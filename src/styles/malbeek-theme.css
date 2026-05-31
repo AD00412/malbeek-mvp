@@ -1,0 +1,60 @@
+/* ============================================================
+   ملبّيك · ثيم الهوية للإنتاج
+   ضع ملفات woff2 في:  public/fonts/
+   استورد هذا الملف في:  src/main.jsx  ->  import "./styles/malbeek-theme.css"
+   ============================================================ */
+
+/* ---------- خط ثمانية · Sans (واجهات الاستخدام) ---------- */
+@font-face{font-family:'Thmanyah';font-weight:300;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahsans-Light.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:400;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahsans-Regular.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:500;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahsans-Medium.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:700;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahsans-Bold.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:900;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahsans-Black.woff2') format('woff2')}
+
+/* ---------- خط ثمانية · Serif Display (العناوين والشعار) ---------- */
+@font-face{font-family:'Thmanyah Display';font-weight:300;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahserifdisplay-Light.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:400;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahserifdisplay-Regular.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:500;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahserifdisplay-Medium.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:700;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahserifdisplay-Bold.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:900;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahserifdisplay-Black.woff2') format('woff2')}
+
+/* ---------- خط ثمانية · Serif Text (نصوص طويلة · اختياري) ---------- */
+@font-face{font-family:'Thmanyah Text';font-weight:400;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahseriftext-Regular.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Text';font-weight:700;font-style:normal;font-display:swap;
+  src:url('/fonts/thmanyahseriftext-Bold.woff2') format('woff2')}
+
+/* ---------- متغيرات ألوان ملبّيك ---------- */
+:root{
+  --emerald-950:#04261C; --emerald-900:#063D2C; --emerald-800:#0A4E3A;
+  --emerald-700:#0B5C43; --emerald-500:#128A66; --emerald-300:#2BB68C;
+  --gold-700:#8A6A1F; --gold-500:#C49A45; --gold-400:#D8B25E;
+  --gold-300:#E2C277; --gold-100:#F6E3B0;
+  --cream-50:#FBF7EE; --cream-100:#F1E9D6; --cream-200:#D9CEB4;
+  --ink:#1C2A24;
+  --success:#1FA971; --warning:#E0A82E; --danger:#C2453A; --info:#2E7D8A;
+
+  --font-sans:'Thmanyah', system-ui, sans-serif;
+  --font-display:'Thmanyah Display', Georgia, serif;
+}
+
+/* ---------- أساسيات ---------- */
+html{ direction:rtl; }
+body{
+  font-family:var(--font-sans);
+  background:var(--emerald-950);
+  color:var(--cream-50);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,.font-display{ font-family:var(--font-display); }
