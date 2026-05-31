@@ -15,21 +15,44 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)   // { id, role, full_name, phone, subscriber_id }
   const [loading, setLoading] = useState(true)
 
-  // تحميل الملف الشخصي (الدور + الحملة) — null-safe
+  // تحميل الملف الشخصي (الدور + الحملة) — null-safe + self-heal
   const loadProfile = useCallback(async (uid) => {
     if (!uid) { setProfile(null); return }
+    const COLS = 'id, role, full_name, phone, subscriber_id'
+
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, role, full_name, phone, subscriber_id')
-      .eq('id', uid)
-      .maybeSingle()
+      .from('profiles').select(COLS).eq('id', uid).maybeSingle()
     if (error) {
       // eslint-disable-next-line no-console
       console.error('تعذّر تحميل الملف الشخصي:', error.message)
       setProfile(null)
       return
     }
-    setProfile(data ?? null)
+    if (data) { setProfile(data); return }
+
+    // self-heal: لو لم يوجد ملفٌ شخصي (مثلًا التريغر لم يفعّل لحساباتٍ قديمة)،
+    // ننشئه من بيانات تسجيل المستخدم — مسموحٌ بسياسة "profile self insert".
+    const { data: u } = await supabase.auth.getUser()
+    const md = u?.user?.user_metadata ?? {}
+    const { data: created, error: insErr } = await supabase
+      .from('profiles')
+      .insert({
+        id: uid,
+        role: md.role ?? 'customer',
+        full_name: md.full_name ?? null,
+        phone: md.phone ?? null,
+        subscriber_id: md.subscriber_id ?? null,
+      })
+      .select(COLS)
+      .maybeSingle()
+    if (insErr) {
+      // eslint-disable-next-line no-console
+      console.error('تعذّر إنشاء الملف الشخصي تلقائيًا:', insErr.message,
+        '— تأكّد من تشغيل supabase/schema.sql على مشروعك (التريغر + سياسات profiles).')
+      setProfile(null)
+      return
+    }
+    setProfile(created ?? null)
   }, [])
 
   useEffect(() => {
