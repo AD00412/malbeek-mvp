@@ -1,276 +1,161 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import CompassMark from './CompassMark'
 
-/* ============================================================
-   نافذة إنشاء/تعديل رحلة — RTL، هوية ملبّيك
-   الاستخدام:
-     <TripFormModal
-        open={bool}
-        trip={null | tripObject}   // null = إنشاء جديد
-        subscriberId={uuid}        // مطلوب للإنشاء فقط
-        onClose={() => ...}
-        onSaved={() => ...}        // يُستدعى بعد نجاح الحفظ
-     />
-   ============================================================ */
-
-// قائمة حالات الرحلة (مطابِقة لـ enum trip_status في القاعدة)
 const STATUS_OPTIONS = [
-  { value: 'draft',  label: 'مسودة'   },
-  { value: 'open',   label: 'مفتوحة'  },
-  { value: 'closed', label: 'مغلقة'   },
-  { value: 'done',   label: 'منتهية' },
+  { v: 'draft', t: 'مسودة' },
+  { v: 'open', t: 'مفتوحة' },
+  { v: 'closed', t: 'مغلقة' },
+  { v: 'done', t: 'منتهية' },
 ]
 
-// الحالة الابتدائية للنموذج (افتراضيات ودودة)
-const EMPTY = {
-  title: '',
-  route_from: 'جازان',
-  route_to: 'مكة المكرمة',
-  depart_at: '',
-  return_at: '',
-  capacity: '',
-  bus_label: '',
-  boarding_point: '',
-  status: 'open',
-  notes: '',
-}
-
-// 'YYYY-MM-DDTHH:mm' (وقت محلي) ← ISO UTC
-function localInputToIso(v) {
-  if (!v) return null
-  const d = new Date(v) // المتصفّح يفسّر القيمة كوقتٍ محلّي
-  return isNaN(d.getTime()) ? null : d.toISOString()
-}
-
-// ISO ← 'YYYY-MM-DDTHH:mm' لعرضها في حقل datetime-local
+// ISO ← → قيمة input[type=datetime-local] بالتوقيت المحلي
 function isoToLocalInput(iso) {
   if (!iso) return ''
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
-  const tz = d.getTimezoneOffset() * 60000
-  return new Date(d.getTime() - tz).toISOString().slice(0, 16)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-// تحويل رحلةٍ من القاعدة إلى قيمٍ صالحة لحقول النموذج
-function tripToForm(t) {
-  if (!t) return { ...EMPTY }
-  return {
-    title:          t.title ?? '',
-    route_from:     t.route_from ?? '',
-    route_to:       t.route_to ?? '',
-    depart_at:      isoToLocalInput(t.depart_at),
-    return_at:      isoToLocalInput(t.return_at),
-    capacity:       (t.capacity ?? '') === null ? '' : String(t.capacity ?? ''),
-    bus_label:      t.bus_label ?? '',
-    boarding_point: t.boarding_point ?? '',
-    status:         t.status ?? 'open',
-    notes:          t.notes ?? '',
-  }
-}
-
-export default function TripFormModal({ open, trip, subscriberId, onClose, onSaved }) {
+/**
+ * نافذة إنشاء/تعديل رحلة
+ * @param {object|null} trip          رحلة للتعديل، أو null للإنشاء
+ * @param {string}      subscriberId  معرّف الحملة (يُستخدم عند الإدراج)
+ * @param {Function}    onClose
+ * @param {Function}    onSaved
+ */
+export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) {
   const isEdit = Boolean(trip?.id)
-  const [form, setForm]   = useState(EMPTY)
-  const [busy, setBusy]   = useState(false)
-  const [err, setErr]     = useState('')
 
-  // إعادة تعبئة النموذج كلّما فُتحت النافذة أو تغيّرت الرحلة المعدَّلة
-  useEffect(() => {
-    if (!open) return
-    setForm(tripToForm(trip))
-    setErr('')
-    setBusy(false)
-  }, [open, trip])
+  const [title, setTitle] = useState(trip?.title ?? '')
+  const [routeFrom, setRouteFrom] = useState(trip?.route_from ?? 'جازان')
+  const [routeTo, setRouteTo] = useState(trip?.route_to ?? 'مكة المكرمة')
+  const [depart, setDepart] = useState(isoToLocalInput(trip?.depart_at))
+  const [ret, setRet] = useState(isoToLocalInput(trip?.return_at))
+  const [capacity, setCapacity] = useState(
+    trip?.capacity === 0 || trip?.capacity ? String(trip.capacity) : ''
+  )
+  const [busLabel, setBusLabel] = useState(trip?.bus_label ?? '')
+  const [boardingPoint, setBoardingPoint] = useState(trip?.boarding_point ?? '')
+  const [status, setStatus] = useState(trip?.status ?? 'open')
+  const [notes, setNotes] = useState(trip?.notes ?? '')
 
-  // إغلاق بـ Escape
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e) => { if (e.key === 'Escape' && !busy) onClose?.() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, busy, onClose])
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const set = useCallback((k, v) => setForm((f) => ({ ...f, [k]: v })), [])
-
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function save() {
     if (busy) return
-    setErr('')
+    if (!title.trim()) { setErr('عنوان الرحلة مطلوب.'); return }
+    if (!depart) { setErr('تاريخ ووقت الذهاب مطلوب.'); return }
+    setErr(''); setBusy(true)
 
-    // تحقّق من الحقول المطلوبة
-    const title = form.title.trim()
-    const departIso = localInputToIso(form.depart_at)
-    if (!title) { setErr('عنوان الرحلة مطلوب.'); return }
-    if (!departIso) { setErr('تاريخ ووقت الذهاب مطلوبان.'); return }
-    if (!isEdit && !subscriberId) { setErr('لم يتم التعرّف على حملتك بعد. حدّث الصفحة وحاول مجدّدًا.'); return }
-
-    // بناء الحمولة بأعمدةٍ مطابقةٍ تمامًا لجدول trips
-    const capInt = Math.max(0, parseInt(form.capacity, 10) || 0)
     const payload = {
-      title,
-      route_from:     form.route_from.trim()     || null,
-      route_to:       form.route_to.trim()       || null,
-      depart_at:      departIso,
-      return_at:      localInputToIso(form.return_at),
-      capacity:       capInt,
-      bus_label:      form.bus_label.trim()      || null,
-      boarding_point: form.boarding_point.trim() || null,
-      status:         form.status,
-      notes:          form.notes.trim()          || null,
+      title: title.trim(),
+      route_from: routeFrom.trim() || null,
+      route_to: routeTo.trim() || null,
+      depart_at: new Date(depart).toISOString(),
+      return_at: ret ? new Date(ret).toISOString() : null,
+      capacity: capacity === '' ? 0 : Math.max(0, parseInt(capacity, 10) || 0),
+      bus_label: busLabel.trim() || null,
+      boarding_point: boardingPoint.trim() || null,
+      status,
+      notes: notes.trim() || null,
     }
 
-    setBusy(true)
     try {
+      let result
       if (isEdit) {
-        const { error } = await supabase.from('trips').update(payload).eq('id', trip.id)
-        if (error) throw error
+        result = await supabase.from('trips').update(payload).eq('id', trip.id)
       } else {
-        const { error } = await supabase
-          .from('trips')
-          .insert({ ...payload, subscriber_id: subscriberId })
-        if (error) throw error
+        result = await supabase.from('trips').insert({ ...payload, subscriber_id: subscriberId })
       }
+      if (result.error) throw result.error
       onSaved?.()
-    } catch (e2) {
-      setErr(typeof e2?.message === 'string' ? e2.message : 'تعذّر حفظ الرحلة.')
+    } catch (e) {
+      setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر حفظ الرحلة. حاول مرة أخرى.')
     } finally {
       setBusy(false)
     }
   }
 
-  if (!open) return null
+  function tryClose() { if (!busy) onClose?.() }
 
   return (
-    <div
-      className="modal-overlay"
-      onMouseDown={(e) => {
-        // إغلاق فقط عند النقر على الخلفية (لا تُغلق إن بدأ النقر داخل البطاقة)
-        if (e.target === e.currentTarget && !busy) onClose?.()
-      }}
-    >
-      <div className="modal-card" role="dialog" aria-modal="true" aria-label={isEdit ? 'تعديل رحلة' : 'إنشاء رحلة'}>
-        <div className="modal-head">
+    <div className="modal-overlay" onClick={tryClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="m-head">
+          <CompassMark size={26} variant="gold" />
           <h3>{isEdit ? 'تعديل الرحلة' : 'رحلة جديدة'}</h3>
-          <span className="sp" style={{ flex: 1 }} />
-          <button type="button" className="modal-x" onClick={onClose} disabled={busy} aria-label="إغلاق">×</button>
+          <button className="m-close" onClick={tryClose} aria-label="إغلاق">×</button>
         </div>
 
-        <form className="form" onSubmit={handleSubmit} style={{ marginTop: 0, gap: 14 }}>
+        <div className="form" style={{ marginTop: 0 }}>
           <div className="field">
-            <label>العنوان <span style={{ color: 'var(--gold-300)' }}>*</span></label>
-            <input
-              type="text"
-              placeholder="مثال: رحلة العشر الأواخر"
-              value={form.title}
-              onChange={(e) => set('title', e.target.value)}
-              required
-              autoFocus
-            />
+            <label>عنوان الرحلة *</label>
+            <input type="text" placeholder="مثال: عُمرة رمضان — الفوج الأول" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div className="grid-2">
             <div className="field">
               <label>من</label>
-              <input
-                type="text"
-                placeholder="مدينة الانطلاق"
-                value={form.route_from}
-                onChange={(e) => set('route_from', e.target.value)}
-              />
+              <input type="text" placeholder="جازان" value={routeFrom} onChange={(e) => setRouteFrom(e.target.value)} />
             </div>
             <div className="field">
               <label>إلى</label>
-              <input
-                type="text"
-                placeholder="مكة المكرمة"
-                value={form.route_to}
-                onChange={(e) => set('route_to', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid-2">
-            <div className="field ltr">
-              <label>تاريخ ووقت الذهاب <span style={{ color: 'var(--gold-300)' }}>*</span></label>
-              <input
-                type="datetime-local"
-                value={form.depart_at}
-                onChange={(e) => set('depart_at', e.target.value)}
-                required
-              />
-            </div>
-            <div className="field ltr">
-              <label>تاريخ ووقت العودة</label>
-              <input
-                type="datetime-local"
-                value={form.return_at}
-                onChange={(e) => set('return_at', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid-2">
-            <div className="field ltr">
-              <label>السعة</label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.capacity}
-                onChange={(e) => set('capacity', e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label>اسم/رقم الباص</label>
-              <input
-                type="text"
-                placeholder="مثال: باص رقم ١"
-                value={form.bus_label}
-                onChange={(e) => set('bus_label', e.target.value)}
-              />
+              <input type="text" placeholder="مكة المكرمة" value={routeTo} onChange={(e) => setRouteTo(e.target.value)} />
             </div>
           </div>
 
           <div className="grid-2">
             <div className="field">
-              <label>نقطة الانطلاق</label>
-              <input
-                type="text"
-                placeholder="مثال: محطة جازان المركزية"
-                value={form.boarding_point}
-                onChange={(e) => set('boarding_point', e.target.value)}
-              />
+              <label>تاريخ ووقت الذهاب *</label>
+              <input type="datetime-local" value={depart} onChange={(e) => setDepart(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>تاريخ العودة (اختياري)</label>
+              <input type="datetime-local" value={ret} onChange={(e) => setRet(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid-2">
+            <div className="field">
+              <label>السعة (عدد المقاعد)</label>
+              <input type="number" min="0" inputMode="numeric" placeholder="0" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
             </div>
             <div className="field">
               <label>الحالة</label>
-              <select value={form.status} onChange={(e) => set('status', e.target.value)}>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                {STATUS_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
               </select>
             </div>
           </div>
 
+          <div className="grid-2">
+            <div className="field">
+              <label>اسم/رقم الباص (اختياري)</label>
+              <input type="text" placeholder="باص ١ — حافلة VIP" value={busLabel} onChange={(e) => setBusLabel(e.target.value)} />
+            </div>
+            <div className="field">
+              <label>نقطة الانطلاق (اختياري)</label>
+              <input type="text" placeholder="محطة جازان المركزية" value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
+            </div>
+          </div>
+
           <div className="field">
-            <label>ملاحظات</label>
-            <textarea
-              placeholder="تعليمات أو ترتيبات إضافية…"
-              value={form.notes}
-              onChange={(e) => set('notes', e.target.value)}
-              rows={3}
-            />
+            <label>ملاحظات (اختياري)</label>
+            <textarea placeholder="أي تفاصيل إضافية عن الرحلة…" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
           {err && <div className="alert err">{err}</div>}
 
           <div className="modal-actions">
-            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>
-            <button type="submit" className="btn btn-gold" disabled={busy}>
-              {busy ? <span className="spinner" /> : (isEdit ? 'حفظ التعديلات' : 'حفظ الرحلة')}
+            <button className="btn btn-ghost" onClick={tryClose} disabled={busy}>إلغاء</button>
+            <button className="btn btn-gold" onClick={save} disabled={busy}>
+              {busy ? <span className="spinner" /> : (isEdit ? 'حفظ التعديلات' : 'إنشاء الرحلة')}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

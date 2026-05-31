@@ -4,10 +4,6 @@ import { useAuth } from '../../app/AuthProvider'
 import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
 
-/* خرائط عرض حالة الرحلة (نص عربي + لون شارة) */
-const TRIP_STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
-const TRIP_STATUS_CLASS = { draft: 'muted', open: 'ok', closed: 'warn', done: 'done' }
-
 /* ---------- شريط علوي مشترك ---------- */
 function TopBar({ roleLabel }) {
   const { signOut, profile } = useAuth()
@@ -28,6 +24,9 @@ function fmtDate(v) {
   try { return new Date(v).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) }
   catch { return '—' }
 }
+
+const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
+function statusClass(s) { return s === 'open' ? 'ok' : 'warn' }
 
 /* ============================================================
    لوحة الإدارة
@@ -89,77 +88,57 @@ export function AdminHome() {
    ============================================================ */
 export function SubscriberHome() {
   const { user } = useAuth()
-  const [sub, setSub]         = useState(null)
-  const [trips, setTrips]     = useState([])
+  const [sub, setSub] = useState(null)
+  const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
-  const [err, setErr]         = useState('')
-  const [copied, setCopied]   = useState(false)
-
-  // حالة النافذة: open + الرحلة قيد التعديل (null = إنشاء جديد)
-  const [modalOpen, setModalOpen]     = useState(false)
-  const [editingTrip, setEditingTrip] = useState(null)
-  // حالة الحذف الجاري (id الرحلة) لتعطيل زر الحذف فقط لها
-  const [deletingId, setDeletingId]   = useState(null)
+  const [err, setErr] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState(null)
 
   const load = useCallback(async () => {
     if (!user?.id) return
-    setLoading(true)
-    setErr('')
-    try {
-      // ١) اقرأ حملة المالك (مرّةً واحدة لكل تحميل)
-      const { data: s, error: sErr } = await supabase
-        .from('subscribers')
-        .select('id, org_name, slug, plan, trial_ends_at')
-        .eq('owner_id', user.id)
-        .maybeSingle()
-      if (sErr) throw sErr
-      setSub(s ?? null)
+    setLoading(true); setErr('')
 
-      // ٢) اقرأ رحلات الحملة بكل الأعمدة التي يحتاجها الجدول/النموذج
-      if (s?.id) {
-        const { data: t, error: tErr } = await supabase
-          .from('trips')
-          .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes, created_at')
-          .eq('subscriber_id', s.id)
-          .order('depart_at', { ascending: true, nullsFirst: false })
-        if (tErr) throw tErr
-        setTrips(t ?? [])
-      } else {
-        setTrips([])
-      }
-    } catch (e) {
-      setErr(typeof e?.message === 'string' ? e.message : 'تعذّر تحميل البيانات.')
-    } finally {
-      setLoading(false)
+    const { data: s, error: sErr } = await supabase
+      .from('subscribers')
+      .select('id, org_name, slug, plan, trial_ends_at')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    if (sErr) { setErr('تعذّر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
+    setSub(s ?? null)
+
+    if (s?.id) {
+      const { data: t, error: tErr } = await supabase
+        .from('trips')
+        .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes')
+        .eq('subscriber_id', s.id)
+        .order('depart_at', { ascending: true })
+      if (tErr) { setErr('تعذّر تحميل الرحلات: ' + tErr.message); setTrips([]) }
+      else setTrips(t ?? [])
+    } else {
+      setTrips([])
     }
+    setLoading(false)
   }, [user])
 
   useEffect(() => { load() }, [load])
 
-  // فتح نافذة الإنشاء/التعديل
-  function openCreate() { setEditingTrip(null); setModalOpen(true) }
-  function openEdit(trip) { setEditingTrip(trip); setModalOpen(true) }
-  function closeModal() { setModalOpen(false); setEditingTrip(null) }
+  function openCreate() { setEditing(null); setModalOpen(true) }
+  function openEdit(t) { setEditing(t); setModalOpen(true) }
+  function closeModal() { setModalOpen(false); setEditing(null) }
+  function handleSaved() { closeModal(); load() }
 
-  async function deleteTrip(trip) {
-    if (!trip?.id) return
-    const ok = window.confirm(`هل تريد حذف هذه الرحلة؟\n«${trip.title || 'رحلة'}»`)
-    if (!ok) return
-    setDeletingId(trip.id)
-    setErr('')
-    try {
-      const { error } = await supabase.from('trips').delete().eq('id', trip.id)
-      if (error) throw error
-      await load()
-    } catch (e) {
-      setErr(typeof e?.message === 'string' ? e.message : 'تعذّر حذف الرحلة.')
-    } finally {
-      setDeletingId(null)
-    }
+  async function remove(t) {
+    if (!t?.id) return
+    if (!window.confirm(`هل تريد حذف رحلة «${t.title}»؟ لا يمكن التراجع.`)) return
+    const { error } = await supabase.from('trips').delete().eq('id', t.id)
+    if (error) { setErr('تعذّر حذف الرحلة: ' + error.message); return }
+    load()
   }
 
   const shareUrl = sub?.slug ? `${window.location.origin}/j/${sub.slug}` : ''
-
   function copyLink() {
     if (!shareUrl) return
     navigator.clipboard?.writeText(shareUrl).then(() => {
@@ -175,6 +154,8 @@ export function SubscriberHome() {
         <p className="app-sub">
           {sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة.' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}.`}
         </p>
+
+        {err && <div className="alert err" style={{ marginTop: 18 }}>{err}</div>}
 
         <section className="panel">
           <h3>رابط تسجيل العملاء</h3>
@@ -194,81 +175,55 @@ export function SubscriberHome() {
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
             <h3 style={{ margin: 0 }}>الرحلات ({trips.length})</h3>
             <span className="sp" style={{ flex: 1 }} />
-            <button
-              className="btn btn-gold"
-              style={{ width: 'auto', padding: '10px 18px' }}
-              onClick={openCreate}
-              disabled={!sub || loading}
-            >
+            <button className="btn btn-gold" style={{ width: 'auto', padding: '10px 18px' }} onClick={openCreate} disabled={!sub}>
               ＋ رحلة جديدة
             </button>
           </div>
 
-          {err && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
-
           {loading ? (
             <div className="empty">جارٍ التحميل…</div>
+          ) : !sub ? (
+            <div className="empty">لم يتم العثور على حملتك. تواصل مع الدعم.</div>
           ) : trips.length === 0 ? (
-            <div className="empty">لا توجد رحلاتٌ بعد — أضف أوّل رحلة.</div>
+            <div className="empty">لا توجد رحلاتٌ بعد — أضف أول رحلة.</div>
           ) : (
             <table className="tbl">
               <thead>
-                <tr>
-                  <th>الرحلة</th>
-                  <th>المسار</th>
-                  <th>الذهاب</th>
-                  <th>السعة</th>
-                  <th>الحالة</th>
-                  <th style={{ textAlign: 'end' }}>إجراءات</th>
-                </tr>
+                <tr><th>الرحلة</th><th>المسار</th><th>الذهاب</th><th>السعة</th><th>الحالة</th><th>إجراءات</th></tr>
               </thead>
               <tbody>
-                {trips.map((t) => {
-                  const stCls = TRIP_STATUS_CLASS[t.status] || 'muted'
-                  const stLbl = TRIP_STATUS_LABEL[t.status] || (t.status || '—')
-                  return (
-                    <tr key={t.id}>
-                      <td>{t.title || '—'}</td>
-                      <td>{(t.route_from || '—') + ' ← ' + (t.route_to || '—')}</td>
-                      <td>{fmtDate(t.depart_at)}</td>
-                      <td>{Number.isFinite(t.capacity) && t.capacity > 0 ? t.capacity : '—'}</td>
-                      <td><span className={`st ${stCls}`}>{stLbl}</span></td>
-                      <td>
-                        <div className="row-actions">
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => openEdit(t)}
-                            disabled={deletingId === t.id}
-                          >
-                            تعديل
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-danger btn-sm"
-                            onClick={() => deleteTrip(t)}
-                            disabled={deletingId === t.id}
-                          >
-                            {deletingId === t.id ? <span className="spinner" /> : 'حذف'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {trips.map((t) => (
+                  <tr key={t.id}>
+                    <td>
+                      {t.title}
+                      {t.bus_label && <div className="muted">باص: {t.bus_label}</div>}
+                    </td>
+                    <td>{(t.route_from || '—') + ' ← ' + (t.route_to || '—')}</td>
+                    <td>{fmtDate(t.depart_at)}</td>
+                    <td>{t.capacity ?? 0}</td>
+                    <td><span className={`st ${statusClass(t.status)}`}>{STATUS_LABEL[t.status] || t.status}</span></td>
+                    <td>
+                      <div className="row-actions">
+                        <button className="icon-btn" onClick={() => openEdit(t)}>تعديل</button>
+                        <button className="icon-btn danger" onClick={() => remove(t)}>حذف</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
         </section>
       </main>
 
-      <TripFormModal
-        open={modalOpen}
-        trip={editingTrip}
-        subscriberId={sub?.id ?? null}
-        onClose={closeModal}
-        onSaved={async () => { closeModal(); await load() }}
-      />
+      {modalOpen && sub && (
+        <TripFormModal
+          trip={editing}
+          subscriberId={sub.id}
+          onClose={closeModal}
+          onSaved={handleSaved}
+        />
+      )}
     </div>
   )
 }
@@ -327,7 +282,7 @@ export function CustomerHome() {
                     <td>{t.title}</td>
                     <td>{(t.route_from || '—') + ' ← ' + (t.route_to || '—')}</td>
                     <td>{fmtDate(t.depart_at)}</td>
-                    <td><span className={`st ${t.status === 'open' ? 'ok' : 'warn'}`}>{t.status === 'open' ? 'مفتوحة' : t.status}</span></td>
+                    <td><span className={`st ${t.status === 'open' ? 'ok' : 'warn'}`}>{STATUS_LABEL[t.status] || t.status}</span></td>
                   </tr>
                 ))}
               </tbody>
