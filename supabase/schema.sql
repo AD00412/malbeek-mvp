@@ -36,16 +36,25 @@ create index if not exists idx_profiles_subscriber on public.profiles(subscriber
 
 -- ---------- الرحلات ----------
 create table if not exists public.trips (
-  id            uuid primary key default gen_random_uuid(),
-  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
-  title         text not null,
-  route_from    text,
-  route_to      text default 'مكة المكرمة',
-  depart_at     timestamptz,
-  capacity      int default 0,
-  status        trip_status not null default 'open',
-  created_at    timestamptz not null default now()
+  id              uuid primary key default gen_random_uuid(),
+  subscriber_id   uuid not null references public.subscribers(id) on delete cascade,
+  title           text not null,
+  route_from      text,
+  route_to        text default 'مكة المكرمة',
+  depart_at       timestamptz,
+  return_at       timestamptz,
+  capacity        int default 0,
+  bus_label       text,
+  boarding_point  text,
+  status          trip_status not null default 'open',
+  notes           text,
+  created_at      timestamptz not null default now()
 );
+-- ترقية القواعد القديمة (idempotent) — تضيف الأعمدة إن غابت دون حذف بيانات
+alter table public.trips add column if not exists return_at      timestamptz;
+alter table public.trips add column if not exists bus_label      text;
+alter table public.trips add column if not exists boarding_point text;
+alter table public.trips add column if not exists notes          text;
 create index if not exists idx_trips_subscriber on public.trips(subscriber_id);
 
 -- ---------- المعتمرون (بيانات العميل المحفوظة دائمًا) ----------
