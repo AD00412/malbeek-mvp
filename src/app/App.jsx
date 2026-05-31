@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuth } from './useAuth'
 import RequireAuth, { homeForRole, ScreenLoader } from './RequireAuth'
 
 import Login from '../pages/auth/Login'

@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuth } from './useAuth'
 import CompassMark from '../components/CompassMark'
 
 // الوجهة الافتراضية لكل دور

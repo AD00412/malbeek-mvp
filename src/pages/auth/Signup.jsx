@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import { useAuth } from '../../app/AuthProvider'
+import { useAuth } from '../../app/useAuth'
 import AuthShell from './AuthShell'
 
 function arError(msg = '') {

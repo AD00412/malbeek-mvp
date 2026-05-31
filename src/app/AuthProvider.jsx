@@ -1,14 +1,6 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
-
-const AuthContext = createContext(null)
-
-// خطّاف للوصول إلى حالة المصادقة من أي مكوّن
-export const useAuth = () => {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth يجب أن يُستخدم داخل <AuthProvider>')
-  return ctx
-}
+import { AuthContext } from './useAuth'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)

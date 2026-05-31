@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import { useAuth } from '../../app/AuthProvider'
+import { useAuth } from '../../app/useAuth'
 import AuthShell from './AuthShell'
 import { ScreenLoader } from '../../app/RequireAuth'
 

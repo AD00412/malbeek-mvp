@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { useAuth } from '../../app/AuthProvider'
+import { useAuth } from '../../app/useAuth'
 import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
 
