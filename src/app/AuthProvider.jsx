@@ -34,22 +34,50 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true
+    let timeoutId = null
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return
-      const s = data?.session ?? null
-      setSession(s)
-      await loadProfile(s?.user?.id)
-      setLoading(false)
-    })
+    const init = async () => {
+      try {
+        // إن تعلّق getSession (توكِنٌ قديمٌ بمشروعٍ مختلف، شبكةٌ متذبذبة، …)
+        // نعتبر "لا جلسة" بعد ٥ ثوانٍ بدلًا من البقاء عالقين على شاشة التحميل
+        const session = await Promise.race([
+          supabase.auth.getSession().then((r) => r?.data?.session ?? null),
+          new Promise((resolve) => {
+            timeoutId = setTimeout(() => {
+              // eslint-disable-next-line no-console
+              console.warn('⏱️ getSession تأخّر عن ٥ ثوانٍ — أتجاوزه كأنّه بلا جلسة. امسح localStorage إن استمرّ.')
+              resolve(null)
+            }, 5000)
+          }),
+        ])
+        if (timeoutId) clearTimeout(timeoutId)
+        if (!active) return
+        setSession(session)
+        await loadProfile(session?.user?.id)
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('AuthProvider init failed:', e?.message || e)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    init()
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (!active) return
       setSession(s ?? null)
-      await loadProfile(s?.user?.id)
+      try { await loadProfile(s?.user?.id) }
+      catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('loadProfile failed on auth change:', e?.message || e)
+      }
     })
 
-    return () => { active = false; sub?.subscription?.unsubscribe?.() }
+    return () => {
+      active = false
+      if (timeoutId) clearTimeout(timeoutId)
+      sub?.subscription?.unsubscribe?.()
+    }
   }, [loadProfile])
 
   const signOut = useCallback(async () => {
