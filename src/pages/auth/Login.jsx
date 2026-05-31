@@ -6,11 +6,20 @@ import AuthShell from './AuthShell'
 
 // ترجمة رسائل الخطأ الشائعة من Supabase إلى العربية
 function arError(msg = '') {
-  const m = msg.toLowerCase()
+  const m = String(msg).toLowerCase()
   if (m.includes('invalid login')) return 'البريد أو كلمة المرور غير صحيحة.'
-  if (m.includes('email not confirmed')) return 'لم يتم تأكيد البريد بعد. تحقّق من بريدك.'
-  if (m.includes('network')) return 'تعذّر الاتصال بالخادم. حاول مرة أخرى.'
+  if (m.includes('email not confirmed')) return 'لم يتم تأكيد البريد بعد. عطّل «Confirm email» في إعدادات Supabase أثناء التطوير.'
+  if (m.includes('timeout')) return 'تعذّر الوصول إلى خادم Supabase خلال ١٠ ثوانٍ. تحقّق من VITE_SUPABASE_URL في .env، ومن أن مشروعك ليس متوقّفًا، ومن أن شبكتك لا تحجب supabase.co'
+  if (m.includes('network') || m.includes('fetch')) return 'تعذّر الاتصال بالخادم. تحقّق من رابط Supabase في .env.'
   return 'حدث خطأٌ غير متوقّع. حاول مرة أخرى.'
+}
+
+// timeout دفاعي: لو signin معلَّق، نرفع خطأً واضحًا بدلًا من تجمّد الزر
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ])
 }
 
 export default function Login() {
@@ -26,27 +35,31 @@ export default function Login() {
     setErr('')
     setBusy(true)
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    })
+    try {
+      // ١٠ ثوانٍ كحدٍّ أقصى لطلب الدخول قبل عرض رسالة timeout
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: email.trim(), password }),
+        10000,
+      )
+      if (error) { setErr(arError(error.message)); return }
 
-    if (error) {
+      // ٥ ثوانٍ لقراءة الدور — لو فشلت نُكمل للجذر ويتكفّل AuthProvider/RootRedirect
+      const uid = data?.user?.id
+      let role = null
+      try {
+        const { data: prof } = await withTimeout(
+          supabase.from('profiles').select('role').eq('id', uid).maybeSingle(),
+          5000,
+        )
+        role = prof?.role ?? null
+      } catch (_) { /* تجاوزه؛ التوجيه الافتراضي يحدث أدناه */ }
+
+      navigate(homeForRole(role), { replace: true })
+    } catch (e2) {
+      setErr(arError(e2?.message))
+    } finally {
       setBusy(false)
-      setErr(arError(error.message))
-      return
     }
-
-    // اقرأ الدور لتوجيه المستخدم إلى لوحته الصحيحة
-    const uid = data?.user?.id
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', uid)
-      .maybeSingle()
-
-    setBusy(false)
-    navigate(homeForRole(prof?.role), { replace: true })
   }
 
   return (
