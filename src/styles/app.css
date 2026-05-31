@@ -90,7 +90,47 @@ a{text-decoration:none;color:inherit}
 .st.ok{background:rgba(43,182,140,.16);color:#7be0bf}.st.warn{background:rgba(224,168,46,.16);color:#f0cf86}
 .empty{text-align:center;color:var(--cream-200);font-weight:300;padding:34px 10px}
 
+/* ---------- شارات حالة إضافية + إجراءات صف ---------- */
+.st.muted{background:rgba(217,206,180,.12);color:var(--cream-200)}
+.st.done{background:rgba(46,125,138,.18);color:#86c0cc}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.btn-sm{padding:7px 13px;font-size:13px;border-radius:9px}
+.btn-danger{background:rgba(194,69,58,.18);color:#f0a99f;border:1px solid rgba(194,69,58,.4)}
+.btn-danger:hover:not(:disabled){background:rgba(194,69,58,.28)}
+
+/* ---------- شبكة حقول + textarea/select ---------- */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field textarea,.field select{width:100%;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;
+  padding:13px 15px;color:var(--cream-50);font-family:var(--font-sans);font-size:15px;
+  transition:border-color .2s,box-shadow .2s;direction:rtl}
+.field textarea{min-height:84px;resize:vertical;line-height:1.6}
+.field textarea::placeholder{color:rgba(217,206,180,.5)}
+.field textarea:focus,.field select:focus{outline:none;border-color:var(--gold-500);box-shadow:0 0 0 3px rgba(196,154,69,.16)}
+.field select{appearance:none;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--gold-300) 50%),linear-gradient(135deg,var(--gold-300) 50%,transparent 50%);
+  background-position:left 18px center,left 13px center;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-left:36px}
+
+/* ---------- النوافذ المنبثقة (Modal) ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(2,15,11,.72);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:24px;z-index:100;animation:mk-fade .15s ease}
+.modal-card{width:100%;max-width:680px;max-height:calc(100vh - 48px);overflow-y:auto;
+  background:linear-gradient(160deg,#063D2C,#031f17);border:1px solid var(--line);border-radius:20px;padding:26px;
+  box-shadow:0 30px 80px rgba(0,0,0,.55);direction:rtl;animation:mk-rise .2s ease}
+.modal-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.modal-head h3{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--cream-50);margin:0}
+.modal-x{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--cream-100);
+  width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:20px;line-height:1;display:grid;place-items:center;transition:background .15s}
+.modal-x:hover:not(:disabled){background:rgba(255,255,255,.1)}
+.modal-actions{display:flex;gap:10px;margin-top:6px}
+.modal-actions .btn{width:auto;flex:1;padding:13px 18px}
+@keyframes mk-fade{from{opacity:0}to{opacity:1}}
+@keyframes mk-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
 @media(max-width:820px){
   .auth-wrap{grid-template-columns:1fr}
   .auth-art{display:none}
+}
+@media(max-width:560px){
+  .grid-2{grid-template-columns:1fr}
+  .modal-card{padding:20px}
 }
