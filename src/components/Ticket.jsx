@@ -42,7 +42,7 @@ export default function Ticket({ passenger, trip, sub, onClose }) {
     if (!dataUrl) return
     const a = document.createElement('a')
     a.href = dataUrl
-    a.download = `tذكرة-${(passenger?.full_name || 'معتمر').replace(/\s+/g, '_')}.png`
+    a.download = `تذكرة-${(passenger?.full_name || 'معتمر').replace(/\s+/g, '_')}.png`
     a.click()
   }
 

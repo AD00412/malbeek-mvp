@@ -33,10 +33,10 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
   const handleCode = useCallback(async (rawCode) => {
     const code = (rawCode || '').trim()
     if (!code || busy) return
-    // كبح التكرار: نفس الرمز خلال ٣ ثوانٍ يُتجاهل
+    // كبح التكرار: نتجاهل إعادة مسح نفس الرمز خلال ٣ ثوانٍ بعد نجاحٍ سابقٍ فقط،
+    // حتى لا يُحجب رمزٌ فشل تحديثه (شبكة) ويُظنّ أنه سُجّل.
     const now = Date.now()
     if (lastScanRef.current.code === code && now - lastScanRef.current.at < 3000) return
-    lastScanRef.current = { code, at: now }
 
     setBusy(true)
     try {
@@ -59,6 +59,8 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
       const { error: upErr } = await supabase.from('passengers').update(patch).eq('id', data.id)
       if (upErr) throw upErr
 
+      // ثبّت الكبح بعد النجاح فقط
+      lastScanRef.current = { code, at: Date.now() }
       if (navigator.vibrate) navigator.vibrate(120)
       setResult({ ok: true, msg: `تم تسجيل ${targetLabel}`, passenger: { ...data, ...patch } })
       onUpdated?.()
