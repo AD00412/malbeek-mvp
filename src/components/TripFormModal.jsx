@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import CompassMark from './CompassMark'
+import { SEATING_POLICIES } from '../lib/busLayout'
 
 const STATUS_OPTIONS = [
   { v: 'draft', t: 'مسودة' },
@@ -39,6 +40,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
   const [busLabel, setBusLabel] = useState(trip?.bus_label ?? '')
   const [boardingPoint, setBoardingPoint] = useState(trip?.boarding_point ?? '')
   const [status, setStatus] = useState(trip?.status ?? 'open')
+  const [seatingPolicy, setSeatingPolicy] = useState(trip?.seating_policy ?? 'all_male')
   const [notes, setNotes] = useState(trip?.notes ?? '')
 
   const [err, setErr] = useState('')
@@ -60,6 +62,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
       bus_label: busLabel.trim() || null,
       boarding_point: boardingPoint.trim() || null,
       status,
+      seating_policy: seatingPolicy,
       notes: notes.trim() || null,
     }
 
@@ -140,6 +143,13 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
               <label>نقطة الانطلاق (اختياري)</label>
               <input type="text" placeholder="محطة جازان المركزية" value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
             </div>
+          </div>
+
+          <div className="field">
+            <label>سياسة المقاعد</label>
+            <select value={seatingPolicy} onChange={(e) => setSeatingPolicy(e.target.value)}>
+              {SEATING_POLICIES.map((p) => <option key={p.v} value={p.v}>{p.t}</option>)}
+            </select>
           </div>
 
           <div className="field">

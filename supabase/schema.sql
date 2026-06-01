@@ -102,6 +102,13 @@ create index if not exists idx_passengers_subscriber on public.passengers(subscr
 alter table public.passengers add column if not exists ticket_code   text;
 alter table public.passengers add column if not exists boarded_at     timestamptz;
 alter table public.passengers add column if not exists checked_in_at  timestamptz;
+-- خريطة المقاعد: جنس المعتمر، عائلة، وسياسة المقاعد على مستوى الرحلة
+alter table public.passengers add column if not exists gender         text;            -- 'male' | 'female'
+alter table public.passengers add column if not exists is_family      boolean not null default false;
+alter table public.trips      add column if not exists seating_policy text not null default 'all_male';
+-- منع حجز مقعدٍ مكرّر في نفس الرحلة (يسمح بالـ NULL لمقاعد غير مخصّصة بعد)
+create unique index if not exists uniq_passengers_trip_seat
+  on public.passengers(trip_id, seat_no) where seat_no is not null;
 -- توليد رمز تذكرةٍ فريدٍ للصفوف القديمة ثم جعله افتراضيًّا للجديدة
 update public.passengers set ticket_code = 'TKT-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,10))
   where ticket_code is null;

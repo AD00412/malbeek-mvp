@@ -460,6 +460,81 @@
 .scan-result .sr-msg{font-weight:700;font-size:14.5px}
 .scan-result .sr-pax{font-size:13px;color:var(--cr-100);margin-top:2px}
 
+/* ============================================================
+   مخطّط الباص التفاعلي (SeatMap)
+   ============================================================ */
+.bus-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
+.bus-frame{position:relative;width:100%;max-width:300px;background:linear-gradient(180deg,#0a4734,#04261c);
+  border:2px solid var(--gd-500);border-radius:46px 46px 28px 28px;padding:14px 14px 18px;
+  box-shadow:inset 0 0 0 1px rgba(226,194,119,.2),0 14px 38px rgba(0,0,0,.45)}
+.bus-frame::before,.bus-frame::after{content:"";position:absolute;top:-9px;width:14px;height:14px;border-radius:50%;
+  background:#1a2420;border:2px solid var(--gd-500)}
+.bus-frame::before{inset-inline-start:30px}
+.bus-frame::after{inset-inline-end:30px}
+
+.bus-front{display:grid;grid-template-columns:36px 36px 1fr;gap:8px;align-items:center;
+  padding:10px 6px;margin-bottom:10px;border-bottom:1px dashed rgba(226,194,119,.25)}
+.bus-driver,.bus-assist{width:36px;height:36px;border-radius:10px;background:rgba(226,194,119,.08);
+  border:1px solid var(--line);display:grid;place-items:center;color:var(--cr-300)}
+.bus-entry{justify-self:end;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--gd-300);
+  background:rgba(196,154,69,.12);border:1px solid rgba(196,154,69,.3);padding:4px 10px;border-radius:var(--r-pill)}
+
+.bus-rows{display:flex;flex-direction:column;gap:8px}
+.bus-row{display:grid;grid-template-columns:1fr 1fr 18px 1fr 1fr;gap:6px}
+.bus-aisle{background:repeating-linear-gradient(90deg,transparent 0 4px,rgba(226,194,119,.08) 4px 8px);border-radius:4px}
+
+.bus-exit{position:absolute;inset-inline-end:-10px;top:54%;display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;color:var(--gd-300);background:#04261c;border:1px solid var(--gd-500);
+  padding:4px 8px;border-radius:6px;transform:rotate(0deg)}
+
+.bus-back{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px;
+  padding-top:10px;border-top:1px dashed rgba(226,194,119,.25)}
+
+/* المقعد */
+.seat{position:relative;aspect-ratio:1/1.05;background:rgba(255,255,255,.05);border:1px solid var(--line);
+  border-radius:8px 8px 12px 12px;color:var(--cr-200);cursor:pointer;font-family:var(--font-sans);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:11px;font-weight:600;padding:2px;transition:.15s;overflow:hidden}
+.seat::after{content:"";position:absolute;top:1px;inset-inline-start:6px;right:6px;height:3px;
+  background:rgba(226,194,119,.25);border-radius:2px}
+.seat .s-no{font-family:var(--font-display);font-weight:900;line-height:1;color:var(--cr-100);font-size:11.5px}
+.seat .s-nm{font-size:8.5px;color:var(--cr-300);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+
+.seat:hover:not(:disabled){background:rgba(196,154,69,.1);border-color:rgba(226,194,119,.4);transform:translateY(-1px)}
+.seat:disabled{cursor:not-allowed}
+
+.seat-available{}
+.seat-available.a-male{border-color:rgba(58,160,179,.35);background:rgba(58,160,179,.06)}
+.seat-available.a-female{border-color:rgba(232,121,189,.35);background:rgba(232,121,189,.06)}
+.seat-available.a-family{border-color:rgba(196,154,69,.35);background:rgba(196,154,69,.06)}
+
+.seat-selected{background:linear-gradient(180deg,var(--gd-300),var(--gd-500));border-color:var(--gd-100);
+  color:var(--em-950);box-shadow:0 0 0 3px rgba(196,154,69,.25)}
+.seat-selected .s-no,.seat-selected .s-nm{color:var(--em-950)}
+
+.seat-taken{background:rgba(43,182,140,.16);border-color:rgba(43,182,140,.4);color:var(--ok-ink);cursor:not-allowed;opacity:.92}
+.seat-taken .s-no{color:var(--ok-ink)}
+.seat-taken .s-nm{color:var(--cr-100)}
+
+.seat-locked{background:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0 4px,transparent 4px 8px);
+  border-color:rgba(217,206,180,.18);color:var(--cr-300);opacity:.5}
+
+/* عوامل التشريع */
+.bus-legend{display:flex;flex-direction:column;gap:6px;align-items:center;width:100%;max-width:320px}
+.lg-policy{font-size:13px;color:var(--cr-200)}
+.lg-policy strong{color:var(--gd-300);font-family:var(--font-display)}
+.lg-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.lg-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--cr-200)}
+.lg-chip .dot{width:10px;height:10px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid var(--line)}
+.lg-chip .dot.mine{background:var(--grad-gold);border-color:var(--gd-100)}
+.lg-chip .dot.taken{background:rgba(43,182,140,.45);border-color:rgba(43,182,140,.5)}
+.lg-chip .dot.locked{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 3px,transparent 3px 6px)}
+.lg-chip .dot.a-male{background:rgba(58,160,179,.25);border-color:rgba(58,160,179,.45)}
+.lg-chip .dot.a-female{background:rgba(232,121,189,.22);border-color:rgba(232,121,189,.45)}
+.lg-chip .dot.a-family{background:rgba(196,154,69,.22);border-color:rgba(196,154,69,.45)}
+
+.bus-wrap.compact .bus-frame{max-width:260px}
+
 /* ---------- الطباعة: يُظهر الكشف/التذكرة فقط ---------- */
 @media print{
   body{background:#fff}

@@ -5,6 +5,9 @@ import CompassMark from '../../components/CompassMark'
 import PassengerFormModal, { PASSENGER_STATUS } from '../../components/PassengerFormModal'
 import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
+import SeatMap from '../../components/SeatMap'
+import BottomSheet from '../../components/BottomSheet'
+import { policyLabel } from '../../lib/busLayout'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -47,14 +50,15 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [crewOpen, setCrewOpen] = useState(false)
   const [manifestOpen, setManifestOpen] = useState(false)
   const [ticketFor, setTicketFor] = useState(null)   // المعتمر لعرض تذكرته
-  const [scanMode, setScanMode] = useState(null)      // 'board' | 'checkin' | null
+  const [scanMode, setScanMode] = useState(null)     // 'board' | 'checkin' | null
+  const [seatMapOpen, setSeatMapOpen] = useState(false)
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, ticket_code, boarded_at, checked_in_at, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -123,6 +127,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <div className="tags">
           <span className="tag gold">عمرة</span>
           <span className="tag muted">{trip?.bus_label || 'بدون باص'}</span>
+          <span className="tag info">{policyLabel(trip?.seating_policy)}</span>
         </div>
         <h2 style={{ marginTop: 8 }}>{trip?.title || 'رحلة'}</h2>
         <p>{(trip?.route_from || '—') + ' ← ' + (trip?.route_to || '—')} · {fmt(trip?.depart_at)}</p>
@@ -147,13 +152,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           </button>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          <button className="action" style={{ flex: 1 }} onClick={() => setSeatMapOpen(true)}>
+            <Icon name="seat" size={18} /> خريطة المقاعد
+          </button>
           <button className="action" style={{ flex: 1 }} onClick={() => setCrewOpen(true)}>
             <Icon name="bus" size={18} /> الباص والطاقم
           </button>
-          <button className="action ok" style={{ flex: 1 }} onClick={() => setManifestOpen(true)}>
-            <Icon name="manifest" size={18} /> الكشف الرسمي
-          </button>
         </div>
+        <button className="action ok" onClick={() => setManifestOpen(true)}>
+          <Icon name="manifest" size={18} /> الكشف الرسمي
+        </button>
       </div>
 
       {err && <div className="alert err" style={{ marginTop: 14 }}>{err}</div>}
@@ -210,10 +218,24 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         passenger={editingPax}
         tripId={trip?.id}
         subscriberId={sub?.id}
+        seatingPolicy={trip?.seating_policy}
+        passengers={passengers}
         defaultBoarding={trip?.boarding_point}
         onClose={() => setPaxOpen(false)}
         onSaved={() => { setPaxOpen(false); loadPassengers() }}
       />
+
+      <BottomSheet
+        open={seatMapOpen}
+        onClose={() => setSeatMapOpen(false)}
+        title="خريطة المقاعد"
+        actions={<button className="btn btn-gold btn-block" onClick={() => setSeatMapOpen(false)}>تم</button>}
+      >
+        <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 8, textAlign: 'center' }}>
+          عرضٌ مباشرٌ للباص — يحدّث فور إضافة معتمرٍ أو نقل مقعده.
+        </p>
+        <SeatMap policy={trip?.seating_policy} passengers={passengers} readOnly />
+      </BottomSheet>
 
       <CrewFormModal
         open={crewOpen}
