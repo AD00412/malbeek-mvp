@@ -49,48 +49,38 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true
-    let timeoutId = null
 
+    // قراءة الجلسة الأولى عند الإقلاع. القفل المحدود في supabaseClient يضمن
+    // ألّا يتجمّد getSession، لذا لا حاجة لأي سباق مؤقّتٍ هنا.
     const init = async () => {
       try {
-        // إن تعلّق getSession (توكِنٌ قديمٌ بمشروعٍ مختلف، شبكةٌ متذبذبة، …)
-        // نعتبر "لا جلسة" بعد ٥ ثوانٍ بدلًا من البقاء عالقين على شاشة التحميل
-        const session = await Promise.race([
-          supabase.auth.getSession().then((r) => r?.data?.session ?? null),
-          new Promise((resolve) => {
-            timeoutId = setTimeout(() => {
-              // eslint-disable-next-line no-console
-              console.warn('⏱️ getSession تأخّر عن ٥ ثوانٍ — أتجاوزه كأنّه بلا جلسة. امسح localStorage إن استمرّ.')
-              resolve(null)
-            }, 5000)
-          }),
-        ])
-        if (timeoutId) clearTimeout(timeoutId)
+        const { data } = await supabase.auth.getSession()
         if (!active) return
-        setSession(session)
-        await loadProfile(session?.user?.id)
+        const s = data?.session ?? null
+        setSession(s)
+        await loadProfile(s?.user?.id)
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.error('AuthProvider init failed:', e?.message || e)
+        console.error('تعذّر تهيئة الجلسة:', e?.message || e)
       } finally {
         if (active) setLoading(false)
       }
     }
     init()
 
+    // أي تغيّرٍ لاحقٍ في حالة المصادقة (دخول/خروج/تجديد) يُحدّث الجلسة والملف
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (!active) return
       setSession(s ?? null)
       try { await loadProfile(s?.user?.id) }
       catch (e) {
         // eslint-disable-next-line no-console
-        console.error('loadProfile failed on auth change:', e?.message || e)
+        console.error('تعذّر تحميل الملف عند تغيّر الجلسة:', e?.message || e)
       }
     })
 
     return () => {
       active = false
-      if (timeoutId) clearTimeout(timeoutId)
       sub?.subscription?.unsubscribe?.()
     }
   }, [loadProfile])
