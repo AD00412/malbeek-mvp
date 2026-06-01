@@ -1,38 +1,53 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
 
-/* تسمية الدور بالعربية */
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
 
-/* أوّل حرفٍ للأفاتار */
 function initials(name) {
   const n = (name || '').trim()
   return n ? n[0] : '؟'
 }
 
-/**
- * هيكل اللوحة الموحّد: شريطٌ جانبيٌّ (تنقّل حسب الدور) + رأسٌ + محتوى.
- *
- * @param {string}   title    عنوان الصفحة في الرأس
- * @param {string}   subtitle وصفٌ صغيرٌ تحت العنوان
- * @param {Array}    nav      عناصر التنقّل [{ key, label, icon, badge }]
- * @param {string}   active   مفتاح العنصر النشط
- * @param {Function} onNav    عند اختيار عنصر (key) => void
- * @param {ReactNode} actions أزرارٌ في يسار الرأس (اختياري)
- */
-export default function AppShell({ title, subtitle, nav = [], active, onNav, actions, children }) {
-  const { profile, role, signOut } = useAuth()
-  const [open, setOpen] = useState(false)
+/** شارة حالة الاتصال — تستمع لأحداث المتصفّح */
+function ConnectionPill() {
+  const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
+  useEffect(() => {
+    const up = () => setOnline(true), down = () => setOnline(false)
+    window.addEventListener('online', up); window.addEventListener('offline', down)
+    return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down) }
+  }, [])
+  return (
+    <span className={`status-pill ${online ? '' : 'offline'}`}>
+      <span className="ring" />
+      {online ? 'متّصل' : 'غير متّصل'}
+    </span>
+  )
+}
 
-  const go = (key) => { onNav?.(key); setOpen(false) }
+/**
+ * هيكل اللوحة الموحّد — موبايل أوّلًا.
+ * على الجوال: رأسٌ + محتوى + شريطٌ سفليٌّ للتنقّل (يأخذ `tabs`).
+ * على سطح المكتب: شريطٌ جانبيٌّ يستخدم نفس `tabs`.
+ *
+ * @param {string}   title
+ * @param {string}   subtitle
+ * @param {Array}    tabs    [{ key, label, icon, badge, disabled, fab }]  fab=true يجعل العنصر FAB المركزي
+ * @param {string}   active
+ * @param {Function} onTab
+ * @param {ReactNode} actions  أزرارٌ يسار الرأس (سطح المكتب)
+ */
+export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children }) {
+  const { profile, role, signOut } = useAuth()
+
+  const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
+  const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
 
   return (
     <div className="shell">
-      {open && <div className="scrim" onClick={() => setOpen(false)} />}
-
-      <aside className={`sidebar ${open ? 'open' : ''}`}>
+      {/* ---------- الشريط الجانبي (سطح المكتب) ---------- */}
+      <aside className="sidebar">
         <div className="brand">
           <CompassMark size={36} />
           <div>
@@ -42,22 +57,22 @@ export default function AppShell({ title, subtitle, nav = [], active, onNav, act
         </div>
 
         <nav className="nav">
-          {nav.map((item) =>
-            item.section ? (
-              <div className="nav-sec" key={'sec-' + item.section}>{item.section}</div>
+          {tabs.map((item, i) =>
+            !item.label ? (
+              <div className="nav-sec" key={'sec-' + i}>{item.section}</div>
             ) : (
-              <div
+              <button
                 key={item.key}
-                className={`nav-item ${active === item.key ? 'active' : ''} ${item.disabled ? 'dim' : ''}`}
-                onClick={() => !item.disabled && go(item.key)}
-                style={item.disabled ? { cursor: 'not-allowed', opacity: .5 } : undefined}
-                role="button"
-                tabIndex={0}
+                type="button"
+                className={`nav-item ${active === item.key ? 'active' : ''}`}
+                onClick={() => !item.disabled && onTab?.(item.key)}
+                disabled={item.disabled}
+                style={item.disabled ? { opacity: .5, cursor: 'not-allowed' } : undefined}
               >
                 <span className="ic"><Icon name={item.icon} size={20} /></span>
                 {item.label}
                 {item.badge != null && <span className="badge">{item.badge}</span>}
-              </div>
+              </button>
             )
           )}
         </nav>
@@ -76,21 +91,54 @@ export default function AppShell({ title, subtitle, nav = [], active, onNav, act
         </div>
       </aside>
 
-      <div className="main">
+      {/* ---------- المنطقة الرئيسة ---------- */}
+      <div className="main" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <header className="topbar">
-          <button className="menu-btn" onClick={() => setOpen(true)} aria-label="القائمة">
-            <Icon name="menu" size={18} />
-          </button>
           <div>
             <div className="pg-title">{title}</div>
             {subtitle && <div className="pg-sub">{subtitle}</div>}
           </div>
-          <span className="sp-grow" />
+          <span style={{ flex: 1 }} />
+          <ConnectionPill />
+          <button type="button" className="icon-bubble" aria-label="الإشعارات">
+            <Icon name="bell" size={18} />
+          </button>
           {actions}
         </header>
 
         <main className="content">{children}</main>
       </div>
+
+      {/* ---------- الشريط السفلي (الجوال) ---------- */}
+      <nav className="tabbar" aria-label="تنقّل سفلي">
+        {bottomTabs.map((t) => (
+          t.fab ? (
+            <div key={t.key} className="tab-cta-wrap">
+              <button
+                type="button"
+                className="tab-cta"
+                onClick={() => !t.disabled && onTab?.(t.key)}
+                aria-label={t.label}
+              >
+                <Icon name={t.icon} size={24} />
+              </button>
+              <span className="lb">{t.label}</span>
+            </div>
+          ) : (
+            <button
+              key={t.key}
+              type="button"
+              className={`tab ${active === t.key ? 'active' : ''}`}
+              onClick={() => !t.disabled && onTab?.(t.key)}
+              disabled={t.disabled}
+              style={t.disabled ? { opacity: .45 } : undefined}
+            >
+              <span className="tb-ic"><Icon name={t.icon} size={20} /></span>
+              {t.label}
+            </button>
+          )
+        ))}
+      </nav>
     </div>
   )
 }

@@ -1,37 +1,40 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import AppShell from '../../layout/AppShell'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
+import BottomSheet from '../../components/BottomSheet'
+import Roadmap from '../../components/Roadmap'
 
 /* ---------- أدوات عرض مشتركة ---------- */
-const TRIP_STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
-const TRIP_STATUS_CLASS = { draft: 'muted', open: 'ok', closed: 'warn', done: 'done' }
+const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
+const STATUS_TAG   = { draft: 'muted', open: 'ok', closed: 'warn', done: 'info' }
+const STATUS_FUTURE_LABEL = { draft: 'مسودة', open: 'قادمة', closed: 'نشطة', done: 'منتهية' }
 
 function fmtDate(v) {
   if (!v) return '—'
   try { return new Date(v).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) }
   catch { return '—' }
 }
-
-function StatusPill({ status }) {
-  return <span className={`st ${TRIP_STATUS_CLASS[status] || 'muted'}`}>{TRIP_STATUS_LABEL[status] || status || '—'}</span>
+function fmtShort(v) {
+  if (!v) return '—'
+  try { return new Date(v).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: '2-digit' }) }
+  catch { return '—' }
 }
 
 /* حالةٌ فارغةٌ أنيقة */
-function Empty({ title, hint }) {
+function Empty({ title, hint, mark = true }) {
   return (
     <div className="empty">
-      <div className="em-mark"><CompassMark size={56} /></div>
+      {mark && <div className="em-mark"><CompassMark size={56} /></div>}
       {title && <div className="em-ttl">{title}</div>}
       {hint && <div>{hint}</div>}
     </div>
   )
 }
 
-/* لوحة "قريبًا" لعناصر خارطة الطريق */
 function ComingSoon({ title, desc }) {
   return (
     <section className="panel">
@@ -41,7 +44,7 @@ function ComingSoon({ title, desc }) {
 }
 
 /* ============================================================
-   لوحة الإدارة
+   لوحة الإدارة (تبقى بسيطةً للآن)
    ============================================================ */
 export function AdminHome() {
   const [view, setView] = useState('overview')
@@ -64,33 +67,30 @@ export function AdminHome() {
     return () => { active = false }
   }, [])
 
-  const nav = [
+  const tabs = [
     { section: 'الإدارة' },
-    { key: 'overview', label: 'نظرة عامة', icon: 'dashboard' },
+    { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     { key: 'subs', label: 'المشتركون', icon: 'building', badge: subs.length || undefined },
   ]
   const paid = subs.filter((s) => s.plan === 'paid').length
 
   return (
-    <AppShell
-      title="لوحة الإدارة"
-      subtitle="إشرافٌ عامٌ على منصّة ملبّيك"
-      nav={nav}
-      active={view}
-      onNav={setView}
-    >
-      {view === 'overview' && (
-        <>
-          <div className="stats">
-            <div className="stat"><span className="ic"><Icon name="building" /></span><div className="k">المشتركون</div><div className="v">{subs.length}</div></div>
-            <div className="stat"><span className="ic"><Icon name="payments" /></span><div className="k">الباقات المدفوعة</div><div className="v">{paid}</div></div>
-            <div className="stat"><span className="ic"><Icon name="trips" /></span><div className="k">إجمالي الرحلات</div><div className="v">{tripCount}</div></div>
-          </div>
-          <SubsPanel subs={subs} loading={loading} />
-        </>
-      )}
-      {view === 'subs' && <SubsPanel subs={subs} loading={loading} />}
-    </AppShell>
+    <>
+      <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view} onTab={setView}>
+        {view === 'overview' && (
+          <>
+            <div className="stats">
+              <div className="stat"><div className="top"><span className="ic"><Icon name="building" size={15} /></span>المشتركون</div><div className="v">{subs.length}</div></div>
+              <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>الباقات المدفوعة</div><div className="v">{paid}</div></div>
+              <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>إجمالي الرحلات</div><div className="v">{tripCount}</div></div>
+            </div>
+            <SubsPanel subs={subs} loading={loading} />
+          </>
+        )}
+        {view === 'subs' && <SubsPanel subs={subs} loading={loading} />}
+      </AppShell>
+      <Roadmap />
+    </>
   )
 }
 
@@ -110,7 +110,7 @@ function SubsPanel({ subs, loading }) {
               {subs.map((s) => (
                 <tr key={s.id}>
                   <td>{s.org_name}</td>
-                  <td className="ltr" style={{ textAlign: 'right' }}><code className="gold">/j/{s.slug}</code></td>
+                  <td className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)' }}>/j/{s.slug}</code></td>
                   <td><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
                   <td>{fmtDate(s.created_at)}</td>
                 </tr>
@@ -124,7 +124,7 @@ function SubsPanel({ subs, loading }) {
 }
 
 /* ============================================================
-   لوحة المشترك (صاحب الحملة)
+   لوحة المشترك — تجربةٌ موبايل أوّلًا
    ============================================================ */
 export function SubscriberHome() {
   const { user, profile, refreshProfile } = useAuth()
@@ -133,16 +133,18 @@ export function SubscriberHome() {
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
-  const [copied, setCopied] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [filter, setFilter] = useState('all')   // all | upcoming | active | done
+  const [search, setSearch] = useState('')
   const creatingRef = useRef(false)
 
   const load = useCallback(async () => {
     if (!user?.id) return
     setLoading(true); setErr('')
 
-    // أقدم حملةٍ للمالك (limit 1) — مرنٌ تجاه أي تكرارٍ سابق
     const { data: rows, error: sErr } = await supabase
       .from('subscribers')
       .select('id, org_name, slug, plan, trial_ends_at')
@@ -153,7 +155,6 @@ export function SubscriberHome() {
 
     let s = rows?.[0] ?? null
 
-    // self-heal: إنشاء الحملة تلقائيًّا إن غابت (تسجيلٌ بتأكيد بريدٍ مفعّل)
     if (!s && !creatingRef.current) {
       creatingRef.current = true
       const slug = 'hamla-' + Math.random().toString(36).slice(2, 8)
@@ -164,8 +165,6 @@ export function SubscriberHome() {
         .select('id, org_name, slug, plan, trial_ends_at')
         .maybeSingle()
       if (insErr) {
-        // 23505 = الفهرس الفريد على owner_id: حملةٌ أُنشئت بالتوازي (تبويبٌ/سباق).
-        // ليست خطأً — أعد قراءة الحملة الموجودة بدل إظهار خطأٍ زائف.
         if (insErr.code === '23505') {
           const { data: again } = await supabase
             .from('subscribers').select('id, org_name, slug, plan, trial_ends_at')
@@ -173,8 +172,7 @@ export function SubscriberHome() {
           s = again ?? null
         } else {
           creatingRef.current = false
-          setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message)
-          setLoading(false); return
+          setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message); setLoading(false); return
         }
       } else {
         s = created
@@ -219,143 +217,293 @@ export function SubscriberHome() {
     navigator.clipboard?.writeText(shareUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800) })
   }
 
-  const totalSeats = trips.reduce((sum, t) => sum + (Number(t.capacity) || 0), 0)
-  const planLabel = sub?.plan === 'paid' ? 'مدفوعة' : 'تجريبية'
+  /* تصفيةٌ سريعة + بحث */
+  const filteredTrips = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return trips.filter((t) => {
+      if (filter === 'upcoming' && t.status !== 'draft' && t.status !== 'open') return false
+      if (filter === 'active' && t.status !== 'open') return false
+      if (filter === 'done' && t.status !== 'done' && t.status !== 'closed') return false
+      if (q) {
+        const hay = [t.title, t.route_from, t.route_to, t.bus_label].filter(Boolean).join(' ').toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+      return true
+    })
+  }, [trips, filter, search])
 
-  const nav = [
+  const totalSeats = trips.reduce((s, t) => s + (Number(t.capacity) || 0), 0)
+  const planLabel = sub?.plan === 'paid' ? 'باقة ملبّيك' : 'الباقة التجريبية'
+
+  /* الشريط السفلي للجوال — ٥ عناصر مع زرّ مركزيٍّ بارز */
+  const tabs = [
     { section: 'حملتي' },
-    { key: 'overview', label: 'نظرة عامة', icon: 'dashboard' },
+    { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
-    { key: 'share', label: 'رابط التسجيل', icon: 'share' },
-    { section: 'قريبًا' },
+    { key: 'add', label: 'إضافة', icon: 'plus', fab: true },
     { key: 'customers', label: 'المعتمرون', icon: 'customers', disabled: true },
+    { key: 'settings', label: 'إعدادات', icon: 'settings', disabled: true },
+    { section: 'قريبًا' },
     { key: 'manifest', label: 'الكشف الرسمي', icon: 'manifest', disabled: true },
-    { key: 'settings', label: 'إعدادات المؤسسة', icon: 'settings', disabled: true },
+    { key: 'payments', label: 'المدفوعات', icon: 'payments', disabled: true },
   ]
 
-  const addBtn = (
-    <button className="btn btn-gold btn-sm" onClick={openCreate} disabled={!sub || loading}>
-      <Icon name="plus" size={17} /> رحلة جديدة
-    </button>
-  )
+  function onTab(k) {
+    if (k === 'add') { openCreate(); return }
+    setView(k)
+  }
 
   return (
-    <AppShell
-      title={sub?.org_name || 'حملتي'}
-      subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
-      nav={nav}
-      active={view}
-      onNav={setView}
-      actions={view === 'trips' ? addBtn : null}
-    >
-      {err && <div className="alert err" style={{ marginBottom: 4 }}>{err}</div>}
+    <>
+      <AppShell
+        title={view === 'overview' ? 'نظرة عامة' : view === 'trips' ? 'رحلات العمرة' : 'حملتي'}
+        subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
+        tabs={tabs}
+        active={view}
+        onTab={onTab}
+      >
+        {err && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
 
-      {view === 'overview' && (
-        <>
-          <div className="stats">
-            <div className="stat"><span className="ic"><Icon name="trips" /></span><div className="k">الرحلات</div><div className="v">{trips.length}</div></div>
-            <div className="stat"><span className="ic"><Icon name="seat" /></span><div className="k">إجمالي المقاعد</div><div className="v">{totalSeats}</div></div>
-            <div className="stat"><span className="ic"><Icon name="payments" /></span><div className="k">الباقة</div><div className="v" style={{ fontSize: 22 }}>{planLabel}</div></div>
+        {view === 'overview' && (
+          <Overview
+            sub={sub}
+            profile={profile}
+            trips={trips}
+            totalSeats={totalSeats}
+            planLabel={planLabel}
+            onCreate={openCreate}
+            onShare={() => setShareOpen(true)}
+          />
+        )}
+
+        {view === 'trips' && (
+          <TripsView
+            trips={filteredTrips}
+            allCount={trips.length}
+            sub={sub}
+            loading={loading}
+            filter={filter}
+            setFilter={setFilter}
+            search={search}
+            setSearch={setSearch}
+            onCreate={openCreate}
+            onEdit={openEdit}
+            onRemove={remove}
+            onShare={() => setShareOpen(true)}
+          />
+        )}
+
+        {view === 'customers' && <ComingSoon title="تعبئة بيانات المعتمرين" desc="ضمن خارطة الطريق — المرحلة التالية بعد الكشف الرسمي." />}
+        {view === 'settings' && <ComingSoon title="إعدادات المؤسسة" desc="شعار وختم المؤسسة، بيانات السائق والمشرف، خيارات الكشف — قريبًا." />}
+        {view === 'manifest' && <ComingSoon title="الكشف الرسمي للباص" desc="٩ أعمدة بترويسة المؤسسة والختم وإصدار PDF/طباعة — قيد البناء التالي." />}
+        {view === 'payments' && <ComingSoon title="المدفوعات" desc="ربطٌ مع متجرٍ خارجي ثم العودة لإرفاق الإيصال." />}
+
+        {modalOpen && sub && (
+          <TripFormModal trip={editing} subscriberId={sub.id} onClose={closeModal} onSaved={handleSaved} />
+        )}
+
+        <BottomSheet
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          title="مشاركة رابط الحجز"
+          actions={
+            <button className="btn btn-gold btn-block" onClick={copyLink} disabled={!shareUrl}>
+              <Icon name={copied ? 'check' : 'copy'} size={17} />
+              {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}
+            </button>
+          }
+        >
+          <div className="stats" style={{ marginTop: 0 }}>
+            <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>مدفوع</div><div className="v">0</div></div>
+            <div className="stat info"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>مقاعد محجوزة</div><div className="v">0/{totalSeats}</div></div>
           </div>
-          <SharePanel shareUrl={shareUrl} copied={copied} copyLink={copyLink} />
-          <TripsPanel trips={trips} loading={loading} sub={sub} onCreate={openCreate} onEdit={openEdit} onRemove={remove} compact />
-        </>
-      )}
+          <div className="share-box" style={{ marginTop: 14 }}>
+            <code>{shareUrl || '—'}</code>
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: 10, textAlign: 'center' }}>
+            شارك هذا الرابط مع العملاء ليملؤوا بياناتهم ويختاروا مقاعدهم مباشرة
+          </p>
+        </BottomSheet>
+      </AppShell>
 
-      {view === 'trips' && (
-        <TripsPanel trips={trips} loading={loading} sub={sub} onCreate={openCreate} onEdit={openEdit} onRemove={remove} />
-      )}
-
-      {view === 'share' && <SharePanel shareUrl={shareUrl} copied={copied} copyLink={copyLink} expanded />}
-
-      {view === 'customers' && <ComingSoon title="تعبئة بيانات المعتمرين" desc="ضمن خارطة الطريق — المرحلة التالية بعد الكشف الرسمي." />}
-      {view === 'manifest' && <ComingSoon title="الكشف الرسمي للباص" desc="٩ أعمدة بترويسة المؤسسة والختم وإصدار PDF/طباعة — قيد البناء التالي." />}
-      {view === 'settings' && <ComingSoon title="إعدادات المؤسسة" desc="شعار وختم المؤسسة، بيانات السائق والمشرف، خيارات الكشف — قريبًا." />}
-
-      {modalOpen && sub && (
-        <TripFormModal trip={editing} subscriberId={sub.id} onClose={closeModal} onSaved={handleSaved} />
-      )}
-    </AppShell>
+      <Roadmap />
+    </>
   )
 }
 
-function SharePanel({ shareUrl, copied, copyLink, expanded }) {
+/* ---------- نظرة عامة ---------- */
+function Overview({ sub, profile, trips, totalSeats, planLabel, onCreate, onShare }) {
+  const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
   return (
-    <section className="panel">
-      <div className="panel-head"><h3>رابط تسجيل العملاء</h3></div>
-      <p className="muted" style={{ fontSize: 14, marginBottom: 10 }}>
-        شارك هذا الرابط مع معتمري حملتك — كلٌّ يسجّل بياناته ويرى رحلاتك فقط.
-      </p>
-      <div className="share-box">
-        <code>{shareUrl || '—'}</code>
-        <span className="sp-grow" />
-        <button className="btn btn-em btn-sm" onClick={copyLink} disabled={!shareUrl}>
-          <Icon name={copied ? 'check' : 'copy'} size={16} /> {copied ? 'تم النسخ' : 'نسخ الرابط'}
+    <>
+      <section className="hero">
+        <span className="tag">منصة عُمرة</span>
+        <h2>أهلًا {profile?.full_name ? `· ${profile.full_name.split(' ')[0]}` : ''}</h2>
+        <p>{sub?.org_name ? `${sub.org_name} — ` : ''}مركز قيادتك المركزي. كل رحلاتك، المعتمرون، والإشعارات في مكانٍ واحد.</p>
+      </section>
+
+      <div className="stats">
+        <div className="stat">
+          <div className="top"><span className="ic"><Icon name="customers" size={15} /></span>المعتمرون</div>
+          <div className="v">0</div>
+        </div>
+        <div className="stat ok">
+          <div className="top"><span className="ic"><Icon name="payments" size={15} /></span>مدفوع</div>
+          <div className="v">0</div>
+        </div>
+        <div className="stat info">
+          <div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعود الحافلة</div>
+          <div className="v">0</div>
+        </div>
+        <div className="stat warn">
+          <div className="top"><span className="ic"><Icon name="bed" size={15} /></span>استلام الغرفة</div>
+          <div className="v">0</div>
+        </div>
+      </div>
+
+      <div className="actions">
+        <button className="action primary" onClick={onCreate}>
+          <Icon name="plus" size={18} /> إنشاء رحلة عمرة
+        </button>
+        <button className="action info" disabled>
+          <Icon name="qr" size={18} /> مسح تذكرة <span className="tag muted" style={{ marginInlineStart: 'auto', fontSize: 10 }}>قريبًا</span>
+        </button>
+        <button className="action ok" onClick={onShare} disabled={!sub?.slug}>
+          <Icon name="share" size={18} /> مشاركة رابط الحجز
+        </button>
+        <button className="action violet" disabled>
+          <Icon name="chart" size={18} /> التحليلات <span className="tag muted" style={{ marginInlineStart: 'auto', fontSize: 10 }}>قريبًا</span>
         </button>
       </div>
-      {expanded && (
-        <p className="dim" style={{ fontSize: 13, marginTop: 14 }}>
-          🔒 كل من يسجّل عبر هذا الرابط يُربط بحملتك تلقائيًّا، ولا يرى رحلات أي حملةٍ أخرى.
-        </p>
-      )}
-    </section>
+
+      <section className="panel">
+        <div className="panel-head">
+          <h3>ملخّص الباقة</h3>
+          <span className="sp-grow" style={{ flex: 1 }} />
+          <span className="tag gold">{planLabel}</span>
+        </div>
+        <div className="stats" style={{ marginTop: 0 }}>
+          <div className="stat"><div className="top">الرحلات</div><div className="v">{trips.length}</div><div className="sub">{upcoming} قادمة</div></div>
+          <div className="stat"><div className="top">إجمالي المقاعد</div><div className="v">{totalSeats}</div></div>
+        </div>
+      </section>
+    </>
   )
 }
 
-function TripsPanel({ trips, loading, sub, onCreate, onEdit, onRemove, compact }) {
+/* ---------- شاشة الرحلات (بطاقات على الجوال + تصفية) ---------- */
+function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, setSearch, onCreate, onEdit, onRemove, onShare }) {
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h3>الرحلات</h3><span className="sub">({trips.length})</span>
-        <span className="sp-grow" />
-        {!compact && (
-          <button className="btn btn-gold btn-sm" onClick={onCreate} disabled={!sub}>
+    <>
+      <section className="hero" style={{ paddingBottom: 16 }}>
+        <span className="tag">مركز الرحلات</span>
+        <h2 style={{ marginTop: 6, fontSize: 22 }}>إدارة ومتابعة جميع رحلاتك</h2>
+        <p>في مكانٍ واحد — <strong style={{ color: 'var(--gd-300)' }}>{allCount}</strong> {allCount === 1 ? 'رحلة مسجّلة' : 'رحلة'}.</p>
+        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+          <button className="btn btn-gold" onClick={onCreate} disabled={!sub}>
             <Icon name="plus" size={17} /> رحلة جديدة
           </button>
+          <button className="btn btn-ghost" onClick={onShare} disabled={!sub?.slug}>
+            <Icon name="share" size={17} /> رابط الحجز
+          </button>
+        </div>
+      </section>
+
+      <div className="field search" style={{ marginTop: 14 }}>
+        <span className="ic"><Icon name="search" size={17} /></span>
+        <input type="text" placeholder="بحث باسم الرحلة أو المدينة…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
+      <div className="chips">
+        {[
+          { k: 'all', t: 'الكل' },
+          { k: 'upcoming', t: 'قادمة' },
+          { k: 'active', t: 'نشطة' },
+          { k: 'done', t: 'منتهية' },
+        ].map((c) => (
+          <button key={c.k} type="button" className={`chip ${filter === c.k ? 'active' : ''}`} onClick={() => setFilter(c.k)}>
+            {c.t}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        {loading ? (
+          <Empty title="جارٍ التحميل…" />
+        ) : !sub ? (
+          <Empty title="لم يتم العثور على حملتك" hint="حدّث الصفحة، أو تواصل مع الدعم إن استمرّ." />
+        ) : trips.length === 0 ? (
+          <Empty title="لا توجد رحلاتٌ تطابق التصفية" hint="جرّب تغيير التصفية أو ابحث بكلمةٍ أخرى." />
+        ) : (
+          trips.map((t) => (
+            <TripCard key={t.id} trip={t} onEdit={() => onEdit(t)} onRemove={() => onRemove(t)} />
+          ))
+        )}
+      </div>
+    </>
+  )
+}
+
+function TripCard({ trip, onEdit, onRemove }) {
+  const cap = Number(trip.capacity) || 0
+  const booked = 0    // سيُحسب من جدول العملاء في المرحلة التالية
+  const pct = cap > 0 ? Math.round((booked / cap) * 100) : 0
+  const status = trip.status || 'draft'
+  const tagCls = STATUS_TAG[status] || 'muted'
+  const tagLbl = STATUS_FUTURE_LABEL[status] || STATUS_LABEL[status]
+
+  return (
+    <article className="trip-card">
+      <div className="tags">
+        <span className="tag gold">عمرة</span>
+        <span className={`tag ${tagCls}`}>{tagLbl}</span>
+      </div>
+
+      <h3>{trip.title || 'رحلة'}</h3>
+
+      <div className="meta">
+        <div className="row">
+          <span className="ic"><Icon name="calendar" size={16} /></span>
+          <span>{fmtShort(trip.depart_at)}</span>
+          {trip.return_at && <><Icon name="arrowLeft" size={13} /><span>{fmtShort(trip.return_at)}</span></>}
+        </div>
+        <div className="row">
+          <span className="ic"><Icon name="location" size={16} /></span>
+          <span>{(trip.route_from || '—') + ' ← ' + (trip.route_to || '—')}</span>
+        </div>
+        {trip.bus_label && (
+          <div className="row">
+            <span className="ic"><Icon name="bus" size={16} /></span>
+            <span>{trip.bus_label}</span>
+          </div>
         )}
       </div>
 
-      {loading ? (
-        <Empty title="جارٍ التحميل…" />
-      ) : !sub ? (
-        <Empty title="لم يتم العثور على حملتك" hint="حدّث الصفحة، أو تواصل مع الدعم إن استمرّ." />
-      ) : trips.length === 0 ? (
-        <Empty title="لا توجد رحلاتٌ بعد" hint="أضف أوّل رحلةٍ لتبدأ تنظيم حملتك." />
-      ) : (
-        <div className="tbl-wrap">
-          <table className="tbl">
-            <thead>
-              <tr><th>الرحلة</th><th>المسار</th><th>الذهاب</th><th>السعة</th><th>الحالة</th><th>إجراءات</th></tr>
-            </thead>
-            <tbody>
-              {trips.map((t) => (
-                <tr key={t.id}>
-                  <td>
-                    {t.title || '—'}
-                    {t.bus_label && <div className="cell-sub">باص: {t.bus_label}</div>}
-                  </td>
-                  <td>{(t.route_from || '—') + ' ← ' + (t.route_to || '—')}</td>
-                  <td>{fmtDate(t.depart_at)}</td>
-                  <td>{Number(t.capacity) > 0 ? t.capacity : '—'}</td>
-                  <td><StatusPill status={t.status} /></td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="icon-btn" onClick={() => onEdit(t)}><Icon name="edit" size={15} /> تعديل</button>
-                      <button className="icon-btn danger" onClick={() => onRemove(t)}><Icon name="trash" size={15} /> حذف</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+      <div className="occupancy">
+        <div className="lbl">إشغال الحافلة <span className="pct">{booked}/{cap || '—'}</span></div>
+        <div className="bar"><span style={{ width: pct + '%' }} /></div>
+      </div>
+
+      <div className="ministats">
+        <div className="ministat"><div className="top">حجوزات</div><div className="v">{booked}</div></div>
+        <div className="ministat"><div className="top">مدفوع</div><div className="v ok">0</div></div>
+        <div className="ministat"><div className="top">صعد</div><div className="v info">0</div></div>
+      </div>
+
+      <div className="actions-row">
+        <button className="btn btn-gold" onClick={onEdit}>
+          <Icon name="settings" size={16} /> إدارة الرحلة
+        </button>
+        <button className="icon-btn danger" onClick={onRemove} aria-label="حذف">
+          <Icon name="trash" size={16} />
+        </button>
+      </div>
+    </article>
   )
 }
 
 /* ============================================================
-   لوحة العميل (المعتمر) — يرى رحلات حملته فقط عبر RLS
+   لوحة العميل (المعتمر)
    ============================================================ */
 export function CustomerHome() {
   const { subscriberId } = useAuth()
@@ -367,68 +515,62 @@ export function CustomerHome() {
   useEffect(() => {
     let active = true
     ;(async () => {
-      // تصفيةٌ صريحةٌ بحملة العميل (دفاعٌ في العمق فوق عزل RLS)
       let sq = supabase.from('subscribers').select('org_name')
       sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
       const { data: s } = await sq.maybeSingle()
       if (active && s) setOrgName(s.org_name)
-      const { data: t } = await supabase
+      // دفاعٌ مزدوج: تصفيةٌ صريحةٌ بحملة العميل فوق عزل RLS
+      let tq = supabase
         .from('trips')
-        .select('id, title, route_from, route_to, depart_at, status')
+        .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, status')
         .order('depart_at', { ascending: true })
+      if (subscriberId) tq = tq.eq('subscriber_id', subscriberId)
+      const { data: t } = await tq
       if (active) { setTrips(t ?? []); setLoading(false) }
     })()
     return () => { active = false }
   }, [subscriberId])
 
-  const nav = [
+  const tabs = [
     { section: 'رحلاتي' },
-    { key: 'trips', label: 'الرحلات المتاحة', icon: 'trips', badge: trips.length || undefined },
-    { section: 'قريبًا' },
-    { key: 'ticket', label: 'تذكرتي والباركود', icon: 'barcode', disabled: true },
+    { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
+    { key: 'ticket', label: 'تذكرتي', icon: 'barcode', disabled: true },
     { key: 'profile', label: 'بياناتي', icon: 'customers', disabled: true },
   ]
 
   return (
-    <AppShell
-      title="أهلًا بك"
-      subtitle={orgName ? `رحلات حملة ${orgName} المتاحة لك` : 'رحلاتك المتاحة'}
-      nav={nav}
-      active={view}
-      onNav={setView}
-    >
-      {view === 'trips' && (
-        <section className="panel">
-          <div className="panel-head"><h3>الرحلات المتاحة</h3><span className="sub">({trips.length})</span></div>
-          {loading ? (
-            <Empty title="جارٍ التحميل…" />
-          ) : trips.length === 0 ? (
-            <Empty title="لا توجد رحلاتٌ متاحةٌ حاليًا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
-          ) : (
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead><tr><th>الرحلة</th><th>المسار</th><th>الذهاب</th><th>الحالة</th></tr></thead>
-                <tbody>
-                  {trips.map((t) => (
-                    <tr key={t.id}>
-                      <td>{t.title || '—'}</td>
-                      <td>{(t.route_from || '—') + ' ← ' + (t.route_to || '—')}</td>
-                      <td>{fmtDate(t.depart_at)}</td>
-                      <td><StatusPill status={t.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="dim" style={{ fontSize: 13, marginTop: 18, textAlign: 'center' }}>
-            🔒 تُعرض لك رحلات حملتك فقط — بياناتك معزولةٌ تمامًا عن بقية الحملات.
-          </p>
-        </section>
-      )}
+    <>
+      <AppShell
+        title="أهلًا بك"
+        subtitle={orgName ? `رحلات حملة ${orgName}` : 'رحلاتك المتاحة'}
+        tabs={tabs}
+        active={view}
+        onTab={setView}
+      >
+        {view === 'trips' && (
+          <>
+            <section className="hero">
+              <span className="tag">حملتي</span>
+              <h2>{orgName || 'رحلاتي المتاحة'}</h2>
+              <p>اختر رحلتك المناسبة وأكمل بياناتك — تُعرض لك رحلات حملتك فقط، بياناتك معزولة تمامًا.</p>
+            </section>
 
-      {view === 'ticket' && <ComingSoon title="تذكرتي والباركود" desc="تذكرة الصعود بالباركود وحفظها في محفظة الجوال — ضمن خارطة الطريق." />}
-      {view === 'profile' && <ComingSoon title="بياناتي المحفوظة" desc="بياناتك تُحفظ دائمًا لتعيد الطلب بلا تعبئة — قريبًا." />}
-    </AppShell>
+            <div style={{ marginTop: 14 }}>
+              {loading ? (
+                <Empty title="جارٍ التحميل…" />
+              ) : trips.length === 0 ? (
+                <Empty title="لا توجد رحلاتٌ متاحةٌ حاليًا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
+              ) : (
+                trips.map((t) => <TripCard key={t.id} trip={t} onEdit={() => {}} onRemove={() => {}} />)
+              )}
+            </div>
+          </>
+        )}
+
+        {view === 'ticket' && <ComingSoon title="تذكرتي والباركود" desc="تذكرة الصعود بالباركود وحفظها في محفظة الجوال — ضمن خارطة الطريق." />}
+        {view === 'profile' && <ComingSoon title="بياناتي المحفوظة" desc="بياناتك تُحفظ دائمًا لتعيد الطلب بلا تعبئة — قريبًا." />}
+      </AppShell>
+      <Roadmap />
+    </>
   )
 }
