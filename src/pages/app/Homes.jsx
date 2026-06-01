@@ -7,6 +7,7 @@ import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
 import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
+import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
@@ -139,6 +140,7 @@ export function SubscriberHome() {
   const [copied, setCopied] = useState(false)
   const [filter, setFilter] = useState('all')   // all | upcoming | active | done
   const [search, setSearch] = useState('')
+  const [managing, setManaging] = useState(null) // الرحلة قيد الإدارة (شاشة كاملة)
   const creatingRef = useRef(false)
 
   const load = useCallback(async () => {
@@ -249,6 +251,7 @@ export function SubscriberHome() {
   ]
 
   function onTab(k) {
+    setManaging(null)
     if (k === 'add') { openCreate(); return }
     setView(k)
   }
@@ -256,47 +259,59 @@ export function SubscriberHome() {
   return (
     <>
       <AppShell
-        title={view === 'overview' ? 'نظرة عامة' : view === 'trips' ? 'رحلات العمرة' : 'حملتي'}
+        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'trips' ? 'رحلات العمرة' : 'حملتي'}
         subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
         tabs={tabs}
         active={view}
         onTab={onTab}
       >
-        {err && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
+        {err && !managing && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
 
-        {view === 'overview' && (
-          <Overview
+        {managing ? (
+          <TripManage
+            trip={managing}
             sub={sub}
-            profile={profile}
-            trips={trips}
-            totalSeats={totalSeats}
-            planLabel={planLabel}
-            onCreate={openCreate}
-            onShare={() => setShareOpen(true)}
+            onBack={() => setManaging(null)}
+            onTripChanged={load}
           />
-        )}
+        ) : (
+          <>
+            {view === 'overview' && (
+              <Overview
+                sub={sub}
+                profile={profile}
+                trips={trips}
+                totalSeats={totalSeats}
+                planLabel={planLabel}
+                onCreate={openCreate}
+                onShare={() => setShareOpen(true)}
+              />
+            )}
 
-        {view === 'trips' && (
-          <TripsView
-            trips={filteredTrips}
-            allCount={trips.length}
-            sub={sub}
-            loading={loading}
-            filter={filter}
-            setFilter={setFilter}
-            search={search}
-            setSearch={setSearch}
-            onCreate={openCreate}
-            onEdit={openEdit}
-            onRemove={remove}
-            onShare={() => setShareOpen(true)}
-          />
-        )}
+            {view === 'trips' && (
+              <TripsView
+                trips={filteredTrips}
+                allCount={trips.length}
+                sub={sub}
+                loading={loading}
+                filter={filter}
+                setFilter={setFilter}
+                search={search}
+                setSearch={setSearch}
+                onCreate={openCreate}
+                onEdit={openEdit}
+                onRemove={remove}
+                onManage={(t) => setManaging(t)}
+                onShare={() => setShareOpen(true)}
+              />
+            )}
 
-        {view === 'customers' && <ComingSoon title="تعبئة بيانات المعتمرين" desc="ضمن خارطة الطريق — المرحلة التالية بعد الكشف الرسمي." />}
-        {view === 'settings' && <ComingSoon title="إعدادات المؤسسة" desc="شعار وختم المؤسسة، بيانات السائق والمشرف، خيارات الكشف — قريبًا." />}
-        {view === 'manifest' && <ComingSoon title="الكشف الرسمي للباص" desc="٩ أعمدة بترويسة المؤسسة والختم وإصدار PDF/طباعة — قيد البناء التالي." />}
-        {view === 'payments' && <ComingSoon title="المدفوعات" desc="ربطٌ مع متجرٍ خارجي ثم العودة لإرفاق الإيصال." />}
+            {view === 'customers' && <ComingSoon title="تعبئة بيانات المعتمرين" desc="افتح أي رحلةٍ ثم «إدارة الرحلة» لإضافة المعتمرين وإصدار الكشف." />}
+            {view === 'settings' && <ComingSoon title="إعدادات المؤسسة" desc="بيانات المؤسسة والختم تُحرّر من «إدارة الرحلة ← الباص والطاقم» حاليًّا." />}
+            {view === 'manifest' && <ComingSoon title="الكشف الرسمي للباص" desc="افتح رحلةً ثم «إدارة الرحلة ← الكشف الرسمي» لإصداره وطباعته." />}
+            {view === 'payments' && <ComingSoon title="المدفوعات" desc="ربطٌ مع متجرٍ خارجي ثم العودة لإرفاق الإيصال." />}
+          </>
+        )}
 
         {modalOpen && sub && (
           <TripFormModal trip={editing} subscriberId={sub.id} onClose={closeModal} onSaved={handleSaved} />
@@ -392,7 +407,7 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, onCreate, onShar
 }
 
 /* ---------- شاشة الرحلات (بطاقات على الجوال + تصفية) ---------- */
-function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, setSearch, onCreate, onEdit, onRemove, onShare }) {
+function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, setSearch, onCreate, onEdit, onRemove, onManage, onShare }) {
   return (
     <>
       <section className="hero" style={{ paddingBottom: 16 }}>
@@ -436,7 +451,7 @@ function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, s
           <Empty title="لا توجد رحلاتٌ تطابق التصفية" hint="جرّب تغيير التصفية أو ابحث بكلمةٍ أخرى." />
         ) : (
           trips.map((t) => (
-            <TripCard key={t.id} trip={t} onEdit={() => onEdit(t)} onRemove={() => onRemove(t)} />
+            <TripCard key={t.id} trip={t} onManage={() => onManage(t)} onEdit={() => onEdit(t)} onRemove={() => onRemove(t)} />
           ))
         )}
       </div>
@@ -444,7 +459,7 @@ function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, s
   )
 }
 
-function TripCard({ trip, onEdit, onRemove }) {
+function TripCard({ trip, onManage, onEdit, onRemove }) {
   const cap = Number(trip.capacity) || 0
   const booked = 0    // سيُحسب من جدول العملاء في المرحلة التالية
   const pct = cap > 0 ? Math.round((booked / cap) * 100) : 0
@@ -490,14 +505,17 @@ function TripCard({ trip, onEdit, onRemove }) {
         <div className="ministat"><div className="top">صعد</div><div className="v info">0</div></div>
       </div>
 
-      <div className="actions-row">
-        <button className="btn btn-gold" onClick={onEdit}>
-          <Icon name="settings" size={16} /> إدارة الرحلة
-        </button>
-        <button className="icon-btn danger" onClick={onRemove} aria-label="حذف">
-          <Icon name="trash" size={16} />
-        </button>
-      </div>
+      {(onManage || onEdit || onRemove) && (
+        <div className="actions-row">
+          {onManage && (
+            <button className="btn btn-gold" onClick={onManage}>
+              <Icon name="chevron" size={16} /> إدارة الرحلة
+            </button>
+          )}
+          {onEdit && <button className="icon-btn" onClick={onEdit} aria-label="تعديل"><Icon name="edit" size={16} /></button>}
+          {onRemove && <button className="icon-btn danger" onClick={onRemove} aria-label="حذف"><Icon name="trash" size={16} /></button>}
+        </div>
+      )}
     </article>
   )
 }
@@ -561,7 +579,7 @@ export function CustomerHome() {
               ) : trips.length === 0 ? (
                 <Empty title="لا توجد رحلاتٌ متاحةٌ حاليًا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
               ) : (
-                trips.map((t) => <TripCard key={t.id} trip={t} onEdit={() => {}} onRemove={() => {}} />)
+                trips.map((t) => <TripCard key={t.id} trip={t} />)
               )}
             </div>
           </>

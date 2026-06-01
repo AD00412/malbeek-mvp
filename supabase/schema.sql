@@ -60,11 +60,43 @@ create table if not exists public.trips (
   created_at      timestamptz not null default now()
 );
 -- ترقية القواعد القديمة (idempotent) — تضيف الأعمدة إن غابت دون حذف بيانات
-alter table public.trips add column if not exists return_at      timestamptz;
-alter table public.trips add column if not exists bus_label      text;
-alter table public.trips add column if not exists boarding_point text;
-alter table public.trips add column if not exists notes          text;
+alter table public.trips add column if not exists return_at        timestamptz;
+alter table public.trips add column if not exists bus_label        text;
+alter table public.trips add column if not exists boarding_point   text;
+alter table public.trips add column if not exists notes            text;
+-- بيانات الباص والطاقم (تظهر في ترويسة الكشف الرسمي)
+alter table public.trips add column if not exists bus_plate        text;
+alter table public.trips add column if not exists driver_name      text;
+alter table public.trips add column if not exists driver_phone     text;
+alter table public.trips add column if not exists assistant_name   text;
+alter table public.trips add column if not exists assistant_phone  text;
+alter table public.trips add column if not exists supervisor_name  text;
+alter table public.trips add column if not exists supervisor_phone text;
 create index if not exists idx_trips_subscriber on public.trips(subscriber_id);
+
+-- ترويسة المؤسسة في الكشف الرسمي
+alter table public.subscribers add column if not exists license_no  text;  -- رقم تصريح/ترخيص النقل
+alter table public.subscribers add column if not exists stamp_text  text;  -- نص الختم الإلكتروني
+alter table public.subscribers add column if not exists logo_url    text;  -- شعار المؤسسة (اختياري)
+alter table public.subscribers add column if not exists contact_phone text;
+
+-- ---------- ركّاب الرحلة (سجلّ الكشف لكل رحلة/باص) ----------
+create table if not exists public.passengers (
+  id             uuid primary key default gen_random_uuid(),
+  subscriber_id  uuid not null references public.subscribers(id) on delete cascade,
+  trip_id        uuid not null references public.trips(id) on delete cascade,
+  full_name      text not null,
+  national_id    text,
+  phone          text,
+  nationality    text,
+  seat_no        text,
+  boarding_point text,
+  status         text not null default 'registered',  -- registered/paid/boarded/checked_in
+  notes          text,
+  created_at     timestamptz not null default now()
+);
+create index if not exists idx_passengers_trip       on public.passengers(trip_id);
+create index if not exists idx_passengers_subscriber on public.passengers(subscriber_id);
 
 -- ---------- المعتمرون (بيانات العميل المحفوظة دائمًا) ----------
 create table if not exists public.customers (
@@ -160,6 +192,7 @@ alter table public.subscribers enable row level security;
 alter table public.profiles    enable row level security;
 alter table public.trips       enable row level security;
 alter table public.customers   enable row level security;
+alter table public.passengers  enable row level security;
 
 -- ---------- profiles ----------
 drop policy if exists "profile self read"   on public.profiles;
@@ -210,6 +243,20 @@ create policy "customers self insert" on public.customers for insert
 -- الإدارة تقرأ الكل
 drop policy if exists "customers admin read" on public.customers;
 create policy "customers admin read" on public.customers for select using (public.my_role() = 'admin');
+
+-- ---------- passengers (ركّاب الرحلة / سجلّ الكشف) ----------
+-- المشترك يدير ركّاب رحلات حملته بالكامل
+drop policy if exists "passengers owner manage" on public.passengers;
+create policy "passengers owner manage" on public.passengers for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+-- ملاحظة أمان: لا توجد سياسة قراءةٍ للعميل هنا عمدًا. جدول passengers لا يحوي
+-- profile_id بعد، فأي سياسةٍ على مستوى الحملة كانت ستسرّب بيانات بقية المعتمرين.
+-- ستُضاف سياسةٌ مقيّدةٌ بـ profile_id عند بناء تذكرة العميل.
+drop policy if exists "passengers customer read" on public.passengers;
+-- الإدارة تقرأ الكل
+drop policy if exists "passengers admin read" on public.passengers;
+create policy "passengers admin read" on public.passengers for select using (public.my_role() = 'admin');
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة

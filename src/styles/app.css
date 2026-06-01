@@ -337,3 +337,80 @@
   .trip-card .ministats{grid-template-columns:repeat(3,1fr)}
   .actions{display:flex;flex-direction:column}
 }
+
+/* ============================================================
+   عناوين أقسام النموذج + قائمة المعتمرين
+   ============================================================ */
+.sec-label{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--gd-300);
+  margin-top:6px;padding-bottom:2px;border-bottom:1px solid var(--line)}
+
+.pax-list{display:flex;flex-direction:column;gap:8px}
+.pax-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--surface-3)}
+.pax-seat{flex:none;width:38px;height:38px;border-radius:var(--r-sm);background:rgba(196,154,69,.12);color:var(--gd-300);
+  display:grid;place-items:center;font-family:var(--font-display);font-weight:900;font-size:15px}
+.pax-main{flex:1;min-width:0}
+.pax-name{color:var(--cr-50);font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pax-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--cr-300);font-size:12px;margin-top:2px}
+.pax-actions{display:flex;gap:6px;flex:none}
+
+/* ============================================================
+   الكشف الرسمي (Manifest) — ورقة بيضاء رسمية + طباعة
+   ============================================================ */
+.manifest-overlay{position:fixed;inset:0;z-index:200;background:#1a2420;display:flex;flex-direction:column}
+.manifest-toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(4,30,22,.9);
+  border-bottom:1px solid var(--line);backdrop-filter:var(--glass-blur)}
+.manifest-scroll{flex:1;overflow:auto;padding:18px;display:flex;justify-content:center}
+
+.manifest-sheet{background:#fff;color:#13211c;width:100%;max-width:900px;padding:26px 28px;border-radius:8px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:var(--font-sans);align-self:flex-start}
+.manifest-sheet .mf-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding-bottom:14px;border-bottom:2px solid #0b5c43}
+.manifest-sheet .mf-brand{display:flex;align-items:center;gap:12px}
+.manifest-sheet .mf-org{font-family:var(--font-display);font-weight:900;font-size:22px;color:#063d2c}
+.manifest-sheet .mf-sub{font-size:12px;color:#5a6b62;margin-top:3px}
+.manifest-sheet .mf-title{text-align:left}
+.manifest-sheet .mf-title .t1{font-family:var(--font-display);font-weight:900;font-size:18px;color:#8a6a1f}
+.manifest-sheet .mf-title .t2{font-size:13px;color:#3a4a43;margin-top:2px}
+
+.manifest-sheet .mf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#d8e0db;
+  border:1px solid #d8e0db;margin:14px 0;border-radius:6px;overflow:hidden}
+.manifest-sheet .mf-cell{background:#f7faf8;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.manifest-sheet .mf-k{font-size:10.5px;color:#7a8a82;font-weight:600}
+.manifest-sheet .mf-v{font-size:13px;color:#13211c;font-weight:500}
+
+.manifest-sheet .mf-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px}
+.manifest-sheet .mf-table th{background:#063d2c;color:#f6e3b0;font-family:var(--font-display);font-weight:700;
+  padding:8px 6px;border:1px solid #0b5c43;text-align:center;font-size:11.5px}
+.manifest-sheet .mf-table td{padding:7px 6px;border:1px solid #cdd8d2;text-align:center;color:#13211c}
+.manifest-sheet .mf-table td.mf-name{text-align:right;font-weight:500}
+.manifest-sheet .mf-table td.ltr{direction:ltr}
+.manifest-sheet .mf-table tbody tr:nth-child(even) td{background:#f3f7f5}
+.manifest-sheet .mf-empty{padding:22px;color:#7a8a82;font-style:italic}
+
+.manifest-sheet .mf-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:20px;padding-top:14px;border-top:1px dashed #b9c6bf}
+.manifest-sheet .mf-note{font-size:11px;color:#7a8a82;max-width:50%}
+.manifest-sheet .mf-stamp-e{display:flex;align-items:center;gap:8px;border:2px solid #8a6a1f;color:#8a6a1f;
+  border-radius:10px;padding:8px 16px;font-family:var(--font-display);font-weight:700;font-size:13px;transform:rotate(-4deg)}
+.manifest-sheet .mf-stamp-m{border:1.5px dashed #9aa89f;color:#7a8a82;border-radius:8px;padding:18px 40px;font-size:12px}
+
+@media(max-width:560px){
+  .manifest-sheet{padding:16px}
+  .manifest-sheet .mf-grid{grid-template-columns:repeat(2,1fr)}
+  .manifest-sheet .mf-head{flex-direction:column}
+  .manifest-sheet .mf-title{text-align:right}
+  .manifest-sheet .mf-table{font-size:10.5px}
+}
+
+/* ---------- الطباعة: يُظهر الكشف فقط ---------- */
+@media print{
+  body{background:#fff}
+  body *{visibility:hidden !important}
+  .manifest-sheet,.manifest-sheet *{visibility:visible !important}
+  .manifest-overlay{position:static;background:#fff}
+  .manifest-scroll{overflow:visible;padding:0}
+  .manifest-sheet{position:absolute;inset:0;width:100%;max-width:none;box-shadow:none;border-radius:0;padding:0 4mm}
+  .no-print{display:none !important}
+  .mf-table tr{page-break-inside:avoid}
+  @page{size:A4;margin:12mm}
+}
