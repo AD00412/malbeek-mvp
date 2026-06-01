@@ -68,7 +68,13 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
         result = await supabase.from('passengers').insert({ ...payload, trip_id: tripId, subscriber_id: subscriberId })
       }
       if (result.error) {
-        if (result.error.code === '23505') { setErr('هذا المقعد محجوزٌ لمعتمرٍ آخر — اختر مقعدًا مختلفًا.'); return }
+        if (result.error.code === '23505') {
+          const m = String(result.error.message || '')
+          if (m.includes('seat')) { setErr('هذا المقعد محجوزٌ لمعتمرٍ آخر — اختر مقعدًا مختلفًا.'); return }
+          if (m.includes('ticket')) { setErr('تعارضٌ في رمز التذكرة — حاول الحفظ مرّةً ثانية.'); return }
+          setErr('قيمةٌ مكرّرةٌ تتعارض مع قيدٍ في القاعدة — حاول مرّةً ثانية.')
+          return
+        }
         throw result.error
       }
       onSaved?.()

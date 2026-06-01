@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import Icon from './Icon'
-import { buildSeats, allowedFor, policyLabel } from '../lib/busLayout'
+import { buildSeats, isAllowed, policyLabel, allowedFor } from '../lib/busLayout'
 
 /**
  * مخطّط الباص التفاعلي — ٤٩ مقعدًا.
@@ -31,10 +31,7 @@ export default function SeatMap({ policy = 'all_male', passengers = [], selected
     const holder = taken.get(key)
     const isMine = holder && forPassenger?.id && holder.id === forPassenger.id
     const a = allowedFor(seat, policy)
-    const allowed = a === 'any' || a === 'family' || a === myGender || (myFamily && a !== 'female' && a !== 'male' ? true : myFamily && a === 'female' ? true : myFamily && a === 'male' ? true : false) || myFamily
-    // simplified: family can sit in family-or-any zones; gender-restricted zones blocked unless matches.
-    const familyOk = myFamily && (a === 'family' || a === 'any')
-    const ok = a === 'any' || a === 'family' || a === myGender || familyOk
+    const ok = isAllowed(seat, policy, myGender, myFamily)
 
     if (holder && !isMine) return { kind: 'taken', holder, a }
     if (selected != null && String(selected) === key) return { kind: 'selected', a }
