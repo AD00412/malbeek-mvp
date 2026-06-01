@@ -2,18 +2,19 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { AuthContext } from './useAuth'
 
+const PROFILE_COLS = 'id, role, full_name, phone, subscriber_id'
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)   // { id, role, full_name, phone, subscriber_id }
   const [loading, setLoading] = useState(true)
 
-  // تحميل الملف الشخصي (الدور + الحملة) — null-safe + self-heal
+  /* تحميل الملف الشخصي (الدور + الحملة) — null-safe + self-heal */
   const loadProfile = useCallback(async (uid) => {
     if (!uid) { setProfile(null); return }
-    const COLS = 'id, role, full_name, phone, subscriber_id'
 
     const { data, error } = await supabase
-      .from('profiles').select(COLS).eq('id', uid).maybeSingle()
+      .from('profiles').select(PROFILE_COLS).eq('id', uid).maybeSingle()
     if (error) {
       // eslint-disable-next-line no-console
       console.error('تعذّر تحميل الملف الشخصي:', error.message)
@@ -22,8 +23,8 @@ export function AuthProvider({ children }) {
     }
     if (data) { setProfile(data); return }
 
-    // self-heal: لو لم يوجد ملفٌ شخصي (مثلًا التريغر لم يفعّل لحساباتٍ قديمة)،
-    // ننشئه من بيانات تسجيل المستخدم — مسموحٌ بسياسة "profile self insert".
+    // self-heal: لو غاب الملف (التريغر لم يفعّل لحساباتٍ قديمة) ننشئه من بيانات
+    // التسجيل — مسموحٌ بسياسة "profile self insert".
     const { data: u } = await supabase.auth.getUser()
     const md = u?.user?.user_metadata ?? {}
     const { data: created, error: insErr } = await supabase
@@ -35,12 +36,12 @@ export function AuthProvider({ children }) {
         phone: md.phone ?? null,
         subscriber_id: md.subscriber_id ?? null,
       })
-      .select(COLS)
+      .select(PROFILE_COLS)
       .maybeSingle()
     if (insErr) {
       // eslint-disable-next-line no-console
       console.error('تعذّر إنشاء الملف الشخصي تلقائيًا:', insErr.message,
-        '— تأكّد من تشغيل supabase/schema.sql على مشروعك (التريغر + سياسات profiles).')
+        '— تأكّد من تشغيل supabase/schema.sql (التريغر + سياسات profiles).')
       setProfile(null)
       return
     }
@@ -49,46 +50,29 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true
-    let settled = false
 
-    // إنهاء حالة التحميل مرّةً واحدةً فقط (أوّل حدثٍ يصل، أو شبكة الأمان)
-    const finish = () => { if (active && !settled) { settled = true; setLoading(false) } }
-
-    // المصدر الموثوق للجلسة: onAuthStateChange يُطلق فورًا حدث INITIAL_SESSION
-    // بالجلسة الحالية (إن وُجدت) — دون استدعاء getSession الذي قد يعلق على القفل.
-    // كل دخول/خروج/تجديدٍ لاحقٍ يمرّ من هنا أيضًا، فمصدرٌ واحدٌ للحقيقة.
+    // onAuthStateChange يُطلق فورًا حدث INITIAL_SESSION بالجلسة الحالية،
+    // ثم كل دخول/خروج/تجديد. مصدرٌ واحدٌ للحقيقة. مع القفل الصوري في
+    // supabaseClient يصل الحدث الأوّل خلال أجزاء الثانية بلا أي تجمّد.
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (!active) return
       setSession(s ?? null)
       try { await loadProfile(s?.user?.id) }
       catch (e) {
         // eslint-disable-next-line no-console
-        console.error('تعذّر تحميل الملف عند تغيّر الجلسة:', e?.message || e)
+        console.error('تعذّر تحميل الملف:', e?.message || e)
+        setProfile(null)
       } finally {
-        finish()
+        if (active) setLoading(false)
       }
     })
 
-    // شبكة أمان: لو لم يصل أي حدثٍ خلال ٨ ثوانٍ (حالةٌ نادرةٌ جدًّا)، لا نُبقي
-    // المستخدم عالقًا على شاشة التحميل أبدًا — نعرض الواجهة (شاشة الدخول غالبًا).
-    const safety = setTimeout(() => {
-      if (active && !settled) {
-        // eslint-disable-next-line no-console
-        console.warn('⏱️ لم تصل حالة الجلسة خلال المهلة — إظهار الواجهة. امسح بيانات الموقع إن تكرّر.')
-        finish()
-      }
-    }, 8000)
-
-    return () => {
-      active = false
-      clearTimeout(safety)
-      sub?.subscription?.unsubscribe?.()
-    }
+    return () => { active = false; sub?.subscription?.unsubscribe?.() }
   }, [loadProfile])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
     setProfile(null)
+    await supabase.auth.signOut()
   }, [])
 
   const refreshProfile = useCallback(
