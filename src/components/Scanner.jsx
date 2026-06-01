@@ -1,40 +1,34 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 
 const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد الحافلة', checked_in: 'استلم الغرفة' }
 
 /**
- * مسحٌ حيٌّ بالكاميرا لتحضير الصعود/التسكين.
- * يقرأ ticket_code من الباركود، يجلب المعتمر ضمن هذه الرحلة (RLS يعزل)،
- * ويتيح تحديث حالته (صعد الحافلة / استلم الغرفة).
+ * مسحٌ حيٌّ بالكاميرا لتحضير الصعود/التسكين — يعتمد على واجهة المتصفّح
+ * الأصلية BarcodeDetector (بلا أي مكتبةٍ خارجية). عند عدم الدعم أو تعذّر
+ * الكاميرا، يُتاح الإدخال اليدوي لرمز التذكرة.
  *
- * @param {object} trip    الرحلة الحالية (للتقييد البصري)
+ * @param {object} trip
  * @param {string} mode    'board' | 'checkin'
  * @param {Function} onClose
- * @param {Function} onUpdated  يُستدعى بعد تحديث ناجح لإعادة تحميل القائمة
+ * @param {Function} onUpdated
  */
 export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
   const videoRef = useRef(null)
-  const controlsRef = useRef(null)
-  const readerRef = useRef(null)
   const lastScanRef = useRef({ code: '', at: 0 })
 
   const [camError, setCamError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState(null)   // { ok, passenger?, msg }
+  const [result, setResult] = useState(null)
   const [manual, setManual] = useState('')
 
   const targetStatus = mode === 'checkin' ? 'checked_in' : 'boarded'
   const targetLabel = mode === 'checkin' ? 'استلام الغرفة' : 'صعود الحافلة'
 
-  /* معالجة رمزٍ ممسوح/مُدخل */
   const handleCode = useCallback(async (rawCode) => {
     const code = (rawCode || '').trim()
     if (!code || busy) return
-    // كبح التكرار: نتجاهل إعادة مسح نفس الرمز خلال ٣ ثوانٍ بعد نجاحٍ سابقٍ فقط،
-    // حتى لا يُحجب رمزٌ فشل تحديثه (شبكة) ويُظنّ أنه سُجّل.
     const now = Date.now()
     if (lastScanRef.current.code === code && now - lastScanRef.current.at < 3000) return
 
@@ -42,7 +36,6 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     try {
       let q = supabase.from('passengers')
         .select('id, full_name, seat_no, boarding_point, status, trip_id, ticket_code, national_id')
-      // يقبل رمز التذكرة أو معرّف الصف
       q = code.startsWith('TKT-') ? q.eq('ticket_code', code) : q.eq('id', code)
       const { data, error } = await q.maybeSingle()
       if (error) throw error
@@ -59,8 +52,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
       const { error: upErr } = await supabase.from('passengers').update(patch).eq('id', data.id)
       if (upErr) throw upErr
 
-      // ثبّت الكبح بعد النجاح فقط
-      lastScanRef.current = { code, at: Date.now() }
+      lastScanRef.current = { code, at: Date.now() }   // ثبّت الكبح بعد النجاح فقط
       if (navigator.vibrate) navigator.vibrate(120)
       setResult({ ok: true, msg: `تم تسجيل ${targetLabel}`, passenger: { ...data, ...patch } })
       onUpdated?.()
@@ -71,32 +63,52 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     }
   }, [busy, mode, targetStatus, targetLabel, trip, onUpdated])
 
-  /* تشغيل الكاميرا */
+  /* تشغيل الكاميرا + كشف الباركود عبر BarcodeDetector الأصلية */
   useEffect(() => {
-    let cancelled = false
-    const reader = new BrowserMultiFormatReader()
-    readerRef.current = reader
+    let stopped = false
+    let stream = null
+    let timer = null
+
+    if (!('BarcodeDetector' in window)) {
+      setCamError('المسح المباشر غير مدعومٍ في هذا المتصفّح — استخدم الإدخال اليدوي بالأسفل (يعمل على Chrome/Android).')
+      return
+    }
+
     ;(async () => {
       try {
-        const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (res) => {
-          if (res) handleCode(res.getText())
-        })
-        if (cancelled) controls.stop()
-        else controlsRef.current = controls
+        const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
+        if (stopped) { stream.getTracks().forEach((t) => t.stop()); return }
+        const v = videoRef.current
+        if (!v) return
+        v.srcObject = stream
+        await v.play().catch(() => {})
+
+        timer = setInterval(async () => {
+          if (stopped || !videoRef.current) return
+          try {
+            const codes = await detector.detect(videoRef.current)
+            if (codes && codes.length) handleCode(codes[0].rawValue)
+          } catch (_) { /* تجاهل إطارًا فاشلًا */ }
+        }, 280)
       } catch (e) {
-        const m = String(e?.message || e).toLowerCase()
-        if (m.includes('permission') || m.includes('denied') || m.includes('notallowed')) {
+        const m = String(e?.name || e?.message || e).toLowerCase()
+        if (m.includes('notallowed') || m.includes('permission') || m.includes('denied')) {
           setCamError('تعذّر الوصول للكاميرا — اسمح بالإذن أو استخدم الإدخال اليدوي بالأسفل.')
-        } else if (m.includes('notfound') || m.includes('no camera') || m.includes('requested device')) {
+        } else if (m.includes('notfound') || m.includes('no camera') || m.includes('devicesnotfound')) {
           setCamError('لا توجد كاميرا متاحة — استخدم الإدخال اليدوي بالأسفل.')
+        } else if (m.includes('secure') || m.includes('https')) {
+          setCamError('الكاميرا تتطلّب اتصالًا آمنًا (HTTPS أو localhost) — استخدم الإدخال اليدوي.')
         } else {
           setCamError('تعذّر تشغيل الكاميرا — استخدم الإدخال اليدوي بالأسفل.')
         }
       }
     })()
+
     return () => {
-      cancelled = true
-      try { controlsRef.current?.stop() } catch (_) {}
+      stopped = true
+      if (timer) clearInterval(timer)
+      try { stream?.getTracks().forEach((t) => t.stop()) } catch (_) {}
     }
   }, [handleCode])
 
@@ -125,7 +137,6 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         )}
       </div>
 
-      {/* إدخال يدوي احتياطي */}
       <div className="scanner-manual">
         <div className="field ltr" style={{ flex: 1 }}>
           <input
@@ -141,7 +152,6 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         </button>
       </div>
 
-      {/* نتيجة آخر مسح */}
       {result && (
         <div className={`scan-result ${result.ok ? 'ok' : 'err'}`}>
           <Icon name={result.ok ? 'check' : 'bell'} size={20} />

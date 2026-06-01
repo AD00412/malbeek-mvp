@@ -427,6 +427,9 @@
 .ticket .tk-qr::before{inset-inline-start:-30px}
 .ticket .tk-qr::after{inset-inline-end:-30px}
 .ticket .tk-qr canvas{width:180px;height:180px}
+.ticket .tk-qr img{width:180px;height:180px;display:block}
+.ticket .tk-qr-fallback{width:180px;height:180px;display:grid;place-items:center;border:2px dashed #c9b98a;
+  border-radius:10px;color:#8a6a1f;font-family:var(--font-display);font-weight:700;font-size:14px}
 .ticket .tk-code{font-family:var(--font-display);letter-spacing:.06em;color:#063d2c;font-weight:700;font-size:13px;direction:ltr}
 .ticket .tk-foot{text-align:center;font-size:12px;color:#5a6b62;padding:6px 18px 18px}
 

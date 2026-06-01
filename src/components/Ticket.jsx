@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import QRCode from 'qrcode'
+import { useEffect, useState } from 'react'
 import CompassMark from './CompassMark'
 import Icon from './Icon'
 
@@ -18,33 +17,37 @@ const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صع
 
 /**
  * تذكرة صعود المعتمر — بطاقةٌ بالباركود (QR) قابلةٌ للتنزيل والطباعة.
- * QR يحمل ticket_code ليُمسح عند الصعود.
- *
- * @param {object} passenger
- * @param {object} trip
- * @param {object} sub
- * @param {Function} onClose
+ * تُحمّل مكتبة qrcode ديناميكيًّا؛ إن غابت تعرض الرمز نصيًّا (تدهورٌ لطيف).
  */
 export default function Ticket({ passenger, trip, sub, onClose }) {
-  const canvasRef = useRef(null)
-  const [dataUrl, setDataUrl] = useState('')
+  const [qrUrl, setQrUrl] = useState('')
+  const [qrFailed, setQrFailed] = useState(false)
   const code = passenger?.ticket_code || passenger?.id || ''
 
   useEffect(() => {
     if (!code) return
-    QRCode.toCanvas(canvasRef.current, code, { width: 200, margin: 1,
-      color: { dark: '#063d2c', light: '#ffffff' } }, () => {})
-    QRCode.toDataURL(code, { width: 520, margin: 2, color: { dark: '#063d2c', light: '#ffffff' } })
-      .then(setDataUrl).catch(() => {})
+    let cancelled = false
+    ;(async () => {
+      try {
+        const QR = (await import('qrcode')).default
+        const url = await QR.toDataURL(code, { width: 520, margin: 2, color: { dark: '#063d2c', light: '#ffffff' } })
+        if (!cancelled) setQrUrl(url)
+      } catch (_) {
+        if (!cancelled) setQrFailed(true)
+      }
+    })()
+    return () => { cancelled = true }
   }, [code])
 
   function downloadPng() {
-    if (!dataUrl) return
+    if (!qrUrl) return
     const a = document.createElement('a')
-    a.href = dataUrl
+    a.href = qrUrl
     a.download = `تذكرة-${(passenger?.full_name || 'معتمر').replace(/\s+/g, '_')}.png`
     a.click()
   }
+
+  const boarded = passenger?.status === 'boarded' || passenger?.status === 'checked_in'
 
   return (
     <div className="manifest-overlay">
@@ -53,7 +56,7 @@ export default function Ticket({ passenger, trip, sub, onClose }) {
           <Icon name="arrowRight" size={16} /> رجوع
         </button>
         <span style={{ flex: 1 }} />
-        <button className="btn btn-ghost btn-sm" onClick={downloadPng} disabled={!dataUrl}>
+        <button className="btn btn-ghost btn-sm" onClick={downloadPng} disabled={!qrUrl}>
           <Icon name="download" size={16} /> حفظ كصورة
         </button>
         <button className="btn btn-gold btn-sm" onClick={() => window.print()}>
@@ -71,9 +74,7 @@ export default function Ticket({ passenger, trip, sub, onClose }) {
                 <div className="tk-kind">تذكرة صعود · عُمرة</div>
               </div>
             </div>
-            <span className={`st ${passenger?.status === 'boarded' || passenger?.status === 'checked_in' ? 'ok' : 'muted'}`}>
-              {STATUS_AR[passenger?.status] || 'مسجّل'}
-            </span>
+            <span className={`st ${boarded ? 'ok' : 'muted'}`}>{STATUS_AR[passenger?.status] || 'مسجّل'}</span>
           </div>
 
           <div className="tk-name">{passenger?.full_name || '—'}</div>
@@ -88,7 +89,13 @@ export default function Ticket({ passenger, trip, sub, onClose }) {
           </div>
 
           <div className="tk-qr">
-            <canvas ref={canvasRef} />
+            {qrUrl ? (
+              <img src={qrUrl} alt="باركود التذكرة" width={180} height={180} />
+            ) : qrFailed ? (
+              <div className="tk-qr-fallback">رمز التذكرة</div>
+            ) : (
+              <div className="tk-qr-fallback">…</div>
+            )}
             <div className="tk-code">{code}</div>
           </div>
 

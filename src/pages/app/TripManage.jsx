@@ -6,7 +6,7 @@ import PassengerFormModal, { PASSENGER_STATUS } from '../../components/Passenger
 import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
 
-// تحميلٌ كسولٌ للمكوّنات الثقيلة (qrcode / zxing) — خارج الحزمة الأساسية
+// تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
 const Scanner = lazy(() => import('../../components/Scanner'))
 
