@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import CompassMark from '../../components/CompassMark'
@@ -95,22 +95,29 @@ export function SubscriberHome() {
   const [copied, setCopied] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const creatingRef = useRef(false)   // يمنع إنشاء حملةٍ مكرّرةٍ عند تكرار التحميل (StrictMode)
 
   const load = useCallback(async () => {
     if (!user?.id) return
     setLoading(true); setErr('')
 
-    let { data: s, error: sErr } = await supabase
+    // نقرأ أقدم حملةٍ للمالك (limit 1) بدل maybeSingle — فلا نتعطّل لو وُجدت
+    // صفوفٌ مكرّرةٌ سابقة؛ نختار الأقدم دائمًا ونتجاهل الباقي.
+    const { data: rows, error: sErr } = await supabase
       .from('subscribers')
       .select('id, org_name, slug, plan, trial_ends_at')
       .eq('owner_id', user.id)
-      .maybeSingle()
+      .order('created_at', { ascending: true })
+      .limit(1)
 
     if (sErr) { setErr('تعذّر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
 
+    let s = rows?.[0] ?? null
+
     // self-heal: إن كان المستخدم مشتركًا بلا صفّ subscribers (مثلًا سجّل و«Confirm Email»
     // مفعَّل فعاد بعد التأكيد ولم يُنشئ سجلّ الحملة)، أنشئه تلقائيًّا واربطه بالملف الشخصي.
-    if (!s) {
+    if (!s && !creatingRef.current) {
+      creatingRef.current = true
       const slug = 'hamla-' + Math.random().toString(36).slice(2, 8)
       const orgName = profile?.full_name ? `حملة ${profile.full_name}` : 'حملتي'
       const { data: created, error: insErr } = await supabase
@@ -119,6 +126,7 @@ export function SubscriberHome() {
         .select('id, org_name, slug, plan, trial_ends_at')
         .maybeSingle()
       if (insErr) {
+        creatingRef.current = false
         setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message)
         setLoading(false); return
       }

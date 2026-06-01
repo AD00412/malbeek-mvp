@@ -23,6 +23,15 @@ create table if not exists public.subscribers (
 );
 create index if not exists idx_subscribers_owner on public.subscribers(owner_id);
 
+-- حملةٌ واحدةٌ لكل مالك: نُزيل أي تكرارٍ سابق (نُبقي الأقدم) ثم نمنع تكراره مستقبلًا.
+-- آمنٌ على التثبيت الجديد (لا صفوف ⇒ لا حذف). الحذف يتعاقب على رحلات النسخ المكرّرة فقط.
+delete from public.subscribers a
+  using public.subscribers b
+  where a.owner_id = b.owner_id
+    and (a.created_at > b.created_at
+         or (a.created_at = b.created_at and a.id > b.id));
+create unique index if not exists uniq_subscribers_owner on public.subscribers(owner_id);
+
 -- ---------- الملفات الشخصية (سجلّ لكل مستخدم) ----------
 create table if not exists public.profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
