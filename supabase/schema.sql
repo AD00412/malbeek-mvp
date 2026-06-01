@@ -94,14 +94,22 @@ $$;
 
 -- ============================================================
 --  إنشاء الملف الشخصي تلقائيًا عند التسجيل (يقرأ بيانات التسجيل)
+--  ★ أمان: لا يُمنح دور admin عبر التسجيل إطلاقًا — raw_user_meta_data
+--    يتحكّم بها المستخدم. الترقية إلى admin تتم يدويًّا من القاعدة فقط.
 -- ============================================================
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_role user_role := coalesce((new.raw_user_meta_data->>'role')::user_role, 'customer');
 begin
+  if v_role = 'admin' then
+    v_role := 'customer';                       -- منع رفع الامتياز عند التسجيل
+  end if;
+
   insert into public.profiles (id, role, full_name, phone, subscriber_id)
   values (
     new.id,
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'customer'),
+    v_role,
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'phone',
     nullif(new.raw_user_meta_data->>'subscriber_id','')::uuid
@@ -114,6 +122,36 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ============================================================
+--  ★ حارس أعمدة الملف الشخصي (يمنع رفع الامتيازات الذاتي)
+--  RLS وحده لا يمنع تعديل عمودٍ بعينه؛ هذا التريغر يحرس role و subscriber_id:
+--   • لا يستطيع غير الأدمن تغيير دوره بنفسه (يبقى كما هو).
+--   • لا يستطيع المستخدم ربط نفسه بحملةٍ لا يملكها (يبقى كما هو) —
+--     ويُسمح بالربط بحملةٍ يملكها (يخدم تدفّق المشترك والإصلاح الذاتي).
+-- ============================================================
+create or replace function public.guard_profile_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(public.my_role(), 'customer') <> 'admin' then
+    if new.role is distinct from old.role then
+      new.role := old.role;
+    end if;
+    if new.subscriber_id is distinct from old.subscriber_id then
+      if new.subscriber_id is not null
+         and not exists (select 1 from public.subscribers s
+                         where s.id = new.subscriber_id and s.owner_id = auth.uid()) then
+        new.subscriber_id := old.subscriber_id;
+      end if;
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists guard_profiles_update on public.profiles;
+create trigger guard_profiles_update
+  before update on public.profiles
+  for each row execute function public.guard_profile_columns();
 
 -- ============================================================
 --  تفعيل RLS على كل الجداول

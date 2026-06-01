@@ -39,6 +39,13 @@ export function AuthProvider({ children }) {
       .select(PROFILE_COLS)
       .maybeSingle()
     if (insErr) {
+      // 23505 = المفتاح الأساسي: التريغر أنشأ الملف بالتوازي. ليس خطأً — أعد قراءته.
+      if (insErr.code === '23505') {
+        const { data: again } = await supabase
+          .from('profiles').select(PROFILE_COLS).eq('id', uid).maybeSingle()
+        setProfile(again ?? null)
+        return
+      }
       // eslint-disable-next-line no-console
       console.error('تعذّر إنشاء الملف الشخصي تلقائيًا:', insErr.message,
         '— تأكّد من تشغيل supabase/schema.sql (التريغر + سياسات profiles).')

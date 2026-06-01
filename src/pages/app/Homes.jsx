@@ -163,8 +163,22 @@ export function SubscriberHome() {
         .insert({ owner_id: user.id, org_name: orgName, slug, plan: 'trial' })
         .select('id, org_name, slug, plan, trial_ends_at')
         .maybeSingle()
-      if (insErr) { creatingRef.current = false; setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message); setLoading(false); return }
-      s = created
+      if (insErr) {
+        // 23505 = الفهرس الفريد على owner_id: حملةٌ أُنشئت بالتوازي (تبويبٌ/سباق).
+        // ليست خطأً — أعد قراءة الحملة الموجودة بدل إظهار خطأٍ زائف.
+        if (insErr.code === '23505') {
+          const { data: again } = await supabase
+            .from('subscribers').select('id, org_name, slug, plan, trial_ends_at')
+            .eq('owner_id', user.id).order('created_at', { ascending: true }).limit(1).maybeSingle()
+          s = again ?? null
+        } else {
+          creatingRef.current = false
+          setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message)
+          setLoading(false); return
+        }
+      } else {
+        s = created
+      }
       if (s?.id) {
         const { error: upErr } = await supabase.from('profiles').update({ subscriber_id: s.id }).eq('id', user.id)
         if (!upErr) await refreshProfile?.()
@@ -353,7 +367,10 @@ export function CustomerHome() {
   useEffect(() => {
     let active = true
     ;(async () => {
-      const { data: s } = await supabase.from('subscribers').select('org_name').limit(1).maybeSingle()
+      // تصفيةٌ صريحةٌ بحملة العميل (دفاعٌ في العمق فوق عزل RLS)
+      let sq = supabase.from('subscribers').select('org_name')
+      sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
+      const { data: s } = await sq.maybeSingle()
       if (active && s) setOrgName(s.org_name)
       const { data: t } = await supabase
         .from('trips')
