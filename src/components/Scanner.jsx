@@ -32,11 +32,16 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     const now = Date.now()
     if (lastScanRef.current.code === code && now - lastScanRef.current.at < 3000) return
 
+    // نقبل فقط رمز تذكرةٍ (TKT-) أو UUID صالحًا — يمنع خطأ نوعٍ عند مسح باركودٍ عشوائي
+    const isTicket = code.startsWith('TKT-')
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code)
+    if (!isTicket && !isUuid) { setResult({ ok: false, msg: 'هذا ليس باركود تذكرةٍ صالح.' }); return }
+
     setBusy(true)
     try {
       let q = supabase.from('passengers')
         .select('id, full_name, seat_no, boarding_point, status, trip_id, ticket_code, national_id')
-      q = code.startsWith('TKT-') ? q.eq('ticket_code', code) : q.eq('id', code)
+      q = isTicket ? q.eq('ticket_code', code) : q.eq('id', code)
       const { data, error } = await q.maybeSingle()
       if (error) throw error
       if (!data) { setResult({ ok: false, msg: 'تذكرة غير معروفة أو لا تخصّ حملتك.' }); return }

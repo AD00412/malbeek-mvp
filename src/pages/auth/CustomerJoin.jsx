@@ -77,14 +77,23 @@ export default function CustomerJoin() {
     }
 
     try {
-      // 3) احفظ سجلّ المعتمر (ضمن حملته فقط — تتحقق منه سياسة RLS)
-      const { error: insErr } = await supabase.from('customers').insert({
+      // 3) احفظ سجلّ المعتمر (ضمن حملته فقط — تتحقق منه سياسة RLS).
+      //    قد لا يكون تريغر إنشاء الملف الشخصي قد اكتمل بعد، فتُرجع
+      //    my_subscriber_id() قيمة null ويُرفض الإدراج؛ نُعيد المحاولة قليلًا.
+      const insertCustomer = () => supabase.from('customers').insert({
         subscriber_id: org.id,
         profile_id: data.user.id,
         full_name: fullName.trim(),
         national_id: nationalId.trim(),
         phone: phone.trim(),
       })
+
+      let insErr = (await insertCustomer()).error
+      for (let i = 0; insErr && i < 4; i++) {
+        await refreshProfile()                              // يحدّث profiles.subscriber_id محليًّا وفي القاعدة
+        await new Promise((r) => setTimeout(r, 350 * (i + 1)))
+        insErr = (await insertCustomer()).error
+      }
       if (insErr) throw insErr
 
       await refreshProfile()

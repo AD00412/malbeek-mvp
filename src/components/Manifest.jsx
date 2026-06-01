@@ -1,6 +1,8 @@
 import CompassMark from './CompassMark'
 import Icon from './Icon'
 
+const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
+
 /* تنسيق تاريخ ميلادي مختصر للكشف */
 function fmt(v) {
   if (!v) return '—'
@@ -137,5 +139,3 @@ export default function Manifest({ trip, sub, passengers = [], onClose }) {
     </div>
   )
 }
-
-const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
