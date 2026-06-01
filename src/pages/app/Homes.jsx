@@ -87,7 +87,7 @@ export function AdminHome() {
    لوحة المشترك (صاحب الحملة) — إدارة رحلات كاملة
    ============================================================ */
 export function SubscriberHome() {
-  const { user } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const [sub, setSub] = useState(null)
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
@@ -100,13 +100,41 @@ export function SubscriberHome() {
     if (!user?.id) return
     setLoading(true); setErr('')
 
-    const { data: s, error: sErr } = await supabase
+    let { data: s, error: sErr } = await supabase
       .from('subscribers')
       .select('id, org_name, slug, plan, trial_ends_at')
       .eq('owner_id', user.id)
       .maybeSingle()
 
     if (sErr) { setErr('تعذّر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
+
+    // self-heal: إن كان المستخدم مشتركًا بلا صفّ subscribers (مثلًا سجّل و«Confirm Email»
+    // مفعَّل فعاد بعد التأكيد ولم يُنشئ سجلّ الحملة)، أنشئه تلقائيًّا واربطه بالملف الشخصي.
+    if (!s) {
+      const slug = 'hamla-' + Math.random().toString(36).slice(2, 8)
+      const orgName = profile?.full_name ? `حملة ${profile.full_name}` : 'حملتي'
+      const { data: created, error: insErr } = await supabase
+        .from('subscribers')
+        .insert({ owner_id: user.id, org_name: orgName, slug, plan: 'trial' })
+        .select('id, org_name, slug, plan, trial_ends_at')
+        .maybeSingle()
+      if (insErr) {
+        setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message)
+        setLoading(false); return
+      }
+      s = created
+      // اربط الحملة بالملف الشخصي ثم حدّث AuthProvider ليلتقط subscriber_id الجديد
+      if (s?.id) {
+        const { error: upErr } = await supabase
+          .from('profiles').update({ subscriber_id: s.id }).eq('id', user.id)
+        if (upErr) {
+          // eslint-disable-next-line no-console
+          console.warn('تعذّر ربط الحملة بالملف الشخصي:', upErr.message)
+        } else {
+          await refreshProfile?.()
+        }
+      }
+    }
     setSub(s ?? null)
 
     if (s?.id) {
@@ -121,7 +149,7 @@ export function SubscriberHome() {
       setTrips([])
     }
     setLoading(false)
-  }, [user])
+  }, [user, profile, refreshProfile])
 
   useEffect(() => { load() }, [load])
 
