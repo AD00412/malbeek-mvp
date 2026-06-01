@@ -1,60 +1,114 @@
 /* ============================================================
-   ملبّيك · ثيم الهوية للإنتاج
-   ضع ملفات woff2 في:  public/fonts/
-   استورد هذا الملف في:  src/main.jsx  ->  import "./styles/malbeek-theme.css"
+   ملبّيك · نظام التصميم — الأساس (الخطوط + الرموز + التهيئة)
+   هوية "بوصلة الإيمان": زمرّدٌ عميقٌ + ذهبٌ مقدّس + كريمٌ رسمي
+   خط ثمانية للمنصّة كاملةً.
    ============================================================ */
 
 /* ---------- خط ثمانية · Sans (واجهات الاستخدام) ---------- */
-@font-face{font-family:'Thmanyah';font-weight:300;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahsans-Light.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah';font-weight:400;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahsans-Regular.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah';font-weight:500;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahsans-Medium.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah';font-weight:700;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahsans-Bold.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah';font-weight:900;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahsans-Black.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:300;font-style:normal;font-display:swap;src:url('/fonts/thmanyahsans-Light.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:400;font-style:normal;font-display:swap;src:url('/fonts/thmanyahsans-Regular.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:500;font-style:normal;font-display:swap;src:url('/fonts/thmanyahsans-Medium.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:700;font-style:normal;font-display:swap;src:url('/fonts/thmanyahsans-Bold.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah';font-weight:900;font-style:normal;font-display:swap;src:url('/fonts/thmanyahsans-Black.woff2') format('woff2')}
 
 /* ---------- خط ثمانية · Serif Display (العناوين والشعار) ---------- */
-@font-face{font-family:'Thmanyah Display';font-weight:300;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahserifdisplay-Light.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah Display';font-weight:400;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahserifdisplay-Regular.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah Display';font-weight:500;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahserifdisplay-Medium.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah Display';font-weight:700;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahserifdisplay-Bold.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah Display';font-weight:900;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahserifdisplay-Black.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:300;font-style:normal;font-display:swap;src:url('/fonts/thmanyahserifdisplay-Light.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:400;font-style:normal;font-display:swap;src:url('/fonts/thmanyahserifdisplay-Regular.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:500;font-style:normal;font-display:swap;src:url('/fonts/thmanyahserifdisplay-Medium.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:700;font-style:normal;font-display:swap;src:url('/fonts/thmanyahserifdisplay-Bold.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Display';font-weight:900;font-style:normal;font-display:swap;src:url('/fonts/thmanyahserifdisplay-Black.woff2') format('woff2')}
 
-/* ---------- خط ثمانية · Serif Text (نصوص طويلة · اختياري) ---------- */
-@font-face{font-family:'Thmanyah Text';font-weight:400;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahseriftext-Regular.woff2') format('woff2')}
-@font-face{font-family:'Thmanyah Text';font-weight:700;font-style:normal;font-display:swap;
-  src:url('/fonts/thmanyahseriftext-Bold.woff2') format('woff2')}
+/* ---------- خط ثمانية · Serif Text (النصوص الطويلة/الكشوف) ---------- */
+@font-face{font-family:'Thmanyah Text';font-weight:300;font-style:normal;font-display:swap;src:url('/fonts/thmanyahseriftext-Light.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Text';font-weight:400;font-style:normal;font-display:swap;src:url('/fonts/thmanyahseriftext-Regular.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Text';font-weight:500;font-style:normal;font-display:swap;src:url('/fonts/thmanyahseriftext-Medium.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Text';font-weight:700;font-style:normal;font-display:swap;src:url('/fonts/thmanyahseriftext-Bold.woff2') format('woff2')}
+@font-face{font-family:'Thmanyah Text';font-weight:900;font-style:normal;font-display:swap;src:url('/fonts/thmanyahseriftext-Black.woff2') format('woff2')}
 
-/* ---------- متغيرات ألوان ملبّيك ---------- */
+/* ============================================================
+   الرموز (Design Tokens)
+   ============================================================ */
 :root{
-  --emerald-950:#04261C; --emerald-900:#063D2C; --emerald-800:#0A4E3A;
-  --emerald-700:#0B5C43; --emerald-500:#128A66; --emerald-300:#2BB68C;
-  --gold-700:#8A6A1F; --gold-500:#C49A45; --gold-400:#D8B25E;
-  --gold-300:#E2C277; --gold-100:#F6E3B0;
-  --cream-50:#FBF7EE; --cream-100:#F1E9D6; --cream-200:#D9CEB4;
-  --ink:#1C2A24;
-  --success:#1FA971; --warning:#E0A82E; --danger:#C2453A; --info:#2E7D8A;
+  /* الزمرّدي — العمق والرحلة */
+  --em-950:#031F17; --em-900:#04261C; --em-850:#063D2C; --em-800:#0A4E3A;
+  --em-700:#0B5C43; --em-600:#0E7152; --em-500:#128A66; --em-400:#1AA87E; --em-300:#2BB68C;
 
-  --font-sans:'Thmanyah', system-ui, sans-serif;
+  /* الذهبي — القيمة والقداسة */
+  --gd-700:#8A6A1F; --gd-600:#A6822F; --gd-500:#C49A45; --gd-400:#D8B25E; --gd-300:#E2C277; --gd-100:#F6E3B0;
+
+  /* الكريمي — الوضوح والورق الرسمي */
+  --cr-50:#FBF7EE; --cr-100:#F1E9D6; --cr-200:#D9CEB4; --cr-300:#B9AD8E;
+
+  /* دلالية */
+  --ok:#2BB68C; --ok-ink:#7be0bf;
+  --warn:#E0A82E; --warn-ink:#f0cf86;
+  --danger:#E0584B; --danger-ink:#f3ab9f;
+  --info:#3AA0B3; --info-ink:#8fd3df;
+
+  /* أسطح وخطوط (على خلفيةٍ داكنة) */
+  --bg:radial-gradient(1100px 720px at 88% -12%,rgba(196,154,69,.13),transparent 56%),linear-gradient(165deg,#052A1F 0%,var(--em-900) 48%,#031c14 100%);
+  --surface:rgba(11,92,67,.18);
+  --surface-2:rgba(8,52,38,.55);
+  --surface-3:rgba(0,0,0,.24);
+  --line:rgba(226,194,119,.16);
+  --line-strong:rgba(226,194,119,.34);
+  --glass-blur:saturate(140%) blur(12px);
+
+  /* تدرّجات الهوية */
+  --grad-gold:linear-gradient(180deg,var(--gd-300),var(--gd-500));
+  --grad-gold-soft:linear-gradient(180deg,var(--gd-100),var(--gd-400));
+  --grad-em:linear-gradient(150deg,var(--em-500),var(--em-700));
+  --grad-head:linear-gradient(180deg,var(--cr-50),var(--gd-300));
+
+  /* الخطوط */
+  --font-sans:'Thmanyah', system-ui, -apple-system, sans-serif;
   --font-display:'Thmanyah Display', Georgia, serif;
+  --font-text:'Thmanyah Text', Georgia, serif;
+
+  /* المقاسات */
+  --r-sm:10px; --r-md:14px; --r-lg:18px; --r-xl:24px; --r-pill:999px;
+  --sp:8px;
+  --shadow-sm:0 4px 14px rgba(0,0,0,.22);
+  --shadow-md:0 14px 40px rgba(0,0,0,.34);
+  --shadow-lg:0 30px 80px rgba(0,0,0,.5);
+  --glow-gold:0 10px 30px rgba(196,154,69,.3);
+
+  /* عرض الشريط الجانبي */
+  --sidebar-w:264px;
 }
 
-/* ---------- أساسيات ---------- */
-html{ direction:rtl; }
+/* ============================================================
+   التهيئة الأساسية
+   ============================================================ */
+*{box-sizing:border-box}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:rgba(226,194,119,.18);border-radius:var(--r-pill)}
+*::-webkit-scrollbar-track{background:transparent}
+
+html{direction:rtl;scroll-behavior:smooth}
 body{
+  margin:0;
   font-family:var(--font-sans);
-  background:var(--emerald-950);
-  color:var(--cream-50);
+  font-weight:400;
+  background:var(--em-900);
+  color:var(--cr-50);
   -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
   -webkit-tap-highlight-color:transparent;
 }
-h1,h2,h3,.font-display{ font-family:var(--font-display); }
+h1,h2,h3,h4,.font-display{font-family:var(--font-display);font-weight:900;letter-spacing:-.01em}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit}
+::selection{background:rgba(196,154,69,.3);color:var(--cr-50)}
+
+/* أدوات مساعدة */
+.flex{display:flex}.items-center{align-items:center}.gap{gap:10px}
+.sp-grow{flex:1}
+.ltr{direction:ltr}
+.muted{color:var(--cr-200);font-weight:300}
+.dim{color:var(--cr-300)}
+.gold{color:var(--gd-300)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes mk-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(8deg)}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes rise-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
