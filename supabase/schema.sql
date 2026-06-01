@@ -98,6 +98,17 @@ create table if not exists public.passengers (
 create index if not exists idx_passengers_trip       on public.passengers(trip_id);
 create index if not exists idx_passengers_subscriber on public.passengers(subscriber_id);
 
+-- التذكرة والباركود + أوقات الحضور (idempotent)
+alter table public.passengers add column if not exists ticket_code   text;
+alter table public.passengers add column if not exists boarded_at     timestamptz;
+alter table public.passengers add column if not exists checked_in_at  timestamptz;
+-- توليد رمز تذكرةٍ فريدٍ للصفوف القديمة ثم جعله افتراضيًّا للجديدة
+update public.passengers set ticket_code = 'TKT-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,10))
+  where ticket_code is null;
+alter table public.passengers alter column ticket_code
+  set default 'TKT-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,10));
+create unique index if not exists uniq_passengers_ticket on public.passengers(ticket_code);
+
 -- ---------- المعتمرون (بيانات العميل المحفوظة دائمًا) ----------
 create table if not exists public.customers (
   id            uuid primary key default gen_random_uuid(),

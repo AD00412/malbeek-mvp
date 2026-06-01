@@ -195,6 +195,7 @@
 .action.primary:hover{transform:translateY(-2px)}
 .action.info{color:var(--info-ink)}
 .action.ok{color:var(--ok-ink)}
+.action.warn{color:var(--warn-ink)}
 .action.violet{color:#c9b5ff}
 
 /* بطاقة الرحلة (موبايل) */
@@ -402,14 +403,69 @@
   .manifest-sheet .mf-table{font-size:10.5px}
 }
 
-/* ---------- الطباعة: يُظهر الكشف فقط ---------- */
+/* ============================================================
+   تذكرة الصعود (Ticket)
+   ============================================================ */
+.ticket{background:linear-gradient(165deg,#fbf7ee,#f1e9d6);color:#13211c;width:100%;max-width:380px;
+  border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;align-self:flex-start;
+  border:1px solid #e3d6b4}
+.ticket .ticket-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;
+  background:linear-gradient(180deg,#063d2c,#04261c);color:#f1e9d6}
+.ticket .tk-brand{display:flex;align-items:center;gap:10px}
+.ticket .tk-org{font-family:var(--font-display);font-weight:900;font-size:16px;color:#fbf7ee}
+.ticket .tk-kind{font-size:11px;color:#d9ceb4;margin-top:2px}
+.ticket .tk-name{font-family:var(--font-display);font-weight:900;font-size:22px;color:#063d2c;padding:16px 18px 8px}
+.ticket .tk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px 8px}
+.ticket .tk-grid > div{display:flex;flex-direction:column;gap:2px}
+.ticket .tk-grid .k{font-size:11px;color:#8a6a1f;font-weight:600}
+.ticket .tk-grid .v{font-size:14px;color:#13211c;font-weight:500}
+.ticket .tk-grid .v.big{font-family:var(--font-display);font-weight:900;font-size:20px;color:#063d2c}
+.ticket .tk-qr{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;margin:8px 18px;
+  background:#fff;border-radius:14px;border:1px dashed #c9b98a;position:relative}
+.ticket .tk-qr::before,.ticket .tk-qr::after{content:"";position:absolute;top:50%;width:22px;height:22px;
+  background:#1a2420;border-radius:50%;transform:translateY(-50%)}
+.ticket .tk-qr::before{inset-inline-start:-30px}
+.ticket .tk-qr::after{inset-inline-end:-30px}
+.ticket .tk-qr canvas{width:180px;height:180px}
+.ticket .tk-code{font-family:var(--font-display);letter-spacing:.06em;color:#063d2c;font-weight:700;font-size:13px;direction:ltr}
+.ticket .tk-foot{text-align:center;font-size:12px;color:#5a6b62;padding:6px 18px 18px}
+
+/* ============================================================
+   الماسح الحي (Scanner)
+   ============================================================ */
+.scanner-overlay{position:fixed;inset:0;z-index:200;background:#04120d;display:flex;flex-direction:column;color:var(--cr-100)}
+.scanner-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+  background:rgba(4,30,22,.9);border-bottom:1px solid var(--line)}
+.scanner-head .sc-title{font-family:var(--font-display);font-weight:900;font-size:16px;color:var(--cr-50)}
+.scanner-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000}
+.scanner-video{width:100%;height:100%;object-fit:cover}
+.scanner-frame{position:absolute;width:min(72vw,300px);height:min(72vw,300px);pointer-events:none}
+.scanner-frame span{position:absolute;width:34px;height:34px;border:3px solid var(--gd-300)}
+.scanner-frame span:nth-child(1){top:0;inset-inline-start:0;border-bottom:none;border-inline-end:none;border-radius:14px 0 0 0}
+.scanner-frame span:nth-child(2){top:0;inset-inline-end:0;border-bottom:none;border-inline-start:none;border-radius:0 14px 0 0}
+.scanner-frame span:nth-child(3){bottom:0;inset-inline-start:0;border-top:none;border-inline-end:none;border-radius:0 0 0 14px}
+.scanner-frame span:nth-child(4){bottom:0;inset-inline-end:0;border-top:none;border-inline-start:none;border-radius:0 0 14px 0}
+.scanner-hint{position:absolute;bottom:26px;background:rgba(0,0,0,.55);color:var(--cr-100);font-size:13px;
+  padding:8px 16px;border-radius:var(--r-pill)}
+.scanner-fallback{display:flex;flex-direction:column;align-items:center;gap:14px;color:var(--cr-300);text-align:center;padding:30px}
+.scanner-manual{display:flex;gap:10px;align-items:flex-end;padding:14px 16px;background:rgba(4,30,22,.7);border-top:1px solid var(--line)}
+.scanner-manual .field{margin:0}
+.scan-result{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:0;
+  background:var(--surface-2);border-top:1px solid var(--line)}
+.scan-result.ok{background:rgba(43,182,140,.16);color:var(--ok-ink)}
+.scan-result.err{background:rgba(224,88,75,.16);color:var(--danger-ink)}
+.scan-result .sr-msg{font-weight:700;font-size:14.5px}
+.scan-result .sr-pax{font-size:13px;color:var(--cr-100);margin-top:2px}
+
+/* ---------- الطباعة: يُظهر الكشف/التذكرة فقط ---------- */
 @media print{
   body{background:#fff}
   body *{visibility:hidden !important}
-  .manifest-sheet,.manifest-sheet *{visibility:visible !important}
+  .manifest-sheet,.manifest-sheet *,.ticket,.ticket *{visibility:visible !important}
   .manifest-overlay{position:static;background:#fff}
   .manifest-scroll{overflow:visible;padding:0}
   .manifest-sheet{position:absolute;inset:0;width:100%;max-width:none;box-shadow:none;border-radius:0;padding:0 4mm}
+  .ticket{position:absolute;inset-inline-start:50%;top:10mm;transform:translateX(-50%);box-shadow:none}
   .no-print{display:none !important}
   .mf-table tr{page-break-inside:avoid}
   @page{size:A4;margin:12mm}

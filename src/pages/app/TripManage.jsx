@@ -1,10 +1,23 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
 import PassengerFormModal, { PASSENGER_STATUS } from '../../components/PassengerFormModal'
 import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
+
+// تحميلٌ كسولٌ للمكوّنات الثقيلة (qrcode / zxing) — خارج الحزمة الأساسية
+const Ticket = lazy(() => import('../../components/Ticket'))
+const Scanner = lazy(() => import('../../components/Scanner'))
+
+/* غلافٌ بسيطٌ بانتظار تحميل المكوّن الكسول */
+function LazyLoading() {
+  return (
+    <div className="manifest-overlay" style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <div className="sl-mark"><CompassMark size={64} /></div>
+    </div>
+  )
+}
 
 const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
 const STATUS_CLS = { registered: 'muted', paid: 'ok', boarded: 'info', checked_in: 'warn' }
@@ -33,13 +46,15 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [editingPax, setEditingPax] = useState(null)
   const [crewOpen, setCrewOpen] = useState(false)
   const [manifestOpen, setManifestOpen] = useState(false)
+  const [ticketFor, setTicketFor] = useState(null)   // المعتمر لعرض تذكرته
+  const [scanMode, setScanMode] = useState(null)      // 'board' | 'checkin' | null
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, ticket_code, boarded_at, checked_in_at, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -82,6 +97,20 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   if (manifestOpen) {
     return <Manifest trip={trip} sub={sub} passengers={passengers} onClose={() => setManifestOpen(false)} />
   }
+  if (ticketFor) {
+    return (
+      <Suspense fallback={<LazyLoading />}>
+        <Ticket passenger={ticketFor} trip={trip} sub={sub} onClose={() => setTicketFor(null)} />
+      </Suspense>
+    )
+  }
+  if (scanMode) {
+    return (
+      <Suspense fallback={<LazyLoading />}>
+        <Scanner trip={trip} mode={scanMode} onClose={() => setScanMode(null)} onUpdated={loadPassengers} />
+      </Suspense>
+    )
+  }
 
   return (
     <>
@@ -109,6 +138,14 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       {/* أزرار الإجراءات */}
       <div className="actions" style={{ marginTop: 16 }}>
         <button className="action primary" onClick={openAdd}><Icon name="plus" size={18} /> إضافة معتمر</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="action info" style={{ flex: 1 }} onClick={() => setScanMode('board')}>
+            <Icon name="qr" size={18} /> مسح الصعود
+          </button>
+          <button className="action warn" style={{ flex: 1 }} onClick={() => setScanMode('checkin')}>
+            <Icon name="bed" size={18} /> مسح التسكين
+          </button>
+        </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action" style={{ flex: 1 }} onClick={() => setCrewOpen(true)}>
             <Icon name="bus" size={18} /> الباص والطاقم
@@ -158,6 +195,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                 </div>
                 <span className={`st ${STATUS_CLS[p.status] || 'muted'}`}>{STATUS_AR[p.status] || p.status}</span>
                 <div className="pax-actions">
+                  <button className="icon-btn" onClick={() => setTicketFor(p)} aria-label="التذكرة"><Icon name="qr" size={15} /></button>
                   <button className="icon-btn" onClick={() => openEdit(p)} aria-label="تعديل"><Icon name="edit" size={15} /></button>
                   <button className="icon-btn danger" onClick={() => removePax(p)} aria-label="حذف"><Icon name="trash" size={15} /></button>
                 </div>
