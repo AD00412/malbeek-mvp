@@ -49,26 +49,14 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true
+    let settled = false
 
-    // قراءة الجلسة الأولى عند الإقلاع. القفل المحدود في supabaseClient يضمن
-    // ألّا يتجمّد getSession، لذا لا حاجة لأي سباق مؤقّتٍ هنا.
-    const init = async () => {
-      try {
-        const { data } = await supabase.auth.getSession()
-        if (!active) return
-        const s = data?.session ?? null
-        setSession(s)
-        await loadProfile(s?.user?.id)
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error('تعذّر تهيئة الجلسة:', e?.message || e)
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-    init()
+    // إنهاء حالة التحميل مرّةً واحدةً فقط (أوّل حدثٍ يصل، أو شبكة الأمان)
+    const finish = () => { if (active && !settled) { settled = true; setLoading(false) } }
 
-    // أي تغيّرٍ لاحقٍ في حالة المصادقة (دخول/خروج/تجديد) يُحدّث الجلسة والملف
+    // المصدر الموثوق للجلسة: onAuthStateChange يُطلق فورًا حدث INITIAL_SESSION
+    // بالجلسة الحالية (إن وُجدت) — دون استدعاء getSession الذي قد يعلق على القفل.
+    // كل دخول/خروج/تجديدٍ لاحقٍ يمرّ من هنا أيضًا، فمصدرٌ واحدٌ للحقيقة.
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (!active) return
       setSession(s ?? null)
@@ -76,11 +64,24 @@ export function AuthProvider({ children }) {
       catch (e) {
         // eslint-disable-next-line no-console
         console.error('تعذّر تحميل الملف عند تغيّر الجلسة:', e?.message || e)
+      } finally {
+        finish()
       }
     })
 
+    // شبكة أمان: لو لم يصل أي حدثٍ خلال ٨ ثوانٍ (حالةٌ نادرةٌ جدًّا)، لا نُبقي
+    // المستخدم عالقًا على شاشة التحميل أبدًا — نعرض الواجهة (شاشة الدخول غالبًا).
+    const safety = setTimeout(() => {
+      if (active && !settled) {
+        // eslint-disable-next-line no-console
+        console.warn('⏱️ لم تصل حالة الجلسة خلال المهلة — إظهار الواجهة. امسح بيانات الموقع إن تكرّر.')
+        finish()
+      }
+    }, 8000)
+
     return () => {
       active = false
+      clearTimeout(safety)
       sub?.subscription?.unsubscribe?.()
     }
   }, [loadProfile])
