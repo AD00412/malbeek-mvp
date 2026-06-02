@@ -114,6 +114,33 @@ alter table public.trips      add column if not exists bus_back_row   int  not n
 alter table public.trips      add column if not exists price          numeric(10,2);   -- سعر المقعد (اختياري)
 alter table public.passengers add column if not exists paid_at        timestamptz;     -- وقت تأكيد الدفع
 alter table public.passengers add column if not exists amount         numeric(10,2);   -- المبلغ المحصّل
+alter table public.passengers add column if not exists payment_provider text;          -- مزوّد الدفع (عند التأكيد الآليّ)
+
+-- سجلّ معاملات الدفع (مصدر الحقيقة للتدقيق؛ يكتبه الـ Webhook بصلاحية service_role فقط)
+create table if not exists public.payments (
+  id            uuid primary key default gen_random_uuid(),
+  passenger_id  uuid references public.passengers(id) on delete set null,
+  trip_id       uuid references public.trips(id) on delete set null,
+  subscriber_id uuid references public.subscribers(id) on delete set null,
+  provider      text not null,                       -- moyasar | tap | generic | ...
+  provider_ref  text not null,                        -- معرّف العملية لدى المزوّد (للتمييز ومنع التكرار)
+  amount        numeric(10,2),
+  currency      text default 'SAR',
+  status        text not null default 'paid',
+  raw           jsonb,
+  created_at    timestamptz not null default now()
+);
+create unique index if not exists uniq_payment_provider_ref on public.payments(provider, provider_ref);
+create index if not exists idx_payments_passenger on public.payments(passenger_id);
+create index if not exists idx_payments_subscriber on public.payments(subscriber_id);
+alter table public.payments enable row level security;
+-- المالك يقرأ مدفوعات حملته، والإدارة الكلّ؛ لا كتابةٌ من العميل (الـ Webhook يكتب بـ service_role متجاوزًا RLS)
+drop policy if exists "payments owner read" on public.payments;
+create policy "payments owner read" on public.payments for select
+  using (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+drop policy if exists "payments admin read" on public.payments;
+create policy "payments admin read" on public.payments for select using (public.my_role() = 'admin');
+
 -- منع حجز مقعدٍ مكرّر في نفس الرحلة (يسمح بالـ NULL لمقاعد غير مخصّصة بعد)
 create unique index if not exists uniq_passengers_trip_seat
   on public.passengers(trip_id, seat_no) where seat_no is not null;
@@ -636,8 +663,10 @@ begin
     end if;
   end if;
 
-  -- العميل لا يرفع حالته ذاتيًّا ولا يزوّر الحضور ولا ينقل حجزه
-  if not v_owner then
+  -- العميل لا يرفع حالته ذاتيًّا ولا يزوّر الحضور ولا ينقل حجزه.
+  -- يُطبَّق على مستخدمٍ مصدَّقٍ فعليّ فقط (auth.uid() غير فارغ)؛ السياقات الموثوقة بلا JWT
+  -- (service_role لبوّابة الدفع / محرّر SQL) معفاةٌ لتأكيد الدفع آليًّا — والعميل دائمًا مصدَّقٌ فيبقى محروسًا.
+  if auth.uid() is not null and not v_owner then
     if tg_op = 'INSERT' then
       new.status := 'registered';
       new.boarded_at := null;
