@@ -126,6 +126,57 @@ create index if not exists idx_passengers_profile on public.passengers(profile_i
 -- رابط المتجر الخارجي للمشترك (سلة/زد) لخطوة الدفع
 alter table public.subscribers add column if not exists store_url text;
 
+-- ============================================================
+--  تعدّد الباصات في الرحلة (المرحلة ١: أساسٌ خلفيٌّ متوافقٌ تمامًا)
+--  كلّ رحلةٍ تملك باصًا واحدًا على الأقلّ. الرحلات الحالية تُهاجَر إلى
+--  "باص ١" يعكس تخطيطها الحالي (bus_rows/bus_back_row/seating_policy).
+-- ============================================================
+create table if not exists public.trip_buses (
+  id             uuid primary key default gen_random_uuid(),
+  trip_id        uuid not null references public.trips(id) on delete cascade,
+  subscriber_id  uuid not null references public.subscribers(id) on delete cascade,
+  bus_number     int  not null default 1,
+  label          text,
+  plate          text,
+  bus_rows       int  not null default 11,
+  bus_back_row   int  not null default 5,
+  seating_policy text not null default 'all_male',
+  created_at     timestamptz not null default now()
+);
+create index if not exists idx_trip_buses_trip on public.trip_buses(trip_id, bus_number);
+create unique index if not exists uniq_trip_bus_number on public.trip_buses(trip_id, bus_number);
+
+-- migration: نسخ تخطيط كلّ رحلةٍ حاليّةٍ إلى باصٍ رقم ١ (مرّة واحدة، idempotent)
+insert into public.trip_buses (trip_id, subscriber_id, bus_number, label, plate, bus_rows, bus_back_row, seating_policy)
+select t.id, t.subscriber_id, 1, t.bus_label, t.bus_plate,
+       coalesce(t.bus_rows, 11), coalesce(t.bus_back_row, 5), coalesce(t.seating_policy, 'all_male')
+from public.trips t
+where not exists (select 1 from public.trip_buses b where b.trip_id = t.id and b.bus_number = 1);
+
+-- ربط الراكب بباصٍ معيّن (افتراضيًّا باص ١ — يُسنَد تلقائيًّا عبر الحارس)
+alter table public.passengers add column if not exists bus_id uuid references public.trip_buses(id) on delete set null;
+create index if not exists idx_passengers_bus on public.passengers(bus_id);
+-- backfill: كلّ راكبٍ حاليٍّ ينتمي إلى باص ١ في رحلته
+update public.passengers p set bus_id = b.id
+from public.trip_buses b
+where b.trip_id = p.trip_id and b.bus_number = 1 and p.bus_id is null;
+
+-- استبدال فهرس تفرّد المقعد ليصبح على مستوى (رحلة، باص، مقعد)
+drop index if exists public.uniq_passengers_trip_seat;
+create unique index if not exists uniq_passengers_trip_bus_seat
+  on public.passengers(trip_id, bus_id, seat_no) where seat_no is not null;
+
+alter table public.trip_buses enable row level security;
+drop policy if exists "trip_buses owner manage" on public.trip_buses;
+create policy "trip_buses owner manage" on public.trip_buses for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+drop policy if exists "trip_buses customer read" on public.trip_buses;
+create policy "trip_buses customer read" on public.trip_buses for select
+  using (subscriber_id = public.my_subscriber_id());
+drop policy if exists "trip_buses admin read" on public.trip_buses;
+create policy "trip_buses admin read" on public.trip_buses for select using (public.my_role() = 'admin');
+
 -- ---------- المعتمرون (بيانات العميل المحفوظة دائمًا) ----------
 create table if not exists public.customers (
   id            uuid primary key default gen_random_uuid(),
@@ -411,7 +462,9 @@ create policy "passengers admin read" on public.passengers for select using (pub
 --  يُرجع رقم المقعد + الجنس + عائلة فقط — بلا اسمٍ أو هوية. SECURITY DEFINER
 --  مع تقييدٍ صريحٍ: المستدعي مالكُ الحملة أو عميلٌ ضمنها أو إدارة.
 -- ============================================================
-create or replace function public.trip_seat_occupancy(p_trip uuid)
+--  p_bus اختياري: عند تمريره يُرجع إشغال ذلك الباص فقط؛ وإلّا كلّ الرحلة (سلوك المرحلة ١).
+drop function if exists public.trip_seat_occupancy(uuid);
+create or replace function public.trip_seat_occupancy(p_trip uuid, p_bus uuid default null)
 returns table(seat_no text, gender text, is_family boolean)
 language sql stable security definer set search_path = public as $$
   select p.seat_no, p.gender, p.is_family
@@ -419,13 +472,14 @@ language sql stable security definer set search_path = public as $$
   join public.trips t on t.id = p.trip_id
   where p.trip_id = p_trip
     and p.seat_no is not null
+    and (p_bus is null or p.bus_id = p_bus)
     and (
       t.subscriber_id in (select id from public.subscribers where owner_id = auth.uid())
       or t.subscriber_id = public.my_subscriber_id()
       or public.my_role() = 'admin'
     );
 $$;
-grant execute on function public.trip_seat_occupancy(uuid) to authenticated;
+grant execute on function public.trip_seat_occupancy(uuid, uuid) to authenticated;
 
 -- ============================================================
 --  حدّ الباقة التجريبية: رحلةٌ واحدةٌ فقط للمشترك على الباقة 'trial'
@@ -486,6 +540,44 @@ create trigger trg_validate_trip
   before insert or update on public.trips
   for each row execute function public.validate_trip();
 
+-- ★ كلّ رحلةٍ جديدةٍ تحصل على "باص ١" تلقائيًّا يعكس تخطيطها (أساس تعدّد الباصات)
+create or replace function public.ensure_primary_bus()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.trip_buses (trip_id, subscriber_id, bus_number, label, plate, bus_rows, bus_back_row, seating_policy)
+  values (new.id, new.subscriber_id, 1, new.bus_label, new.bus_plate,
+          coalesce(new.bus_rows, 11), coalesce(new.bus_back_row, 5), coalesce(new.seating_policy, 'all_male'))
+  on conflict (trip_id, bus_number) do nothing;
+  return new;
+end $$;
+drop trigger if exists trg_ensure_primary_bus on public.trips;
+create trigger trg_ensure_primary_bus
+  after insert on public.trips
+  for each row execute function public.ensure_primary_bus();
+
+-- ★ مزامنة "باص ١" مع تعديلات تخطيط الرحلة (BusEditor يكتب في trips في المرحلة ١)
+create or replace function public.sync_primary_bus()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.bus_rows is distinct from old.bus_rows
+     or new.bus_back_row is distinct from old.bus_back_row
+     or new.seating_policy is distinct from old.seating_policy
+     or new.bus_label is distinct from old.bus_label
+     or new.bus_plate is distinct from old.bus_plate then
+    update public.trip_buses set
+      bus_rows = coalesce(new.bus_rows, bus_rows),
+      bus_back_row = coalesce(new.bus_back_row, bus_back_row),
+      seating_policy = coalesce(new.seating_policy, seating_policy),
+      label = new.bus_label, plate = new.bus_plate
+    where trip_id = new.id and bus_number = 1;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_sync_primary_bus on public.trips;
+create trigger trg_sync_primary_bus
+  after update on public.trips
+  for each row execute function public.sync_primary_bus();
+
 -- ============================================================
 --  ★ حارس أعمدة الراكب: يمنع العميل من تزوير الحالة/الحضور أو نقل حجزه،
 --    ويتحقّق أنّ المقعد ضمن تخطيط الباص. (المالك/الإدارة بلا قيد)
@@ -499,6 +591,12 @@ begin
   select (exists (select 1 from public.subscribers s
                   where s.id = new.subscriber_id and s.owner_id = auth.uid())
           or public.my_role() = 'admin') into v_owner;
+
+  -- إسناد الباص: إن لم يُحدَّد، يُربط الراكب بأوّل باصٍ في الرحلة (باص ١) — توافقٌ تامٌّ مع المرحلة ١
+  if new.bus_id is null then
+    select id into new.bus_id from public.trip_buses
+     where trip_id = new.trip_id order by bus_number asc limit 1;
+  end if;
 
   -- تطبيع/تحقّق الاسم والهوية والجوال (عند الإدراج أو تغيّر القيمة فقط — لا يكسر بياناتٍ قديمة)
   if tg_op = 'INSERT' then
@@ -875,6 +973,7 @@ do $$ begin alter publication supabase_realtime add table public.passengers;  ex
 do $$ begin alter publication supabase_realtime add table public.feedback;    exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.subscribers; exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.trips;       exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.trip_buses;  exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.notifications; exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.waitlist;      exception when duplicate_object then null; when others then null; end $$;
 
