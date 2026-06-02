@@ -8,6 +8,8 @@ import TripFormModal from '../../components/TripFormModal'
 import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
 import CustomerBooking from '../../components/CustomerBooking'
+import FeedbackSheet from '../../components/FeedbackSheet'
+import FeedbackInbox from '../../components/FeedbackInbox'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -73,6 +75,7 @@ export function AdminHome() {
     { section: 'الإدارة' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     { key: 'subs', label: 'المشتركون', icon: 'building', badge: subs.length || undefined },
+    { key: 'feedback', label: 'التغذية الراجعة', icon: 'message' },
   ]
   const paid = subs.filter((s) => s.plan === 'paid').length
 
@@ -87,9 +90,11 @@ export function AdminHome() {
               <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>إجمالي الرحلات</div><div className="v">{tripCount}</div></div>
             </div>
             <SubsPanel subs={subs} loading={loading} />
+            <FeedbackInbox />
           </>
         )}
         {view === 'subs' && <SubsPanel subs={subs} loading={loading} />}
+        {view === 'feedback' && <FeedbackInbox />}
       </AppShell>
       <Roadmap />
     </>
@@ -143,6 +148,7 @@ export function SubscriberHome() {
   const [search, setSearch] = useState('')
   const [managing, setManaging] = useState(null) // الرحلة قيد الإدارة (شاشة كاملة)
   const [paxStats, setPaxStats] = useState({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } })
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const creatingRef = useRef(false)
 
   const load = useCallback(async () => {
@@ -360,6 +366,11 @@ export function SubscriberHome() {
         </BottomSheet>
       </AppShell>
 
+      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} title="تواصل مع إدارة ملبّيك">
+        <Icon name="message" size={18} />
+      </button>
+      <FeedbackSheet open={feedbackOpen} audience="subscriber" onClose={() => setFeedbackOpen(false)} />
+
       <Roadmap />
     </>
   )
@@ -553,6 +564,7 @@ export function CustomerHome() {
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(null)        // الرحلة قيد الحجز (شاشة كاملة)
   const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -685,6 +697,12 @@ export function CustomerHome() {
                       <div className="actions-row">
                         <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
                         {t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
+                        <button className="icon-btn danger" onClick={async () => {
+                          if (!window.confirm(`إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`)) return
+                          const { error } = await supabase.from('passengers').delete().eq('id', b.id)
+                          if (error) alert('تعذّر الإلغاء: ' + error.message)
+                          else load()
+                        }}><Icon name="trash" size={15} /> إلغاء</button>
                       </div>
                     </div>
                   )
@@ -694,6 +712,12 @@ export function CustomerHome() {
           </>
         )}
       </AppShell>
+
+      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} title="تواصل مع إدارة ملبّيك">
+        <Icon name="message" size={18} />
+      </button>
+      <FeedbackSheet open={feedbackOpen} audience="customer" onClose={() => setFeedbackOpen(false)} />
+
       <Roadmap />
     </>
   )

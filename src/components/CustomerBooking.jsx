@@ -64,6 +64,21 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   }
   useEffect(() => { load() }, [trip?.id, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // تحديثٌ حيٌّ للمقاعد: نُعيد جلب الإشغال (بلا PII) عند أي تغيّرٍ على passengers في هذه الرحلة.
+  useEffect(() => {
+    if (!trip?.id) return
+    let cancelled = false
+    const refresh = async () => {
+      const { data: occ } = await supabase.rpc('trip_seat_occupancy', { p_trip: trip.id })
+      if (!cancelled) setOccupancy(occ ?? [])
+    }
+    const ch = supabase
+      .channel(`pax:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, refresh)
+      .subscribe()
+    return () => { cancelled = true; supabase.removeChannel(ch) }
+  }, [trip?.id])
+
   // مصفوفة "ركّاب" للخريطة: إشغالٌ بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
   const seatPassengers = useMemo(() => {
     return (occupancy ?? []).map((o) => ({

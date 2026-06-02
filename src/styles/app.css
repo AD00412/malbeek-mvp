@@ -539,6 +539,13 @@
   border-color:rgba(217,206,180,.18)}
 .seat-locked .s-head{background:rgba(217,206,180,.18)}
 
+/* زرّ التغذية الراجعة العائم */
+.fab-feedback{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));inset-inline-end:18px;z-index:50;
+  width:46px;height:46px;border-radius:50%;border:1px solid var(--gd-500);background:linear-gradient(180deg,var(--em-600),var(--em-800));
+  color:var(--gd-300);cursor:pointer;display:grid;place-items:center;box-shadow:var(--shadow-md);transition:.2s}
+.fab-feedback:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(0,0,0,.45);color:var(--gd-100)}
+@media(min-width:820px){.fab-feedback{bottom:24px;inset-inline-end:24px}}
+
 /* محرّر الباص */
 .bus-editor{width:100%;max-width:460px;display:flex;flex-direction:column;gap:6px}
 .stepper{display:flex;align-items:center;justify-content:space-between;background:var(--surface-3);

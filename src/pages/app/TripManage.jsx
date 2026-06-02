@@ -62,7 +62,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -78,6 +78,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   }, [trip, onTripChanged])
 
   useEffect(() => { loadPassengers() }, [loadPassengers])
+
+  // تحديثٌ حيٌّ: عند أي تغيّرٍ على passengers لهذه الرحلة، أعِد التحميل.
+  useEffect(() => {
+    if (!trip?.id) return
+    const ch = supabase
+      .channel(`pax-mgr:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, () => loadPassengers())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [trip?.id, loadPassengers])
 
   function openAdd() { setEditingPax(null); setPaxOpen(true) }
   function openEdit(p) { setEditingPax(p); setPaxOpen(true) }
@@ -215,16 +225,28 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
               <div className="pax-row" key={p.id}>
                 <div className="pax-seat">{p.seat_no || (i + 1)}</div>
                 <div className="pax-main">
-                  <div className="pax-name">{p.full_name}</div>
+                  <div className="pax-name">
+                    {p.full_name}
+                    {p.profile_id && <span className="tag muted" style={{ fontSize: 9, padding: '1px 6px', marginInlineStart: 6 }}>ذاتي</span>}
+                  </div>
                   <div className="pax-meta">
                     <span className="ltr">{p.national_id || '—'}</span>
                     <span>·</span>
                     <span className="ltr">{p.phone || '—'}</span>
                     {p.boarding_point && <><span>·</span><span>{p.boarding_point}</span></>}
+                    {p.payment_ref && p.status === 'registered' && (
+                      <><span>·</span><span style={{ color: 'var(--warn-ink)' }}>دفع بانتظار التأكيد: {p.payment_ref}</span></>
+                    )}
                   </div>
                 </div>
                 <span className={`st ${STATUS_CLS[p.status] || 'muted'}`}>{STATUS_AR[p.status] || p.status}</span>
                 <div className="pax-actions">
+                  {p.payment_ref && p.status === 'registered' && (
+                    <button className="icon-btn" title="تأكيد الدفع" onClick={async () => {
+                      const { error } = await supabase.from('passengers').update({ status: 'paid' }).eq('id', p.id)
+                      if (error) alert('تعذّر التأكيد: ' + error.message); else loadPassengers()
+                    }}><Icon name="check" size={15} /></button>
+                  )}
                   <button className="icon-btn" onClick={() => setTicketFor(p)} aria-label="التذكرة"><Icon name="qr" size={15} /></button>
                   <button className="icon-btn" onClick={() => openEdit(p)} aria-label="تعديل"><Icon name="edit" size={15} /></button>
                   <button className="icon-btn danger" onClick={() => removePax(p)} aria-label="حذف"><Icon name="trash" size={15} /></button>

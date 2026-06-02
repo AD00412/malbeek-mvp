@@ -10,6 +10,7 @@ create extension if not exists "pgcrypto";
 do $$ begin create type user_role as enum ('admin','subscriber','customer'); exception when duplicate_object then null; end $$;
 do $$ begin create type plan_type as enum ('trial','paid'); exception when duplicate_object then null; end $$;
 do $$ begin create type trip_status as enum ('draft','open','closed','done'); exception when duplicate_object then null; end $$;
+do $$ begin create type feedback_kind as enum ('suggestion','problem','question','feature'); exception when duplicate_object then null; end $$;
 
 -- ---------- المشتركون (الحملات / المستأجرون) ----------
 create table if not exists public.subscribers (
@@ -381,6 +382,50 @@ drop trigger if exists trg_guard_passengers on public.passengers;
 create trigger trg_guard_passengers
   before insert or update on public.passengers
   for each row execute function public.guard_passenger_columns();
+
+-- ---------- passengers customer delete (لإلغاء حجزه ذاتيًّا) ----------
+drop policy if exists "passengers customer delete" on public.passengers;
+create policy "passengers customer delete" on public.passengers for delete
+  using (profile_id = auth.uid());
+
+-- ============================================================
+--  نظام التغذية الراجعة (شكاوى/اقتراحات/أسئلة/طلب ميزة)
+-- ============================================================
+create table if not exists public.feedback (
+  id            uuid primary key default gen_random_uuid(),
+  subscriber_id uuid references public.subscribers(id) on delete set null,
+  profile_id    uuid references public.profiles(id) on delete set null,
+  audience      text not null,                          -- 'subscriber' | 'customer'
+  kind          feedback_kind not null default 'suggestion',
+  subject       text,
+  body          text not null,
+  reply         text,
+  status        text not null default 'open',           -- 'open' | 'in_progress' | 'resolved'
+  replied_at    timestamptz,
+  created_at    timestamptz not null default now()
+);
+create index if not exists idx_feedback_profile    on public.feedback(profile_id);
+create index if not exists idx_feedback_subscriber on public.feedback(subscriber_id);
+create index if not exists idx_feedback_status     on public.feedback(status);
+
+alter table public.feedback enable row level security;
+
+-- المستخدم يُنشئ ملاحظته (مع تثبيت هويته)؛ يقرأها فقط؛ الإدارة تقرأ الكل وتردّ.
+drop policy if exists "feedback self insert" on public.feedback;
+create policy "feedback self insert" on public.feedback for insert
+  with check (profile_id = auth.uid());
+drop policy if exists "feedback self read" on public.feedback;
+create policy "feedback self read" on public.feedback for select
+  using (profile_id = auth.uid() or public.my_role() = 'admin');
+drop policy if exists "feedback admin update" on public.feedback;
+create policy "feedback admin update" on public.feedback for update
+  using (public.my_role() = 'admin') with check (public.my_role() = 'admin');
+
+-- تفعيل البثّ الحيّ (Realtime) لتحديث المقاعد عند تغيّر passengers
+do $$ begin
+  alter publication supabase_realtime add table public.passengers;
+exception when duplicate_object then null;
+when others then null; end $$;
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة
