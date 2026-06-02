@@ -1,17 +1,57 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import AuthShell from './AuthShell'
+import Icon from '../../components/Icon'
 import { ScreenLoader } from '../../app/RequireAuth'
 
 function arError(msg = '') {
   const m = msg.toLowerCase()
   if (m.includes('already registered') || m.includes('already been registered')) return 'هذا البريد مُسجّل مسبقًا. سجّل الدخول من صفحة الدخول.'
+  if (m.includes('duplicate key') || msg.includes('uniq_customer')) return 'أنت مسجّلٌ بالفعل في هذه الحملة. ادخل حسابك.'
   if (m.includes('password')) return 'كلمة المرور ضعيفة (٦ أحرف على الأقل).'
   if (m.includes('network')) return 'تعذّر الاتصال بالخادم. حاول مرة أخرى.'
+  // رسائل التحقّق العربية من تريغرات القاعدة تظهر كما هي
+  if (/[؀-ۿ]/.test(msg)) return msg
   return 'تعذّر إنشاء الحساب. حاول مرة أخرى.'
 }
+
+// ——— تطبيع المدخلات (يطابق تريغرات القاعدة: دفاعٌ متعدّد الطبقات) ———
+const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩'
+function toLatinDigits(s = '') {
+  return s.replace(/[٠-٩]/g, (d) => String(AR_DIGITS.indexOf(d)))
+}
+function normalizePhone(raw = '') {
+  let p = toLatinDigits(raw).replace(/[^0-9]/g, '')
+  if (/^9665[0-9]{8}$/.test(p)) p = '0' + p.slice(3)
+  else if (/^5[0-9]{8}$/.test(p)) p = '0' + p
+  return p
+}
+
+// ——— قواعد التحقّق الحيّ ———
+function validators() {
+  return {
+    fullName: (v) => btrimWords(v) >= 2 || 'اكتب الاسم الرباعي كاملًا.',
+    nationalId: (v) => /^[12][0-9]{9}$/.test(toLatinDigits(v).trim()) || '١٠ أرقام تبدأ بـ ١ أو ٢.',
+    phone: (v) => /^05[0-9]{8}$/.test(normalizePhone(v)) || 'مثال: 05XXXXXXXX.',
+    email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) || 'بريدٌ إلكترونيٌّ غير صحيح.',
+    password: (v) => v.length >= 6 || '٦ أحرف على الأقل.',
+  }
+}
+function btrimWords(v = '') {
+  const t = v.trim()
+  return t ? t.split(/\s+/).length : 0
+}
+function pwStrength(v = '') {
+  let s = 0
+  if (v.length >= 6) s++
+  if (v.length >= 10) s++
+  if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++
+  if (/[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) s++
+  return Math.min(s, 3) // 0..3
+}
+const PW_LABEL = ['', 'ضعيفة', 'متوسّطة', 'قويّة']
 
 export default function CustomerJoin() {
   const { slug } = useParams()
@@ -27,6 +67,8 @@ export default function CustomerJoin() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
+  const [touched, setTouched] = useState({})
   const [err, setErr] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
@@ -48,10 +90,35 @@ export default function CustomerJoin() {
     return () => { active = false }
   }, [slug])
 
+  const vals = { fullName, nationalId, phone, email, password }
+  const rules = useMemo(() => validators(), [])
+  const errors = useMemo(() => {
+    const out = {}
+    for (const k of Object.keys(rules)) {
+      const r = rules[k](vals[k])
+      if (r !== true) out[k] = r
+    }
+    return out
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullName, nationalId, phone, email, password])
+  const allValid = Object.keys(errors).length === 0
+  const strength = pwStrength(password)
+
+  function markTouched(k) { setTouched((t) => ({ ...t, [k]: true })) }
+  function fieldCls(k, extra = '') {
+    return `field with-ic ${extra} ${touched[k] && errors[k] ? 'invalid' : ''}`.trim()
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (busy || !org) return
+    setTouched({ fullName: 1, nationalId: 1, phone: 1, email: 1, password: 1 })
+    if (!allValid) { setErr('يُرجى تصحيح الحقول المظلّلة.'); return }
     setErr(''); setInfo(''); setBusy(true)
+
+    const cleanName = fullName.trim().replace(/\s+/g, ' ')
+    const cleanId = toLatinDigits(nationalId).trim()
+    const cleanPhone = normalizePhone(phone)
 
     // 1) إنشاء حساب العميل مربوطًا بحملة هذا الرابط فقط
     const { data, error } = await supabase.auth.signUp({
@@ -60,8 +127,8 @@ export default function CustomerJoin() {
       options: {
         data: {
           role: 'customer',
-          full_name: fullName.trim(),
-          phone: phone.trim(),
+          full_name: cleanName,
+          phone: cleanPhone,
           subscriber_id: org.id,
         },
       },
@@ -83,25 +150,26 @@ export default function CustomerJoin() {
       const insertCustomer = () => supabase.from('customers').insert({
         subscriber_id: org.id,
         profile_id: data.user.id,
-        full_name: fullName.trim(),
-        national_id: nationalId.trim(),
-        phone: phone.trim(),
+        full_name: cleanName,
+        national_id: cleanId,
+        phone: cleanPhone,
       })
 
       let insErr = (await insertCustomer()).error
-      for (let i = 0; insErr && i < 4; i++) {
+      for (let i = 0; insErr && insErr.code !== '23505' && i < 4; i++) {
         await refreshProfile()                              // يحدّث profiles.subscriber_id محليًّا وفي القاعدة
         await new Promise((r) => setTimeout(r, 350 * (i + 1)))
         insErr = (await insertCustomer()).error
       }
-      if (insErr) throw insErr
+      // 23505 = العميل مسجّلٌ مسبقًا في الحملة؛ نكمل للوحته بدل الفشل
+      if (insErr && insErr.code !== '23505') throw insErr
 
       await refreshProfile()
       setBusy(false)
       navigate('/customer', { replace: true })
     } catch (e2) {
       setBusy(false)
-      setErr(typeof e2?.message === 'string' ? e2.message : 'تعذّر حفظ بياناتك. حاول مرة أخرى.')
+      setErr(arError(typeof e2?.message === 'string' ? e2.message : ''))
     }
   }
 
@@ -110,10 +178,33 @@ export default function CustomerJoin() {
   if (notFound) {
     return (
       <AuthShell heading="رابطٌ غير صالح" blurb="هذا الرابط غير موجودٍ أو انتهت صلاحيته." points={[]}>
-        <h2 className="ttl">تعذّر العثور على الحملة</h2>
-        <p className="desc">تأكّد من الرابط الذي وصلك من جهة الحملة، أو تواصل معهم لإعادة إرساله.</p>
-        <div className="auth-foot" style={{ marginTop: 28 }}>
+        <div className="join-state">
+          <span className="join-state-ic warn"><Icon name="location" size={30} /></span>
+          <h2 className="ttl">تعذّر العثور على الحملة</h2>
+          <p className="desc">تأكّد من الرابط الذي وصلك من جهة الحملة، أو تواصل معهم لإعادة إرساله.</p>
+        </div>
+        <div className="auth-foot" style={{ marginTop: 24 }}>
           لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link>
+        </div>
+      </AuthShell>
+    )
+  }
+
+  // حالة "تأكيد البريد" — عرضٌ مخصّص بدل التنبيه النحيف
+  if (info) {
+    return (
+      <AuthShell
+        heading={`التسجيل مع ${org.org_name}`}
+        blurb="خطوةٌ أخيرةٌ تفصلك عن لوحتك."
+        points={['تذكرة صعودٍ بالباركود', 'حجزٌ سريعٌ دون إعادة تعبئة', 'ترى رحلات حملتك فقط']}
+      >
+        <div className="join-success">
+          <span className="join-success-ic"><Icon name="mail" size={34} /></span>
+          <h2 className="ttl">تحقّق من بريدك</h2>
+          <p className="desc">{info}</p>
+          <Link to="/login" className="btn btn-gold btn-block" style={{ marginTop: 22 }}>
+            <Icon name="check" size={16} /> الذهاب لتسجيل الدخول
+          </Link>
         </div>
       </AuthShell>
     )
@@ -126,35 +217,78 @@ export default function CustomerJoin() {
       points={['تذكرة صعودٍ بالباركود', 'حجزٌ سريعٌ دون إعادة تعبئة', 'ترى رحلات حملتك فقط']}
     >
       <h2 className="ttl">تسجيل معتمرٍ جديد</h2>
-      <span className="auth-org"><span style={{ fontSize: 13 }}>الحملة:</span> {org.org_name}</span>
 
-      <form className="form" onSubmit={handleSubmit}>
-        <div className="field">
+      {/* بطاقة الحملة */}
+      <div className="join-org">
+        <span className="join-org-ic"><Icon name="building" size={20} /></span>
+        <div>
+          <div className="join-org-lbl">أنت تنضمّ إلى حملة</div>
+          <div className="join-org-nm">{org.org_name}</div>
+        </div>
+      </div>
+
+      {/* شريط المزايا — يظهر على الجوال حيث تختفي لوحة الفنّ */}
+      <div className="join-benefits">
+        <div className="li"><Icon name="barcode" size={16} /> تذكرة صعودٍ بالباركود</div>
+        <div className="li"><Icon name="seat" size={16} /> حجزٌ سريعٌ دون إعادة تعبئة</div>
+        <div className="li"><Icon name="building" size={16} /> ترى رحلات حملتك فقط</div>
+      </div>
+
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        <div className={fieldCls('fullName')}>
           <label>الاسم الرباعي</label>
-          <input type="text" placeholder="الاسم كما في الهوية" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          <span className="f-ic"><Icon name="user" size={17} /></span>
+          <input type="text" placeholder="الاسم كما في الهوية" value={fullName}
+            onChange={(e) => setFullName(e.target.value)} onBlur={() => markTouched('fullName')} required />
+          {touched.fullName && errors.fullName && <span className="hint">{errors.fullName}</span>}
         </div>
-        <div className="field ltr">
+
+        <div className={fieldCls('nationalId', 'ltr')}>
           <label>رقم الهوية / الإقامة</label>
-          <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={nationalId} onChange={(e) => setNationalId(e.target.value)} required />
+          <span className="f-ic"><Icon name="badge" size={17} /></span>
+          <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={nationalId}
+            onChange={(e) => setNationalId(e.target.value)} onBlur={() => markTouched('nationalId')} required />
+          {touched.nationalId && errors.nationalId && <span className="hint">{errors.nationalId}</span>}
         </div>
-        <div className="field ltr">
+
+        <div className={fieldCls('phone', 'ltr')}>
           <label>رقم الجوال</label>
-          <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+          <span className="f-ic"><Icon name="phone" size={17} /></span>
+          <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone}
+            onChange={(e) => setPhone(e.target.value)} onBlur={() => markTouched('phone')} required />
+          {touched.phone && errors.phone && <span className="hint">{errors.phone}</span>}
         </div>
-        <div className="field ltr">
+
+        <div className={fieldCls('email', 'ltr')}>
           <label>البريد الإلكتروني</label>
-          <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <span className="f-ic"><Icon name="mail" size={17} /></span>
+          <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value={email}
+            onChange={(e) => setEmail(e.target.value)} onBlur={() => markTouched('email')} required />
+          {touched.email && errors.email && <span className="hint">{errors.email}</span>}
         </div>
-        <div className="field ltr">
+
+        <div className={fieldCls('password', 'ltr has-toggle')}>
           <label>كلمة المرور</label>
-          <input type="password" autoComplete="new-password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+          <span className="f-ic"><Icon name="lock" size={17} /></span>
+          <input type={showPw ? 'text' : 'password'} autoComplete="new-password" placeholder="٦ أحرف على الأقل"
+            value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => markTouched('password')}
+            minLength={6} required />
+          <button type="button" className="pw-toggle" aria-label={showPw ? 'إخفاء' : 'إظهار'}
+            onClick={() => setShowPw((s) => !s)}>
+            <Icon name={showPw ? 'eyeOff' : 'eye'} size={17} />
+          </button>
+          {password && (
+            <div className={`pw-meter s${strength}`} aria-hidden="true"><i /><i /><i />
+              <span className="pw-lbl">{PW_LABEL[strength]}</span>
+            </div>
+          )}
+          {touched.password && errors.password && <span className="hint">{errors.password}</span>}
         </div>
 
         {err && <div className="alert err">{err}</div>}
-        {info && <div className="alert ok">{info}</div>}
 
-        <button className="btn btn-gold" type="submit" disabled={busy}>
-          {busy ? <span className="spinner" /> : 'تسجيل ودخول'}
+        <button className="btn btn-gold" type="submit" disabled={busy || !allValid}>
+          {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> تسجيل ودخول</>}
         </button>
       </form>
 

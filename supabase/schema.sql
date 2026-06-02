@@ -291,6 +291,67 @@ create policy "customers self insert" on public.customers for insert
 drop policy if exists "customers admin read" on public.customers;
 create policy "customers admin read" on public.customers for select using (public.my_role() = 'admin');
 
+-- ★ تطبيع وتحقّق بيانات المعتمر (هوية/جوال) — دفاعٌ مُلزِمٌ على مستوى القاعدة
+create or replace function public.normalize_customer()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare ar text := '٠١٢٣٤٥٦٧٨٩'; la text := '0123456789'; p text;
+begin
+  -- تحويل الأرقام العربية-الهنديّة إلى لاتينيّة + قصّ المسافات
+  new.full_name   := btrim(coalesce(new.full_name, ''));
+  new.national_id := nullif(btrim(translate(coalesce(new.national_id, ''), ar, la)), '');
+  p := btrim(translate(coalesce(new.phone, ''), ar, la));
+
+  if new.full_name = '' or array_length(regexp_split_to_array(new.full_name, '\s+'), 1) < 2 then
+    raise exception 'الاسم الرباعي مطلوبٌ كاملًا (كلمتان على الأقل).';
+  end if;
+
+  -- الهوية: ١٠ أرقام تبدأ بـ 1 (مواطن) أو 2 (مقيم)
+  if new.national_id is not null and new.national_id !~ '^[12][0-9]{9}$' then
+    raise exception 'رقم الهوية/الإقامة غير صحيح (١٠ أرقام تبدأ بـ ١ أو ٢).';
+  end if;
+
+  -- تطبيع الجوال السعودي إلى 05XXXXXXXX (يقبل +9665.. / 9665.. / 5.. / 05..)
+  if p <> '' then
+    p := regexp_replace(p, '[^0-9]', '', 'g');
+    if p ~ '^9665[0-9]{8}$'  then p := '0' || substring(p from 4); end if;  -- 9665XXXXXXXX -> 05XXXXXXXX
+    if p ~ '^5[0-9]{8}$'     then p := '0' || p; end if;                    -- 5XXXXXXXX   -> 05XXXXXXXX
+    if p !~ '^05[0-9]{8}$' then
+      raise exception 'رقم الجوال غير صحيح (مثال: 05XXXXXXXX).';
+    end if;
+    new.phone := p;
+  else
+    new.phone := null;
+  end if;
+
+  return new;
+end $$;
+drop trigger if exists trg_normalize_customer on public.customers;
+create trigger trg_normalize_customer
+  before insert or update on public.customers
+  for each row execute function public.normalize_customer();
+
+-- ★ حارس أعمدة: العميل لا ينقل نفسه لحملةٍ أخرى ولا يغيّر ربط حسابه
+create or replace function public.guard_customer_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(public.my_role(), 'customer') <> 'admin'
+     and not exists (select 1 from public.subscribers
+                     where id = old.subscriber_id and owner_id = auth.uid()) then
+    new.subscriber_id := old.subscriber_id;
+    new.profile_id    := old.profile_id;
+    new.created_at    := old.created_at;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_customers on public.customers;
+create trigger trg_guard_customers
+  before update on public.customers
+  for each row execute function public.guard_customer_columns();
+
+-- ★ منع تكرار سجلّ العميل نفسه داخل الحملة الواحدة
+create unique index if not exists uniq_customer_subscriber_profile
+  on public.customers(subscriber_id, profile_id) where profile_id is not null;
+
 -- ---------- passengers (ركّاب الرحلة / سجلّ الكشف) ----------
 -- المشترك يدير ركّاب رحلات حملته بالكامل
 drop policy if exists "passengers owner manage" on public.passengers;
