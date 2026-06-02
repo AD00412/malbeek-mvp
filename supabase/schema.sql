@@ -472,11 +472,177 @@ create trigger trg_guard_feedback
   before insert on public.feedback
   for each row execute function public.guard_feedback_columns();
 
--- تفعيل البثّ الحيّ (Realtime) لتحديث المقاعد عند تغيّر passengers
-do $$ begin
-  alter publication supabase_realtime add table public.passengers;
-exception when duplicate_object then null;
-when others then null; end $$;
+-- ============================================================
+--  مركز الإشعارات الداخلي (للمشترك/العميل/الإدارة)
+-- ============================================================
+create table if not exists public.notifications (
+  id            uuid primary key default gen_random_uuid(),
+  profile_id    uuid references public.profiles(id) on delete cascade,
+  audience      text not null,                              -- 'admin' | 'subscriber' | 'customer'
+  kind          text not null,                              -- new_booking | payment_pending | booking_canceled | feedback_reply | trial_ending | upgrade_request | low_occupancy | trial_limit_hit | new_subscriber | new_feedback | trip_changed
+  title         text not null,
+  body          text,
+  link          text,
+  ref_trip      uuid references public.trips(id) on delete cascade,
+  ref_passenger uuid references public.passengers(id) on delete set null,
+  ref_feedback  uuid references public.feedback(id) on delete set null,
+  read_at       timestamptz,
+  created_at    timestamptz not null default now()
+);
+create index if not exists idx_notif_profile_unread on public.notifications(profile_id, read_at) where read_at is null;
+create index if not exists idx_notif_audience       on public.notifications(audience);
+create index if not exists idx_notif_created        on public.notifications(created_at desc);
+
+alter table public.notifications enable row level security;
+-- العميل/المشترك يقرأ ويُعلِّم إشعاراته فقط
+drop policy if exists "notif self read"   on public.notifications;
+create policy "notif self read"   on public.notifications for select using (profile_id = auth.uid());
+drop policy if exists "notif self update" on public.notifications;
+create policy "notif self update" on public.notifications for update using (profile_id = auth.uid()) with check (profile_id = auth.uid());
+-- الإدارة تقرأ كل إشعارات الإدارة
+drop policy if exists "notif admin read"  on public.notifications;
+create policy "notif admin read"  on public.notifications for select using (public.my_role() = 'admin' and audience = 'admin');
+drop policy if exists "notif admin update" on public.notifications;
+create policy "notif admin update" on public.notifications for update using (public.my_role() = 'admin' and audience = 'admin') with check (public.my_role() = 'admin' and audience = 'admin');
+-- لا insert من العميل: التريغرات تُنشئ الإشعارات (بصلاحية SECURITY DEFINER)
+
+-- مساعد: عدّ غير المقروء للمستخدم الحالي
+create or replace function public.unread_notifications_count()
+returns int language sql stable security definer set search_path = public as $$
+  select count(*)::int from public.notifications
+  where read_at is null
+    and (profile_id = auth.uid()
+         or (public.my_role() = 'admin' and audience = 'admin'));
+$$;
+grant execute on function public.unread_notifications_count() to authenticated;
+
+-- ★ تريغر: إشعارات passengers (حجزٌ جديد للمشترك، تأكيد الدفع/الصعود/التسكين للعميل، إلغاء حجز)
+create or replace function public.notify_passengers_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_owner_id uuid;
+  v_trip     record;
+  v_admins   record;
+begin
+  if tg_op = 'INSERT' then
+    select owner_id into v_owner_id from public.subscribers where id = new.subscriber_id;
+    select title, route_from, route_to into v_trip from public.trips where id = new.trip_id;
+    -- إشعار المشترك بكل حجزٍ جديد (سواء من المشترك أو من العميل)
+    if v_owner_id is not null then
+      insert into public.notifications(profile_id, audience, kind, title, body, ref_trip, ref_passenger)
+      values (v_owner_id, 'subscriber', 'new_booking',
+              'حجزٌ جديد: ' || coalesce(new.full_name,'معتمر'),
+              'في رحلة «' || coalesce(v_trip.title,'') || '» — مقعد ' || coalesce(new.seat_no,'—'),
+              new.trip_id, new.id);
+    end if;
+    -- إن وُجد مرجع دفعٍ للمشترك بانتظار التأكيد
+    if new.payment_ref is not null and new.status = 'registered' and v_owner_id is not null then
+      insert into public.notifications(profile_id, audience, kind, title, body, ref_trip, ref_passenger)
+      values (v_owner_id, 'subscriber', 'payment_pending',
+              'دفعٌ بانتظار التأكيد',
+              coalesce(new.full_name,'معتمر') || ' — مرجع: ' || new.payment_ref,
+              new.trip_id, new.id);
+    end if;
+  elsif tg_op = 'UPDATE' then
+    -- إشعار العميل بتغيّر حالة حجزه
+    if new.profile_id is not null and new.status is distinct from old.status then
+      insert into public.notifications(profile_id, audience, kind, title, body, ref_trip, ref_passenger)
+      values (new.profile_id, 'customer',
+              case new.status when 'paid' then 'payment_pending'
+                              when 'boarded' then 'new_booking'
+                              when 'checked_in' then 'new_booking'
+                              else 'new_booking' end,
+              case new.status
+                when 'paid'       then 'تمّ تأكيد دفعك ✓'
+                when 'boarded'    then 'تمّ تسجيل صعودك الحافلة'
+                when 'checked_in' then 'تمّ استلام غرفتك'
+                else 'تحدّثت حالة حجزك'
+              end,
+              'حجزك في رحلتك الحالية',
+              new.trip_id, new.id);
+    end if;
+  elsif tg_op = 'DELETE' then
+    select owner_id into v_owner_id from public.subscribers where id = old.subscriber_id;
+    if v_owner_id is not null then
+      insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+      values (v_owner_id, 'subscriber', 'booking_canceled',
+              'أُلغي حجز: ' || coalesce(old.full_name,'معتمر'),
+              'تفرّغ المقعد ' || coalesce(old.seat_no,'—'),
+              old.trip_id);
+    end if;
+  end if;
+  return coalesce(new, old);
+end $$;
+drop trigger if exists trg_notify_passengers on public.passengers;
+create trigger trg_notify_passengers
+  after insert or update or delete on public.passengers
+  for each row execute function public.notify_passengers_change();
+
+-- ★ تريغر: ردّ الإدارة على ملاحظة → إشعار للمرسِل
+create or replace function public.notify_feedback_reply()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and new.reply is not null
+     and (old.reply is null or old.reply is distinct from new.reply)
+     and new.profile_id is not null then
+    insert into public.notifications(profile_id, audience, kind, title, body, ref_feedback)
+    values (new.profile_id,
+            case when new.audience = 'subscriber' then 'subscriber' else 'customer' end,
+            'feedback_reply',
+            'ردّ إدارة ملبّيك على ملاحظتك',
+            left(new.reply, 160),
+            new.id);
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_notify_feedback_reply on public.feedback;
+create trigger trg_notify_feedback_reply
+  after update on public.feedback
+  for each row execute function public.notify_feedback_reply();
+
+-- ★ تريغر: ملاحظة جديدة → إشعار للإدارة
+create or replace function public.notify_new_feedback()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare a record;
+begin
+  for a in select id from public.profiles where role = 'admin' loop
+    insert into public.notifications(profile_id, audience, kind, title, body, ref_feedback)
+    values (a.id, 'admin', 'new_feedback',
+            'ملاحظةٌ جديدة (' || new.audience || ')',
+            coalesce(new.subject,'') || ' — ' || left(coalesce(new.body,''), 140),
+            new.id);
+  end loop;
+  return new;
+end $$;
+drop trigger if exists trg_notify_new_feedback on public.feedback;
+create trigger trg_notify_new_feedback
+  after insert on public.feedback
+  for each row execute function public.notify_new_feedback();
+
+-- ★ تريغر: مشترك جديد → إشعار للإدارة
+create or replace function public.notify_new_subscriber()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare a record;
+begin
+  for a in select id from public.profiles where role = 'admin' loop
+    insert into public.notifications(profile_id, audience, kind, title, body)
+    values (a.id, 'admin', 'new_subscriber',
+            'مشترك جديد: ' || coalesce(new.org_name,''),
+            'انضمت حملةٌ جديدةٌ بالباقة ' || new.plan::text);
+  end loop;
+  return new;
+end $$;
+drop trigger if exists trg_notify_new_subscriber on public.subscribers;
+create trigger trg_notify_new_subscriber
+  after insert on public.subscribers
+  for each row execute function public.notify_new_subscriber();
+
+-- تفعيل البثّ الحيّ (Realtime) لتحديث المقاعد + التغذية الراجعة + الباقات
+do $$ begin alter publication supabase_realtime add table public.passengers;  exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.feedback;    exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.subscribers; exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.trips;       exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.notifications; exception when duplicate_object then null; when others then null; end $$;
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة

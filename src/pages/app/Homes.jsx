@@ -13,6 +13,7 @@ import FeedbackInbox from '../../components/FeedbackInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
+import { useRealtime } from '../../lib/useRealtime'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -66,6 +67,11 @@ export function AdminHome() {
     ;(async () => { if (active) await load() })()
     return () => { active = false }
   }, [load])
+
+  // Realtime للإدارة: مشتركون جدد، رحلات جديدة، ملاحظات جديدة، ترقيات.
+  useRealtime('admin-home', [
+    { table: 'subscribers' }, { table: 'trips' }, { table: 'feedback' },
+  ], load, 300, [load])
 
   const tabs = [
     { section: 'الإدارة' },
@@ -232,6 +238,13 @@ export function SubscriberHome() {
   }, [user, profile, refreshProfile])
 
   useEffect(() => { load() }, [load])
+
+  // Realtime للمشترك: رحلات/ركّاب/حملةٌ معدَّلة (ترقية الباقة، ردّ الإدارة على ملاحظاتي)
+  useRealtime('subscriber-home', sub?.id ? [
+    { table: 'passengers', filter: `subscriber_id=eq.${sub.id}` },
+    { table: 'trips',      filter: `subscriber_id=eq.${sub.id}` },
+    { table: 'subscribers', filter: `id=eq.${sub.id}` },
+  ] : [], load, 350, [sub?.id, load])
 
   function openCreate() { setEditing(null); setModalOpen(true) }
   function openEdit(t) { setEditing(t); setModalOpen(true) }
@@ -617,6 +630,13 @@ export function CustomerHome() {
   }, [subscriberId, user])
 
   useEffect(() => { load() }, [load])
+
+  // Realtime للعميل: تغيّر حالة حجزه (تأكيد الدفع/الصعود)، رحلاتٌ جديدة في حملته،
+  // وردّ الإدارة على ملاحظاته (يلتقطه FeedbackSheet عند الفتح أيضًا).
+  useRealtime('customer-home', user?.id ? [
+    { table: 'passengers', filter: `profile_id=eq.${user.id}` },
+    ...(subscriberId ? [{ table: 'trips', filter: `subscriber_id=eq.${subscriberId}` }] : []),
+  ] : [], load, 350, [user?.id, subscriberId, load])
 
   const bookingByTrip = useMemo(() => {
     const m = new Map()

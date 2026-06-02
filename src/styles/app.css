@@ -539,6 +539,23 @@
   border-color:rgba(217,206,180,.18)}
 .seat-locked .s-head{background:rgba(217,206,180,.18)}
 
+/* مركز الإشعارات */
+.notif-badge{position:absolute;top:-4px;inset-inline-end:-4px;min-width:18px;height:18px;padding:0 5px;
+  background:var(--danger);color:#fff;border-radius:999px;font-size:10.5px;font-weight:700;
+  display:grid;place-items:center;border:2px solid var(--em-900);font-family:var(--font-sans)}
+.notif-list{display:flex;flex-direction:column;gap:6px;margin-top:-4px}
+.notif-row{display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--surface-3);cursor:pointer;font-family:inherit;text-align:start;transition:.15s;color:var(--cr-100)}
+.notif-row:hover{border-color:var(--line-strong);background:rgba(255,255,255,.04)}
+.notif-row.unread{background:rgba(196,154,69,.08);border-color:rgba(226,194,119,.3)}
+.notif-ic{width:32px;height:32px;border-radius:9px;background:rgba(196,154,69,.14);color:var(--gd-300);
+  display:grid;place-items:center;flex:none}
+.notif-main{flex:1;min-width:0}
+.notif-title{font-weight:700;color:var(--cr-50);font-size:13.5px;display:flex;align-items:center;gap:6px}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex:none}
+.notif-body{font-size:12.5px;color:var(--cr-200);margin-top:3px}
+.notif-time{font-size:11px;color:var(--cr-300);margin-top:4px}
+
 /* جولة التهيئة */
 .onb .ic-badge{width:38px;height:38px;border-radius:12px;background:rgba(196,154,69,.14);color:var(--gd-300);
   display:grid;place-items:center;flex:none}

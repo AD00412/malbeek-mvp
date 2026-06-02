@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
+import NotificationsCenter, { useUnreadCount } from '../components/NotificationsCenter'
 
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
 
@@ -40,6 +41,8 @@ function ConnectionPill() {
  */
 export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children }) {
   const { profile, role, signOut } = useAuth()
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [unread] = useUnreadCount()
 
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
@@ -100,13 +103,15 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
           </div>
           <span style={{ flex: 1 }} />
           <ConnectionPill />
-          <button type="button" className="icon-bubble" aria-label="الإشعارات">
+          <button type="button" className="icon-bubble" aria-label="الإشعارات" onClick={() => setNotifOpen(true)} style={{ position: 'relative' }}>
             <Icon name="bell" size={18} />
+            {unread > 0 && <span className="notif-badge">{unread > 99 ? '99+' : unread}</span>}
           </button>
           {actions}
         </header>
 
         <main className="content">{children}</main>
+        <NotificationsCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
       </div>
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
