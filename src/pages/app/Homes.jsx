@@ -771,13 +771,17 @@ export function CustomerHome() {
                       </div>
                       <div className="actions-row">
                         <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
-                        {t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
-                        <button className="icon-btn danger" onClick={async () => {
-                          if (!window.confirm(`إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`)) return
-                          const { error } = await supabase.from('passengers').delete().eq('id', b.id)
-                          if (error) alert('تعذّر الإلغاء: ' + error.message)
-                          else load()
-                        }}><Icon name="trash" size={15} /> إلغاء</button>
+                        {b.status === 'registered' && t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
+                        {b.status === 'registered' ? (
+                          <button className="icon-btn danger" onClick={async () => {
+                            if (!window.confirm(`إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`)) return
+                            const { error } = await supabase.from('passengers').delete().eq('id', b.id)
+                            if (error) alert('تعذّر الإلغاء: ' + error.message)
+                            else load()
+                          }}><Icon name="trash" size={15} /> إلغاء</button>
+                        ) : (
+                          <span className="muted" style={{ fontSize: 12 }}>للتعديل أو الإلغاء تواصل مع الحملة</span>
+                        )}
                       </div>
                     </div>
                   )

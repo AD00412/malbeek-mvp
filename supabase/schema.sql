@@ -160,6 +160,8 @@ where not exists (select 1 from public.trip_buses b where b.trip_id = t.id and b
 -- ربط الراكب بباصٍ معيّن (افتراضيًّا باص ١ — يُسنَد تلقائيًّا عبر الحارس)
 alter table public.passengers add column if not exists bus_id uuid references public.trip_buses(id) on delete set null;
 create index if not exists idx_passengers_bus on public.passengers(bus_id);
+-- فهرس أداءٍ لإحصاءات الإدارة/المالك وتجميع التحصيل (مرشّحٌ على subscriber_id + status)
+create index if not exists idx_passengers_subscriber_status on public.passengers(subscriber_id, status);
 -- backfill: كلّ راكبٍ حاليٍّ ينتمي إلى باص ١ في رحلته
 update public.passengers p set bus_id = b.id
 from public.trip_buses b
@@ -672,9 +674,10 @@ create trigger trg_guard_passengers
   for each row execute function public.guard_passenger_columns();
 
 -- ---------- passengers customer delete (لإلغاء حجزه ذاتيًّا) ----------
+-- العميل يُلغي حجزه غير المدفوع فقط؛ الحجوزات المدفوعة/المصعّدة تُلغى عبر الحملة (حمايةً للسجلّ المالي).
 drop policy if exists "passengers customer delete" on public.passengers;
 create policy "passengers customer delete" on public.passengers for delete
-  using (profile_id = auth.uid());
+  using (profile_id = auth.uid() and status = 'registered');
 
 -- ============================================================
 --  نظام التغذية الراجعة (شكاوى/اقتراحات/أسئلة/طلب ميزة)
