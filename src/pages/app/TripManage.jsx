@@ -10,6 +10,7 @@ import BusEditor from '../../components/BusEditor'
 import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
+import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -106,6 +107,26 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
   function openAdd() { setEditingPax(null); setPaxOpen(true) }
   function openEdit(p) { setEditingPax(p); setPaxOpen(true) }
+
+  function exportRoster() {
+    const statusAr = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
+    const busById = new Map(buses.map((b) => [b.id, busName(b)]))
+    const cols = [
+      { label: 'الاسم الرباعي', value: (p) => p.full_name },
+      { label: 'رقم الهوية/الإقامة', value: (p) => p.national_id },
+      { label: 'الجوال', value: (p) => p.phone },
+      { label: 'الجنسية', value: (p) => p.nationality },
+      { label: 'الجنس', value: (p) => (p.gender === 'female' ? 'أنثى' : 'ذكر') },
+      { label: 'الباص', value: (p) => busById.get(p.bus_id) || '' },
+      { label: 'المقعد', value: (p) => p.seat_no },
+      { label: 'مكان الركوب', value: (p) => p.boarding_point },
+      { label: 'الحالة', value: (p) => statusAr[p.status] || p.status },
+      { label: 'المبلغ', value: (p) => (p.amount != null ? p.amount : '') },
+      { label: 'وقت الدفع', value: (p) => csvDate(p.paid_at) },
+      { label: 'رمز التذكرة', value: (p) => p.ticket_code },
+    ]
+    downloadCSV(`كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`, toCSV(passengers, cols))
+  }
 
   async function removePax(p) {
     if (!p?.id) return
@@ -223,6 +244,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
             <Icon name="message" size={18} /> إرسال عرض
           </button>
         </div>
+        <button className="action" onClick={exportRoster} disabled={count === 0}>
+          <Icon name="download" size={18} /> تصدير الكشف (CSV / Excel)
+        </button>
       </div>
 
       {err && <div className="alert err" style={{ marginTop: 14 }}>{err}</div>}

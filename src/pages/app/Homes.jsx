@@ -14,6 +14,7 @@ import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
 import { useRealtime } from '../../lib/useRealtime'
+import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -118,9 +119,28 @@ function SubsPanel({ subs, loading, onReload }) {
     if (error) alert('تعذّر التحديث: ' + error.message)
     else onReload?.()
   }
+  function exportReport() {
+    const cols = [
+      { label: 'الحملة', value: (s) => s.org_name },
+      { label: 'الرابط', value: (s) => `/j/${s.slug}` },
+      { label: 'الباقة', value: (s) => (s.plan === 'paid' ? 'مدفوعة' : 'تجريبية') },
+      { label: 'الرحلات', value: (s) => s.trips_count || 0 },
+      { label: 'المعتمرون', value: (s) => s.pax_count || 0 },
+      { label: 'المدفوع', value: (s) => s.paid_count || 0 },
+      { label: 'المحصّل', value: (s) => Number(s.collected) || 0 },
+      { label: 'تاريخ الاشتراك', value: (s) => csvDate(s.created_at) },
+    ]
+    downloadCSV('تقرير-الحملات', toCSV(subs, cols))
+  }
   return (
     <section className="panel">
-      <div className="panel-head"><h3>المشتركون</h3><span className="sub">({subs.length})</span></div>
+      <div className="panel-head">
+        <h3>المشتركون</h3><span className="sub">({subs.length})</span>
+        <span style={{ flex: 1 }} />
+        <button className="btn btn-ghost btn-sm" onClick={exportReport} disabled={subs.length === 0}>
+          <Icon name="download" size={15} /> تصدير التقرير
+        </button>
+      </div>
       {loading ? (
         <Empty title="جارٍ التحميل…" />
       ) : subs.length === 0 ? (
