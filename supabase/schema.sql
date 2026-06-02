@@ -118,6 +118,12 @@ update public.passengers set ticket_code = 'TKT-' || upper(substr(replace(gen_ra
 alter table public.passengers alter column ticket_code
   set default 'TKT-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,10));
 create unique index if not exists uniq_passengers_ticket on public.passengers(ticket_code);
+-- ربط الراكب بحساب العميل (لتدفّق الحجز الذاتي) + مرجع الدفع
+alter table public.passengers add column if not exists profile_id  uuid references public.profiles(id) on delete set null;
+alter table public.passengers add column if not exists payment_ref text;
+create index if not exists idx_passengers_profile on public.passengers(profile_id);
+-- رابط المتجر الخارجي للمشترك (سلة/زد) لخطوة الدفع
+alter table public.subscribers add column if not exists store_url text;
 
 -- ---------- المعتمرون (بيانات العميل المحفوظة دائمًا) ----------
 create table if not exists public.customers (
@@ -271,13 +277,65 @@ drop policy if exists "passengers owner manage" on public.passengers;
 create policy "passengers owner manage" on public.passengers for all
   using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
   with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
--- ملاحظة أمان: لا توجد سياسة قراءةٍ للعميل هنا عمدًا. جدول passengers لا يحوي
--- profile_id بعد، فأي سياسةٍ على مستوى الحملة كانت ستسرّب بيانات بقية المعتمرين.
--- ستُضاف سياسةٌ مقيّدةٌ بـ profile_id عند بناء تذكرة العميل.
+-- ملاحظة أمان: الآن جدول passengers يحوي profile_id، فنسمح للعميل بإدارة
+-- سجلّه فقط (قراءةً وإنشاءً وتعديلًا) ضمن حملته — دون رؤية بيانات بقية المعتمرين.
 drop policy if exists "passengers customer read" on public.passengers;
+create policy "passengers customer read" on public.passengers for select
+  using (profile_id = auth.uid());
+drop policy if exists "passengers customer insert" on public.passengers;
+create policy "passengers customer insert" on public.passengers for insert
+  with check (profile_id = auth.uid() and subscriber_id = public.my_subscriber_id());
+drop policy if exists "passengers customer update" on public.passengers;
+create policy "passengers customer update" on public.passengers for update
+  using (profile_id = auth.uid()) with check (profile_id = auth.uid());
 -- الإدارة تقرأ الكل
 drop policy if exists "passengers admin read" on public.passengers;
 create policy "passengers admin read" on public.passengers for select using (public.my_role() = 'admin');
+
+-- ============================================================
+--  إشغال مقاعد رحلةٍ بلا بياناتٍ حساسة (لاختيار العميل مقعدًا حرًّا)
+--  يُرجع رقم المقعد + الجنس + عائلة فقط — بلا اسمٍ أو هوية. SECURITY DEFINER
+--  مع تقييدٍ صريحٍ: المستدعي مالكُ الحملة أو عميلٌ ضمنها أو إدارة.
+-- ============================================================
+create or replace function public.trip_seat_occupancy(p_trip uuid)
+returns table(seat_no text, gender text, is_family boolean)
+language sql stable security definer set search_path = public as $$
+  select p.seat_no, p.gender, p.is_family
+  from public.passengers p
+  join public.trips t on t.id = p.trip_id
+  where p.trip_id = p_trip
+    and p.seat_no is not null
+    and (
+      t.subscriber_id in (select id from public.subscribers where owner_id = auth.uid())
+      or t.subscriber_id = public.my_subscriber_id()
+      or public.my_role() = 'admin'
+    );
+$$;
+grant execute on function public.trip_seat_occupancy(uuid) to authenticated;
+
+-- ============================================================
+--  حدّ الباقة التجريبية: رحلةٌ واحدةٌ فقط للمشترك على الباقة 'trial'
+-- ============================================================
+create or replace function public.enforce_trial_trip_limit()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_plan plan_type;
+  v_count int;
+begin
+  select plan into v_plan from public.subscribers where id = new.subscriber_id;
+  if v_plan = 'trial' then
+    select count(*) into v_count from public.trips where subscriber_id = new.subscriber_id;
+    if v_count >= 1 then
+      raise exception 'TRIAL_TRIP_LIMIT'
+        using hint = 'الباقة التجريبية تسمح برحلةٍ واحدة. رقِّ باقتك لإضافة المزيد.';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_trial_trip_limit on public.trips;
+create trigger trg_trial_trip_limit
+  before insert on public.trips
+  for each row execute function public.enforce_trial_trip_limit();
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة

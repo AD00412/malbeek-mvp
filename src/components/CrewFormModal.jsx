@@ -22,6 +22,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
   const [licenseNo, setLicenseNo] = useState(sub?.license_no ?? '')
   const [contactPhone, setContactPhone] = useState(sub?.contact_phone ?? '')
   const [stampText, setStampText] = useState(sub?.stamp_text ?? '')
+  const [storeUrl, setStoreUrl] = useState(sub?.store_url ?? '')
 
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -49,6 +50,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         license_no: licenseNo.trim() || null,
         contact_phone: contactPhone.trim() || null,
         stamp_text: stampText.trim() || null,
+        store_url: storeUrl.trim() || null,
       }
       const r2 = await supabase.from('subscribers').update(orgPayload).eq('id', sub.id)
       if (r2.error) throw r2.error
@@ -94,6 +96,10 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         <div className="field">
           <label>نص الختم الإلكتروني (اختياري)</label>
           <input type="text" placeholder="مثال: مؤسسة مشاعر الرحمن — معتمد" value={stampText} onChange={(e) => setStampText(e.target.value)} />
+        </div>
+        <div className="field ltr">
+          <label>رابط متجر الدفع (سلة/زد — اختياري)</label>
+          <input type="url" placeholder="https://your-store.salla.sa" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} />
         </div>
 
         <div className="sec-label">الباص</div>

@@ -76,7 +76,12 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
       if (result.error) throw result.error
       onSaved?.()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر حفظ الرحلة. حاول مرة أخرى.')
+      const msg = String(e?.message || '')
+      if (msg.includes('TRIAL_TRIP_LIMIT')) {
+        setErr('باقتك التجريبية تسمح برحلةٍ واحدة فقط. رقِّ إلى باقة ملبّيك (٢٤٩ ﷼) لإضافة رحلاتٍ غير محدودة.')
+      } else {
+        setErr(msg ? 'تعذّر الحفظ: ' + msg : 'تعذّر حفظ الرحلة. حاول مرة أخرى.')
+      }
     } finally {
       setBusy(false)
     }

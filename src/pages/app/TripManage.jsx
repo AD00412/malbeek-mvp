@@ -54,6 +54,8 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [scanMode, setScanMode] = useState(null)     // 'board' | 'checkin' | null
   const [seatMapOpen, setSeatMapOpen] = useState(false)
   const [busEditOpen, setBusEditOpen] = useState(false)
+  const [offersOpen, setOffersOpen] = useState(false)
+  const [offerMsg, setOfferMsg] = useState('')
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
@@ -174,9 +176,14 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <button className="action" onClick={() => setCrewOpen(true)}>
           <Icon name="bus" size={18} /> الباص والطاقم (للكشف)
         </button>
-        <button className="action ok" onClick={() => setManifestOpen(true)}>
-          <Icon name="manifest" size={18} /> الكشف الرسمي
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="action ok" style={{ flex: 1 }} onClick={() => setManifestOpen(true)}>
+            <Icon name="manifest" size={18} /> الكشف الرسمي
+          </button>
+          <button className="action violet" style={{ flex: 1 }} onClick={() => setOffersOpen(true)} disabled={count === 0}>
+            <Icon name="message" size={18} /> إرسال عرض
+          </button>
+        </div>
       </div>
 
       {err && <div className="alert err" style={{ marginTop: 14 }}>{err}</div>}
@@ -267,6 +274,78 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         onClose={() => setCrewOpen(false)}
         onSaved={() => { setCrewOpen(false); reloadTrip() }}
       />
+
+      <OffersSheet
+        open={offersOpen}
+        onClose={() => setOffersOpen(false)}
+        passengers={passengers}
+        trip={trip}
+        sub={sub}
+        msg={offerMsg}
+        setMsg={setOfferMsg}
+      />
     </>
+  )
+}
+
+/* ---------- إرسال عرضٍ جماعيٍّ عبر واتساب/الإيميل ---------- */
+function normalizePhone(p) {
+  let d = String(p || '').replace(/[^\d]/g, '')
+  if (!d) return ''
+  if (d.startsWith('00')) d = d.slice(2)
+  if (d.startsWith('0')) d = '966' + d.slice(1)        // محلّي سعودي
+  else if (d.startsWith('5') && d.length === 9) d = '966' + d
+  return d
+}
+
+function OffersSheet({ open, onClose, passengers, trip, sub, msg, setMsg }) {
+  const withPhone = passengers.filter((p) => normalizePhone(p.phone))
+  const defaultMsg = `السلام عليكم، من ${sub?.org_name || 'حملتنا'} بخصوص رحلة «${trip?.title || 'العمرة'}». `
+  const text = (msg && msg.trim()) ? msg : defaultMsg
+
+  function waOne(p) {
+    const ph = normalizePhone(p.phone)
+    if (!ph) return
+    window.open(`https://wa.me/${ph}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
+  }
+  function mailAll() {
+    // لا إيميل في سجلّ الراكب — نفتح رسالةً فارغةً بالنصّ للنسخ (احتياطي)
+    window.open(`mailto:?subject=${encodeURIComponent('عرض ' + (sub?.org_name || 'الحملة'))}&body=${encodeURIComponent(text)}`, '_blank')
+  }
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="إرسال عرضٍ للمعتمرين"
+      actions={<button className="btn btn-gold btn-block" onClick={onClose}>تم</button>}
+    >
+      <div className="form" style={{ marginTop: 0 }}>
+        <div className="field">
+          <label>نصّ العرض</label>
+          <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={defaultMsg} />
+        </div>
+        <p className="muted" style={{ fontSize: 13 }}>
+          اضغط على معتمرٍ لفتح محادثة واتساب جاهزةً بالنصّ — {withPhone.length} معتمرٍ لديهم رقم جوال.
+        </p>
+        <button className="btn btn-ghost btn-block btn-sm" onClick={mailAll}>
+          <Icon name="message" size={15} /> فتح رسالة بريدٍ بالنصّ
+        </button>
+        <div className="pax-list" style={{ marginTop: 6 }}>
+          {withPhone.length === 0 ? (
+            <div className="empty">لا يوجد معتمرون بأرقام جوال.</div>
+          ) : withPhone.map((p) => (
+            <button type="button" className="pax-row" key={p.id} style={{ cursor: 'pointer', textAlign: 'start' }} onClick={() => waOne(p)}>
+              <div className="pax-seat"><Icon name="message" size={15} /></div>
+              <div className="pax-main">
+                <div className="pax-name">{p.full_name}</div>
+                <div className="pax-meta ltr">{p.phone}</div>
+              </div>
+              <Icon name="external" size={15} />
+            </button>
+          ))}
+        </div>
+      </div>
+    </BottomSheet>
   )
 }

@@ -1,0 +1,213 @@
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../app/useAuth'
+import Icon from './Icon'
+import SeatMap from './SeatMap'
+import CompassMark from './CompassMark'
+
+const Ticket = lazy(() => import('./Ticket'))
+
+function fmt(v) {
+  if (!v) return '—'
+  try { return new Date(v).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) }
+  catch { return '—' }
+}
+
+/**
+ * تدفّق حجز العميل لرحلةٍ واحدة:
+ * بياناته → اختيار المقعد من الخريطة الحيّة → (الدفع إن وُجد) → تذكرته.
+ *
+ * @param {object} trip
+ * @param {object} sub        { id, org_name, store_url, ... }
+ * @param {Function} onClose
+ * @param {Function} onBooked
+ */
+export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
+  const { user, profile } = useAuth()
+  const [booking, setBooking] = useState(null)     // سجلّ الراكب الحالي (إن حجز سابقًا)
+  const [occupancy, setOccupancy] = useState([])   // [{seat_no, gender, is_family}]
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [showTicket, setShowTicket] = useState(false)
+
+  // الحقول
+  const [fullName, setFullName] = useState('')
+  const [nationalId, setNationalId] = useState('')
+  const [phone, setPhone] = useState('')
+  const [gender, setGender] = useState('male')
+  const [isFamily, setIsFamily] = useState(false)
+  const [seatNo, setSeatNo] = useState('')
+  const [paymentRef, setPaymentRef] = useState('')
+
+  async function load() {
+    if (!trip?.id || !user?.id) return
+    setLoading(true); setErr('')
+    // حجز العميل الحالي لهذه الرحلة (إن وُجد)
+    const { data: mine } = await supabase
+      .from('passengers')
+      .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref')
+      .eq('trip_id', trip.id).eq('profile_id', user.id).maybeSingle()
+    // إشغال المقاعد (بلا أسماء) عبر دالةٍ آمنة
+    const { data: occ } = await supabase.rpc('trip_seat_occupancy', { p_trip: trip.id })
+    setOccupancy(occ ?? [])
+    if (mine) {
+      setBooking(mine)
+      setFullName(mine.full_name ?? ''); setNationalId(mine.national_id ?? '')
+      setPhone(mine.phone ?? ''); setGender(mine.gender ?? 'male')
+      setIsFamily(!!mine.is_family); setSeatNo(mine.seat_no ?? '')
+      setPaymentRef(mine.payment_ref ?? '')
+    } else {
+      setFullName(profile?.full_name ?? ''); setPhone(profile?.phone ?? '')
+    }
+    setLoading(false)
+  }
+  useEffect(() => { load() }, [trip, user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // مصفوفة "ركّاب" للخريطة: إشغالٌ بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
+  const seatPassengers = useMemo(() => {
+    return (occupancy ?? []).map((o) => ({
+      id: booking && String(o.seat_no) === String(booking.seat_no) ? booking.id : 'occ-' + o.seat_no,
+      seat_no: o.seat_no, gender: o.gender, is_family: o.is_family,
+    }))
+  }, [occupancy, booking])
+
+  const forPassenger = useMemo(() => ({ id: booking?.id, gender, is_family: isFamily }), [booking, gender, isFamily])
+
+  async function confirm() {
+    if (busy) return
+    if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
+    if (!seatNo) { setErr('اختر مقعدك من الخريطة.'); return }
+    setErr(''); setBusy(true)
+    const payload = {
+      full_name: fullName.trim(),
+      national_id: nationalId.trim() || null,
+      phone: phone.trim() || null,
+      gender, is_family: isFamily,
+      seat_no: seatNo,
+      boarding_point: trip?.boarding_point || null,
+      payment_ref: paymentRef.trim() || null,
+      status: paymentRef.trim() ? 'paid' : 'registered',
+    }
+    try {
+      let result, row
+      if (booking?.id) {
+        result = await supabase.from('passengers').update(payload).eq('id', booking.id)
+          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref').maybeSingle()
+      } else {
+        result = await supabase.from('passengers')
+          .insert({ ...payload, trip_id: trip.id, subscriber_id: sub.id, profile_id: user.id })
+          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref').maybeSingle()
+      }
+      if (result.error) {
+        if (result.error.code === '23505') { setErr('عذرًا، هذا المقعد حُجز للتوّ — اختر مقعدًا آخر.'); await load(); return }
+        throw result.error
+      }
+      row = result.data
+      setBooking(row)
+      onBooked?.()
+      setShowTicket(true)
+    } catch (e) {
+      setErr(e?.message ? 'تعذّر الحجز: ' + e.message : 'تعذّر إتمام الحجز.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (showTicket && booking) {
+    return (
+      <Suspense fallback={<div className="manifest-overlay" style={{ display: 'grid', placeItems: 'center' }}><CompassMark size={64} /></div>}>
+        <Ticket passenger={booking} trip={trip} sub={sub} onClose={onClose} />
+      </Suspense>
+    )
+  }
+
+  return (
+    <div className="manifest-overlay">
+      <div className="manifest-toolbar">
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>
+          <Icon name="arrowRight" size={16} /> رجوع
+        </button>
+        <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 900, color: 'var(--cr-50)' }}>
+          {booking ? 'تعديل حجزي' : 'حجز مقعد'}
+        </div>
+      </div>
+
+      <div className="manifest-scroll" style={{ flexDirection: 'column', alignItems: 'center' }}>
+        <div className="bus-editor">
+          <section className="hero" style={{ marginTop: 0 }}>
+            <span className="tag">{sub?.org_name || 'حملتي'}</span>
+            <h2 style={{ fontSize: 22 }}>{trip?.title || 'رحلة عُمرة'}</h2>
+            <p>{(trip?.route_from || '—') + ' ← ' + (trip?.route_to || '—')} · {fmt(trip?.depart_at)}</p>
+          </section>
+
+          {loading ? (
+            <div className="empty"><div className="em-mark"><CompassMark size={48} /></div>جارٍ التحميل…</div>
+          ) : (
+            <>
+              <div className="form" style={{ marginTop: 14 }}>
+                <div className="sec-label">بياناتي</div>
+                <div className="field">
+                  <label>الاسم الرباعي <span className="req">*</span></label>
+                  <input type="text" placeholder="الاسم كما في الهوية" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                </div>
+                <div className="grid-2">
+                  <div className="field ltr">
+                    <label>رقم الهوية / الإقامة</label>
+                    <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+                  </div>
+                  <div className="field ltr">
+                    <label>رقم الجوال</label>
+                    <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>الجنس</label>
+                    <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                      <option value="male">ذكر</option>
+                      <option value="female">أنثى</option>
+                    </select>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--cr-200)', alignSelf: 'flex-end', paddingBottom: 12 }}>
+                    <input type="checkbox" checked={isFamily} onChange={(e) => setIsFamily(e.target.checked)} /> ضمن عائلة
+                  </label>
+                </div>
+              </div>
+
+              <div className="sec-label" style={{ textAlign: 'center', marginTop: 8 }}>اختر مقعدك</div>
+              <SeatMap
+                policy={trip?.seating_policy} rows={trip?.bus_rows} back={trip?.bus_back_row}
+                passengers={seatPassengers} selected={seatNo}
+                onSelect={(no) => setSeatNo(no)} forPassenger={forPassenger}
+              />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: -4 }}>
+                <span className="muted" style={{ fontSize: 13 }}>مقعدك:</span>
+                <strong style={{ color: 'var(--gd-300)', fontFamily: 'var(--font-display)' }}>{seatNo || '— لم يُختر —'}</strong>
+              </div>
+
+              {sub?.store_url && (
+                <div className="form" style={{ marginTop: 14 }}>
+                  <div className="sec-label">الدفع</div>
+                  <a className="btn btn-em btn-block" href={sub.store_url} target="_blank" rel="noopener noreferrer">
+                    <Icon name="external" size={16} /> ادفع عبر متجر الحملة
+                  </a>
+                  <div className="field">
+                    <label>مرجع/رقم عملية الدفع (بعد الدفع)</label>
+                    <input type="text" placeholder="الصق رقم العملية لإثبات الدفع" value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              {err && <div className="alert err" style={{ marginTop: 12 }}>{err}</div>}
+
+              <button className="btn btn-gold btn-block" style={{ marginTop: 16 }} onClick={confirm} disabled={busy}>
+                {busy ? <span className="spinner" /> : <><Icon name="check" size={17} /> {booking ? 'حفظ وعرض التذكرة' : 'تأكيد الحجز'}</>}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

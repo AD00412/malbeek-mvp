@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import AppShell from '../../layout/AppShell'
@@ -7,6 +7,7 @@ import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
 import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
+import CustomerBooking from '../../components/CustomerBooking'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -149,7 +150,7 @@ export function SubscriberHome() {
 
     const { data: rows, error: sErr } = await supabase
       .from('subscribers')
-      .select('id, org_name, slug, plan, trial_ends_at')
+      .select('id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, store_url')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: true })
       .limit(1)
@@ -164,12 +165,12 @@ export function SubscriberHome() {
       const { data: created, error: insErr } = await supabase
         .from('subscribers')
         .insert({ owner_id: user.id, org_name: orgName, slug, plan: 'trial' })
-        .select('id, org_name, slug, plan, trial_ends_at')
+        .select('id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, store_url')
         .maybeSingle()
       if (insErr) {
         if (insErr.code === '23505') {
           const { data: again } = await supabase
-            .from('subscribers').select('id, org_name, slug, plan, trial_ends_at')
+            .from('subscribers').select('id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, store_url')
             .eq('owner_id', user.id).order('created_at', { ascending: true }).limit(1).maybeSingle()
           s = again ?? null
         } else {
@@ -524,37 +525,78 @@ function TripCard({ trip, onManage, onEdit, onRemove }) {
    لوحة العميل (المعتمر)
    ============================================================ */
 export function CustomerHome() {
-  const { subscriberId } = useAuth()
+  const { user, subscriberId } = useAuth()
   const [view, setView] = useState('trips')
   const [orgName, setOrgName] = useState('')
+  const [sub, setSub] = useState(null)
   const [trips, setTrips] = useState([])
+  const [myBookings, setMyBookings] = useState([])   // ركّابي (passengers بـ profile_id = أنا)
   const [loading, setLoading] = useState(true)
+  const [booking, setBooking] = useState(null)        // الرحلة قيد الحجز (شاشة كاملة)
+  const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
 
-  useEffect(() => {
-    let active = true
-    ;(async () => {
-      let sq = supabase.from('subscribers').select('org_name')
-      sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
-      const { data: s } = await sq.maybeSingle()
-      if (active && s) setOrgName(s.org_name)
-      // دفاعٌ مزدوج: تصفيةٌ صريحةٌ بحملة العميل فوق عزل RLS
-      let tq = supabase
-        .from('trips')
-        .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, status')
-        .order('depart_at', { ascending: true })
-      if (subscriberId) tq = tq.eq('subscriber_id', subscriberId)
-      const { data: t } = await tq
-      if (active) { setTrips(t ?? []); setLoading(false) }
-    })()
-    return () => { active = false }
-  }, [subscriberId])
+  const load = useCallback(async () => {
+    setLoading(true)
+    let sq = supabase.from('subscribers').select('id, org_name, store_url')
+    sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
+    const { data: s } = await sq.maybeSingle()
+    if (s) { setSub(s); setOrgName(s.org_name) }
+
+    let tq = supabase
+      .from('trips')
+      .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, seating_policy, bus_rows, bus_back_row')
+      .order('depart_at', { ascending: true })
+    if (subscriberId) tq = tq.eq('subscriber_id', subscriberId)
+    const { data: t } = await tq
+    setTrips(t ?? [])
+
+    if (user?.id) {
+      const { data: b } = await supabase
+        .from('passengers')
+        .select('id, trip_id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref')
+        .eq('profile_id', user.id)
+      setMyBookings(b ?? [])
+    }
+    setLoading(false)
+  }, [subscriberId, user])
+
+  useEffect(() => { load() }, [load])
+
+  const bookingByTrip = useMemo(() => {
+    const m = new Map()
+    for (const b of myBookings) m.set(b.trip_id, b)
+    return m
+  }, [myBookings])
 
   const tabs = [
     { section: 'رحلاتي' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
-    { key: 'ticket', label: 'تذكرتي', icon: 'barcode', disabled: true },
-    { key: 'profile', label: 'بياناتي', icon: 'customers', disabled: true },
+    { key: 'tickets', label: 'تذاكري', icon: 'barcode', badge: myBookings.length || undefined },
   ]
+
+  function onTab(k) { setBooking(null); setTicketFor(null); setView(k) }
+
+  // شاشة الحجز الكاملة
+  if (booking) {
+    return (
+      <AppShell title="حجز مقعد" subtitle={orgName} tabs={tabs} active="trips" onTab={onTab}>
+        <CustomerBooking
+          trip={booking}
+          sub={sub}
+          onClose={() => { setBooking(null); load() }}
+          onBooked={load}
+        />
+      </AppShell>
+    )
+  }
+  if (ticketFor) {
+    const t = trips.find((x) => x.id === ticketFor.trip_id)
+    return (
+      <Suspense fallback={<div className="manifest-overlay" style={{ display: 'grid', placeItems: 'center' }}><CompassMark size={64} /></div>}>
+        <CustomerTicket passenger={ticketFor} trip={t} sub={sub} onClose={() => setTicketFor(null)} />
+      </Suspense>
+    )
+  }
 
   return (
     <>
@@ -563,14 +605,14 @@ export function CustomerHome() {
         subtitle={orgName ? `رحلات حملة ${orgName}` : 'رحلاتك المتاحة'}
         tabs={tabs}
         active={view}
-        onTab={setView}
+        onTab={onTab}
       >
         {view === 'trips' && (
           <>
             <section className="hero">
               <span className="tag">حملتي</span>
               <h2>{orgName || 'رحلاتي المتاحة'}</h2>
-              <p>اختر رحلتك المناسبة وأكمل بياناتك — تُعرض لك رحلات حملتك فقط، بياناتك معزولة تمامًا.</p>
+              <p>اختر رحلتك المناسبة، أكمل بياناتك، واحجز مقعدك مباشرةً — تُعرض لك رحلات حملتك فقط.</p>
             </section>
 
             <div style={{ marginTop: 14 }}>
@@ -579,16 +621,92 @@ export function CustomerHome() {
               ) : trips.length === 0 ? (
                 <Empty title="لا توجد رحلاتٌ متاحةٌ حاليًا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
               ) : (
-                trips.map((t) => <TripCard key={t.id} trip={t} />)
+                trips.map((t) => (
+                  <CustomerTripCard
+                    key={t.id}
+                    trip={t}
+                    booking={bookingByTrip.get(t.id)}
+                    onBook={() => setBooking(t)}
+                    onTicket={(b) => setTicketFor(b)}
+                  />
+                ))
               )}
             </div>
           </>
         )}
 
-        {view === 'ticket' && <ComingSoon title="تذكرتي والباركود" desc="تذكرة الصعود بالباركود وحفظها في محفظة الجوال — ضمن خارطة الطريق." />}
-        {view === 'profile' && <ComingSoon title="بياناتي المحفوظة" desc="بياناتك تُحفظ دائمًا لتعيد الطلب بلا تعبئة — قريبًا." />}
+        {view === 'tickets' && (
+          <>
+            <section className="hero">
+              <span className="tag">تذاكري</span>
+              <h2>حجوزاتي</h2>
+              <p>تذاكر صعودك بالباركود — اعرضها عند الصعود أو احفظها على جوالك.</p>
+            </section>
+            <div style={{ marginTop: 14 }}>
+              {loading ? (
+                <Empty title="جارٍ التحميل…" />
+              ) : myBookings.length === 0 ? (
+                <Empty title="لا حجوزات بعد" hint="احجز مقعدك من تبويب الرحلات لتظهر تذكرتك هنا." />
+              ) : (
+                myBookings.map((b) => {
+                  const t = trips.find((x) => x.id === b.trip_id)
+                  return (
+                    <div className="trip-card" key={b.id}>
+                      <div className="tags">
+                        <span className="tag gold">عمرة</span>
+                        <span className={`tag ${b.status === 'paid' || b.status === 'boarded' || b.status === 'checked_in' ? 'ok' : 'muted'}`}>
+                          {b.status === 'paid' ? 'مدفوع' : b.status === 'boarded' ? 'صعد' : b.status === 'checked_in' ? 'مُسكّن' : 'محجوز'}
+                        </span>
+                      </div>
+                      <h3>{t?.title || 'رحلة'}</h3>
+                      <div className="meta">
+                        <div className="row"><span className="ic"><Icon name="calendar" size={16} /></span><span>{fmtShort(t?.depart_at)}</span></div>
+                        <div className="row"><span className="ic"><Icon name="seat" size={16} /></span><span>مقعد {b.seat_no || '—'}</span></div>
+                      </div>
+                      <div className="actions-row">
+                        <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
+                        {t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </>
+        )}
       </AppShell>
       <Roadmap />
     </>
+  )
+}
+
+/* تذكرة العميل — غلافٌ كسولٌ لمكوّن Ticket */
+const CustomerTicket = lazy(() => import('../../components/Ticket'))
+
+/* بطاقة رحلةٍ للعميل: تعرض زرّ الحجز أو التذكرة حسب حالته */
+function CustomerTripCard({ trip, booking, onBook, onTicket }) {
+  return (
+    <article className="trip-card">
+      <div className="tags">
+        <span className="tag gold">عمرة</span>
+        <span className={`tag ${STATUS_TAG[trip.status] || 'muted'}`}>{STATUS_FUTURE_LABEL[trip.status] || STATUS_LABEL[trip.status]}</span>
+        {booking && <span className="tag ok">محجوز · مقعد {booking.seat_no || '—'}</span>}
+      </div>
+      <h3>{trip.title || 'رحلة'}</h3>
+      <div className="meta">
+        <div className="row"><span className="ic"><Icon name="calendar" size={16} /></span><span>{fmtShort(trip.depart_at)}</span></div>
+        <div className="row"><span className="ic"><Icon name="location" size={16} /></span><span>{(trip.route_from || '—') + ' ← ' + (trip.route_to || '—')}</span></div>
+      </div>
+      <div className="actions-row">
+        {booking ? (
+          <>
+            <button className="btn btn-gold" onClick={() => onTicket(booking)}><Icon name="qr" size={16} /> تذكرتي</button>
+            <button className="icon-btn" onClick={onBook}><Icon name="edit" size={15} /> تعديل الحجز</button>
+          </>
+        ) : (
+          <button className="btn btn-gold" onClick={onBook}><Icon name="seat" size={16} /> احجز مقعدي</button>
+        )}
+      </div>
+    </article>
   )
 }
