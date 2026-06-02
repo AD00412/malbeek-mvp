@@ -189,7 +189,7 @@ export function SubscriberHome() {
     if (s?.id) {
       const { data: t, error: tErr } = await supabase
         .from('trips')
-        .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes')
+        .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes, seating_policy, bus_rows, bus_back_row')
         .eq('subscriber_id', s.id)
         .order('depart_at', { ascending: true })
       if (tErr) { setErr('تعذّر تحميل الرحلات: ' + tErr.message); setTrips([]) }
