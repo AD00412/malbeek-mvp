@@ -12,6 +12,7 @@ import FeedbackSheet from '../../components/FeedbackSheet'
 import FeedbackInbox from '../../components/FeedbackInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
+import TrialBanner from '../../components/TrialBanner'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -58,20 +59,21 @@ export function AdminHome() {
   const [tripCount, setTripCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
+  const load = useCallback(async () => {
+    const { data: s } = await supabase
+      .from('subscribers').select('id, org_name, slug, plan, created_at')
+      .order('created_at', { ascending: false })
+    const { count } = await supabase.from('trips').select('id', { count: 'exact', head: true })
+    setSubs(s ?? [])
+    setTripCount(count ?? 0)
+    setLoading(false)
+  }, [])
+
   useEffect(() => {
     let active = true
-    ;(async () => {
-      const { data: s } = await supabase
-        .from('subscribers').select('id, org_name, slug, plan, created_at')
-        .order('created_at', { ascending: false })
-      const { count } = await supabase.from('trips').select('id', { count: 'exact', head: true })
-      if (!active) return
-      setSubs(s ?? [])
-      setTripCount(count ?? 0)
-      setLoading(false)
-    })()
+    ;(async () => { if (active) await load() })()
     return () => { active = false }
-  }, [])
+  }, [load])
 
   const tabs = [
     { section: 'الإدارة' },
@@ -91,11 +93,11 @@ export function AdminHome() {
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>الباقات المدفوعة</div><div className="v">{paid}</div></div>
               <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>إجمالي الرحلات</div><div className="v">{tripCount}</div></div>
             </div>
-            <SubsPanel subs={subs} loading={loading} />
+            <SubsPanel subs={subs} loading={loading} onReload={load} />
             <FeedbackInbox />
           </>
         )}
-        {view === 'subs' && <SubsPanel subs={subs} loading={loading} />}
+        {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} />}
         {view === 'feedback' && <FeedbackInbox />}
       </AppShell>
       <Roadmap />
@@ -103,7 +105,16 @@ export function AdminHome() {
   )
 }
 
-function SubsPanel({ subs, loading }) {
+function SubsPanel({ subs, loading, onReload }) {
+  const [busyId, setBusyId] = useState(null)
+  async function togglePlan(s) {
+    setBusyId(s.id)
+    const next = s.plan === 'paid' ? 'trial' : 'paid'
+    const { error } = await supabase.from('subscribers').update({ plan: next }).eq('id', s.id)
+    setBusyId(null)
+    if (error) alert('تعذّر التحديث: ' + error.message)
+    else onReload?.()
+  }
   return (
     <section className="panel">
       <div className="panel-head"><h3>المشتركون</h3><span className="sub">({subs.length})</span></div>
@@ -114,7 +125,7 @@ function SubsPanel({ subs, loading }) {
       ) : (
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr><th>الحملة</th><th>الرابط</th><th>الباقة</th><th>تاريخ الاشتراك</th></tr></thead>
+            <thead><tr><th>الحملة</th><th>الرابط</th><th>الباقة</th><th>تاريخ الاشتراك</th><th>إجراء</th></tr></thead>
             <tbody>
               {subs.map((s) => (
                 <tr key={s.id}>
@@ -122,6 +133,11 @@ function SubsPanel({ subs, loading }) {
                   <td className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)' }}>/j/{s.slug}</code></td>
                   <td><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
                   <td>{fmtDate(s.created_at)}</td>
+                  <td>
+                    <button className="icon-btn" onClick={() => togglePlan(s)} disabled={busyId === s.id}>
+                      {busyId === s.id ? <span className="spinner" /> : (s.plan === 'paid' ? 'إرجاع لتجريبية' : 'ترقية لمدفوعة')}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -307,6 +323,7 @@ export function SubscriberHome() {
           <>
             {view === 'overview' && (
               <>
+                <TrialBanner sub={sub} />
                 <Overview
                   sub={sub}
                   profile={profile}

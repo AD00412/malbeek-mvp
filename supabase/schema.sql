@@ -235,6 +235,25 @@ drop policy if exists "subscriber owner all"        on public.subscribers;
 create policy "subscriber owner all"        on public.subscribers for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 drop policy if exists "subscriber admin read"       on public.subscribers;
 create policy "subscriber admin read"       on public.subscribers for select using (public.my_role() = 'admin');
+-- الإدارة تُحدّث المشترك (مثل ترقية الباقة trial ↔ paid)
+drop policy if exists "subscriber admin update"     on public.subscribers;
+create policy "subscriber admin update"     on public.subscribers for update using (public.my_role() = 'admin') with check (public.my_role() = 'admin');
+
+-- ★ حارس فوترة: المشترك لا يرقّي باقته أو يمدّد تجربته أو ينقل ملكيته بنفسه
+create or replace function public.guard_subscriber_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(public.my_role(), 'customer') <> 'admin' then
+    new.plan          := old.plan;
+    new.trial_ends_at := old.trial_ends_at;
+    new.owner_id      := old.owner_id;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_subscribers on public.subscribers;
+create trigger trg_guard_subscribers
+  before update on public.subscribers
+  for each row execute function public.guard_subscriber_columns();
 -- العميل يقرأ حملته فقط (لعرض اسم/شعار الحملة)
 drop policy if exists "subscriber customer read"    on public.subscribers;
 create policy "subscriber customer read"    on public.subscribers for select using (id = public.my_subscriber_id());
