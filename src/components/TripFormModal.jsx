@@ -37,6 +37,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
   const [capacity, setCapacity] = useState(
     trip?.capacity === 0 || trip?.capacity ? String(trip.capacity) : ''
   )
+  const [price, setPrice] = useState(trip?.price != null ? String(trip.price) : '')
   const [busLabel, setBusLabel] = useState(trip?.bus_label ?? '')
   const [boardingPoint, setBoardingPoint] = useState(trip?.boarding_point ?? '')
   const [status, setStatus] = useState(trip?.status ?? 'open')
@@ -63,6 +64,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
       depart_at: new Date(depart).toISOString(),
       return_at: ret ? new Date(ret).toISOString() : null,
       capacity: capacity === '' ? 0 : Math.max(0, parseInt(capacity, 10) || 0),
+      price: price === '' ? null : Math.max(0, parseFloat(price) || 0),
       bus_label: busLabel.trim() || null,
       boarding_point: boardingPoint.trim() || null,
       status,
@@ -137,29 +139,35 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
               <input type="number" min="0" inputMode="numeric" placeholder="0" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
             </div>
             <div className="field">
-              <label>الحالة</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                {STATUS_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
-              </select>
+              <label>سعر المقعد (﷼ — اختياري)</label>
+              <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="مثال: 1500" value={price} onChange={(e) => setPrice(e.target.value)} />
             </div>
           </div>
 
           <div className="grid-2">
             <div className="field">
+              <label>الحالة</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                {STATUS_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
+              </select>
+            </div>
+            <div className="field">
               <label>اسم/رقم الباص (اختياري)</label>
               <input type="text" placeholder="باص ١ — حافلة VIP" value={busLabel} onChange={(e) => setBusLabel(e.target.value)} />
             </div>
+          </div>
+
+          <div className="grid-2">
             <div className="field">
               <label>نقطة الانطلاق (اختياري)</label>
               <input type="text" placeholder="محطة جازان المركزية" value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
             </div>
-          </div>
-
-          <div className="field">
-            <label>سياسة المقاعد</label>
-            <select value={seatingPolicy} onChange={(e) => setSeatingPolicy(e.target.value)}>
-              {SEATING_POLICIES.map((p) => <option key={p.v} value={p.v}>{p.t}</option>)}
-            </select>
+            <div className="field">
+              <label>سياسة المقاعد</label>
+              <select value={seatingPolicy} onChange={(e) => setSeatingPolicy(e.target.value)}>
+                {SEATING_POLICIES.map((p) => <option key={p.v} value={p.v}>{p.t}</option>)}
+              </select>
+            </div>
           </div>
 
           <div className="field">

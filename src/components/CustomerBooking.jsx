@@ -276,6 +276,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 <strong style={{ color: 'var(--gd-300)', fontFamily: 'var(--font-display)' }}>{seatNo || '— لم يُختر —'}</strong>
               </div>
 
+              {trip?.price != null && (
+                <div className="alert info" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Icon name="payments" size={16} /> المبلغ المطلوب:
+                  <strong>{Number(trip.price).toLocaleString('en-US')} ﷼</strong> للمقعد
+                </div>
+              )}
+
               {sub?.store_url && (
                 <div className="form" style={{ marginTop: 14 }}>
                   <div className="sec-label">الدفع</div>

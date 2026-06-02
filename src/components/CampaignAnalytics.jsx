@@ -27,11 +27,11 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
     { label: 'نسبة التسكين', value: checkinRate, sub: `${tt.checked_in} مُسكّن`, cls: 'warn' },
   ]
 
-  // تفاصيلٌ زمنية + نقاط الركوب — تُحمَّل مرّةً عند تغيّر الحملة
-  const [detail, setDetail] = useState({ daily: [], topBoarding: [] })
+  // تفاصيلٌ زمنية + نقاط الركوب + التحصيل — تُحمَّل مرّةً عند تغيّر الحملة
+  const [detail, setDetail] = useState({ daily: [], topBoarding: [], collected: 0 })
   useEffect(() => {
     let cancel = false
-    if (!subscriberId) { setDetail({ daily: [], topBoarding: [] }); return }
+    if (!subscriberId) { setDetail({ daily: [], topBoarding: [], collected: 0 }); return }
     ;(async () => {
       const since = new Date(Date.now() - 30 * 86400000).toISOString()
       const { data } = await supabase
@@ -59,10 +59,28 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
         bp.set(k, (bp.get(k) || 0) + 1)
       }
       const topBoarding = [...bp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
-      setDetail({ daily, topBoarding })
+
+      // التحصيل الكلّي (كلّ الأوقات): مجموع مبالغ المدفوعين
+      const { data: payRows } = await supabase
+        .from('passengers').select('amount')
+        .eq('subscriber_id', subscriberId)
+        .in('status', ['paid', 'boarded', 'checked_in'])
+      if (cancel) return
+      const collected = (payRows ?? []).reduce((s, r) => s + (Number(r.amount) || 0), 0)
+
+      setDetail({ daily, topBoarding, collected })
     })()
     return () => { cancel = true }
   }, [subscriberId])
+
+  // المتوقّع = مجموع (سعر الرحلة × عدد مسجّليها)
+  const expectedRevenue = trips.reduce((s, t) => {
+    const pr = t.price != null ? Number(t.price) : 0
+    const c = byTrip?.get(t.id)?.count || 0
+    return s + pr * c
+  }, 0)
+  const hasPricing = trips.some((t) => t.price != null)
+  const money = (n) => Number(n || 0).toLocaleString('en-US')
 
   const maxDaily = Math.max(1, ...detail.daily.map((d) => d.c))
   const last7 = detail.daily.slice(-7).reduce((s, d) => s + d.c, 0)
@@ -93,6 +111,24 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
           </div>
         )}
       </section>
+
+      {hasPricing && (
+        <section className="panel">
+          <div className="panel-head">
+            <h3>التحصيل المالي</h3>
+            <span className="sub">عبر الحملة</span>
+            <span style={{ flex: 1 }} />
+            <span className={`tag ${expectedRevenue > 0 && detail.collected >= expectedRevenue ? 'ok' : 'warn'}`}>
+              {pct(detail.collected, expectedRevenue)}% محصّل
+            </span>
+          </div>
+          <div className="an-row" style={{ marginTop: 4 }}>
+            <div className="an-head"><span>المحصّل من المتوقّع</span><strong>{money(detail.collected)} / {money(expectedRevenue)} ﷼</strong></div>
+            <div className="bar"><span className="fill-ok" style={{ width: pct(detail.collected, expectedRevenue) + '%' }} /></div>
+            <div className="an-sub">المتبقّي: {money(Math.max(0, expectedRevenue - detail.collected))} ﷼</div>
+          </div>
+        </section>
+      )}
 
       <section className="panel">
         <div className="panel-head">

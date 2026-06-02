@@ -66,7 +66,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, amount, paid_at, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -117,9 +117,15 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
   const cap = Number(trip?.capacity) || 0
   const count = passengers.length
-  const paid = passengers.filter((p) => p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in').length
+  const paidList = passengers.filter((p) => p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in')
+  const paid = paidList.length
   const boarded = passengers.filter((p) => p.status === 'boarded' || p.status === 'checked_in').length
   const pct = cap > 0 ? Math.min(100, Math.round((count / cap) * 100)) : 0
+  // التحصيل الماليّ: المحصّل (مجموع المبالغ المدفوعة) والمتوقّع (السعر × عدد المسجّلين)
+  const price = trip?.price != null ? Number(trip.price) : null
+  const collected = paidList.reduce((s, p) => s + (Number(p.amount) || (price || 0)), 0)
+  const expected = price != null ? price * count : null
+  const money = (n) => Number(n || 0).toLocaleString('en-US')
 
   const q = search.trim().toLowerCase()
   const filtered = q
@@ -178,6 +184,14 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <div className="stat info"><div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعدوا</div><div className="v">{boarded}</div></div>
         <div className="stat warn"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>الإشغال</div><div className="v">{pct}%</div></div>
       </div>
+
+      {price != null && (
+        <div className="stats" style={{ marginTop: 12 }}>
+          <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>المحصّل</div><div className="v" style={{ fontSize: 22 }}>{money(collected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
+          <div className="stat warn"><div className="top"><span className="ic"><Icon name="chart" size={15} /></span>المتوقّع</div><div className="v" style={{ fontSize: 22 }}>{money(expected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
+          <div className="stat"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>سعر المقعد</div><div className="v" style={{ fontSize: 22 }}>{money(price)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
+        </div>
+      )}
 
       {/* أزرار الإجراءات */}
       <div className="actions" style={{ marginTop: 16 }}>

@@ -110,6 +110,10 @@ alter table public.trips      add column if not exists seating_policy text not n
 -- تخطيط الباص القابل للضبط (صفوف ٤ مقاعد + صفّ خلفي)
 alter table public.trips      add column if not exists bus_rows       int  not null default 11;
 alter table public.trips      add column if not exists bus_back_row   int  not null default 5;
+-- التسعير والتحصيل (تتبّعٌ ماليٌّ للدفع اليدويّ — يمهّد لبوّابة الدفع لاحقًا)
+alter table public.trips      add column if not exists price          numeric(10,2);   -- سعر المقعد (اختياري)
+alter table public.passengers add column if not exists paid_at        timestamptz;     -- وقت تأكيد الدفع
+alter table public.passengers add column if not exists amount         numeric(10,2);   -- المبلغ المحصّل
 -- منع حجز مقعدٍ مكرّر في نفس الرحلة (يسمح بالـ NULL لمقاعد غير مخصّصة بعد)
 create unique index if not exists uniq_passengers_trip_seat
   on public.passengers(trip_id, seat_no) where seat_no is not null;
@@ -636,6 +640,8 @@ begin
       new.status := 'registered';
       new.boarded_at := null;
       new.checked_in_at := null;
+      new.amount := null;            -- العميل لا يضبط مبلغًا/ختم دفعٍ بنفسه
+      new.paid_at := null;
     else
       new.status        := old.status;
       new.trip_id       := old.trip_id;
@@ -643,8 +649,21 @@ begin
       new.profile_id    := old.profile_id;
       new.boarded_at    := old.boarded_at;
       new.checked_in_at := old.checked_in_at;
+      new.amount        := old.amount;     -- حقولٌ ماليّةٌ محميّةٌ من تلاعب العميل
+      new.paid_at       := old.paid_at;
     end if;
   end if;
+
+  -- ختم التحصيل تلقائيًّا عند الانتقال إلى "مدفوع" (للجميع — لكنّ العميل لا يبلغ هذه الحالة)
+  if new.status = 'paid' and (tg_op = 'INSERT' or old.status is distinct from 'paid') then
+    if new.paid_at is null then new.paid_at := now(); end if;
+    if new.amount is null then
+      select price into new.amount from public.trips where id = new.trip_id;
+    end if;
+  elsif tg_op = 'UPDATE' and new.status <> 'paid' and old.status = 'paid' then
+    new.paid_at := null;   -- التراجع عن التأكيد يُلغي ختم الدفع
+  end if;
+
   return new;
 end $$;
 drop trigger if exists trg_guard_passengers on public.passengers;
