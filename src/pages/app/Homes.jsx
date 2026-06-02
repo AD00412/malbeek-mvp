@@ -10,6 +10,8 @@ import Roadmap from '../../components/Roadmap'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
 import FeedbackInbox from '../../components/FeedbackInbox'
+import OnboardingChecklist from '../../components/OnboardingChecklist'
+import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -266,23 +268,27 @@ export function SubscriberHome() {
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
     { key: 'add', label: 'إضافة', icon: 'plus', fab: true },
-    { key: 'customers', label: 'المعتمرون', icon: 'customers', disabled: true },
-    { key: 'settings', label: 'إعدادات', icon: 'settings', disabled: true },
-    { section: 'قريبًا' },
-    { key: 'manifest', label: 'الكشف الرسمي', icon: 'manifest', disabled: true },
-    { key: 'payments', label: 'المدفوعات', icon: 'payments', disabled: true },
+    { key: 'analytics', label: 'التحليلات', icon: 'chart' },
+    { key: 'feedback', label: 'الدعم', icon: 'message' },
   ]
+
+  // فتح إدارة أوّل رحلة (لخطوات التهيئة)؛ أو إنشاء رحلةٍ إن لم توجد
+  function manageFirst() {
+    if (trips[0]) { setManaging(trips[0]); setView('trips') }
+    else openCreate()
+  }
 
   function onTab(k) {
     setManaging(null)
     if (k === 'add') { openCreate(); return }
+    if (k === 'feedback') { setFeedbackOpen(true); return }
     setView(k)
   }
 
   return (
     <>
       <AppShell
-        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'trips' ? 'رحلات العمرة' : 'حملتي'}
+        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'trips' ? 'رحلات العمرة' : view === 'analytics' ? 'التحليلات' : 'حملتي'}
         subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
         tabs={tabs}
         active={view}
@@ -300,16 +306,31 @@ export function SubscriberHome() {
         ) : (
           <>
             {view === 'overview' && (
-              <Overview
-                sub={sub}
-                profile={profile}
-                trips={trips}
-                totalSeats={totalSeats}
-                planLabel={planLabel}
-                totals={paxStats.totals}
-                onCreate={openCreate}
-                onShare={() => setShareOpen(true)}
-              />
+              <>
+                <Overview
+                  sub={sub}
+                  profile={profile}
+                  trips={trips}
+                  totalSeats={totalSeats}
+                  planLabel={planLabel}
+                  totals={paxStats.totals}
+                  onCreate={openCreate}
+                  onShare={() => setShareOpen(true)}
+                  onAnalytics={() => setView('analytics')}
+                />
+                <OnboardingChecklist
+                  sub={sub}
+                  trips={trips}
+                  totals={paxStats.totals}
+                  onCreateTrip={openCreate}
+                  onShare={() => setShareOpen(true)}
+                  onManageFirst={manageFirst}
+                />
+              </>
+            )}
+
+            {view === 'analytics' && (
+              <CampaignAnalytics trips={trips} byTrip={paxStats.byTrip} totals={paxStats.totals} />
             )}
 
             {view === 'trips' && (
@@ -377,7 +398,7 @@ export function SubscriberHome() {
 }
 
 /* ---------- نظرة عامة ---------- */
-function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate, onShare }) {
+function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate, onShare, onAnalytics }) {
   const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   return (
@@ -417,8 +438,8 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate
         <button className="action ok" onClick={onShare} disabled={!sub?.slug}>
           <Icon name="share" size={18} /> مشاركة رابط الحجز
         </button>
-        <button className="action violet" disabled>
-          <Icon name="chart" size={18} /> التحليلات <span className="tag muted" style={{ marginInlineStart: 'auto', fontSize: 10 }}>قريبًا</span>
+        <button className="action violet" onClick={onAnalytics}>
+          <Icon name="chart" size={18} /> التحليلات
         </button>
       </div>
 

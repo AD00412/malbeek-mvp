@@ -539,6 +539,31 @@
   border-color:rgba(217,206,180,.18)}
 .seat-locked .s-head{background:rgba(217,206,180,.18)}
 
+/* جولة التهيئة */
+.onb .ic-badge{width:38px;height:38px;border-radius:12px;background:rgba(196,154,69,.14);color:var(--gd-300);
+  display:grid;place-items:center;flex:none}
+.onb-pct{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--gd-300)}
+.onb-steps{display:flex;flex-direction:column;gap:8px}
+.onb-step{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-3)}
+.onb-step.done{opacity:.7}
+.onb-step.done .onb-label{text-decoration:line-through;text-decoration-color:rgba(226,194,119,.4)}
+.onb-check{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;
+  background:rgba(255,255,255,.05);color:var(--cr-300);border:1px solid var(--line)}
+.onb-step.done .onb-check{background:rgba(43,182,140,.16);color:var(--ok-ink);border-color:rgba(43,182,140,.4)}
+.onb-main{flex:1;min-width:0}
+.onb-label{font-weight:600;color:var(--cr-50);font-size:14px}
+.onb-hint{font-size:12px;color:var(--cr-300);margin-top:2px}
+
+/* تحليلات الحملة */
+.an-bars{display:flex;flex-direction:column;gap:14px}
+.an-row .an-head{display:flex;justify-content:space-between;font-size:13.5px;color:var(--cr-200);margin-bottom:6px}
+.an-row .an-head strong{font-family:var(--font-display);color:var(--cr-50)}
+.an-row .an-sub{font-size:11.5px;color:var(--cr-300);margin-top:4px}
+.bar .fill-em{display:block;height:100%;border-radius:var(--r-pill);background:var(--grad-em)}
+.bar .fill-ok{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--em-400),var(--ok))}
+.bar .fill-info{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,#2e7d8a,var(--info))}
+.bar .fill-warn{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--gd-500),var(--warn))}
+
 /* زرّ التغذية الراجعة العائم */
 .fab-feedback{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));inset-inline-end:18px;z-index:50;
   width:46px;height:46px;border-radius:50%;border:1px solid var(--gd-500);background:linear-gradient(180deg,var(--em-600),var(--em-800));
