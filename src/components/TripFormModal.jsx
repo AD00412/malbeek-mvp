@@ -46,10 +46,14 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
+  // تحقّقٌ حيّ: العودة بعد الذهاب (يطابق تريغر validate_trip في القاعدة)
+  const dateErr = depart && ret && new Date(ret) < new Date(depart) ? 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب.' : ''
+
   async function save() {
     if (busy) return
     if (!title.trim()) { setErr('عنوان الرحلة مطلوب.'); return }
     if (!depart) { setErr('تاريخ ووقت الذهاب مطلوب.'); return }
+    if (dateErr) { setErr(dateErr); return }
     setErr(''); setBusy(true)
 
     const payload = {
@@ -120,9 +124,10 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
               <label>تاريخ ووقت الذهاب *</label>
               <input type="datetime-local" value={depart} onChange={(e) => setDepart(e.target.value)} />
             </div>
-            <div className="field">
+            <div className={`field ${dateErr ? 'invalid' : ''}`}>
               <label>تاريخ العودة (اختياري)</label>
               <input type="datetime-local" value={ret} onChange={(e) => setRet(e.target.value)} />
+              {dateErr && <span className="hint">{dateErr}</span>}
             </div>
           </div>
 
@@ -166,7 +171,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
 
           <div className="modal-actions">
             <button className="btn btn-ghost" onClick={tryClose} disabled={busy}>إلغاء</button>
-            <button className="btn btn-gold" onClick={save} disabled={busy}>
+            <button className="btn btn-gold" onClick={save} disabled={busy || Boolean(dateErr)}>
               {busy ? <span className="spinner" /> : (isEdit ? 'حفظ التعديلات' : 'إنشاء الرحلة')}
             </button>
           </div>

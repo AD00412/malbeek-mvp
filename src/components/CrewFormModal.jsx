@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import { normalizePhone, isValidSaPhone } from '../lib/format'
 
 /**
  * تحرير بيانات الباص والطاقم (تظهر في ترويسة الكشف الرسمي) + بيانات المؤسسة.
@@ -27,20 +28,29 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
+  // تحقّقٌ حيّ لأرقام الجوال (اختياريّة — يُتحقّق منها عند الإدخال فقط، يطابق القاعدة)
+  const phErr = (v) => (v.trim() && !isValidSaPhone(v) ? 'مثال: 05XXXXXXXX.' : '')
+  const driverErr = phErr(driverPhone)
+  const assistErr = phErr(assistantPhone)
+  const supErr = phErr(supPhone)
+  const contactErr = phErr(contactPhone)
+  const anyPhoneErr = Boolean(driverErr || assistErr || supErr || contactErr)
+
   async function save() {
     if (busy) return
     if (!trip?.id || !sub?.id) { setErr('تعذّر تحديد الرحلة أو المؤسسة. حدّث الصفحة.'); return }
+    if (anyPhoneErr) { setErr('صحّح أرقام الجوال المظلّلة.'); return }
     setErr(''); setBusy(true)
     try {
       const tripPayload = {
         bus_label: busLabel.trim() || null,
         bus_plate: busPlate.trim() || null,
         driver_name: driverName.trim() || null,
-        driver_phone: driverPhone.trim() || null,
+        driver_phone: normalizePhone(driverPhone) || null,
         assistant_name: assistantName.trim() || null,
-        assistant_phone: assistantPhone.trim() || null,
+        assistant_phone: normalizePhone(assistantPhone) || null,
         supervisor_name: supName.trim() || null,
-        supervisor_phone: supPhone.trim() || null,
+        supervisor_phone: normalizePhone(supPhone) || null,
       }
       const r1 = await supabase.from('trips').update(tripPayload).eq('id', trip.id)
       if (r1.error) throw r1.error
@@ -48,7 +58,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
       const orgPayload = {
         org_name: orgName.trim() || sub.org_name || 'حملتي',
         license_no: licenseNo.trim() || null,
-        contact_phone: contactPhone.trim() || null,
+        contact_phone: normalizePhone(contactPhone) || null,
         stamp_text: stampText.trim() || null,
         store_url: storeUrl.trim() || null,
       }
@@ -71,7 +81,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
       actions={
         <>
           <button className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>
-          <button className="btn btn-gold" onClick={save} disabled={busy}>
+          <button className="btn btn-gold" onClick={save} disabled={busy || anyPhoneErr}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> حفظ</>}
           </button>
         </>
@@ -88,9 +98,10 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
             <label>رقم التصريح / الترخيص</label>
             <input type="text" placeholder="—" value={licenseNo} onChange={(e) => setLicenseNo(e.target.value)} />
           </div>
-          <div className="field ltr">
+          <div className={`field ltr ${contactErr ? 'invalid' : ''}`}>
             <label>جوال التواصل</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+            {contactErr && <span className="hint">{contactErr}</span>}
           </div>
         </div>
         <div className="field">
@@ -120,17 +131,19 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
             <label>اسم السائق</label>
             <input type="text" value={driverName} onChange={(e) => setDriverName(e.target.value)} />
           </div>
-          <div className="field ltr">
+          <div className={`field ltr ${driverErr ? 'invalid' : ''}`}>
             <label>جوال السائق</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} />
+            {driverErr && <span className="hint">{driverErr}</span>}
           </div>
           <div className="field">
             <label>اسم مساعد السائق</label>
             <input type="text" value={assistantName} onChange={(e) => setAssistantName(e.target.value)} />
           </div>
-          <div className="field ltr">
+          <div className={`field ltr ${assistErr ? 'invalid' : ''}`}>
             <label>جوال المساعد</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={assistantPhone} onChange={(e) => setAssistantPhone(e.target.value)} />
+            {assistErr && <span className="hint">{assistErr}</span>}
           </div>
         </div>
 
@@ -140,9 +153,10 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
             <label>اسم المشرف</label>
             <input type="text" value={supName} onChange={(e) => setSupName(e.target.value)} />
           </div>
-          <div className="field ltr">
+          <div className={`field ltr ${supErr ? 'invalid' : ''}`}>
             <label>جوال المشرف</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={supPhone} onChange={(e) => setSupPhone(e.target.value)} />
+            {supErr && <span className="hint">{supErr}</span>}
           </div>
         </div>
 

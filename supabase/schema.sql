@@ -248,6 +248,10 @@ begin
     new.trial_ends_at := old.trial_ends_at;
     new.owner_id      := old.owner_id;
   end if;
+  -- تطبيع جوال التواصل عند تغيّره (يُعيد استخدام دالّة الجوال المشتركة)
+  if new.contact_phone is distinct from old.contact_phone then
+    new.contact_phone := public.norm_sa_phone(new.contact_phone);
+  end if;
   return new;
 end $$;
 drop trigger if exists trg_guard_subscribers on public.subscribers;
@@ -446,6 +450,41 @@ drop trigger if exists trg_trial_trip_limit on public.trips;
 create trigger trg_trial_trip_limit
   before insert on public.trips
   for each row execute function public.enforce_trial_trip_limit();
+
+-- ★ تحقّق منطق الرحلة + تطبيع أرقام الطاقم (عند الإدراج أو تغيّر القيمة فقط — لا يكسر بياناتٍ قديمة)
+create or replace function public.validate_trip()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  -- السعة غير سالبة (عند الإدراج أو تغيّرها فقط)
+  if (tg_op = 'INSERT' or new.capacity is distinct from old.capacity)
+     and new.capacity is not null and new.capacity < 0 then
+    new.capacity := 0;
+  end if;
+
+  -- التواريخ: العودة بعد الذهاب
+  if tg_op = 'INSERT' then
+    if new.depart_at is not null and new.return_at is not null and new.return_at < new.depart_at then
+      raise exception 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب.';
+    end if;
+    new.driver_phone     := public.norm_sa_phone(new.driver_phone);
+    new.assistant_phone  := public.norm_sa_phone(new.assistant_phone);
+    new.supervisor_phone := public.norm_sa_phone(new.supervisor_phone);
+  else
+    if new.depart_at is distinct from old.depart_at or new.return_at is distinct from old.return_at then
+      if new.depart_at is not null and new.return_at is not null and new.return_at < new.depart_at then
+        raise exception 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب.';
+      end if;
+    end if;
+    if new.driver_phone     is distinct from old.driver_phone     then new.driver_phone     := public.norm_sa_phone(new.driver_phone);     end if;
+    if new.assistant_phone  is distinct from old.assistant_phone  then new.assistant_phone  := public.norm_sa_phone(new.assistant_phone);  end if;
+    if new.supervisor_phone is distinct from old.supervisor_phone then new.supervisor_phone := public.norm_sa_phone(new.supervisor_phone); end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_validate_trip on public.trips;
+create trigger trg_validate_trip
+  before insert or update on public.trips
+  for each row execute function public.validate_trip();
 
 -- ============================================================
 --  ★ حارس أعمدة الراكب: يمنع العميل من تزوير الحالة/الحضور أو نقل حجزه،
