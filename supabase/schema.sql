@@ -287,7 +287,8 @@ create policy "passengers customer insert" on public.passengers for insert
   with check (profile_id = auth.uid() and subscriber_id = public.my_subscriber_id());
 drop policy if exists "passengers customer update" on public.passengers;
 create policy "passengers customer update" on public.passengers for update
-  using (profile_id = auth.uid()) with check (profile_id = auth.uid());
+  using (profile_id = auth.uid())
+  with check (profile_id = auth.uid() and subscriber_id = public.my_subscriber_id());
 -- الإدارة تقرأ الكل
 drop policy if exists "passengers admin read" on public.passengers;
 create policy "passengers admin read" on public.passengers for select using (public.my_role() = 'admin');
