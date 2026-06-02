@@ -1,14 +1,18 @@
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 
 function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
+function dayKey(iso) { return iso ? iso.slice(0, 10) : '' }
 
 /**
- * تحليلات الحملة — مؤشّراتٌ حقيقيّةٌ محسوبةٌ من الرحلات والمعتمرين.
+ * تحليلات الحملة المتقدّمة — مؤشّرات، منحنى زمني، نقاط الركوب الأكثر، ومقارنة الرحلات.
  * @param {Array}  trips
  * @param {object} byTrip   Map(trip_id -> {count, paid, boarded, checked_in})
- * @param {object} totals   { count, paid, boarded, checked_in }
+ * @param {object} totals
+ * @param {string} subscriberId   لجلب التفاصيل الزمنية ونقاط الركوب
  */
-export default function CampaignAnalytics({ trips = [], byTrip, totals }) {
+export default function CampaignAnalytics({ trips = [], byTrip, totals, subscriberId }) {
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   const totalSeats = trips.reduce((s, t) => s + (Number(t.capacity) || 0), 0)
   const occupancy = pct(tt.count, totalSeats)
@@ -23,17 +27,61 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals }) {
     { label: 'نسبة التسكين', value: checkinRate, sub: `${tt.checked_in} مُسكّن`, cls: 'warn' },
   ]
 
-  return (
-    <section className="panel">
-      <div className="panel-head">
-        <h3>تحليلات الحملة</h3>
-        <span className="sub">عبر {trips.length} رحلة</span>
-      </div>
+  // تفاصيلٌ زمنية + نقاط الركوب — تُحمَّل مرّةً عند تغيّر الحملة
+  const [detail, setDetail] = useState({ daily: [], topBoarding: [] })
+  useEffect(() => {
+    let cancel = false
+    if (!subscriberId) { setDetail({ daily: [], topBoarding: [] }); return }
+    ;(async () => {
+      const since = new Date(Date.now() - 30 * 86400000).toISOString()
+      const { data } = await supabase
+        .from('passengers').select('created_at, boarding_point, status')
+        .eq('subscriber_id', subscriberId).gte('created_at', since).limit(2000)
+      if (cancel) return
+      const rows = data ?? []
+      // منحنى زمني آخر ٣٠ يوم
+      const buckets = new Map()
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0)
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(today.getTime() - i * 86400000)
+        buckets.set(d.toISOString().slice(0, 10), 0)
+      }
+      for (const r of rows) {
+        const k = dayKey(r.created_at)
+        if (buckets.has(k)) buckets.set(k, buckets.get(k) + 1)
+      }
+      const daily = Array.from(buckets, ([day, c]) => ({ day, c }))
 
-      {tt.count === 0 && totalSeats === 0 ? (
-        <div className="empty"><div className="em-ttl">لا بيانات بعد</div><div>ستظهر المؤشّرات فور إضافة الرحلات والمعتمرين.</div></div>
-      ) : (
-        <>
+      // أكثر نقاط الركوب
+      const bp = new Map()
+      for (const r of rows) {
+        const k = (r.boarding_point || '—').trim() || '—'
+        bp.set(k, (bp.get(k) || 0) + 1)
+      }
+      const topBoarding = [...bp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+      setDetail({ daily, topBoarding })
+    })()
+    return () => { cancel = true }
+  }, [subscriberId])
+
+  const maxDaily = Math.max(1, ...detail.daily.map((d) => d.c))
+  const last7 = detail.daily.slice(-7).reduce((s, d) => s + d.c, 0)
+  const prev7 = detail.daily.slice(-14, -7).reduce((s, d) => s + d.c, 0)
+  const trend = prev7 === 0 ? (last7 > 0 ? 100 : 0) : Math.round(((last7 - prev7) / prev7) * 100)
+
+  const topBoardingMax = Math.max(1, ...detail.topBoarding.map(([, c]) => c))
+
+  return (
+    <>
+      <section className="panel">
+        <div className="panel-head">
+          <h3>المؤشّرات الرئيسة</h3>
+          <span className="sub">عبر {trips.length} رحلة</span>
+        </div>
+
+        {tt.count === 0 && totalSeats === 0 ? (
+          <div className="empty"><div className="em-ttl">لا بيانات بعد</div><div>ستظهر المؤشّرات فور إضافة الرحلات والمعتمرين.</div></div>
+        ) : (
           <div className="an-bars">
             {bars.map((b) => (
               <div className="an-row" key={b.label}>
@@ -43,30 +91,67 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals }) {
               </div>
             ))}
           </div>
+        )}
+      </section>
 
-          {trips.length > 0 && (
-            <div className="tbl-wrap" style={{ marginTop: 16 }}>
-              <table className="tbl">
-                <thead><tr><th>الرحلة</th><th>الإشغال</th><th>مدفوع</th><th>صعدوا</th></tr></thead>
-                <tbody>
-                  {trips.map((t) => {
-                    const e = byTrip?.get(t.id) || { count: 0, paid: 0, boarded: 0 }
-                    const cap = Number(t.capacity) || 0
-                    return (
-                      <tr key={t.id}>
-                        <td>{t.title || '—'}</td>
-                        <td>{e.count}/{cap || '—'} <span className="muted">({pct(e.count, cap)}%)</span></td>
-                        <td>{e.paid}</td>
-                        <td>{e.boarded}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+      <section className="panel">
+        <div className="panel-head">
+          <h3>منحنى التسجيلات</h3>
+          <span className="sub">آخر ٣٠ يومًا</span>
+          <span style={{ flex: 1 }} />
+          <span className={`tag ${trend >= 0 ? 'ok' : 'warn'}`}>
+            {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}% آخر ٧ أيام
+          </span>
+        </div>
+        <div className="spark">
+          {detail.daily.map((d) => (
+            <div key={d.day} className="spark-bar" style={{ height: `${(d.c / maxDaily) * 100}%` }} title={`${d.day} · ${d.c}`} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--cr-300)', marginTop: 6 }}>
+          <span>قبل ٣٠ يومًا</span><span>اليوم</span>
+        </div>
+      </section>
+
+      {detail.topBoarding.length > 0 && (
+        <section className="panel">
+          <div className="panel-head"><h3>أكثر نقاط الركوب طلبًا</h3></div>
+          <div className="an-bars">
+            {detail.topBoarding.map(([name, c]) => (
+              <div className="an-row" key={name}>
+                <div className="an-head"><span>{name}</span><strong>{c}</strong></div>
+                <div className="bar"><span className="fill-em" style={{ width: (c / topBoardingMax) * 100 + '%' }} /></div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
-    </section>
+
+      {trips.length > 0 && (
+        <section className="panel">
+          <div className="panel-head"><h3>مقارنة الرحلات</h3></div>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead><tr><th>الرحلة</th><th>الإشغال</th><th>مدفوع</th><th>صعدوا</th><th>تسكين</th></tr></thead>
+              <tbody>
+                {trips.map((t) => {
+                  const e = byTrip?.get(t.id) || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
+                  const cap = Number(t.capacity) || 0
+                  return (
+                    <tr key={t.id}>
+                      <td>{t.title || '—'}</td>
+                      <td>{e.count}/{cap || '—'} <span className="muted">({pct(e.count, cap)}%)</span></td>
+                      <td>{e.paid}</td>
+                      <td>{e.boarded}</td>
+                      <td>{e.checked_in}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+    </>
   )
 }

@@ -352,7 +352,7 @@ export function SubscriberHome() {
             )}
 
             {view === 'analytics' && (
-              <CampaignAnalytics trips={trips} byTrip={paxStats.byTrip} totals={paxStats.totals} />
+              <CampaignAnalytics trips={trips} byTrip={paxStats.byTrip} totals={paxStats.totals} subscriberId={sub?.id} />
             )}
 
             {view === 'trips' && (

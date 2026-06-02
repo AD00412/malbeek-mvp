@@ -56,6 +56,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [busEditOpen, setBusEditOpen] = useState(false)
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
+  const [waitlist, setWaitlist] = useState([])
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
@@ -68,6 +69,12 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
     else setPassengers(data ?? [])
     setLoading(false)
+
+    // قائمة الانتظار للرحلة
+    const { data: w } = await supabase
+      .from('waitlist').select('id, profile_id, full_name, phone, notified_at, created_at')
+      .eq('trip_id', trip.id).order('created_at', { ascending: true })
+    setWaitlist(w ?? [])
   }, [trip])
 
   const reloadTrip = useCallback(async () => {
@@ -256,6 +263,36 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           </div>
         )}
       </section>
+
+      {waitlist.length > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <h3>قائمة الانتظار</h3><span className="sub">({waitlist.length})</span>
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: -4, marginBottom: 10 }}>
+            عندما يتفرّغ مقعد، يُبلَّغ أوّل ٥ منتظرين تلقائيًّا.
+          </p>
+          <div className="pax-list">
+            {waitlist.map((w, i) => (
+              <div className="pax-row" key={w.id}>
+                <div className="pax-seat">#{i + 1}</div>
+                <div className="pax-main">
+                  <div className="pax-name">{w.full_name || 'بانتظار'}</div>
+                  <div className="pax-meta">
+                    {w.phone && <span className="ltr">{w.phone}</span>}
+                    {w.notified_at && <><span>·</span><span className="tag ok" style={{ fontSize: 10 }}>أُبلِغ</span></>}
+                  </div>
+                </div>
+                <button className="icon-btn danger" onClick={async () => {
+                  if (!window.confirm('إزالة هذا الشخص من قائمة الانتظار؟')) return
+                  const { error } = await supabase.from('waitlist').delete().eq('id', w.id)
+                  if (error) alert('تعذّر الحذف: ' + error.message); else loadPassengers()
+                }}><Icon name="trash" size={15} /></button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {paxOpen && (
         <PassengerFormModal

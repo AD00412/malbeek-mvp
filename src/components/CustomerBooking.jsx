@@ -98,6 +98,20 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     }))
   }, [occupancy, booking])
 
+  const totalSeats = (trip?.bus_rows || 0) * 4 + (trip?.bus_back_row || 0)
+  const isFull = totalSeats > 0 && occupancy.length >= totalSeats && !booking
+  const [waitlistJoined, setWaitlistJoined] = useState(false)
+
+  async function joinWaitlist() {
+    if (!user?.id || !trip?.id || !sub?.id) return
+    const { error } = await supabase.from('waitlist').insert({
+      profile_id: user.id, trip_id: trip.id, subscriber_id: sub.id,
+      full_name: fullName.trim() || null, phone: phone.trim() || null,
+    })
+    if (error && error.code !== '23505') { setErr('تعذّر الانضمام: ' + error.message); return }
+    setWaitlistJoined(true); setErr('')
+  }
+
   const forPassenger = useMemo(() => ({ id: booking?.id, gender, is_family: isFamily }), [booking, gender, isFamily])
 
   async function confirm() {
@@ -201,6 +215,20 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                   </label>
                 </div>
               </div>
+
+              {isFull && (
+                <div className="alert info" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Icon name="bell" size={16} />
+                  <div style={{ flex: 1 }}>
+                    <strong>الرحلة ممتلئة.</strong> انضمّ لقائمة الانتظار — سنُبلّغك فور تفريغ مقعد.
+                  </div>
+                  {waitlistJoined ? (
+                    <span className="tag ok"><Icon name="check" size={14} /> أنت في القائمة</span>
+                  ) : (
+                    <button className="btn btn-gold btn-sm" onClick={joinWaitlist}>انضمام</button>
+                  )}
+                </div>
+              )}
 
               <div className="sec-label" style={{ textAlign: 'center', marginTop: 8 }}>اختر مقعدك</div>
               <SeatMap

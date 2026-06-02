@@ -473,6 +473,65 @@ create trigger trg_guard_feedback
   for each row execute function public.guard_feedback_columns();
 
 -- ============================================================
+--  قائمة انتظار المقاعد (تُبلَّغ عند تفريغ مقعد)
+-- ============================================================
+create table if not exists public.waitlist (
+  id            uuid primary key default gen_random_uuid(),
+  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
+  trip_id       uuid not null references public.trips(id) on delete cascade,
+  profile_id    uuid not null references public.profiles(id) on delete cascade,
+  full_name     text,
+  phone         text,
+  notified_at   timestamptz,
+  created_at    timestamptz not null default now()
+);
+create unique index if not exists uniq_waitlist_trip_profile on public.waitlist(trip_id, profile_id);
+create index if not exists idx_waitlist_trip on public.waitlist(trip_id, created_at);
+
+alter table public.waitlist enable row level security;
+-- المالك يدير قائمة انتظار حملته
+drop policy if exists "wait owner manage" on public.waitlist;
+create policy "wait owner manage" on public.waitlist for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+-- العميل يقرأ/يُدرج/يحذف سجلّه فقط ضمن حملته
+drop policy if exists "wait self read"   on public.waitlist;
+create policy "wait self read"   on public.waitlist for select using (profile_id = auth.uid());
+drop policy if exists "wait self insert" on public.waitlist;
+create policy "wait self insert" on public.waitlist for insert
+  with check (profile_id = auth.uid() and subscriber_id = public.my_subscriber_id());
+drop policy if exists "wait self delete" on public.waitlist;
+create policy "wait self delete" on public.waitlist for delete using (profile_id = auth.uid());
+drop policy if exists "wait admin read"  on public.waitlist;
+create policy "wait admin read"  on public.waitlist for select using (public.my_role() = 'admin');
+
+-- ★ تريغر: عند تفريغ مقعدٍ (delete) أو إلغاءٍ، يُبلَّغ منتظرو الرحلة
+create or replace function public.notify_waitlist_on_seat_free()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare w record;
+begin
+  if tg_op = 'DELETE' and old.seat_no is not null then
+    for w in
+      select id, profile_id from public.waitlist
+      where trip_id = old.trip_id and notified_at is null
+      order by created_at asc limit 5
+    loop
+      insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+      values (w.profile_id, 'customer', 'new_booking',
+              'تفرّغ مقعدٌ في رحلتك المُنتظَرة',
+              'سارع لحجز مقعدك قبل امتلائها مجدّدًا.',
+              old.trip_id);
+      update public.waitlist set notified_at = now() where id = w.id;
+    end loop;
+  end if;
+  return coalesce(new, old);
+end $$;
+drop trigger if exists trg_notify_waitlist on public.passengers;
+create trigger trg_notify_waitlist
+  after delete on public.passengers
+  for each row execute function public.notify_waitlist_on_seat_free();
+
+-- ============================================================
 --  مركز الإشعارات الداخلي (للمشترك/العميل/الإدارة)
 -- ============================================================
 create table if not exists public.notifications (
@@ -643,6 +702,7 @@ do $$ begin alter publication supabase_realtime add table public.feedback;    ex
 do $$ begin alter publication supabase_realtime add table public.subscribers; exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.trips;       exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.notifications; exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.waitlist;      exception when duplicate_object then null; when others then null; end $$;
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة
