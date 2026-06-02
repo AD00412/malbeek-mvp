@@ -1,22 +1,27 @@
 import { useMemo } from 'react'
 import Icon from './Icon'
-import { buildSeats, isAllowed, policyLabel, allowedFor } from '../lib/busLayout'
+import { buildSeats, isAllowed, allowedFor, policyLabel, DEFAULT_ROWS, DEFAULT_BACK } from '../lib/busLayout'
 
 /**
- * مخطّط الباص التفاعلي — ٤٩ مقعدًا.
+ * مخطّط الباص التفاعلي — واقعيّ، الأبواب يمينًا والسائق/المساعد أعلى اليسار.
  *
- * @param {string} policy            سياسة المقاعد ('all_male' | …)
- * @param {Array}  passengers        قائمة المعتمرين الحاليين (لإظهار المحجوز)
- * @param {string} selected          رقم المقعد المختار حاليًّا (نصّيًّا)
- * @param {Function} onSelect        (seatNo:string) => void
- * @param {object} forPassenger      { id?, gender, is_family } — لتقييد ما يمكنه اختياره
- * @param {boolean} readOnly         عرضٌ فقط بلا اختيار (للخريطة العامّة)
- * @param {boolean} compact          مدمج (للنوافذ الصغيرة)
+ * @param {string} policy          سياسة المقاعد
+ * @param {number} rows            عدد صفوف الأربع مقاعد
+ * @param {number} back            عدد مقاعد الصفّ الخلفي
+ * @param {Array}  passengers      المعتمرون الحاليّون (لإظهار المحجوز)
+ * @param {string} selected        رقم المقعد المختار
+ * @param {Function} onSelect
+ * @param {object} forPassenger    { id?, gender, is_family }
+ * @param {boolean} readOnly
  */
-export default function SeatMap({ policy = 'all_male', passengers = [], selected, onSelect, forPassenger, readOnly, compact }) {
-  const seats = useMemo(() => buildSeats(), [])
+export default function SeatMap({
+  policy = 'all_male', rows = DEFAULT_ROWS, back = DEFAULT_BACK,
+  passengers = [], selected, onSelect, forPassenger, readOnly,
+}) {
+  const seats = useMemo(() => buildSeats(rows, back), [rows, back])
+  const R = Math.max(1, Math.min(20, rows | 0))
+  const B = Math.max(0, Math.min(6, back | 0))
 
-  /* خريطة: رقم المقعد ← المعتمر الذي يحجزه */
   const taken = useMemo(() => {
     const m = new Map()
     for (const p of passengers) if (p.seat_no) m.set(String(p.seat_no), p)
@@ -47,48 +52,53 @@ export default function SeatMap({ policy = 'all_male', passengers = [], selected
     onSelect?.(String(seat.no))
   }
 
+  const rowList = Array.from({ length: R })
+  const backSeats = seats.filter((s) => s.kind === 'back')
+
   return (
-    <div className={`bus-wrap ${compact ? 'compact' : ''}`}>
-      <div className="bus-frame">
-        {/* مقدّمة الباص: السائق والمساعد + باب الدخول */}
-        <div className="bus-front">
-          <div className="bus-driver" title="مقعد السائق">
-            <Icon name="settings" size={14} />
+    <div className="bus3d">
+      <div className="bus3d-body">
+        {/* مقدّمة الباص: زجاجٌ أمامي + كابينة السائق يسارًا + باب الدخول يمينًا */}
+        <div className="bus3d-cab">
+          <div className="cab-driver">
+            <span className="wheel" />
+            <span className="cab-lbl">السائق</span>
           </div>
-          <div className="bus-assist" title="مساعد السائق">
-            <Icon name="customers" size={14} />
+          <div className="cab-assist">
+            <Icon name="customers" size={13} />
+            <span className="cab-lbl">المساعد</span>
           </div>
-          <div className="bus-entry"><Icon name="arrowRight" size={14} /> دخول</div>
+          <div className="cab-windshield" />
+          <div className="door door-entry"><Icon name="chevron" size={12} /> دخول</div>
         </div>
 
-        {/* صفوف المقاعد ١-٤٤ */}
-        <div className="bus-rows">
-          {Array.from({ length: 11 }).map((_, row) => {
-            const rowSeats = seats.filter((s) => s.row === row).sort((a, b) => a.col - b.col)
+        {/* صالة المقاعد */}
+        <div className="bus3d-cabin">
+          {rowList.map((_, row) => {
+            const rowSeats = seats.filter((s) => s.row === row)
+            const right = rowSeats.filter((s) => s.col <= 1).sort((a, b) => b.col - a.col) // نافذة ثم ممرّ
+            const left = rowSeats.filter((s) => s.col >= 3).sort((a, b) => a.col - b.col)  // ممرّ ثم نافذة
+            const isExitRow = row === Math.min(4, R - 1) // باب الخروج عند صفٍّ متوسطٍ يمينًا
             return (
-              <div className="bus-row" key={row}>
-                {[0, 1, 2, 3, 4].map((col) => {
-                  if (col === 2) return <div className="bus-aisle" key={col} />
-                  const seat = rowSeats.find((s) => s.col === col)
-                  if (!seat) return <div key={col} />
-                  return <SeatBtn key={col} seat={seat} state={seatState(seat)} onPick={pick} />
-                })}
+              <div className={`cabin-row ${isExitRow ? 'has-exit' : ''}`} key={row}>
+                <div className="pair pair-right">
+                  {right.map((s) => <SeatBtn key={s.no} seat={s} state={seatState(s)} onPick={pick} />)}
+                </div>
+                <div className="aisle-gap" />
+                <div className="pair pair-left">
+                  {left.map((s) => <SeatBtn key={s.no} seat={s} state={seatState(s)} onPick={pick} />)}
+                </div>
+                {isExitRow && <div className="door door-exit"><Icon name="chevron" size={11} /> خروج</div>}
               </div>
             )
           })}
-        </div>
 
-        {/* مخرج جانبي عند الصفّ الخامس */}
-        <div className="bus-exit" aria-hidden="true">
-          <span>مخرج</span><Icon name="arrowRight" size={13} />
-        </div>
-
-        {/* الصفّ الخلفي ٤٥-٤٩ */}
-        <div className="bus-back">
-          {[0, 1, 2, 3, 4].map((col) => {
-            const seat = seats.find((s) => s.row === 11 && s.col === col)
-            return <SeatBtn key={col} seat={seat} state={seatState(seat)} onPick={pick} />
-          })}
+          {/* الصفّ الخلفي المتراصّ */}
+          {B > 0 && (
+            <div className="cabin-back" style={{ gridTemplateColumns: `repeat(${B}, 1fr)` }}>
+              {backSeats.map((s) => <SeatBtn key={s.no} seat={s} state={seatState(s)} onPick={pick} />)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -98,12 +108,9 @@ export default function SeatMap({ policy = 'all_male', passengers = [], selected
 }
 
 function SeatBtn({ seat, state, onPick }) {
-  const allowance = state.a   // male/female/family/any
-  const cls = `seat seat-${state.kind} ${allowance ? 'a-' + allowance : ''}`
+  const cls = `seat3d seat-${state.kind} ${state.a ? 'a-' + state.a : ''}`
   const holder = state.holder
-  const label = holder
-    ? (holder.full_name || '').trim().split(/\s+/)[0] || '·'
-    : String(seat.no)
+  const firstName = holder ? ((holder.full_name || '').trim().split(/\s+/)[0] || '·') : ''
   return (
     <button
       type="button"
@@ -112,8 +119,11 @@ function SeatBtn({ seat, state, onPick }) {
       title={holder ? `${holder.full_name} · مقعد ${seat.no}` : `مقعد ${seat.no}`}
       disabled={state.kind === 'taken' || state.kind === 'locked'}
     >
-      <span className="s-no">{seat.no}</span>
-      {holder && <span className="s-nm">{label}</span>}
+      <span className="s-head" />
+      <span className="s-body">
+        <span className="s-no">{seat.no}</span>
+        {holder && <span className="s-nm">{firstName}</span>}
+      </span>
     </button>
   )
 }

@@ -106,6 +106,9 @@ alter table public.passengers add column if not exists checked_in_at  timestampt
 alter table public.passengers add column if not exists gender         text;            -- 'male' | 'female'
 alter table public.passengers add column if not exists is_family      boolean not null default false;
 alter table public.trips      add column if not exists seating_policy text not null default 'all_male';
+-- تخطيط الباص القابل للضبط (صفوف ٤ مقاعد + صفّ خلفي)
+alter table public.trips      add column if not exists bus_rows       int  not null default 11;
+alter table public.trips      add column if not exists bus_back_row   int  not null default 5;
 -- منع حجز مقعدٍ مكرّر في نفس الرحلة (يسمح بالـ NULL لمقاعد غير مخصّصة بعد)
 create unique index if not exists uniq_passengers_trip_seat
   on public.passengers(trip_id, seat_no) where seat_no is not null;

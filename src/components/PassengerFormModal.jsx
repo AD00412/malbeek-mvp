@@ -24,7 +24,7 @@ const GENDERS = [
  * @param {string}      seatingPolicy   سياسة المقاعد للرحلة
  * @param {Array}       passengers      المعتمرون الحاليّون لإظهار المحجوز
  */
-export default function PassengerFormModal({ open, passenger, tripId, subscriberId, seatingPolicy, passengers = [], defaultBoarding, onClose, onSaved }) {
+export default function PassengerFormModal({ open, passenger, tripId, subscriberId, seatingPolicy, busRows, busBack, passengers = [], defaultBoarding, onClose, onSaved }) {
   const isEdit = Boolean(passenger?.id)
   const [fullName, setFullName] = useState(passenger?.full_name ?? '')
   const [nationalId, setNationalId] = useState(passenger?.national_id ?? '')
@@ -134,6 +134,8 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
         <div className="sec-label">اختر المقعد</div>
         <SeatMap
           policy={seatingPolicy || 'all_male'}
+          rows={busRows}
+          back={busBack}
           passengers={passengers}
           selected={seatNo}
           onSelect={(no) => setSeatNo(no)}

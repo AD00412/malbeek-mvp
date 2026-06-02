@@ -6,6 +6,7 @@ import PassengerFormModal, { PASSENGER_STATUS } from '../../components/Passenger
 import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
 import SeatMap from '../../components/SeatMap'
+import BusEditor from '../../components/BusEditor'
 import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 
@@ -52,6 +53,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [ticketFor, setTicketFor] = useState(null)   // المعتمر لعرض تذكرته
   const [scanMode, setScanMode] = useState(null)     // 'board' | 'checkin' | null
   const [seatMapOpen, setSeatMapOpen] = useState(false)
+  const [busEditOpen, setBusEditOpen] = useState(false)
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
@@ -100,6 +102,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
   if (manifestOpen) {
     return <Manifest trip={trip} sub={sub} passengers={passengers} onClose={() => setManifestOpen(false)} />
+  }
+  if (busEditOpen) {
+    return (
+      <BusEditor
+        trip={trip}
+        passengers={passengers}
+        onClose={() => setBusEditOpen(false)}
+        onSaved={() => { setBusEditOpen(false); reloadTrip() }}
+      />
+    )
   }
   if (ticketFor) {
     return (
@@ -155,10 +167,13 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           <button className="action" style={{ flex: 1 }} onClick={() => setSeatMapOpen(true)}>
             <Icon name="seat" size={18} /> خريطة المقاعد
           </button>
-          <button className="action" style={{ flex: 1 }} onClick={() => setCrewOpen(true)}>
-            <Icon name="bus" size={18} /> الباص والطاقم
+          <button className="action" style={{ flex: 1 }} onClick={() => setBusEditOpen(true)}>
+            <Icon name="settings" size={18} /> تعديل الباص
           </button>
         </div>
+        <button className="action" onClick={() => setCrewOpen(true)}>
+          <Icon name="bus" size={18} /> الباص والطاقم (للكشف)
+        </button>
         <button className="action ok" onClick={() => setManifestOpen(true)}>
           <Icon name="manifest" size={18} /> الكشف الرسمي
         </button>
@@ -219,6 +234,8 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         tripId={trip?.id}
         subscriberId={sub?.id}
         seatingPolicy={trip?.seating_policy}
+        busRows={trip?.bus_rows}
+        busBack={trip?.bus_back_row}
         passengers={passengers}
         defaultBoarding={trip?.boarding_point}
         onClose={() => setPaxOpen(false)}
@@ -234,7 +251,13 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 8, textAlign: 'center' }}>
           عرضٌ مباشرٌ للباص — يحدّث فور إضافة معتمرٍ أو نقل مقعده.
         </p>
-        <SeatMap policy={trip?.seating_policy} passengers={passengers} readOnly />
+        <SeatMap
+          policy={trip?.seating_policy}
+          rows={trip?.bus_rows}
+          back={trip?.bus_back_row}
+          passengers={passengers}
+          readOnly
+        />
       </BottomSheet>
 
       <CrewFormModal

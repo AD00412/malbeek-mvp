@@ -461,79 +461,106 @@
 .scan-result .sr-pax{font-size:13px;color:var(--cr-100);margin-top:2px}
 
 /* ============================================================
-   مخطّط الباص التفاعلي (SeatMap)
+   مخطّط الباص التفاعلي الواقعي (SeatMap)
    ============================================================ */
-.bus-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
-.bus-frame{position:relative;width:100%;max-width:300px;background:linear-gradient(180deg,#0a4734,#04261c);
-  border:2px solid var(--gd-500);border-radius:46px 46px 28px 28px;padding:14px 14px 18px;
-  box-shadow:inset 0 0 0 1px rgba(226,194,119,.2),0 14px 38px rgba(0,0,0,.45)}
-.bus-frame::before,.bus-frame::after{content:"";position:absolute;top:-9px;width:14px;height:14px;border-radius:50%;
-  background:#1a2420;border:2px solid var(--gd-500)}
-.bus-frame::before{inset-inline-start:30px}
-.bus-frame::after{inset-inline-end:30px}
+.bus3d{display:flex;flex-direction:column;align-items:center;gap:16px;padding:6px 0;width:100%}
+.bus3d-body{position:relative;width:100%;max-width:320px;
+  background:linear-gradient(180deg,#0c5240 0%,#083a2c 70%,#063322 100%);
+  border:3px solid #c49a45;border-radius:64px 64px 30px 30px;
+  padding:0 12px 16px;
+  box-shadow:inset 0 2px 0 rgba(246,227,176,.25),inset 0 0 40px rgba(0,0,0,.35),0 18px 44px rgba(0,0,0,.5)}
+/* مرايا جانبية */
+.bus3d-body::before,.bus3d-body::after{content:"";position:absolute;top:74px;width:9px;height:26px;
+  background:#0a4734;border:2px solid #c49a45;border-radius:3px}
+.bus3d-body::before{inset-inline-start:-12px}
+.bus3d-body::after{inset-inline-end:-12px}
 
-.bus-front{display:grid;grid-template-columns:36px 36px 1fr;gap:8px;align-items:center;
-  padding:10px 6px;margin-bottom:10px;border-bottom:1px dashed rgba(226,194,119,.25)}
-.bus-driver,.bus-assist{width:36px;height:36px;border-radius:10px;background:rgba(226,194,119,.08);
-  border:1px solid var(--line);display:grid;place-items:center;color:var(--cr-300)}
-.bus-entry{justify-self:end;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--gd-300);
-  background:rgba(196,154,69,.12);border:1px solid rgba(196,154,69,.3);padding:4px 10px;border-radius:var(--r-pill)}
+/* مقدّمة الباص (الكابينة) */
+.bus3d-cab{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 6px 12px;
+  margin-bottom:8px;border-bottom:2px dashed rgba(226,194,119,.28)}
+.cab-windshield{position:absolute;top:-2px;inset-inline:18px;height:14px;border-radius:0 0 40% 40%;
+  background:linear-gradient(180deg,rgba(176,224,255,.18),transparent);border-top:2px solid rgba(226,194,119,.25)}
+.cab-driver,.cab-assist{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;
+  border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.18);color:var(--cr-300);font-size:10px}
+.cab-driver{order:2}   /* السائق يسارًا (في RTL: العمود الثاني = أقصى اليسار) */
+.cab-assist{order:1}
+.cab-driver .wheel{width:24px;height:24px;border-radius:50%;border:3px solid var(--gd-400);position:relative}
+.cab-driver .wheel::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--gd-400)}
+.cab-driver .wheel::after{content:"";position:absolute;top:50%;left:50%;width:14px;height:3px;background:var(--gd-400);transform:translate(-50%,-50%)}
+.cab-lbl{font-weight:600}
+.door{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#04261c;
+  background:linear-gradient(180deg,var(--gd-300),var(--gd-500));border-radius:5px;padding:3px 7px}
+.door-entry{position:absolute;bottom:-11px;inset-inline-end:8px;z-index:2;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+.door-exit{position:absolute;inset-inline-end:-14px;top:50%;transform:translateY(-50%);font-size:9px;padding:3px 6px}
 
-.bus-rows{display:flex;flex-direction:column;gap:8px}
-.bus-row{display:grid;grid-template-columns:1fr 1fr 18px 1fr 1fr;gap:6px}
-.bus-aisle{background:repeating-linear-gradient(90deg,transparent 0 4px,rgba(226,194,119,.08) 4px 8px);border-radius:4px}
+/* صالة المقاعد */
+.bus3d-cabin{display:flex;flex-direction:column;gap:9px}
+.cabin-row{position:relative;display:grid;grid-template-columns:1fr 22px 1fr;gap:0;align-items:center}
+.cabin-row.has-exit{padding-inline-end:2px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.aisle-gap{align-self:stretch;margin:2px 0;
+  background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(226,194,119,.07) 5px 10px);border-radius:4px}
+.cabin-back{display:grid;gap:5px;margin-top:11px;padding-top:11px;border-top:2px dashed rgba(226,194,119,.28)}
 
-.bus-exit{position:absolute;inset-inline-end:-10px;top:54%;display:inline-flex;align-items:center;gap:4px;
-  font-size:10px;color:var(--gd-300);background:#04261c;border:1px solid var(--gd-500);
-  padding:4px 8px;border-radius:6px;transform:rotate(0deg)}
+/* المقعد الواقعي: مسند رأس + جسم */
+.seat3d{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;
+  background:none;border:none;padding:0;cursor:pointer;font-family:var(--font-sans);transition:transform .14s}
+.seat3d .s-head{height:5px;margin:0 7px;border-radius:5px 5px 0 0;background:rgba(226,194,119,.3)}
+.seat3d .s-body{position:relative;aspect-ratio:1/.92;border-radius:7px 7px 11px 11px;
+  border:1.5px solid var(--line);background:rgba(255,255,255,.05);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.seat3d .s-no{font-family:var(--font-display);font-weight:900;font-size:12px;line-height:1;color:var(--cr-100)}
+.seat3d .s-nm{font-size:8px;color:var(--cr-300);font-weight:500;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.seat3d:hover:not(:disabled){transform:translateY(-2px)}
+.seat3d:hover:not(:disabled) .s-body{border-color:rgba(226,194,119,.5);background:rgba(196,154,69,.1)}
+.seat3d:disabled{cursor:not-allowed}
 
-.bus-back{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px;
-  padding-top:10px;border-top:1px dashed rgba(226,194,119,.25)}
+/* تلوين المناطق */
+.seat-available.a-male .s-body{border-color:rgba(58,160,179,.4);background:rgba(58,160,179,.07)}
+.seat-available.a-male .s-head{background:rgba(58,160,179,.45)}
+.seat-available.a-female .s-body{border-color:rgba(232,121,189,.4);background:rgba(232,121,189,.07)}
+.seat-available.a-female .s-head{background:rgba(232,121,189,.45)}
+.seat-available.a-family .s-body{border-color:rgba(196,154,69,.4);background:rgba(196,154,69,.07)}
+.seat-available.a-family .s-head{background:rgba(196,154,69,.5)}
 
-/* المقعد */
-.seat{position:relative;aspect-ratio:1/1.05;background:rgba(255,255,255,.05);border:1px solid var(--line);
-  border-radius:8px 8px 12px 12px;color:var(--cr-200);cursor:pointer;font-family:var(--font-sans);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  font-size:11px;font-weight:600;padding:2px;transition:.15s;overflow:hidden}
-.seat::after{content:"";position:absolute;top:1px;inset-inline-start:6px;right:6px;height:3px;
-  background:rgba(226,194,119,.25);border-radius:2px}
-.seat .s-no{font-family:var(--font-display);font-weight:900;line-height:1;color:var(--cr-100);font-size:11.5px}
-.seat .s-nm{font-size:8.5px;color:var(--cr-300);font-weight:500;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-
-.seat:hover:not(:disabled){background:rgba(196,154,69,.1);border-color:rgba(226,194,119,.4);transform:translateY(-1px)}
-.seat:disabled{cursor:not-allowed}
-
-.seat-available{}
-.seat-available.a-male{border-color:rgba(58,160,179,.35);background:rgba(58,160,179,.06)}
-.seat-available.a-female{border-color:rgba(232,121,189,.35);background:rgba(232,121,189,.06)}
-.seat-available.a-family{border-color:rgba(196,154,69,.35);background:rgba(196,154,69,.06)}
-
-.seat-selected{background:linear-gradient(180deg,var(--gd-300),var(--gd-500));border-color:var(--gd-100);
-  color:var(--em-950);box-shadow:0 0 0 3px rgba(196,154,69,.25)}
+.seat-selected .s-body{background:linear-gradient(180deg,var(--gd-300),var(--gd-500));border-color:var(--gd-100);
+  box-shadow:0 0 0 3px rgba(196,154,69,.3),inset 0 -3px 0 rgba(0,0,0,.18)}
+.seat-selected .s-head{background:var(--gd-100)}
 .seat-selected .s-no,.seat-selected .s-nm{color:var(--em-950)}
 
-.seat-taken{background:rgba(43,182,140,.16);border-color:rgba(43,182,140,.4);color:var(--ok-ink);cursor:not-allowed;opacity:.92}
-.seat-taken .s-no{color:var(--ok-ink)}
-.seat-taken .s-nm{color:var(--cr-100)}
+.seat-taken .s-body{background:rgba(43,182,140,.18);border-color:rgba(43,182,140,.45)}
+.seat-taken .s-head{background:rgba(43,182,140,.5)}
+.seat-taken .s-no{color:var(--ok-ink)}.seat-taken .s-nm{color:var(--cr-100)}
+.seat3d.seat-taken{cursor:not-allowed;opacity:.95}
 
-.seat-locked{background:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0 4px,transparent 4px 8px);
-  border-color:rgba(217,206,180,.18);color:var(--cr-300);opacity:.5}
+.seat-locked{opacity:.42}
+.seat-locked .s-body{background:repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 4px,transparent 4px 8px);
+  border-color:rgba(217,206,180,.18)}
+.seat-locked .s-head{background:rgba(217,206,180,.18)}
 
-/* عوامل التشريع */
-.bus-legend{display:flex;flex-direction:column;gap:6px;align-items:center;width:100%;max-width:320px}
+/* محرّر الباص */
+.bus-editor{width:100%;max-width:460px;display:flex;flex-direction:column;gap:6px}
+.stepper{display:flex;align-items:center;justify-content:space-between;background:var(--surface-3);
+  border:1px solid var(--line);border-radius:var(--r-md);padding:6px 8px}
+.stepper button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);
+  color:var(--cr-50);font-size:18px;cursor:pointer;font-family:var(--font-display);line-height:1}
+.stepper button:hover{border-color:var(--line-strong);background:rgba(196,154,69,.12)}
+.stepper span{font-family:var(--font-display);font-weight:900;font-size:18px;color:var(--gd-300)}
+
+/* مفتاح الرموز */
+.bus-legend{display:flex;flex-direction:column;gap:7px;align-items:center;width:100%;max-width:340px}
 .lg-policy{font-size:13px;color:var(--cr-200)}
 .lg-policy strong{color:var(--gd-300);font-family:var(--font-display)}
 .lg-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .lg-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--cr-200)}
-.lg-chip .dot{width:10px;height:10px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid var(--line)}
+.lg-chip .dot{width:11px;height:11px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid var(--line)}
 .lg-chip .dot.mine{background:var(--grad-gold);border-color:var(--gd-100)}
 .lg-chip .dot.taken{background:rgba(43,182,140,.45);border-color:rgba(43,182,140,.5)}
 .lg-chip .dot.locked{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 3px,transparent 3px 6px)}
-.lg-chip .dot.a-male{background:rgba(58,160,179,.25);border-color:rgba(58,160,179,.45)}
-.lg-chip .dot.a-female{background:rgba(232,121,189,.22);border-color:rgba(232,121,189,.45)}
-.lg-chip .dot.a-family{background:rgba(196,154,69,.22);border-color:rgba(196,154,69,.45)}
-
-.bus-wrap.compact .bus-frame{max-width:260px}
+.lg-chip .dot.a-male{background:rgba(58,160,179,.3);border-color:rgba(58,160,179,.5)}
+.lg-chip .dot.a-female{background:rgba(232,121,189,.28);border-color:rgba(232,121,189,.5)}
+.lg-chip .dot.a-family{background:rgba(196,154,69,.28);border-color:rgba(196,154,69,.5)}
 
 /* ---------- الطباعة: يُظهر الكشف/التذكرة فقط ---------- */
 @media print{
