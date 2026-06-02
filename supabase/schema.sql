@@ -871,6 +871,27 @@ returns int language sql stable security definer set search_path = public as $$
 $$;
 grant execute on function public.unread_notifications_count() to authenticated;
 
+-- ★ نظرةٌ تشغيليّةٌ وماليّةٌ للإدارة عبر كلّ الحملات (مقصورةٌ على admin، SECURITY DEFINER)
+create or replace function public.admin_campaign_stats()
+returns table(
+  subscriber_id uuid, org_name text, slug text, plan plan_type,
+  trips_count int, pax_count int, paid_count int, collected numeric, created_at timestamptz
+)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.org_name, s.slug, s.plan,
+    (select count(*)::int from public.trips t where t.subscriber_id = s.id),
+    (select count(*)::int from public.passengers p where p.subscriber_id = s.id),
+    (select count(*)::int from public.passengers p
+       where p.subscriber_id = s.id and p.status in ('paid','boarded','checked_in')),
+    (select coalesce(sum(p.amount),0) from public.passengers p
+       where p.subscriber_id = s.id and p.status in ('paid','boarded','checked_in')),
+    s.created_at
+  from public.subscribers s
+  where public.my_role() = 'admin'      -- غير الأدمن: لا صفوف (رغم SECURITY DEFINER)
+  order by s.created_at desc;
+$$;
+grant execute on function public.admin_campaign_stats() to authenticated;
+
 -- ★ تريغر: إشعارات passengers (حجزٌ جديد للمشترك، تأكيد الدفع/الصعود/التسكين للعميل، إلغاء حجز)
 create or replace function public.notify_passengers_change()
 returns trigger language plpgsql security definer set search_path = public as $$

@@ -49,16 +49,12 @@ function Empty({ title, hint, mark = true }) {
 export function AdminHome() {
   const [view, setView] = useState('overview')
   const [subs, setSubs] = useState([])
-  const [tripCount, setTripCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    const { data: s } = await supabase
-      .from('subscribers').select('id, org_name, slug, plan, created_at')
-      .order('created_at', { ascending: false })
-    const { count } = await supabase.from('trips').select('id', { count: 'exact', head: true })
-    setSubs(s ?? [])
-    setTripCount(count ?? 0)
+    // نظرةٌ تشغيليّةٌ وماليّةٌ مجمّعةٌ عبر كلّ الحملات (دالّةٌ آمنةٌ مقصورةٌ على الأدمن)
+    const { data } = await supabase.rpc('admin_campaign_stats')
+    setSubs((data ?? []).map((r) => ({ ...r, id: r.subscriber_id })))
     setLoading(false)
   }, [])
 
@@ -68,10 +64,10 @@ export function AdminHome() {
     return () => { active = false }
   }, [load])
 
-  // Realtime للإدارة: مشتركون جدد، رحلات جديدة، ملاحظات جديدة، ترقيات.
+  // Realtime للإدارة: مشتركون جدد، رحلات/ركّاب/مدفوعات، ملاحظات جديدة.
   useRealtime('admin-home', [
-    { table: 'subscribers' }, { table: 'trips' }, { table: 'feedback' },
-  ], load, 300, [load])
+    { table: 'subscribers' }, { table: 'trips' }, { table: 'passengers' }, { table: 'feedback' },
+  ], load, 400, [load])
 
   const tabs = [
     { section: 'الإدارة' },
@@ -79,7 +75,11 @@ export function AdminHome() {
     { key: 'subs', label: 'المشتركون', icon: 'building', badge: subs.length || undefined },
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message' },
   ]
+  const money = (n) => Number(n || 0).toLocaleString('en-US')
   const paid = subs.filter((s) => s.plan === 'paid').length
+  const trips = subs.reduce((a, s) => a + (s.trips_count || 0), 0)
+  const pax = subs.reduce((a, s) => a + (s.pax_count || 0), 0)
+  const collected = subs.reduce((a, s) => a + (Number(s.collected) || 0), 0)
 
   return (
     <>
@@ -89,7 +89,11 @@ export function AdminHome() {
             <div className="stats">
               <div className="stat"><div className="top"><span className="ic"><Icon name="building" size={15} /></span>المشتركون</div><div className="v">{subs.length}</div></div>
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>الباقات المدفوعة</div><div className="v">{paid}</div></div>
-              <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>إجمالي الرحلات</div><div className="v">{tripCount}</div></div>
+              <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>الرحلات</div><div className="v">{trips}</div></div>
+              <div className="stat warn"><div className="top"><span className="ic"><Icon name="customers" size={15} /></span>المعتمرون</div><div className="v">{pax}</div></div>
+            </div>
+            <div className="stats" style={{ marginTop: 12 }}>
+              <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>إجمالي المحصّل عبر المنصّة</div><div className="v" style={{ fontSize: 26 }}>{money(collected)} <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>﷼</span></div></div>
             </div>
             <SubsPanel subs={subs} loading={loading} onReload={load} />
             <FeedbackInbox />
@@ -105,6 +109,7 @@ export function AdminHome() {
 
 function SubsPanel({ subs, loading, onReload }) {
   const [busyId, setBusyId] = useState(null)
+  const money = (n) => Number(n || 0).toLocaleString('en-US')
   async function togglePlan(s) {
     setBusyId(s.id)
     const next = s.plan === 'paid' ? 'trial' : 'paid'
@@ -123,14 +128,19 @@ function SubsPanel({ subs, loading, onReload }) {
       ) : (
         <div className="tbl-wrap">
           <table className="tbl">
-            <thead><tr><th>الحملة</th><th>الرابط</th><th>الباقة</th><th>تاريخ الاشتراك</th><th>إجراء</th></tr></thead>
+            <thead><tr><th>الحملة</th><th>الباقة</th><th>رحلات</th><th>معتمرون</th><th>مدفوع</th><th>المحصّل (﷼)</th><th>إجراء</th></tr></thead>
             <tbody>
               {subs.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.org_name}</td>
-                  <td className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)' }}>/j/{s.slug}</code></td>
+                  <td>
+                    {s.org_name}
+                    <div className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)', fontSize: 11 }}>/j/{s.slug}</code></div>
+                  </td>
                   <td><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
-                  <td>{fmtDate(s.created_at)}</td>
+                  <td>{s.trips_count || 0}</td>
+                  <td>{s.pax_count || 0}</td>
+                  <td>{s.paid_count || 0}</td>
+                  <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{money(s.collected)}</td>
                   <td>
                     <button className="icon-btn" onClick={() => togglePlan(s)} disabled={busyId === s.id}>
                       {busyId === s.id ? <span className="spinner" /> : (s.plan === 'paid' ? 'إرجاع لتجريبية' : 'ترقية لمدفوعة')}
