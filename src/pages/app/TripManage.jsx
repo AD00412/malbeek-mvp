@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
 import PassengerFormModal, { PASSENGER_STATUS } from '../../components/PassengerFormModal'
+import ImportPassengers from '../../components/ImportPassengers'
 import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
 import SeatMap from '../../components/SeatMap'
@@ -61,6 +62,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [waitlist, setWaitlist] = useState([])
   const [buses, setBuses] = useState([])
   const [mapBusId, setMapBusId] = useState(null)   // الباص المعروض في خريطة المقاعد
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
@@ -216,7 +218,10 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
       {/* أزرار الإجراءات */}
       <div className="actions" style={{ marginTop: 16 }}>
-        <button className="action primary" onClick={openAdd}><Icon name="plus" size={18} /> إضافة معتمر</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="action primary" style={{ flex: 1 }} onClick={openAdd}><Icon name="plus" size={18} /> إضافة معتمر</button>
+          <button className="action" style={{ flex: 1 }} onClick={() => setImportOpen(true)}><Icon name="download" size={18} /> استيراد قائمة</button>
+        </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action info" style={{ flex: 1 }} onClick={() => setScanMode('board')}>
             <Icon name="qr" size={18} /> مسح الصعود
@@ -338,6 +343,18 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
             ))}
           </div>
         </section>
+      )}
+
+      {importOpen && (
+        <ImportPassengers
+          open
+          tripId={trip?.id}
+          subscriberId={sub?.id}
+          buses={buses}
+          defaultBoarding={trip?.boarding_point}
+          onClose={() => setImportOpen(false)}
+          onDone={(n) => { setImportOpen(false); setErr(''); loadPassengers(); alert(`تم استيراد ${n} معتمرٍ بنجاح.`) }}
+        />
       )}
 
       {paxOpen && (

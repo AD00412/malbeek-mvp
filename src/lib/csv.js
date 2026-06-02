@@ -32,6 +32,29 @@ export function downloadCSV(filename, csv) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/**
+ * تحليل نصّ CSV/TSV إلى صفوفٍ من خلايا. يكتشف الفاصل تلقائيًّا (فاصلة أو Tab من Excel)
+ * ويتعامل مع الحقول المقتبسة (تتضمّن فواصل أو أسطرًا).
+ */
+export function parseCSV(text, delimiter) {
+  const delim = delimiter || (text.includes('\t') ? '\t' : ',')
+  const rows = []
+  let row = [], field = '', inQ = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++ } else inQ = false }
+      else field += c
+    } else if (c === '"') { inQ = true }
+    else if (c === delim) { row.push(field); field = '' }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = '' }
+    else if (c === '\r') { /* تجاهل */ }
+    else field += c
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row) }
+  return rows.filter((r) => r.some((c) => (c ?? '').trim() !== ''))
+}
+
 /** تنسيق تاريخ/وقت مختصر للتصدير (ميلادي) */
 export function csvDate(v) {
   if (!v) return ''
