@@ -5,6 +5,7 @@ import { useAuth } from '../../app/useAuth'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
 import { ScreenLoader } from '../../app/RequireAuth'
+import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, isValidEmail, pwStrength, PW_LABEL } from '../../lib/format'
 
 function arError(msg = '') {
   const m = msg.toLowerCase()
@@ -17,41 +18,20 @@ function arError(msg = '') {
   return 'تعذّر إنشاء الحساب. حاول مرة أخرى.'
 }
 
-// ——— تطبيع المدخلات (يطابق تريغرات القاعدة: دفاعٌ متعدّد الطبقات) ———
-const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩'
-function toLatinDigits(s = '') {
-  return s.replace(/[٠-٩]/g, (d) => String(AR_DIGITS.indexOf(d)))
-}
-function normalizePhone(raw = '') {
-  let p = toLatinDigits(raw).replace(/[^0-9]/g, '')
-  if (/^9665[0-9]{8}$/.test(p)) p = '0' + p.slice(3)
-  else if (/^5[0-9]{8}$/.test(p)) p = '0' + p
-  return p
-}
-
-// ——— قواعد التحقّق الحيّ ———
-function validators() {
-  return {
-    fullName: (v) => btrimWords(v) >= 2 || 'اكتب الاسم الرباعي كاملًا.',
-    nationalId: (v) => /^[12][0-9]{9}$/.test(toLatinDigits(v).trim()) || '١٠ أرقام تبدأ بـ ١ أو ٢.',
-    phone: (v) => /^05[0-9]{8}$/.test(normalizePhone(v)) || 'مثال: 05XXXXXXXX.',
-    email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) || 'بريدٌ إلكترونيٌّ غير صحيح.',
-    password: (v) => v.length >= 6 || '٦ أحرف على الأقل.',
-  }
-}
+// ——— قواعد التحقّق الحيّ (تطابق تريغرات القاعدة: دفاعٌ متعدّد الطبقات) ———
 function btrimWords(v = '') {
   const t = v.trim()
   return t ? t.split(/\s+/).length : 0
 }
-function pwStrength(v = '') {
-  let s = 0
-  if (v.length >= 6) s++
-  if (v.length >= 10) s++
-  if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++
-  if (/[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) s++
-  return Math.min(s, 3) // 0..3
+function validators() {
+  return {
+    fullName: (v) => btrimWords(v) >= 2 || 'اكتب الاسم الرباعي كاملًا.',
+    nationalId: (v) => isValidNationalId(v) || '١٠ أرقام تبدأ بـ ١ أو ٢.',
+    phone: (v) => isValidSaPhone(v) || 'مثال: 05XXXXXXXX.',
+    email: (v) => isValidEmail(v) || 'بريدٌ إلكترونيٌّ غير صحيح.',
+    password: (v) => v.length >= 6 || '٦ أحرف على الأقل.',
+  }
 }
-const PW_LABEL = ['', 'ضعيفة', 'متوسّطة', 'قويّة']
 
 export default function CustomerJoin() {
   const { slug } = useParams()
@@ -116,7 +96,7 @@ export default function CustomerJoin() {
     if (!allValid) { setErr('يُرجى تصحيح الحقول المظلّلة.'); return }
     setErr(''); setInfo(''); setBusy(true)
 
-    const cleanName = fullName.trim().replace(/\s+/g, ' ')
+    const cleanFullName = cleanName(fullName)
     const cleanId = toLatinDigits(nationalId).trim()
     const cleanPhone = normalizePhone(phone)
 
@@ -127,7 +107,7 @@ export default function CustomerJoin() {
       options: {
         data: {
           role: 'customer',
-          full_name: cleanName,
+          full_name: cleanFullName,
           phone: cleanPhone,
           subscriber_id: org.id,
         },
@@ -150,7 +130,7 @@ export default function CustomerJoin() {
       const insertCustomer = () => supabase.from('customers').insert({
         subscriber_id: org.id,
         profile_id: data.user.id,
-        full_name: cleanName,
+        full_name: cleanFullName,
         national_id: cleanId,
         phone: cleanPhone,
       })

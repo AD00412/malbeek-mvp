@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
+import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 
 export const PASSENGER_STATUS = [
   { v: 'registered', t: 'مسجّل' },
@@ -43,15 +44,21 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
     id: passenger?.id, gender, is_family: isFamily,
   }), [passenger, gender, isFamily])
 
+  // تحقّقٌ حيّ — الهوية/الجوال اختياريّان للمعتمر، فيُتحقّق منهما فقط عند الإدخال (يطابق القاعدة)
+  const idErr = nationalId.trim() && !isValidNationalId(nationalId) ? '١٠ أرقام تبدأ بـ ١ أو ٢.' : ''
+  const phErr = phone.trim() && !isValidSaPhone(phone) ? 'مثال: 05XXXXXXXX.' : ''
+
   async function save() {
     if (busy) return
     if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
+    if (idErr || phErr) { setErr('صحّح رقم الهوية/الجوال المظلّل.'); return }
     setErr(''); setBusy(true)
 
+    const cleanPhone = normalizePhone(phone)
     const payload = {
-      full_name: fullName.trim(),
-      national_id: nationalId.trim() || null,
-      phone: phone.trim() || null,
+      full_name: cleanName(fullName),
+      national_id: toLatinDigits(nationalId).trim() || null,
+      phone: cleanPhone || null,
       nationality: nationality.trim() || null,
       gender,
       is_family: isFamily,
@@ -100,18 +107,23 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
       }
     >
       <div className="form" style={{ marginTop: 0 }}>
-        <div className="field">
+        <div className="field with-ic">
           <label>الاسم الرباعي <span className="req">*</span></label>
+          <span className="f-ic"><Icon name="user" size={17} /></span>
           <input type="text" placeholder="الاسم كما في الهوية" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
         <div className="grid-2">
-          <div className="field ltr">
+          <div className={`field with-ic ltr ${idErr ? 'invalid' : ''}`}>
             <label>رقم الهوية / الإقامة</label>
+            <span className="f-ic"><Icon name="badge" size={17} /></span>
             <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+            {idErr && <span className="hint">{idErr}</span>}
           </div>
-          <div className="field ltr">
+          <div className={`field with-ic ltr ${phErr ? 'invalid' : ''}`}>
             <label>رقم الجوال</label>
+            <span className="f-ic"><Icon name="phone" size={17} /></span>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            {phErr && <span className="hint">{phErr}</span>}
           </div>
         </div>
         <div className="grid-2">

@@ -4,6 +4,7 @@ import { useAuth } from '../app/useAuth'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
 import CompassMark from './CompassMark'
+import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 
 const Ticket = lazy(() => import('./Ticket'))
 
@@ -117,12 +118,14 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   async function confirm() {
     if (busy) return
     if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
+    if (nationalId.trim() && !isValidNationalId(nationalId)) { setErr('رقم الهوية/الإقامة غير صحيح (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
+    if (phone.trim() && !isValidSaPhone(phone)) { setErr('رقم الجوال غير صحيح (مثال: 05XXXXXXXX).'); return }
     if (!seatNo) { setErr('اختر مقعدك من الخريطة.'); return }
     setErr(''); setBusy(true)
     const payload = {
-      full_name: fullName.trim(),
-      national_id: nationalId.trim() || null,
-      phone: phone.trim() || null,
+      full_name: cleanName(fullName),
+      national_id: toLatinDigits(nationalId).trim() || null,
+      phone: normalizePhone(phone) || null,
       gender, is_family: isFamily,
       seat_no: seatNo,
       boarding_point: trip?.boarding_point || null,

@@ -291,38 +291,66 @@ create policy "customers self insert" on public.customers for insert
 drop policy if exists "customers admin read" on public.customers;
 create policy "customers admin read" on public.customers for select using (public.my_role() = 'admin');
 
--- ★ تطبيع وتحقّق بيانات المعتمر (هوية/جوال) — دفاعٌ مُلزِمٌ على مستوى القاعدة
-create or replace function public.normalize_customer()
-returns trigger language plpgsql security definer set search_path = public as $$
-declare ar text := '٠١٢٣٤٥٦٧٨٩'; la text := '0123456789'; p text;
+-- ============================================================
+--  دوال تطبيع/تحقّق مشتركة (هوية/جوال) — مصدرٌ واحدٌ لكلّ الجداول
+-- ============================================================
+-- تحويل الأرقام العربية-الهنديّة إلى لاتينيّة + قصّ المسافات
+create or replace function public.norm_digits(t text)
+returns text language sql immutable as $$
+  select btrim(translate(coalesce(t, ''), '٠١٢٣٤٥٦٧٨٩', '0123456789'))
+$$;
+
+-- الهوية/الإقامة: ١٠ أرقام تبدأ بـ 1 (مواطن) أو 2 (مقيم). تُرجع null إن فارغة، وترفع إن غير صحيحة.
+create or replace function public.norm_national_id(t text)
+returns text language plpgsql immutable as $$
+declare v text := nullif(public.norm_digits(t), '');
 begin
-  -- تحويل الأرقام العربية-الهنديّة إلى لاتينيّة + قصّ المسافات
-  new.full_name   := btrim(coalesce(new.full_name, ''));
-  new.national_id := nullif(btrim(translate(coalesce(new.national_id, ''), ar, la)), '');
-  p := btrim(translate(coalesce(new.phone, ''), ar, la));
-
-  if new.full_name = '' or array_length(regexp_split_to_array(new.full_name, '\s+'), 1) < 2 then
-    raise exception 'الاسم الرباعي مطلوبٌ كاملًا (كلمتان على الأقل).';
-  end if;
-
-  -- الهوية: ١٠ أرقام تبدأ بـ 1 (مواطن) أو 2 (مقيم)
-  if new.national_id is not null and new.national_id !~ '^[12][0-9]{9}$' then
+  if v is not null and v !~ '^[12][0-9]{9}$' then
     raise exception 'رقم الهوية/الإقامة غير صحيح (١٠ أرقام تبدأ بـ ١ أو ٢).';
   end if;
+  return v;
+end $$;
 
-  -- تطبيع الجوال السعودي إلى 05XXXXXXXX (يقبل +9665.. / 9665.. / 5.. / 05..)
-  if p <> '' then
-    p := regexp_replace(p, '[^0-9]', '', 'g');
-    if p ~ '^9665[0-9]{8}$'  then p := '0' || substring(p from 4); end if;  -- 9665XXXXXXXX -> 05XXXXXXXX
-    if p ~ '^5[0-9]{8}$'     then p := '0' || p; end if;                    -- 5XXXXXXXX   -> 05XXXXXXXX
-    if p !~ '^05[0-9]{8}$' then
-      raise exception 'رقم الجوال غير صحيح (مثال: 05XXXXXXXX).';
-    end if;
-    new.phone := p;
-  else
-    new.phone := null;
+-- الجوال السعودي → 05XXXXXXXX (يقبل +9665../9665../5../05..). تُرجع null إن فارغ، وترفع إن غير صحيح.
+create or replace function public.norm_sa_phone(t text)
+returns text language plpgsql immutable as $$
+declare p text := regexp_replace(public.norm_digits(t), '[^0-9]', '', 'g');
+begin
+  if p = '' then return null; end if;
+  if p ~ '^9665[0-9]{8}$' then p := '0' || substring(p from 4); end if;
+  if p ~ '^5[0-9]{8}$'    then p := '0' || p; end if;
+  if p !~ '^05[0-9]{8}$' then
+    raise exception 'رقم الجوال غير صحيح (مثال: 05XXXXXXXX).';
   end if;
+  return p;
+end $$;
 
+-- ★ تطبيع وتحقّق بيانات المعتمر (هوية/جوال) — دفاعٌ مُلزِمٌ على مستوى القاعدة.
+--   يُعاد التحقّق عند الإدراج أو تغيّر القيمة فقط (لا يكسر بياناتٍ قديمةً عند تحديثٍ لا يمسّها).
+create or replace function public.normalize_customer()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.full_name   := btrim(coalesce(new.full_name, ''));
+    if new.full_name = '' or array_length(regexp_split_to_array(new.full_name, '\s+'), 1) < 2 then
+      raise exception 'الاسم الرباعي مطلوبٌ كاملًا (كلمتان على الأقل).';
+    end if;
+    new.national_id := public.norm_national_id(new.national_id);
+    new.phone       := public.norm_sa_phone(new.phone);
+  else
+    if new.full_name is distinct from old.full_name then
+      new.full_name := btrim(coalesce(new.full_name, ''));
+      if new.full_name = '' or array_length(regexp_split_to_array(new.full_name, '\s+'), 1) < 2 then
+        raise exception 'الاسم الرباعي مطلوبٌ كاملًا (كلمتان على الأقل).';
+      end if;
+    end if;
+    if new.national_id is distinct from old.national_id then
+      new.national_id := public.norm_national_id(new.national_id);
+    end if;
+    if new.phone is distinct from old.phone then
+      new.phone := public.norm_sa_phone(new.phone);
+    end if;
+  end if;
   return new;
 end $$;
 drop trigger if exists trg_normalize_customer on public.customers;
@@ -432,6 +460,25 @@ begin
   select (exists (select 1 from public.subscribers s
                   where s.id = new.subscriber_id and s.owner_id = auth.uid())
           or public.my_role() = 'admin') into v_owner;
+
+  -- تطبيع/تحقّق الاسم والهوية والجوال (عند الإدراج أو تغيّر القيمة فقط — لا يكسر بياناتٍ قديمة)
+  if tg_op = 'INSERT' then
+    new.full_name := btrim(coalesce(new.full_name, ''));
+    if new.full_name = '' then raise exception 'اسم المعتمر مطلوب.'; end if;
+    new.national_id := public.norm_national_id(new.national_id);
+    new.phone       := public.norm_sa_phone(new.phone);
+  else
+    if new.full_name is distinct from old.full_name then
+      new.full_name := btrim(coalesce(new.full_name, ''));
+      if new.full_name = '' then raise exception 'اسم المعتمر مطلوب.'; end if;
+    end if;
+    if new.national_id is distinct from old.national_id then
+      new.national_id := public.norm_national_id(new.national_id);
+    end if;
+    if new.phone is distinct from old.phone then
+      new.phone := public.norm_sa_phone(new.phone);
+    end if;
+  end if;
 
   -- نطاق المقعد ضمن تخطيط الباص (يسري على الجميع)
   if new.seat_no is not null and new.seat_no ~ '^[0-9]+$' then
