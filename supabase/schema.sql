@@ -508,9 +508,13 @@ create policy "wait admin read"  on public.waitlist for select using (public.my_
 -- ★ تريغر: عند تفريغ مقعدٍ (delete) أو إلغاءٍ، يُبلَّغ منتظرو الرحلة
 create or replace function public.notify_waitlist_on_seat_free()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare w record;
+declare w record; v_trip_alive boolean;
 begin
   if tg_op = 'DELETE' and old.seat_no is not null then
+    -- تأكّد أن الرحلة لا تزال نشطةً (تجنّب إشعار "تفرّغ مقعد" لرحلةٍ مُلغاة/منتهية)
+    select exists (select 1 from public.trips where id = old.trip_id
+                   and status in ('draft','open')) into v_trip_alive;
+    if not v_trip_alive then return old; end if;
     for w in
       select id, profile_id from public.waitlist
       where trip_id = old.trip_id and notified_at is null
@@ -564,6 +568,29 @@ create policy "notif admin read"  on public.notifications for select using (publ
 drop policy if exists "notif admin update" on public.notifications;
 create policy "notif admin update" on public.notifications for update using (public.my_role() = 'admin' and audience = 'admin') with check (public.my_role() = 'admin' and audience = 'admin');
 -- لا insert من العميل: التريغرات تُنشئ الإشعارات (بصلاحية SECURITY DEFINER)
+
+-- ★ حارس أعمدة notifications: غير الأدمن يحدّث read_at فقط
+create or replace function public.guard_notification_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(public.my_role(), 'customer') <> 'admin' then
+    new.profile_id := old.profile_id;
+    new.audience   := old.audience;
+    new.kind       := old.kind;
+    new.title      := old.title;
+    new.body       := old.body;
+    new.link       := old.link;
+    new.ref_trip   := old.ref_trip;
+    new.ref_passenger := old.ref_passenger;
+    new.ref_feedback  := old.ref_feedback;
+    new.created_at := old.created_at;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_notifications on public.notifications;
+create trigger trg_guard_notifications
+  before update on public.notifications
+  for each row execute function public.guard_notification_columns();
 
 -- مساعد: عدّ غير المقروء للمستخدم الحالي
 create or replace function public.unread_notifications_count()
