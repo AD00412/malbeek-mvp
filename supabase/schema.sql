@@ -592,8 +592,10 @@ begin
                   where s.id = new.subscriber_id and s.owner_id = auth.uid())
           or public.my_role() = 'admin') into v_owner;
 
-  -- إسناد الباص: إن لم يُحدَّد، يُربط الراكب بأوّل باصٍ في الرحلة (باص ١) — توافقٌ تامٌّ مع المرحلة ١
-  if new.bus_id is null then
+  -- إسناد/تحقّق الباص: يجب أن ينتمي الباص للرحلة نفسها؛ وإلّا (أو إن كان فارغًا)
+  -- يُربط الراكب بأوّل باصٍ في الرحلة. يمنع إسناد باصٍ من رحلةٍ أخرى (تماسك البيانات).
+  if new.bus_id is null or not exists (
+       select 1 from public.trip_buses where id = new.bus_id and trip_id = new.trip_id) then
     select id into new.bus_id from public.trip_buses
      where trip_id = new.trip_id order by bus_number asc limit 1;
   end if;
@@ -617,9 +619,9 @@ begin
     end if;
   end if;
 
-  -- نطاق المقعد ضمن تخطيط الباص (يسري على الجميع)
+  -- نطاق المقعد ضمن تخطيط الباص المُسنَد (يسري على الجميع) — يقرأ من باص الراكب لا من الرحلة
   if new.seat_no is not null and new.seat_no ~ '^[0-9]+$' then
-    select (t.bus_rows * 4 + t.bus_back_row) into v_total from public.trips t where t.id = new.trip_id;
+    select (b.bus_rows * 4 + b.bus_back_row) into v_total from public.trip_buses b where b.id = new.bus_id;
     if v_total is not null and (new.seat_no::int < 1 or new.seat_no::int > v_total) then
       raise exception 'SEAT_OUT_OF_RANGE' using hint = 'رقم المقعد خارج تخطيط الباص.';
     end if;

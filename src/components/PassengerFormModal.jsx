@@ -4,6 +4,7 @@ import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
+import { busLayout, busName } from '../lib/buses'
 
 export const PASSENGER_STATUS = [
   { v: 'registered', t: 'مسجّل' },
@@ -25,8 +26,14 @@ const GENDERS = [
  * @param {string}      seatingPolicy   سياسة المقاعد للرحلة
  * @param {Array}       passengers      المعتمرون الحاليّون لإظهار المحجوز
  */
-export default function PassengerFormModal({ open, passenger, tripId, subscriberId, seatingPolicy, busRows, busBack, passengers = [], defaultBoarding, onClose, onSaved }) {
+export default function PassengerFormModal({ open, passenger, tripId, subscriberId, seatingPolicy, busRows, busBack, buses = [], passengers = [], defaultBoarding, onClose, onSaved }) {
   const isEdit = Boolean(passenger?.id)
+  const multiBus = buses.length > 1
+  // الباص النشِط: باص الراكب الحالي إن وُجد، وإلّا الأوّل
+  const [busId, setBusId] = useState(passenger?.bus_id ?? (buses[0]?.id ?? null))
+  const activeBus = buses.find((b) => b.id === busId) || buses[0] || null
+  const layout = multiBus && activeBus ? busLayout(activeBus)
+    : { rows: busRows, back: busBack, policy: seatingPolicy || 'all_male' }
   const [fullName, setFullName] = useState(passenger?.full_name ?? '')
   const [nationalId, setNationalId] = useState(passenger?.national_id ?? '')
   const [phone, setPhone] = useState(passenger?.phone ?? '')
@@ -67,6 +74,8 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
       status,
       notes: notes.trim() || null,
     }
+    // عند تعدّد الباصات نُسند الباص المختار صراحةً (وإلّا يُسنده الحارس لباص ١)
+    if (multiBus && busId) payload.bus_id = busId
     try {
       let result
       if (isEdit) {
@@ -143,12 +152,26 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
           ضمن عائلة (يُتاح له اختيار مقاعد العوائل)
         </label>
 
+        {multiBus && (
+          <>
+            <div className="sec-label">الباص</div>
+            <div className="bus-tabs">
+              {buses.map((b) => (
+                <button key={b.id} type="button" className={`bus-tab ${b.id === busId ? 'active' : ''}`}
+                  onClick={() => { setBusId(b.id); setSeatNo('') }}>
+                  <Icon name="bus" size={15} /> {busName(b)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="sec-label">اختر المقعد</div>
         <SeatMap
-          policy={seatingPolicy || 'all_male'}
-          rows={busRows}
-          back={busBack}
-          passengers={passengers}
+          policy={layout.policy}
+          rows={layout.rows}
+          back={layout.back}
+          passengers={multiBus ? passengers.filter((p) => p.bus_id === busId) : passengers}
           selected={seatNo}
           onSelect={(no) => setSeatNo(no)}
           forPassenger={forPassenger}

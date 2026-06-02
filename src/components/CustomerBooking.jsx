@@ -5,6 +5,7 @@ import Icon from './Icon'
 import SeatMap from './SeatMap'
 import CompassMark from './CompassMark'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
+import { loadTripBuses, busLayout, busName } from '../lib/buses'
 
 const Ticket = lazy(() => import('./Ticket'))
 
@@ -40,6 +41,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [isFamily, setIsFamily] = useState(false)
   const [seatNo, setSeatNo] = useState('')
   const [paymentRef, setPaymentRef] = useState('')
+  const [buses, setBuses] = useState([])
+  const [busId, setBusId] = useState(null)
+
+  const multiBus = buses.length > 1
+  const activeBus = buses.find((b) => b.id === busId) || buses[0] || null
+  const layout = multiBus && activeBus ? busLayout(activeBus)
+    : { rows: trip?.bus_rows, back: trip?.bus_back_row, policy: trip?.seating_policy }
 
   async function load() {
     if (!trip?.id || !user?.id) return
@@ -47,10 +55,16 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     // حجز العميل الحالي لهذه الرحلة (إن وُجد)
     const { data: mine } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref')
+      .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref, bus_id')
       .eq('trip_id', trip.id).eq('profile_id', user.id).maybeSingle()
-    // إشغال المقاعد (بلا أسماء) عبر دالةٍ آمنة
-    const { data: occ } = await supabase.rpc('trip_seat_occupancy', { p_trip: trip.id })
+    // باصات الرحلة + تحديد الباص النشِط (باص الحجز الحالي أو الأوّل)
+    const bs = await loadTripBuses(trip.id)
+    setBuses(bs)
+    const activeId = mine?.bus_id ?? bs[0]?.id ?? null
+    setBusId(activeId)
+    // إشغال المقاعد (بلا أسماء) — للباص المختار عند تعدّد الباصات
+    const occArgs = bs.length > 1 && activeId ? { p_trip: trip.id, p_bus: activeId } : { p_trip: trip.id }
+    const { data: occ } = await supabase.rpc('trip_seat_occupancy', occArgs)
     setOccupancy(occ ?? [])
     if (mine) {
       setBooking(mine)
@@ -73,9 +87,11 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     if (!trip?.id) return
     let cancelled = false
     const refresh = async () => {
-      const { data: occ } = await supabase.rpc('trip_seat_occupancy', { p_trip: trip.id })
+      const args = multiBus && busId ? { p_trip: trip.id, p_bus: busId } : { p_trip: trip.id }
+      const { data: occ } = await supabase.rpc('trip_seat_occupancy', args)
       if (!cancelled) setOccupancy(occ ?? [])
     }
+    refresh()  // التقاط فوريٌّ عند تبديل الباص
     const ch = supabase
       .channel(`pax:${trip.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, refresh)
@@ -89,7 +105,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       window.removeEventListener('focus', onFocus)
       supabase.removeChannel(ch)
     }
-  }, [trip?.id])
+  }, [trip?.id, busId, multiBus])
 
   // مصفوفة "ركّاب" للخريطة: إشغالٌ بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
   const seatPassengers = useMemo(() => {
@@ -99,7 +115,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     }))
   }, [occupancy, booking])
 
-  const totalSeats = (trip?.bus_rows || 0) * 4 + (trip?.bus_back_row || 0)
+  const totalSeats = (layout.rows || 0) * 4 + (layout.back || 0)
   const isFull = totalSeats > 0 && occupancy.length >= totalSeats && !booking
   const [waitlistJoined, setWaitlistJoined] = useState(false)
 
@@ -133,6 +149,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       // الحالة تبقى "مسجّل"؛ تأكيد الدفع يتمّ من الحملة بعد مراجعة المرجع.
       status: 'registered',
     }
+    // عند تعدّد الباصات نُسند الباص المختار صراحةً (وإلّا يُسنده الحارس لباص ١)
+    if (multiBus && busId) payload.bus_id = busId
     try {
       let result, row
       if (booking?.id) {
@@ -233,9 +251,23 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 </div>
               )}
 
+              {multiBus && (
+                <>
+                  <div className="sec-label" style={{ textAlign: 'center', marginTop: 8 }}>اختر الباص</div>
+                  <div className="bus-tabs" style={{ justifyContent: 'center' }}>
+                    {buses.map((b) => (
+                      <button key={b.id} type="button" className={`bus-tab ${b.id === busId ? 'active' : ''}`}
+                        onClick={() => { setBusId(b.id); setSeatNo('') }}>
+                        <Icon name="bus" size={15} /> {busName(b)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
               <div className="sec-label" style={{ textAlign: 'center', marginTop: 8 }}>اختر مقعدك</div>
               <SeatMap
-                policy={trip?.seating_policy} rows={trip?.bus_rows} back={trip?.bus_back_row}
+                policy={layout.policy} rows={layout.rows} back={layout.back}
                 passengers={seatPassengers} selected={seatNo}
                 onSelect={(no) => setSeatNo(no)} forPassenger={forPassenger}
               />

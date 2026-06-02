@@ -9,6 +9,7 @@ import SeatMap from '../../components/SeatMap'
 import BusEditor from '../../components/BusEditor'
 import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
+import { loadTripBuses, busLayout, busName } from '../../lib/buses'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -57,13 +58,15 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
   const [waitlist, setWaitlist] = useState([])
+  const [buses, setBuses] = useState([])
+  const [mapBusId, setMapBusId] = useState(null)   // الباص المعروض في خريطة المقاعد
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -75,6 +78,11 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       .from('waitlist').select('id, profile_id, full_name, phone, notified_at, created_at')
       .eq('trip_id', trip.id).order('created_at', { ascending: true })
     setWaitlist(w ?? [])
+
+    // باصات الرحلة (لتعدّد الباصات)
+    const bs = await loadTripBuses(trip.id)
+    setBuses(bs)
+    setMapBusId((cur) => (cur && bs.some((b) => b.id === cur) ? cur : bs[0]?.id ?? null))
   }, [trip])
 
   const reloadTrip = useCallback(async () => {
@@ -304,6 +312,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           seatingPolicy={trip?.seating_policy}
           busRows={trip?.bus_rows}
           busBack={trip?.bus_back_row}
+          buses={buses}
           passengers={passengers}
           defaultBoarding={trip?.boarding_point}
           onClose={() => setPaxOpen(false)}
@@ -320,13 +329,24 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 8, textAlign: 'center' }}>
           عرضٌ مباشرٌ للباص — يحدّث فور إضافة معتمرٍ أو نقل مقعده.
         </p>
-        <SeatMap
-          policy={trip?.seating_policy}
-          rows={trip?.bus_rows}
-          back={trip?.bus_back_row}
-          passengers={passengers}
-          readOnly
-        />
+        {buses.length > 1 && (
+          <div className="bus-tabs" style={{ justifyContent: 'center' }}>
+            {buses.map((b) => (
+              <button key={b.id} type="button" className={`bus-tab ${b.id === mapBusId ? 'active' : ''}`}
+                onClick={() => setMapBusId(b.id)}>
+                <Icon name="bus" size={15} /> {busName(b)}
+              </button>
+            ))}
+          </div>
+        )}
+        {(() => {
+          const multi = buses.length > 1
+          const active = buses.find((b) => b.id === mapBusId)
+          const lay = multi && active ? busLayout(active)
+            : { rows: trip?.bus_rows, back: trip?.bus_back_row, policy: trip?.seating_policy }
+          const pax = multi ? passengers.filter((p) => p.bus_id === mapBusId) : passengers
+          return <SeatMap policy={lay.policy} rows={lay.rows} back={lay.back} passengers={pax} readOnly />
+        })()}
       </BottomSheet>
 
       {crewOpen && (
