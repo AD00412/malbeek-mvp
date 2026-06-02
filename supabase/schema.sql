@@ -421,6 +421,38 @@ drop policy if exists "feedback admin update" on public.feedback;
 create policy "feedback admin update" on public.feedback for update
   using (public.my_role() = 'admin') with check (public.my_role() = 'admin');
 
+-- ★ حارس أعمدة feedback: يمنع المستخدم من تزييف "ردّ الإدارة" أو تشويش الحملة/الجمهور
+create or replace function public.guard_feedback_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_role  user_role := coalesce(public.my_role(), 'customer');
+  v_mysub uuid     := public.my_subscriber_id();
+begin
+  if v_role <> 'admin' then
+    -- لا يُسمح بضبط حقول الإدارة عند الإنشاء
+    new.reply      := null;
+    new.replied_at := null;
+    new.status     := 'open';
+    -- جمهور الإرسال يُشتقّ من دور المرسِل لا من العميل
+    new.audience := case when v_role = 'subscriber' then 'subscriber' else 'customer' end;
+    -- ربط الحملة: المشترك بحملته فقط؛ العميل بحملته فقط؛ غير ذلك null
+    if v_role = 'subscriber' then
+      new.subscriber_id := (select id from public.subscribers where owner_id = auth.uid() limit 1);
+    elsif v_role = 'customer' then
+      new.subscriber_id := v_mysub;
+    else
+      new.subscriber_id := null;
+    end if;
+    -- تثبيت هوية المرسِل
+    new.profile_id := auth.uid();
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_feedback on public.feedback;
+create trigger trg_guard_feedback
+  before insert on public.feedback
+  for each row execute function public.guard_feedback_columns();
+
 -- تفعيل البثّ الحيّ (Realtime) لتحديث المقاعد عند تغيّر passengers
 do $$ begin
   alter publication supabase_realtime add table public.passengers;

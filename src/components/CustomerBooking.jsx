@@ -64,7 +64,10 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   }
   useEffect(() => { load() }, [trip?.id, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // تحديثٌ حيٌّ للمقاعد: نُعيد جلب الإشغال (بلا PII) عند أي تغيّرٍ على passengers في هذه الرحلة.
+  // تحديثٌ حيٌّ للمقاعد بلا PII:
+  // - اشتراك Realtime يلتقط تغيّر سجلّ العميل نفسه (يعمل ضمن RLS الخاصّة به).
+  // - استطلاعٌ احتياطيٌّ كل ١٢ ثانية يلتقط حجوزات الآخرين (RLS الخاصة بـ passengers
+  //   تمنع البثّ التلقائي للعميل، لكن الدالة trip_seat_occupancy آمنةٌ ومسموحٌ بها).
   useEffect(() => {
     if (!trip?.id) return
     let cancelled = false
@@ -76,7 +79,15 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       .channel(`pax:${trip.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, refresh)
       .subscribe()
-    return () => { cancelled = true; supabase.removeChannel(ch) }
+    const poll = setInterval(refresh, 12000)
+    const onFocus = () => refresh()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      cancelled = true
+      clearInterval(poll)
+      window.removeEventListener('focus', onFocus)
+      supabase.removeChannel(ch)
+    }
   }, [trip?.id])
 
   // مصفوفة "ركّاب" للخريطة: إشغالٌ بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
