@@ -42,14 +42,6 @@ function Empty({ title, hint, mark = true }) {
   )
 }
 
-function ComingSoon({ title, desc }) {
-  return (
-    <section className="panel">
-      <Empty title={title} hint={desc} />
-    </section>
-  )
-}
-
 /* ============================================================
    لوحة الإدارة (تبقى بسيطةً للآن)
    ============================================================ */
@@ -368,11 +360,6 @@ export function SubscriberHome() {
                 onShare={() => setShareOpen(true)}
               />
             )}
-
-            {view === 'customers' && <ComingSoon title="تعبئة بيانات المعتمرين" desc="افتح أي رحلةٍ ثم «إدارة الرحلة» لإضافة المعتمرين وإصدار الكشف." />}
-            {view === 'settings' && <ComingSoon title="إعدادات المؤسسة" desc="بيانات المؤسسة والختم تُحرّر من «إدارة الرحلة ← الباص والطاقم» حاليًّا." />}
-            {view === 'manifest' && <ComingSoon title="الكشف الرسمي للباص" desc="افتح رحلةً ثم «إدارة الرحلة ← الكشف الرسمي» لإصداره وطباعته." />}
-            {view === 'payments' && <ComingSoon title="المدفوعات" desc="ربطٌ مع متجرٍ خارجي ثم العودة لإرفاق الإيصال." />}
           </>
         )}
 
