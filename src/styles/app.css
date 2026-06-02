@@ -396,7 +396,7 @@
 .manifest-overlay{position:fixed;inset:0;z-index:200;background:#1a2420;display:flex;flex-direction:column}
 .manifest-toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(4,30,22,.9);
   border-bottom:1px solid var(--line);backdrop-filter:var(--glass-blur)}
-.manifest-scroll{flex:1;overflow:auto;padding:18px;display:flex;justify-content:center}
+.manifest-scroll{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;align-items:center;gap:18px}
 
 .manifest-sheet{background:#fff;color:#13211c;width:100%;max-width:900px;padding:26px 28px;border-radius:8px;
   box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:var(--font-sans);align-self:flex-start}
@@ -665,8 +665,8 @@
   body *{visibility:hidden !important}
   .manifest-sheet,.manifest-sheet *,.ticket,.ticket *{visibility:visible !important}
   .manifest-overlay{position:static;background:#fff}
-  .manifest-scroll{overflow:visible;padding:0}
-  .manifest-sheet{position:absolute;inset:0;width:100%;max-width:none;box-shadow:none;border-radius:0;padding:0 4mm}
+  .manifest-scroll{overflow:visible;padding:0;display:block;gap:0}
+  .manifest-sheet{position:static;width:100%;max-width:none;box-shadow:none;border-radius:0;padding:0 4mm}
   .ticket{position:absolute;inset-inline-start:50%;top:10mm;transform:translateX(-50%);box-shadow:none}
   .no-print{display:none !important}
   .mf-table tr{page-break-inside:avoid}

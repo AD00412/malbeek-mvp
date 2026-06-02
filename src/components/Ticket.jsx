@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import CompassMark from './CompassMark'
 import Icon from './Icon'
+import { busName } from '../lib/buses'
 
 function fmt(v) {
   if (!v) return '—'
@@ -19,10 +20,13 @@ const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صع
  * تذكرة صعود المعتمر — بطاقةٌ بالباركود (QR) قابلةٌ للتنزيل والطباعة.
  * تُحمّل مكتبة qrcode ديناميكيًّا؛ إن غابت تعرض الرمز نصيًّا (تدهورٌ لطيف).
  */
-export default function Ticket({ passenger, trip, sub, onClose }) {
+export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
   const [qrUrl, setQrUrl] = useState('')
   const [qrFailed, setQrFailed] = useState(false)
   const code = passenger?.ticket_code || passenger?.id || ''
+  // اسم باص المعتمر عند تعدّد الباصات؛ وإلّا اسم باص الرحلة (السلوك السابق)
+  const ticketBus = buses.find((b) => b.id === passenger?.bus_id)
+  const busLabel = (ticketBus && busName(ticketBus)) || trip?.bus_label || '—'
 
   useEffect(() => {
     if (!code) return
@@ -85,7 +89,7 @@ export default function Ticket({ passenger, trip, sub, onClose }) {
             <div><span className="k">تاريخ الذهاب</span><span className="v">{fmt(trip?.depart_at)}</span></div>
             <div><span className="k">المقعد</span><span className="v big">{passenger?.seat_no || '—'}</span></div>
             <div><span className="k">مكان الركوب</span><span className="v">{passenger?.boarding_point || trip?.boarding_point || '—'}</span></div>
-            <div><span className="k">الباص</span><span className="v">{trip?.bus_label || '—'}</span></div>
+            <div><span className="k">الباص</span><span className="v">{busLabel}</span></div>
           </div>
 
           <div className="tk-qr">

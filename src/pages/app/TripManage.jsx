@@ -128,7 +128,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     : passengers
 
   if (manifestOpen) {
-    return <Manifest trip={trip} sub={sub} passengers={passengers} onClose={() => setManifestOpen(false)} />
+    return <Manifest trip={trip} sub={sub} passengers={passengers} buses={buses} onClose={() => setManifestOpen(false)} />
   }
   if (busEditOpen) {
     return (
@@ -143,7 +143,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   if (ticketFor) {
     return (
       <Suspense fallback={<LazyLoading />}>
-        <Ticket passenger={ticketFor} trip={trip} sub={sub} onClose={() => setTicketFor(null)} />
+        <Ticket passenger={ticketFor} trip={trip} sub={sub} buses={buses} onClose={() => setTicketFor(null)} />
       </Suspense>
     )
   }

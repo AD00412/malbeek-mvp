@@ -155,11 +155,11 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       let result, row
       if (booking?.id) {
         result = await supabase.from('passengers').update(payload).eq('id', booking.id)
-          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref').maybeSingle()
+          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, bus_id').maybeSingle()
       } else {
         result = await supabase.from('passengers')
           .insert({ ...payload, trip_id: trip.id, subscriber_id: sub.id, profile_id: user.id })
-          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref').maybeSingle()
+          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, bus_id').maybeSingle()
       }
       if (result.error) {
         if (result.error.code === '23505') { setErr('عذرًا، هذا المقعد حُجز للتوّ — اختر مقعدًا آخر.'); await load(); return }
@@ -179,7 +179,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   if (showTicket && booking) {
     return (
       <Suspense fallback={<div className="manifest-overlay" style={{ display: 'grid', placeItems: 'center' }}><CompassMark size={64} /></div>}>
-        <Ticket passenger={booking} trip={trip} sub={sub} onClose={onClose} />
+        <Ticket passenger={booking} trip={trip} sub={sub} buses={buses} onClose={onClose} />
       </Suspense>
     )
   }
