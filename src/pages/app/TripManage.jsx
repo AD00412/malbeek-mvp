@@ -235,19 +235,22 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         )}
       </section>
 
-      <PassengerFormModal
-        open={paxOpen}
-        passenger={editingPax}
-        tripId={trip?.id}
-        subscriberId={sub?.id}
-        seatingPolicy={trip?.seating_policy}
-        busRows={trip?.bus_rows}
-        busBack={trip?.bus_back_row}
-        passengers={passengers}
-        defaultBoarding={trip?.boarding_point}
-        onClose={() => setPaxOpen(false)}
-        onSaved={() => { setPaxOpen(false); loadPassengers() }}
-      />
+      {paxOpen && (
+        <PassengerFormModal
+          open
+          key={editingPax?.id || 'new'}
+          passenger={editingPax}
+          tripId={trip?.id}
+          subscriberId={sub?.id}
+          seatingPolicy={trip?.seating_policy}
+          busRows={trip?.bus_rows}
+          busBack={trip?.bus_back_row}
+          passengers={passengers}
+          defaultBoarding={trip?.boarding_point}
+          onClose={() => setPaxOpen(false)}
+          onSaved={() => { setPaxOpen(false); loadPassengers() }}
+        />
+      )}
 
       <BottomSheet
         open={seatMapOpen}
@@ -267,13 +270,15 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         />
       </BottomSheet>
 
-      <CrewFormModal
-        open={crewOpen}
-        trip={trip}
-        sub={sub}
-        onClose={() => setCrewOpen(false)}
-        onSaved={() => { setCrewOpen(false); reloadTrip() }}
-      />
+      {crewOpen && (
+        <CrewFormModal
+          open
+          trip={trip}
+          sub={sub}
+          onClose={() => setCrewOpen(false)}
+          onSaved={() => { setCrewOpen(false); reloadTrip() }}
+        />
+      )}
 
       <OffersSheet
         open={offersOpen}

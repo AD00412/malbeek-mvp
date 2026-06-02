@@ -110,13 +110,16 @@ export default function SeatMap({
 function SeatBtn({ seat, state, onPick }) {
   const cls = `seat3d seat-${state.kind} ${state.a ? 'a-' + state.a : ''}`
   const holder = state.holder
-  const firstName = holder ? ((holder.full_name || '').trim().split(/\s+/)[0] || '·') : ''
+  const hasName = holder && (holder.full_name || '').trim()
+  const firstName = hasName ? holder.full_name.trim().split(/\s+/)[0] : (holder ? '•' : '')
+  const title = hasName ? `${holder.full_name} · مقعد ${seat.no}`
+    : holder ? `محجوز · مقعد ${seat.no}` : `مقعد ${seat.no}`
   return (
     <button
       type="button"
       className={cls}
       onClick={() => onPick(seat)}
-      title={holder ? `${holder.full_name} · مقعد ${seat.no}` : `مقعد ${seat.no}`}
+      title={title}
       disabled={state.kind === 'taken' || state.kind === 'locked'}
     >
       <span className="s-head" />

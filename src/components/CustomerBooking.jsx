@@ -62,7 +62,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     }
     setLoading(false)
   }
-  useEffect(() => { load() }, [trip, user]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [trip?.id, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // مصفوفة "ركّاب" للخريطة: إشغالٌ بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
   const seatPassengers = useMemo(() => {
@@ -87,7 +87,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       seat_no: seatNo,
       boarding_point: trip?.boarding_point || null,
       payment_ref: paymentRef.trim() || null,
-      status: paymentRef.trim() ? 'paid' : 'registered',
+      // الحالة تبقى "مسجّل"؛ تأكيد الدفع يتمّ من الحملة بعد مراجعة المرجع.
+      status: 'registered',
     }
     try {
       let result, row
@@ -196,6 +197,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                     <label>مرجع/رقم عملية الدفع (بعد الدفع)</label>
                     <input type="text" placeholder="الصق رقم العملية لإثبات الدفع" value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
                   </div>
+                  <p className="muted" style={{ fontSize: 12.5 }}>يُراجع رقم العملية من الحملة ويُؤكَّد الدفع — يبقى حجزك «مسجّلًا» حتى التأكيد.</p>
                 </div>
               )}
 

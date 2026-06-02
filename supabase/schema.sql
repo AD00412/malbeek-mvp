@@ -339,6 +339,50 @@ create trigger trg_trial_trip_limit
   for each row execute function public.enforce_trial_trip_limit();
 
 -- ============================================================
+--  ★ حارس أعمدة الراكب: يمنع العميل من تزوير الحالة/الحضور أو نقل حجزه،
+--    ويتحقّق أنّ المقعد ضمن تخطيط الباص. (المالك/الإدارة بلا قيد)
+-- ============================================================
+create or replace function public.guard_passenger_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_owner boolean;
+  v_total int;
+begin
+  select (exists (select 1 from public.subscribers s
+                  where s.id = new.subscriber_id and s.owner_id = auth.uid())
+          or public.my_role() = 'admin') into v_owner;
+
+  -- نطاق المقعد ضمن تخطيط الباص (يسري على الجميع)
+  if new.seat_no is not null and new.seat_no ~ '^[0-9]+$' then
+    select (t.bus_rows * 4 + t.bus_back_row) into v_total from public.trips t where t.id = new.trip_id;
+    if v_total is not null and (new.seat_no::int < 1 or new.seat_no::int > v_total) then
+      raise exception 'SEAT_OUT_OF_RANGE' using hint = 'رقم المقعد خارج تخطيط الباص.';
+    end if;
+  end if;
+
+  -- العميل لا يرفع حالته ذاتيًّا ولا يزوّر الحضور ولا ينقل حجزه
+  if not v_owner then
+    if tg_op = 'INSERT' then
+      new.status := 'registered';
+      new.boarded_at := null;
+      new.checked_in_at := null;
+    else
+      new.status        := old.status;
+      new.trip_id       := old.trip_id;
+      new.subscriber_id := old.subscriber_id;
+      new.profile_id    := old.profile_id;
+      new.boarded_at    := old.boarded_at;
+      new.checked_in_at := old.checked_in_at;
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_passengers on public.passengers;
+create trigger trg_guard_passengers
+  before insert or update on public.passengers
+  for each row execute function public.guard_passenger_columns();
+
+-- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة
 --  يكشف (id, org_name, slug) فقط — بيانات غير حساسة لازمة للرابط
 -- ============================================================

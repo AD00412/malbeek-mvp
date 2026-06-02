@@ -142,6 +142,7 @@ export function SubscriberHome() {
   const [filter, setFilter] = useState('all')   // all | upcoming | active | done
   const [search, setSearch] = useState('')
   const [managing, setManaging] = useState(null) // الرحلة قيد الإدارة (شاشة كاملة)
+  const [paxStats, setPaxStats] = useState({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } })
   const creatingRef = useRef(false)
 
   const load = useCallback(async () => {
@@ -195,7 +196,22 @@ export function SubscriberHome() {
         .order('depart_at', { ascending: true })
       if (tErr) { setErr('تعذّر تحميل الرحلات: ' + tErr.message); setTrips([]) }
       else setTrips(t ?? [])
-    } else setTrips([])
+
+      // إحصاءات المعتمرين الحقيقية لكل رحلة + الإجماليات
+      const { data: pax } = await supabase
+        .from('passengers').select('trip_id, status').eq('subscriber_id', s.id)
+      const byTrip = new Map()
+      const totals = { count: 0, paid: 0, boarded: 0, checked_in: 0 }
+      for (const p of (pax ?? [])) {
+        const e = byTrip.get(p.trip_id) || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
+        e.count++; totals.count++
+        if (p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in') { e.paid++; totals.paid++ }
+        if (p.status === 'boarded' || p.status === 'checked_in') { e.boarded++; totals.boarded++ }
+        if (p.status === 'checked_in') { e.checked_in++; totals.checked_in++ }
+        byTrip.set(p.trip_id, e)
+      }
+      setPaxStats({ byTrip, totals })
+    } else { setTrips([]); setPaxStats({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } }) }
     setLoading(false)
   }, [user, profile, refreshProfile])
 
@@ -284,6 +300,7 @@ export function SubscriberHome() {
                 trips={trips}
                 totalSeats={totalSeats}
                 planLabel={planLabel}
+                totals={paxStats.totals}
                 onCreate={openCreate}
                 onShare={() => setShareOpen(true)}
               />
@@ -295,6 +312,7 @@ export function SubscriberHome() {
                 allCount={trips.length}
                 sub={sub}
                 loading={loading}
+                paxByTrip={paxStats.byTrip}
                 filter={filter}
                 setFilter={setFilter}
                 search={search}
@@ -348,8 +366,9 @@ export function SubscriberHome() {
 }
 
 /* ---------- نظرة عامة ---------- */
-function Overview({ sub, profile, trips, totalSeats, planLabel, onCreate, onShare }) {
+function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate, onShare }) {
   const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
+  const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   return (
     <>
       <section className="hero">
@@ -361,19 +380,19 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, onCreate, onShar
       <div className="stats">
         <div className="stat">
           <div className="top"><span className="ic"><Icon name="customers" size={15} /></span>المعتمرون</div>
-          <div className="v">0</div>
+          <div className="v">{tt.count}</div>
         </div>
         <div className="stat ok">
           <div className="top"><span className="ic"><Icon name="payments" size={15} /></span>مدفوع</div>
-          <div className="v">0</div>
+          <div className="v">{tt.paid}</div>
         </div>
         <div className="stat info">
           <div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعود الحافلة</div>
-          <div className="v">0</div>
+          <div className="v">{tt.boarded}</div>
         </div>
         <div className="stat warn">
           <div className="top"><span className="ic"><Icon name="bed" size={15} /></span>استلام الغرفة</div>
-          <div className="v">0</div>
+          <div className="v">{tt.checked_in}</div>
         </div>
       </div>
 
@@ -408,7 +427,7 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, onCreate, onShar
 }
 
 /* ---------- شاشة الرحلات (بطاقات على الجوال + تصفية) ---------- */
-function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, setSearch, onCreate, onEdit, onRemove, onManage, onShare }) {
+function TripsView({ trips, allCount, sub, loading, paxByTrip, filter, setFilter, search, setSearch, onCreate, onEdit, onRemove, onManage, onShare }) {
   return (
     <>
       <section className="hero" style={{ paddingBottom: 16 }}>
@@ -452,7 +471,8 @@ function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, s
           <Empty title="لا توجد رحلاتٌ تطابق التصفية" hint="جرّب تغيير التصفية أو ابحث بكلمةٍ أخرى." />
         ) : (
           trips.map((t) => (
-            <TripCard key={t.id} trip={t} onManage={() => onManage(t)} onEdit={() => onEdit(t)} onRemove={() => onRemove(t)} />
+            <TripCard key={t.id} trip={t} booked={paxByTrip?.get(t.id)?.count || 0} stats={paxByTrip?.get(t.id)}
+              onManage={() => onManage(t)} onEdit={() => onEdit(t)} onRemove={() => onRemove(t)} />
           ))
         )}
       </div>
@@ -460,10 +480,9 @@ function TripsView({ trips, allCount, sub, loading, filter, setFilter, search, s
   )
 }
 
-function TripCard({ trip, onManage, onEdit, onRemove }) {
+function TripCard({ trip, booked = 0, stats, onManage, onEdit, onRemove }) {
   const cap = Number(trip.capacity) || 0
-  const booked = 0    // سيُحسب من جدول العملاء في المرحلة التالية
-  const pct = cap > 0 ? Math.round((booked / cap) * 100) : 0
+  const pct = cap > 0 ? Math.min(100, Math.round((booked / cap) * 100)) : 0
   const status = trip.status || 'draft'
   const tagCls = STATUS_TAG[status] || 'muted'
   const tagLbl = STATUS_FUTURE_LABEL[status] || STATUS_LABEL[status]
@@ -502,8 +521,8 @@ function TripCard({ trip, onManage, onEdit, onRemove }) {
 
       <div className="ministats">
         <div className="ministat"><div className="top">حجوزات</div><div className="v">{booked}</div></div>
-        <div className="ministat"><div className="top">مدفوع</div><div className="v ok">0</div></div>
-        <div className="ministat"><div className="top">صعد</div><div className="v info">0</div></div>
+        <div className="ministat"><div className="top">مدفوع</div><div className="v ok">{stats?.paid || 0}</div></div>
+        <div className="ministat"><div className="top">صعد</div><div className="v info">{stats?.boarded || 0}</div></div>
       </div>
 
       {(onManage || onEdit || onRemove) && (
