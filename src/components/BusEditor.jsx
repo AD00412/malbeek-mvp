@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
-import { SEATING_POLICIES, seatCount, DEFAULT_ROWS, DEFAULT_BACK } from '../lib/busLayout'
+import { SEATING_POLICIES, seatCount, buildSeats, isAllowed, DEFAULT_ROWS, DEFAULT_BACK } from '../lib/busLayout'
 
 /**
  * صفحة تعديل الباص المخصّصة — تخطيطٌ قابلٌ للضبط مع معاينةٍ حيّة.
@@ -25,6 +25,15 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
 
   const total = seatCount(rows, back)
   const bookedBeyond = passengers.filter((p) => p.seat_no && Number(p.seat_no) > total).length
+
+  // معتمرون أصبح مقعدهم مخالفًا للسياسة الجديدة (تحذيرٌ لا منع)
+  const seatsByNo = new Map(buildSeats(rows, back).map((s) => [s.no, s]))
+  const policyConflicts = passengers.filter((p) => {
+    if (!p.seat_no) return false
+    const seat = seatsByNo.get(Number(p.seat_no))
+    if (!seat) return false
+    return !isAllowed(seat, policy, p.gender, p.is_family)
+  })
 
   async function save() {
     if (busy || !trip?.id) return
@@ -111,6 +120,14 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
             <div className="alert info" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Icon name="seat" size={16} /> إجمالي المقاعد: <strong>{total}</strong> مقعدًا (عدا السائق والمساعد)
             </div>
+
+            {policyConflicts.length > 0 && (
+              <div className="alert err">
+                ⚠️ {policyConflicts.length} معتمرٍ على مقاعد تخالف السياسة الجديدة
+                ({policyConflicts.map((p) => `${p.full_name} (${p.seat_no})`).join('، ')}).
+                يُحفظ التغيير، لكن أعد توزيع مقاعدهم لاحقًا.
+              </div>
+            )}
 
             {err && <div className="alert err">{err}</div>}
           </div>

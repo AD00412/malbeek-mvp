@@ -66,13 +66,15 @@ export function allowedFor(seat, policy) {
   }
 }
 
-/* هل المعتمر مسموحٌ بهذا المقعد؟ */
+/* هل المعتمر مسموحٌ بهذا المقعد؟
+   - any:    متاحٌ للجميع
+   - family: منطقة العوائل — للعائلات فقط (ذكورًا أو إناثًا ضمن عائلة)
+   - male/female: لجنسٍ محدّد، وتقبل العائلةَ من نفس الجنس أيضًا */
 export function isAllowed(seat, policy, gender, isFamily) {
   const a = allowedFor(seat, policy)
   if (a === 'any') return true
-  if (a === 'family') return true            // منطقة العوائل تقبل أي جنس
-  if (isFamily && a === 'family') return true
-  return a === gender
+  if (a === 'family') return !!isFamily      // منطقة العوائل محصورةٌ بالعائلات
+  return a === gender                        // منطقة ذكور/إناث حسب الجنس
 }
 
 export function policyLabel(v) {
