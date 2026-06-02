@@ -244,7 +244,10 @@ create trigger on_auth_user_created
 create or replace function public.guard_profile_columns()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  if coalesce(public.my_role(), 'customer') <> 'admin' then
+  -- يُجمَّد الدور/الربط فقط لمستخدمٍ مصدَّقٍ فعليٍّ غير admin.
+  -- السياقات الموثوقة بلا JWT (محرّر SQL / service_role) تستطيع التهيئة وإنشاء أوّل admin —
+  -- وهذا لا يمنح المستخدم العاديّ شيئًا (auth.uid() لديه غير فارغٍ دائمًا فيبقى مُجمَّدًا).
+  if auth.uid() is not null and coalesce(public.my_role(), 'customer') <> 'admin' then
     if new.role is distinct from old.role then
       new.role := old.role;
     end if;
