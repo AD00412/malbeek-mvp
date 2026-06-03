@@ -63,13 +63,14 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [buses, setBuses] = useState([])
   const [mapBusId, setMapBusId] = useState(null)   // الباص المعروض في خريطة المقاعد
   const [importOpen, setImportOpen] = useState(false)
+  const [payments, setPayments] = useState([])
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, amount, paid_at, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, amount, paid_at, payment_provider, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -86,6 +87,12 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     const bs = await loadTripBuses(trip.id)
     setBuses(bs)
     setMapBusId((cur) => (cur && bs.some((b) => b.id === cur) ? cur : bs[0]?.id ?? null))
+
+    // سجلّ مدفوعات البوّابة لهذه الرحلة (يقرؤه المالك عبر RLS؛ يمتلئ عند تفعيل الـ Webhook)
+    const { data: pm } = await supabase
+      .from('payments').select('id, passenger_id, provider, provider_ref, amount, currency, created_at')
+      .eq('trip_id', trip.id).order('created_at', { ascending: false }).limit(200)
+    setPayments(pm ?? [])
   }, [trip])
 
   const reloadTrip = useCallback(async () => {
@@ -295,6 +302,12 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                     {p.payment_ref && p.status === 'registered' && (
                       <><span>·</span><span style={{ color: 'var(--warn-ink)' }}>دفع بانتظار التأكيد: {p.payment_ref}</span></>
                     )}
+                    {p.paid_at && (p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in') && (
+                      <><span>·</span><span style={{ color: 'var(--ok-ink)' }}>
+                        {p.amount != null ? `${Number(p.amount).toLocaleString('en-US')}﷼ ` : ''}
+                        {p.payment_provider ? 'مؤكّد آليًّا' : 'مؤكّد'}
+                      </span></>
+                    )}
                   </div>
                 </div>
                 <span className={`st ${STATUS_CLS[p.status] || 'muted'}`}>{STATUS_AR[p.status] || p.status}</span>
@@ -341,6 +354,33 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                 }}><Icon name="trash" size={15} /></button>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {payments.length > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <h3>سجلّ مدفوعات البوّابة</h3><span className="sub">({payments.length})</span>
+          </div>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead><tr><th>المعتمر</th><th>المزوّد</th><th>المبلغ</th><th>المرجع</th><th>التاريخ</th></tr></thead>
+              <tbody>
+                {payments.map((pm) => {
+                  const px = passengers.find((p) => p.id === pm.passenger_id)
+                  return (
+                    <tr key={pm.id}>
+                      <td>{px?.full_name || <span className="muted">غير مرتبط</span>}</td>
+                      <td>{pm.provider}</td>
+                      <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{pm.amount != null ? `${Number(pm.amount).toLocaleString('en-US')} ${pm.currency || '﷼'}` : '—'}</td>
+                      <td className="ltr" style={{ textAlign: 'right' }}><code style={{ fontSize: 11 }}>{pm.provider_ref}</code></td>
+                      <td>{csvDate(pm.created_at)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
