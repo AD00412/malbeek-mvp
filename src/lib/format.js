@@ -37,6 +37,16 @@ export function toWaPhone(raw = '') {
   return /^05[0-9]{8}$/.test(p) ? '966' + p.slice(1) : ''
 }
 
+/** تنسيق تاريخ/وقت ميلاديٍّ مختصر للعرض/التصدير */
+export function fmtDateTime(v) {
+  if (!v) return ''
+  try {
+    const d = new Date(v)
+    const p = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+  } catch { return '' }
+}
+
 /** يبني رابط wa.me آمنًا. إن غاب الرقم يفتح WhatsApp بخيار اختيار جهة الاتصال. */
 export function waMeLink(phone, text = '') {
   const p = toWaPhone(phone)

@@ -14,7 +14,9 @@ import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
 import { useRealtime } from '../../lib/useRealtime'
-import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
+import { fmtDateTime } from '../../lib/format'
+import { tableToDocx } from '../../lib/docx'
+import { htmlToPdf } from '../../lib/pdf'
 import TripManage from './TripManage'
 
 /* ---------- أدوات عرض مشتركة ---------- */
@@ -119,26 +121,45 @@ function SubsPanel({ subs, loading, onReload }) {
     if (error) alert('تعذّر التحديث: ' + error.message)
     else onReload?.()
   }
-  function exportReport() {
-    const cols = [
-      { label: 'الحملة', value: (s) => s.org_name },
-      { label: 'الرابط', value: (s) => `/j/${s.slug}` },
-      { label: 'الباقة', value: (s) => (s.plan === 'paid' ? 'مدفوعة' : 'تجريبية') },
-      { label: 'الرحلات', value: (s) => s.trips_count || 0 },
-      { label: 'المعتمرون', value: (s) => s.pax_count || 0 },
-      { label: 'المدفوع', value: (s) => s.paid_count || 0 },
-      { label: 'المحصّل', value: (s) => Number(s.collected) || 0 },
-      { label: 'تاريخ الاشتراك', value: (s) => csvDate(s.created_at) },
-    ]
-    downloadCSV('تقرير-الحملات', toCSV(subs, cols))
+  const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصّل (﷼)','تاريخ الاشتراك']
+  function reportRows() {
+    return subs.map((s) => [
+      s.org_name || '', `/j/${s.slug}`, s.plan === 'paid' ? 'مدفوعة' : 'تجريبية',
+      s.trips_count || 0, s.pax_count || 0, s.paid_count || 0,
+      Number(s.collected) || 0, fmtDateTime(s.created_at),
+    ])
+  }
+  async function exportReportDocx() {
+    try {
+      await tableToDocx({
+        title: 'تقرير حملات منصّة ملبّيك',
+        subtitle: `إجمالي الحملات: ${subs.length}`,
+        meta: [`صُدر بتاريخ ${new Date().toLocaleDateString('ar-SA')}`],
+        headers: reportHeaders,
+        rows: reportRows(),
+        filename: 'تقرير-الحملات',
+      })
+    } catch (e) { alert('تعذّر إنشاء Word: ' + (e?.message || e)) }
+  }
+  const reportRef = useRef(null)
+  const [pdfBusy, setPdfBusy] = useState(false)
+  async function exportReportPdf() {
+    if (pdfBusy || !reportRef.current) return
+    setPdfBusy(true)
+    try { await htmlToPdf(reportRef.current, 'تقرير-الحملات') }
+    catch (e) { alert('تعذّر إنشاء PDF: ' + (e?.message || e)) }
+    finally { setPdfBusy(false) }
   }
   return (
-    <section className="panel">
+    <section className="panel" ref={reportRef}>
       <div className="panel-head">
         <h3>المشتركون</h3><span className="sub">({subs.length})</span>
         <span style={{ flex: 1 }} />
-        <button className="btn btn-ghost btn-sm" onClick={exportReport} disabled={subs.length === 0}>
-          <Icon name="download" size={15} /> تصدير التقرير
+        <button className="btn btn-ghost btn-sm" onClick={exportReportPdf} disabled={subs.length === 0 || pdfBusy}>
+          {pdfBusy ? <span className="spinner" /> : <><Icon name="download" size={15} /> PDF</>}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={exportReportDocx} disabled={subs.length === 0}>
+          <Icon name="edit" size={15} /> Word
         </button>
       </div>
       {loading ? (

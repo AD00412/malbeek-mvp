@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
-import { parseCSV } from '../lib/csv'
+import { parseTextTable } from '../lib/textTable'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 import { busName } from '../lib/buses'
 
@@ -21,7 +21,7 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
 
   const parsed = useMemo(() => {
     if (!text.trim()) return []
-    let rows = parseCSV(text)
+    let rows = parseTextTable(text)
     if (skipHeader && rows.length) rows = rows.slice(1)
     return rows.map((r, i) => {
       const [name = '', nid = '', phone = '', nat = '', gen = '', board = ''] = r

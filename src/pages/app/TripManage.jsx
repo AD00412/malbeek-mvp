@@ -13,9 +13,9 @@ import AuditLogSheet from '../../components/AuditLogSheet'
 import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
-import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
+import { tableToDocx } from '../../lib/docx'
 import { translateRpcError } from '../../lib/rpcErrors'
-import { waMeLink } from '../../lib/format'
+import { waMeLink, fmtDateTime } from '../../lib/format'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -145,24 +145,37 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   function openAdd() { setEditingPax(null); setPaxOpen(true) }
   function openEdit(p) { setEditingPax(p); setPaxOpen(true) }
 
-  function exportRoster() {
+  /** بياناتُ كشف المعتمرين للتصدير (تُستخدم في DOCX، والـ PDF يستعمل HTML الكشف الرسمي). */
+  function rosterRows() {
     const statusAr = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
     const busById = new Map(buses.map((b) => [b.id, busName(b)]))
-    const cols = [
-      { label: 'الاسم الرباعي', value: (p) => p.full_name },
-      { label: 'رقم الهوية/الإقامة', value: (p) => p.national_id },
-      { label: 'الجوال', value: (p) => p.phone },
-      { label: 'الجنسية', value: (p) => p.nationality },
-      { label: 'الجنس', value: (p) => (p.gender === 'female' ? 'أنثى' : 'ذكر') },
-      { label: 'الباص', value: (p) => busById.get(p.bus_id) || '' },
-      { label: 'المقعد', value: (p) => p.seat_no },
-      { label: 'مكان الركوب', value: (p) => p.boarding_point },
-      { label: 'الحالة', value: (p) => statusAr[p.status] || p.status },
-      { label: 'المبلغ', value: (p) => (p.amount != null ? p.amount : '') },
-      { label: 'وقت الدفع', value: (p) => csvDate(p.paid_at) },
-      { label: 'رمز التذكرة', value: (p) => p.ticket_code },
-    ]
-    downloadCSV(`كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`, toCSV(passengers, cols))
+    return passengers.map((p) => [
+      p.full_name || '', p.national_id || '', p.phone || '', p.nationality || '',
+      p.gender === 'female' ? 'أنثى' : 'ذكر',
+      busById.get(p.bus_id) || '', p.seat_no || '', p.boarding_point || '',
+      statusAr[p.status] || p.status,
+      p.amount != null ? p.amount : '', fmtDateTime(p.paid_at), p.ticket_code || '',
+    ])
+  }
+  const rosterHeaders = ['الاسم الرباعي','رقم الهوية/الإقامة','الجوال','الجنسية','الجنس','الباص','المقعد','مكان الركوب','الحالة','المبلغ','وقت الدفع','رمز التذكرة']
+
+  async function exportRosterDocx() {
+    try {
+      await tableToDocx({
+        title: `كشف معتمري رحلة «${trip?.title || ''}»`,
+        subtitle: sub?.org_name || '',
+        meta: [
+          trip?.route_from ? `المسار: ${trip.route_from} ← ${trip.route_to || ''}` : '',
+          trip?.depart_at ? `الذهاب: ${new Date(trip.depart_at).toLocaleDateString('ar-SA')}` : '',
+          `عدد المعتمرين: ${passengers.length}`,
+        ].filter(Boolean),
+        headers: rosterHeaders,
+        rows: rosterRows(),
+        filename: `كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`,
+      })
+    } catch (e) {
+      alert('تعذّر إنشاء ملفّ Word: ' + (e?.message || e))
+    }
   }
 
   async function removePax(p) {
@@ -291,21 +304,19 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           <Icon name="bed" size={18} /> الفنادق والتسكين
         </button>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="action ok" style={{ flex: 1 }} onClick={() => setManifestOpen(true)}>
-            <Icon name="manifest" size={18} /> الكشف الرسمي
+          <button className="action ok" style={{ flex: 1 }} onClick={() => setManifestOpen(true)} disabled={count === 0}>
+            <Icon name="manifest" size={18} /> الكشف الرسمي (PDF)
           </button>
-          <button className="action violet" style={{ flex: 1 }} onClick={() => setOffersOpen(true)} disabled={count === 0}>
-            <Icon name="message" size={18} /> إرسال عرض
-          </button>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="action" style={{ flex: 1 }} onClick={exportRoster} disabled={count === 0}>
-            <Icon name="download" size={18} /> تصدير الكشف
-          </button>
-          <button className="action" style={{ flex: 1 }} onClick={() => setAuditOpen(true)}>
-            <Icon name="manifest" size={18} /> سجلّ النشاط
+          <button className="action" style={{ flex: 1 }} onClick={exportRosterDocx} disabled={count === 0}>
+            <Icon name="edit" size={18} /> Word قابلٌ للتعديل
           </button>
         </div>
+        <button className="action violet" onClick={() => setOffersOpen(true)} disabled={count === 0}>
+          <Icon name="message" size={18} /> إرسال عرض
+        </button>
+        <button className="action" onClick={() => setAuditOpen(true)}>
+          <Icon name="manifest" size={18} /> سجلّ النشاط
+        </button>
         <button className="action" onClick={() => setDupOpen(true)}>
           <Icon name="copy" size={18} /> استنساخ هذه الرحلة (لفوجٍ جديد)
         </button>
@@ -436,7 +447,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                       <td>{pm.provider}</td>
                       <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{pm.amount != null ? `${Number(pm.amount).toLocaleString('en-US')} ${pm.currency || '﷼'}` : '—'}</td>
                       <td className="ltr" style={{ textAlign: 'right' }}><code style={{ fontSize: 11 }}>{pm.provider_ref}</code></td>
-                      <td>{csvDate(pm.created_at)}</td>
+                      <td>{fmtDateTime(pm.created_at)}</td>
                     </tr>
                   )
                 })}

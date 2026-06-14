@@ -1,6 +1,8 @@
+import { useRef, useState } from 'react'
 import CompassMark from './CompassMark'
 import Icon from './Icon'
 import { busName } from '../lib/buses'
+import { htmlsToPdf } from '../lib/pdf'
 
 const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
 
@@ -134,6 +136,18 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
       }))
     : [{ key: 'single', rows: passengers, busLabel: trip?.bus_label, busPlate: trip?.bus_plate }]
 
+  const sheetRefs = useRef([])
+  const [busy, setBusy] = useState(false)
+
+  async function downloadPdf() {
+    if (busy) return
+    setBusy(true)
+    try {
+      await htmlsToPdf(sheetRefs.current.filter(Boolean), `كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`)
+    } catch (e) { alert('تعذّر إنشاء PDF: ' + (e?.message || e)) }
+    finally { setBusy(false) }
+  }
+
   return (
     <div className="manifest-overlay">
       <div className="manifest-toolbar no-print">
@@ -142,22 +156,26 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
         </button>
         {multi && <span className="muted" style={{ fontSize: 13 }}>{buses.length} باصات — كشفٌ لكلّ باص</span>}
         <span style={{ flex: 1 }} />
-        <button className="btn btn-gold btn-sm" onClick={() => window.print()}>
-          <Icon name="download" size={16} /> طباعة / حفظ PDF
+        <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
+          <Icon name="qr" size={16} /> طباعة
+        </button>
+        <button className="btn btn-gold btn-sm" onClick={downloadPdf} disabled={busy}>
+          {busy ? <span className="spinner" /> : <><Icon name="download" size={16} /> تنزيل PDF</>}
         </button>
       </div>
 
       <div className="manifest-scroll">
         {groups.map((g, gi) => (
-          <ManifestSheet
-            key={g.key}
-            trip={trip}
-            sub={sub}
-            rows={g.rows}
-            busLabel={g.busLabel}
-            busPlate={g.busPlate}
-            pageBreak={gi > 0}
-          />
+          <div key={g.key} ref={(el) => { sheetRefs.current[gi] = el }}>
+            <ManifestSheet
+              trip={trip}
+              sub={sub}
+              rows={g.rows}
+              busLabel={g.busLabel}
+              busPlate={g.busPlate}
+              pageBreak={gi > 0}
+            />
+          </div>
         ))}
       </div>
     </div>
