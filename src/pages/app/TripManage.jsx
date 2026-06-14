@@ -172,6 +172,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       await tableToDocx({
         title: `كشف معتمري رحلة «${trip?.title || ''}»`,
         subtitle: sub?.org_name || '',
+        org: sub?.org_name || '',
         meta: [
           trip?.route_from ? `المسار: ${trip.route_from} ← ${trip.route_to || ''}` : '',
           trip?.depart_at ? `الذهاب: ${new Date(trip.depart_at).toLocaleDateString('ar-SA')}` : '',

@@ -717,7 +717,7 @@ export function CustomerHome() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    let sq = supabase.from('subscribers').select('id, org_name, store_url')
+    let sq = supabase.from('subscribers').select('id, org_name, store_url, logo_url')
     sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
     const { data: s } = await sq.maybeSingle()
     if (s) { setSub(s); setOrgName(s.org_name) }

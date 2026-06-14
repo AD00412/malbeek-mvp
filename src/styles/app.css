@@ -464,6 +464,7 @@
 .ticket .ticket-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;
   background:linear-gradient(180deg,#063d2c,#04261c);color:#f1e9d6}
 .ticket .tk-brand{display:flex;align-items:center;gap:10px}
+.ticket .tk-logo{height:36px;max-width:90px;object-fit:contain}
 .ticket .tk-org{font-family:var(--font-display);font-weight:900;font-size:16px;color:#fbf7ee}
 .ticket .tk-kind{font-size:11px;color:#d9ceb4;margin-top:2px}
 .ticket .tk-name{font-family:var(--font-display);font-weight:900;font-size:22px;color:#063d2c;padding:16px 18px 8px}

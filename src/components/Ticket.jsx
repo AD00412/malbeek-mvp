@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import CompassMark from './CompassMark'
 import Icon from './Icon'
 import { busName } from '../lib/buses'
 import { elementToPngBlob } from '../lib/pdf'
@@ -83,7 +82,7 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
     try {
       const blob = await captureBlob()
       const file = new File([blob], fileBase + '.png', { type: 'image/png' })
-      const data = { files: [file], title: 'تذكرة العمرة', text: `تذكرتي في «${trip?.title || 'رحلة عمرة'}» — ${sub?.org_name || 'ملبّيك'}` }
+      const data = { files: [file], title: 'تذكرة العمرة', text: `تذكرتي في «${trip?.title || 'رحلة عمرة'}» — ${sub?.org_name || 'الحملة'}` }
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share(data)
       } else if (navigator.share) {
@@ -104,7 +103,7 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
       durationMin: 180,
       title: `رحلة عمرة — ${trip?.title || ''}`.trim(),
       location: passenger?.boarding_point || trip?.boarding_point || trip?.route_from || '',
-      description: `مقعد ${passenger?.seat_no || '—'} · ${busLabel} · ${sub?.org_name || 'ملبّيك'} · رمز التذكرة ${code}`,
+      description: `مقعد ${passenger?.seat_no || '—'} · ${busLabel} · ${sub?.org_name || 'الحملة'} · رمز التذكرة ${code}`,
     }, fileBase)
     if (ok) toast('أُضيف موعد الرحلة — افتحه في التقويم', { type: 'success' })
     else toast('تعذّرت إضافة الموعد (تاريخ الرحلة غير محدّد).', { type: 'info' })
@@ -139,9 +138,11 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
         <div className="ticket" dir="rtl" ref={ticketRef}>
           <div className="ticket-top">
             <div className="tk-brand">
-              <CompassMark size={34} variant="gold" />
+              {sub?.logo_url
+                ? <img className="tk-logo" src={sub.logo_url} alt={sub?.org_name || 'الحملة'} crossOrigin="anonymous" />
+                : null}
               <div>
-                <div className="tk-org">{sub?.org_name || 'ملبّيك'}</div>
+                <div className="tk-org">{sub?.org_name || 'الحملة'}</div>
                 <div className="tk-kind">تذكرة صعود · عُمرة</div>
               </div>
             </div>

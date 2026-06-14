@@ -9,9 +9,10 @@
  * @param {string[]} opts.headers     رؤوس الأعمدة
  * @param {any[][]}  opts.rows        صفوف القيم (مصفوفةٌ من المصفوفات)
  * @param {string[]} [opts.meta]      أسطرُ بياناتٍ قبل الجدول (اختياري)
+ * @param {string}   [opts.org]       اسم الحملة — يُبيّض المستند لها (بدل ملبّيك)
  * @param {string}   opts.filename    اسم الملفّ
  */
-export async function tableToDocx({ title, subtitle, headers, rows, meta = [], filename }) {
+export async function tableToDocx({ title, subtitle, headers, rows, meta = [], org, filename }) {
   let docx
   try { docx = await import('docx') }
   catch (e) {
@@ -58,8 +59,13 @@ export async function tableToDocx({ title, subtitle, headers, rows, meta = [], f
     },
   })
 
+  // تذييلٌ مخصّصٌ للحملة عند تمرير org، وإلّا تذييل المنصّة (تقارير الإدارة).
+  const footerText = org
+    ? `كشفٌ رسميٌّ صادرٌ عن ${org} — بتاريخ ${new Date().toLocaleDateString('ar-SA')}`
+    : `صُدر هذا الكشف من منصّة ملبّيك بتاريخ ${new Date().toLocaleDateString('ar-SA')}`
+
   const doc = new Document({
-    creator: 'ملبّيك',
+    creator: org || 'ملبّيك',
     title: title || 'كشف',
     styles: { default: { document: { run: { font: FONT, rightToLeft: true } } } },
     sections: [{
@@ -86,7 +92,7 @@ export async function tableToDocx({ title, subtitle, headers, rows, meta = [], f
         new Paragraph({
           bidirectional: true, alignment: AlignmentType.LEFT,
           children: [new TextRun({
-            text: `صُدر هذا الكشف من منصّة ملبّيك بتاريخ ${new Date().toLocaleDateString('ar-SA')}`,
+            text: footerText,
             italics: true, color: '7A8A82', font: FONT, rightToLeft: true, size: 18,
           })],
         }),
