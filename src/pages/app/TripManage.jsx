@@ -298,10 +298,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
       {/* أزرار الإجراءات */}
       <div className="actions" style={{ marginTop: 16 }}>
+        <div className="sec-label">المعتمرون</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action primary" style={{ flex: 1 }} onClick={openAdd}><Icon name="plus" size={18} /> إضافة معتمر</button>
           <button className="action" style={{ flex: 1 }} onClick={() => setImportOpen(true)}><Icon name="download" size={18} /> استيراد قائمة</button>
         </div>
+        <button className="action" onClick={remindPassengers} disabled={count === 0}>
+          <Icon name="bell" size={18} /> تذكير المعتمرين بالرحلة
+        </button>
+
+        <div className="sec-label" style={{ marginTop: 6 }}>الصعود والتسكين</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action info" style={{ flex: 1 }} onClick={() => setScanMode('board')}>
             <Icon name="qr" size={18} /> مسح الصعود
@@ -310,6 +316,11 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
             <Icon name="bed" size={18} /> مسح التسكين
           </button>
         </div>
+        <button className="action info" onClick={() => setHotelsOpen(true)}>
+          <Icon name="bed" size={18} /> الفنادق والتسكين
+        </button>
+
+        <div className="sec-label" style={{ marginTop: 6 }}>الباص والمقاعد</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action" style={{ flex: 1 }} onClick={() => setSeatMapOpen(true)}>
             <Icon name="seat" size={18} /> خريطة المقاعد
@@ -321,9 +332,8 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <button className="action" onClick={() => setCrewOpen(true)}>
           <Icon name="bus" size={18} /> الباص والطاقم (للكشف)
         </button>
-        <button className="action info" onClick={() => setHotelsOpen(true)}>
-          <Icon name="bed" size={18} /> الفنادق والتسكين
-        </button>
+
+        <div className="sec-label" style={{ marginTop: 6 }}>الكشوفات والتواصل</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action ok" style={{ flex: 1 }} onClick={() => setManifestOpen(true)} disabled={count === 0}>
             <Icon name="manifest" size={18} /> الكشف الرسمي (PDF)
@@ -335,15 +345,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <button className="action violet" onClick={() => setOffersOpen(true)} disabled={count === 0}>
           <Icon name="message" size={18} /> إرسال عرض
         </button>
-        <button className="action" onClick={() => setAuditOpen(true)}>
-          <Icon name="manifest" size={18} /> سجلّ النشاط
-        </button>
-        <button className="action" onClick={() => setRefundsOpen(true)}>
-          <Icon name="payments" size={18} /> طلبات الاسترداد
-        </button>
-        <button className="action" onClick={remindPassengers} disabled={count === 0}>
-          <Icon name="bell" size={18} /> تذكير المعتمرين
-        </button>
+
+        <div className="sec-label" style={{ marginTop: 6 }}>متقدّم</div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="action" style={{ flex: 1 }} onClick={() => setRefundsOpen(true)}>
+            <Icon name="payments" size={18} /> طلبات الاسترداد
+          </button>
+          <button className="action" style={{ flex: 1 }} onClick={() => setAuditOpen(true)}>
+            <Icon name="manifest" size={18} /> سجلّ النشاط
+          </button>
+        </div>
         <button className="action" onClick={() => setDupOpen(true)}>
           <Icon name="copy" size={18} /> استنساخ هذه الرحلة (لفوجٍ جديد)
         </button>
