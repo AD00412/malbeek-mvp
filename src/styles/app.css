@@ -515,56 +515,78 @@
    مخطّط الباص التفاعلي الواقعي (SeatMap)
    ============================================================ */
 .bus3d{display:flex;flex-direction:column;align-items:center;gap:16px;padding:6px 0;width:100%}
-.bus3d-body{position:relative;width:100%;max-width:320px;
-  background:linear-gradient(180deg,#0c5240 0%,#083a2c 70%,#063322 100%);
-  border:3px solid #c49a45;border-radius:64px 64px 30px 30px;
-  padding:0 12px 16px;
-  box-shadow:inset 0 2px 0 rgba(246,227,176,.25),inset 0 0 40px rgba(0,0,0,.35),0 18px 44px rgba(0,0,0,.5)}
-/* مرايا جانبية */
-.bus3d-body::before,.bus3d-body::after{content:"";position:absolute;top:74px;width:9px;height:26px;
-  background:#0a4734;border:2px solid #c49a45;border-radius:3px}
-.bus3d-body::before{inset-inline-start:-12px}
-.bus3d-body::after{inset-inline-end:-12px}
+
+/* هيكل الباص — عرضٌ علويّ: مقدّمةٌ مقوّسة، مؤخّرةٌ شبه مستقيمة */
+.bus3d-body{position:relative;width:100%;max-width:330px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.06),transparent 130px),
+    linear-gradient(180deg,#0e5a45 0%,#0a4836 55%,#073324 100%);
+  border:3px solid #c49a45;border-radius:92px 92px 28px 28px;
+  padding:0 16px 20px;
+  box-shadow:inset 0 3px 0 rgba(246,227,176,.28),inset 0 0 55px rgba(0,0,0,.4),0 22px 52px rgba(0,0,0,.55)}
+/* مرآتان جانبيّتان عند المقدّمة */
+.bus3d-body::before,.bus3d-body::after{content:"";position:absolute;top:58px;width:7px;height:22px;z-index:3;
+  background:linear-gradient(180deg,#0c4a38,#06281e);border:2px solid #c49a45}
+.bus3d-body::before{inset-inline-start:-11px;border-radius:3px 0 0 3px}
+.bus3d-body::after{inset-inline-end:-11px;border-radius:0 3px 3px 0}
+
+/* بابان على الجدار الأيمن (دخولٌ أماميّ · خروجٌ أوسط) — زجاجٌ بإطارٍ ذهبيّ */
+.bus-door{position:absolute;inset-inline-end:1px;z-index:5;
+  display:flex;align-items:center;justify-content:center;
+  width:12px;min-height:48px;padding:5px 0;border-radius:3px;
+  background:linear-gradient(90deg,rgba(176,224,255,.42),rgba(232,212,154,.92));
+  border:1.5px solid var(--gd-200);box-shadow:0 2px 8px rgba(0,0,0,.45),inset 0 0 5px rgba(255,255,255,.3)}
+.bus-door span{writing-mode:vertical-rl;font-size:8px;font-weight:800;letter-spacing:1.5px;color:#04261c}
+.bus-door-front{top:82px}
+.bus-door-mid{top:48%}
 
 /* مقدّمة الباص (الكابينة) */
-.bus3d-cab{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 6px 12px;
-  margin-bottom:8px;border-bottom:2px dashed rgba(226,194,119,.28)}
-.cab-windshield{position:absolute;top:-2px;inset-inline:18px;height:14px;border-radius:0 0 40% 40%;
-  background:linear-gradient(180deg,rgba(176,224,255,.18),transparent);border-top:2px solid rgba(226,194,119,.25)}
-.cab-driver,.cab-assist{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;
-  border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.18);color:var(--cr-300);font-size:10px}
-.cab-driver{order:2}   /* السائق يسارًا (في RTL: العمود الثاني = أقصى اليسار) */
-.cab-assist{order:1}
+.bus3d-cab{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:30px 8px 14px;margin-bottom:10px;border-bottom:2px dashed rgba(226,194,119,.3)}
+/* الزجاج الأمامي المقوّس */
+.cab-windshield{position:absolute;top:12px;inset-inline:26px;height:17px;
+  border-radius:0 0 55% 55% / 0 0 100% 100%;
+  background:linear-gradient(180deg,rgba(176,224,255,.32),rgba(176,224,255,.05));
+  border-top:2px solid rgba(226,194,119,.32);
+  box-shadow:0 0 10px rgba(176,224,255,.15)}
+.cab-driver,.cab-assist{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;
+  border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.2);color:var(--cr-300);font-size:10px}
+/* المساعد أوّل عمودٍ (يمينًا في RTL) والسائق ثانيًا (يسارًا) */
 .cab-driver .wheel{width:24px;height:24px;border-radius:50%;border:3px solid var(--gd-400);position:relative}
 .cab-driver .wheel::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--gd-400)}
 .cab-driver .wheel::after{content:"";position:absolute;top:50%;left:50%;width:14px;height:3px;background:var(--gd-400);transform:translate(-50%,-50%)}
-.cab-lbl{font-weight:600}
-.door{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#04261c;
-  background:linear-gradient(180deg,var(--gd-300),var(--gd-500));border-radius:5px;padding:3px 7px}
-.door-entry{position:absolute;bottom:-11px;inset-inline-end:8px;z-index:2;box-shadow:0 3px 8px rgba(0,0,0,.3)}
-.door-exit{position:absolute;inset-inline-end:-14px;top:50%;transform:translateY(-50%);font-size:9px;padding:3px 6px}
+.cab-lbl{font-weight:700}
 
 /* صالة المقاعد */
-.bus3d-cabin{display:flex;flex-direction:column;gap:9px}
-.cabin-row{position:relative;display:grid;grid-template-columns:1fr 22px 1fr;gap:0;align-items:center}
-.cabin-row.has-exit{padding-inline-end:2px}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.aisle-gap{align-self:stretch;margin:2px 0;
-  background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(226,194,119,.07) 5px 10px);border-radius:4px}
-.cabin-back{display:grid;gap:5px;margin-top:11px;padding-top:11px;border-top:2px dashed rgba(226,194,119,.28)}
+.bus3d-cabin{display:flex;flex-direction:column;gap:10px}
+.cabin-row{display:grid;grid-template-columns:1fr 26px 1fr;gap:0;align-items:center}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* الممرّ الأوسط: أرضيّةٌ بخطٍّ مركزيّ خفيف */
+.aisle-gap{align-self:stretch;min-height:40px;margin:2px 3px;border-radius:5px;
+  background:
+    linear-gradient(90deg,transparent 46%,rgba(226,194,119,.16) 46% 54%,transparent 54%),
+    repeating-linear-gradient(0deg,rgba(226,194,119,.05) 0 6px,transparent 6px 12px)}
+.cabin-back{display:grid;gap:6px;margin-top:12px;padding-top:12px;border-top:2px dashed rgba(226,194,119,.3)}
 
-/* المقعد الواقعي: مسند رأس + جسم */
+/* المقعد الواقعي (عرضٌ علويّ): مسند ظهرٍ مقوّس + وسادة */
 .seat3d{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;
-  background:none;border:none;padding:0;cursor:pointer;font-family:var(--font-sans);transition:transform .14s}
-.seat3d .s-head{height:5px;margin:0 7px;border-radius:5px 5px 0 0;background:rgba(226,194,119,.3)}
-.seat3d .s-body{position:relative;aspect-ratio:1/.92;border-radius:7px 7px 11px 11px;
-  border:1.5px solid var(--line);background:rgba(255,255,255,.05);
+  background:none;border:none;padding:0;cursor:pointer;font-family:var(--font-sans);
+  transition:transform .14s,filter .14s}
+.seat3d .s-head{height:8px;margin:0 5px;border-radius:8px 8px 2px 2px;
+  background:linear-gradient(180deg,rgba(226,194,119,.42),rgba(226,194,119,.14));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.seat3d .s-body{position:relative;aspect-ratio:1/.9;margin-top:2px;
+  border-radius:5px 5px 13px 13px;border:1.5px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
-.seat3d .s-no{font-family:var(--font-display);font-weight:900;font-size:12px;line-height:1;color:var(--cr-100)}
-.seat3d .s-nm{font-size:8px;color:var(--cr-300);font-weight:500;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
-.seat3d:hover:not(:disabled){transform:translateY(-2px)}
-.seat3d:hover:not(:disabled) .s-body{border-color:rgba(226,194,119,.5);background:rgba(196,154,69,.1)}
+  box-shadow:inset 0 -5px 8px rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.07)}
+/* لمعةٌ علويّةٌ على الوسادة */
+.seat3d .s-body::after{content:"";position:absolute;inset:4px 5px auto 5px;height:32%;border-radius:50%;
+  background:radial-gradient(ellipse at top,rgba(255,255,255,.08),transparent 72%);pointer-events:none}
+.seat3d .s-no{position:relative;z-index:1;font-family:var(--font-display);font-weight:900;font-size:12px;line-height:1;color:var(--cr-100)}
+.seat3d .s-nm{position:relative;z-index:1;font-size:8px;color:var(--cr-300);font-weight:500;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.seat3d:hover:not([aria-disabled="true"]){transform:translateY(-2px)}
+.seat3d:hover:not([aria-disabled="true"]) .s-body{border-color:rgba(226,194,119,.55);background:rgba(196,154,69,.12)}
 .seat3d:disabled,.seat3d[aria-disabled="true"]{cursor:not-allowed}
 .seat3d[aria-disabled="true"]:hover{transform:none}
 

@@ -71,37 +71,39 @@ export default function SeatMap({
   return (
     <div className="bus3d">
       <div className="bus3d-body">
-        {/* مقدّمة الباص: زجاجٌ أمامي + كابينة السائق يسارًا + باب الدخول يمينًا */}
+        {/* بابان على الجدار الأيمن: دخولٌ أماميّ · خروجٌ أوسط */}
+        <span className="bus-door bus-door-front" aria-hidden="true"><span>دخول</span></span>
+        <span className="bus-door bus-door-mid" aria-hidden="true"><span>خروج</span></span>
+
+        {/* مقدّمة الباص: زجاجٌ أمامي مقوّس + مقعد المساعد يمينًا + كابينة السائق يسارًا */}
         <div className="bus3d-cab">
-          <div className="cab-driver">
-            <span className="wheel" />
-            <span className="cab-lbl">السائق</span>
-          </div>
+          <div className="cab-windshield" aria-hidden="true" />
           <div className="cab-assist">
             <Icon name="customers" size={13} />
             <span className="cab-lbl">المساعد</span>
           </div>
-          <div className="cab-windshield" />
-          <div className="door door-entry"><Icon name="chevron" size={12} /> دخول</div>
+          <div className="cab-driver">
+            <span className="wheel" />
+            <span className="cab-lbl">السائق</span>
+          </div>
         </div>
 
         {/* صالة المقاعد */}
         <div className="bus3d-cabin">
           {rowList.map((_, row) => {
             const rowSeats = seats.filter((s) => s.row === row)
-            const right = rowSeats.filter((s) => s.col <= 1).sort((a, b) => b.col - a.col) // نافذة ثم ممرّ
-            const left = rowSeats.filter((s) => s.col >= 3).sort((a, b) => a.col - b.col)  // ممرّ ثم نافذة
-            const isExitRow = row === Math.min(4, R - 1) // باب الخروج عند صفٍّ متوسطٍ يمينًا
+            // الترقيم يمين←يسار: النافذة اليمنى أوّلًا (الأصغر) ثمّ الممرّ
+            const right = rowSeats.filter((s) => s.col <= 1).sort((a, b) => a.col - b.col)
+            const left = rowSeats.filter((s) => s.col >= 3).sort((a, b) => a.col - b.col)
             return (
-              <div className={`cabin-row ${isExitRow ? 'has-exit' : ''}`} key={row}>
+              <div className="cabin-row" key={row}>
                 <div className="pair pair-right">
                   {right.map((s) => <SeatBtn key={s.no} seat={s} state={seatState(s)} onPick={pick} />)}
                 </div>
-                <div className="aisle-gap" />
+                <div className="aisle-gap" aria-hidden="true" />
                 <div className="pair pair-left">
                   {left.map((s) => <SeatBtn key={s.no} seat={s} state={seatState(s)} onPick={pick} />)}
                 </div>
-                {isExitRow && <div className="door door-exit"><Icon name="chevron" size={11} /> خروج</div>}
               </div>
             )
           })}
