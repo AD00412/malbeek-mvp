@@ -29,15 +29,19 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
 
   // تفاصيلٌ زمنية + نقاط الركوب + التحصيل — تُحمَّل مرّةً عند تغيّر الحملة
   const [detail, setDetail] = useState({ daily: [], topBoarding: [], collected: 0 })
+  const [loadErr, setLoadErr] = useState(false)
   useEffect(() => {
     let cancel = false
     if (!subscriberId) { setDetail({ daily: [], topBoarding: [], collected: 0 }); return }
     ;(async () => {
+      setLoadErr(false)
       const since = new Date(Date.now() - 30 * 86400000).toISOString()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('passengers').select('created_at, boarding_point, status')
         .eq('subscriber_id', subscriberId).gte('created_at', since).limit(2000)
       if (cancel) return
+      // لا تُظهر أصفارًا مضلّلةً عند فشل الجلب — ميّز الخطأ بوضوح.
+      if (error) { setLoadErr(true); return }
       const rows = data ?? []
       // منحنى زمني آخر ٣٠ يوم
       const buckets = new Map()
@@ -96,6 +100,12 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
           <h3>المؤشّرات الرئيسة</h3>
           <span className="sub">عبر {trips.length} رحلة</span>
         </div>
+
+        {loadErr && (
+          <div className="alert err" style={{ marginBottom: 10 }}>
+            تعذّر تحميل بعض التفاصيل (المنحنى الزمني والتحصيل) — قد تكون الأرقام أدناه غير مكتملة. حدّث الصفحة.
+          </div>
+        )}
 
         {tt.count === 0 && totalSeats === 0 ? (
           <div className="empty"><div className="em-ttl">لا بيانات بعد</div><div>ستظهر المؤشّرات فور إضافة الرحلات والمعتمرين.</div></div>

@@ -29,16 +29,19 @@ export default function NotificationsCenter({ open, onClose, onChanged }) {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
 
   const load = useCallback(async () => {
     if (!user?.id || !open) return
-    setLoading(true)
-    const { data } = await supabase
+    setLoading(true); setErr('')
+    const { data, error } = await supabase
       .from('notifications')
       .select('id, kind, title, body, ref_trip, ref_passenger, ref_feedback, read_at, created_at')
       .order('created_at', { ascending: false })
       .limit(100)
-    setItems(data ?? [])
+    // فرّق بين «لا إشعارات» و«تعذّر الجلب» — لا تُظهر فراغًا مضلّلًا عند الخطأ.
+    if (error) setErr('تعذّر تحميل الإشعارات — تحقّق من اتصالك ثمّ حدّث.')
+    else setItems(data ?? [])
     setLoading(false)
   }, [user, open])
 
@@ -74,6 +77,13 @@ export default function NotificationsCenter({ open, onClose, onChanged }) {
     >
       {loading ? (
         <div className="empty">جارٍ التحميل…</div>
+      ) : err ? (
+        <div className="alert err" style={{ marginTop: 4 }}>
+          {err}
+          <button className="icon-btn" style={{ marginInlineStart: 10 }} onClick={load}>
+            <Icon name="refresh" size={14} /> إعادة المحاولة
+          </button>
+        </div>
       ) : items.length === 0 ? (
         <div className="empty">
           <div className="em-ttl">لا إشعارات بعد</div>

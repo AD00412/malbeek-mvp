@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import CompassMark from './CompassMark'
+import BottomSheet from './BottomSheet'
 import { SEATING_POLICIES } from '../lib/busLayout'
 import { translateRpcError } from '../lib/rpcErrors'
+import { useUI } from '../lib/useUI'
 
 const STATUS_OPTIONS = [
   { v: 'draft', t: 'مسودة' },
@@ -47,6 +48,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
 
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const { toast } = useUI()
 
   // تحقّقٌ حيّ: العودة بعد الذهاب (يطابق تريغر validate_trip في القاعدة)
   const dateErr = depart && ret && new Date(ret) < new Date(depart) ? 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب.' : ''
@@ -81,6 +83,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
         result = await supabase.from('trips').insert({ ...payload, subscriber_id: subscriberId })
       }
       if (result.error) throw result.error
+      toast(isEdit ? 'تم حفظ تعديلات الرحلة ✓' : 'تم إنشاء الرحلة ✓', { type: 'success' })
       onSaved?.()
     } catch (e) {
       setErr(translateRpcError(e, 'تعذّر حفظ الرحلة. حاول مرة أخرى.'))
@@ -92,14 +95,19 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
   function tryClose() { if (!busy) onClose?.() }
 
   return (
-    <div className="modal-overlay" onClick={tryClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="m-head">
-          <CompassMark size={26} variant="gold" />
-          <h3>{isEdit ? 'تعديل الرحلة' : 'رحلة جديدة'}</h3>
-          <button className="m-close" onClick={tryClose} aria-label="إغلاق">×</button>
-        </div>
-
+    <BottomSheet
+      open
+      title={isEdit ? 'تعديل الرحلة' : 'رحلة جديدة'}
+      onClose={tryClose}
+      actions={
+        <>
+          <button className="btn btn-ghost" onClick={tryClose} disabled={busy}>إلغاء</button>
+          <button className="btn btn-gold" onClick={save} disabled={busy || Boolean(dateErr)}>
+            {busy ? <span className="spinner" /> : (isEdit ? 'حفظ التعديلات' : 'إنشاء الرحلة')}
+          </button>
+        </>
+      }
+    >
         <div className="form" style={{ marginTop: 0 }}>
           <div className="field">
             <label>عنوان الرحلة *</label>
@@ -172,15 +180,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
           </div>
 
           {err && <div className="alert err">{err}</div>}
-
-          <div className="modal-actions">
-            <button className="btn btn-ghost" onClick={tryClose} disabled={busy}>إلغاء</button>
-            <button className="btn btn-gold" onClick={save} disabled={busy || Boolean(dateErr)}>
-              {busy ? <span className="spinner" /> : (isEdit ? 'حفظ التعديلات' : 'إنشاء الرحلة')}
-            </button>
-          </div>
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   )
 }

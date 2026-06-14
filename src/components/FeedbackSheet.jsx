@@ -42,7 +42,13 @@ export default function FeedbackSheet({ open, audience, onClose }) {
   const [loading, setLoading] = useState(false)
   const [file, setFile] = useState(null)            // الصورة قبل الرفع (للمعاينة)
   const [previewUrl, setPreviewUrl] = useState('')  // object URL محلّيٌّ للمعاينة
+  const [uploading, setUploading] = useState(false) // أثناء رفع المرفق فقط
   const fileRef = useRef(null)
+  const previewRef = useRef('')                     // مرآةٌ للتنظيف عند التفكيك
+
+  // نظافةٌ مضمونة: ألغِ آخر object URL حين يُفكَّك المكوّن (ولو بقي open=true).
+  useEffect(() => { previewRef.current = previewUrl }, [previewUrl])
+  useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current) }, [])
 
   const loadMine = useCallback(async () => {
     if (!user?.id) return
@@ -97,6 +103,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
       // ١) ارفع المرفق أوّلًا (إن وُجد) — تحت مجلّد profile_id الخاصّ بك (RLS تحرس)
       let attachment_url = null
       if (file && user?.id) {
+        setUploading(true)
         // مزجٌ بين الزمن ومُعرّفٍ عشوائيٍّ يمنع التصادم عند تكرار النقرة في الـ ms ذاتها
         const ext = safeExt(file)
         const rand = Math.random().toString(36).slice(2, 6)
@@ -104,6 +111,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
         const { error: upErr } = await supabase.storage
           .from('feedback-attachments')
           .upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type })
+        setUploading(false)
         if (upErr) throw upErr
         attachment_url = path   // نخزّن المسار، الإدارة تجلب signed URL وقت العرض
       }
@@ -125,7 +133,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
     } catch (e) {
       setErr(e?.message ? 'تعذّر الإرسال: ' + e.message : 'تعذّر الإرسال.')
     } finally {
-      setBusy(false)
+      setBusy(false); setUploading(false)
     }
   }
 
@@ -189,7 +197,9 @@ export default function FeedbackSheet({ open, audience, onClose }) {
           {ok && <div className="alert ok">{ok}</div>}
           {err && <div className="alert err">{err}</div>}
           <button className="btn btn-gold btn-block" onClick={send} disabled={busy}>
-            {busy ? <span className="spinner" /> : <><Icon name="message" size={16} /> إرسال</>}
+            {busy
+              ? <><span className="spinner" /> {uploading ? 'جارٍ رفع الصورة…' : 'جارٍ الإرسال…'}</>
+              : <><Icon name="message" size={16} /> إرسال</>}
           </button>
         </div>
       ) : (
