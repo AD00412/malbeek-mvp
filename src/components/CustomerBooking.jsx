@@ -6,6 +6,8 @@ import SeatMap from './SeatMap'
 import CompassMark from './CompassMark'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 import { loadTripBuses, busLayout, busName } from '../lib/buses'
+import { translateRpcError } from '../lib/rpcErrors'
+import { useUI } from '../lib/useUI'
 
 const Ticket = lazy(() => import('./Ticket'))
 
@@ -26,6 +28,7 @@ function fmt(v) {
  */
 export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const { user, profile } = useAuth()
+  const { toast } = useUI()
   const [booking, setBooking] = useState(null)     // سجلّ الراكب الحالي (إن حجز سابقًا)
   const [occupancy, setOccupancy] = useState([])   // [{seat_no, gender, is_family}]
   const [loading, setLoading] = useState(true)
@@ -208,9 +211,10 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       row = result.data
       setBooking(row)
       onBooked?.()
+      toast(booking?.id ? 'تم تحديث حجزك ✓' : 'تم تأكيد حجزك بنجاح ✓', { type: 'success' })
       setShowTicket(true)
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الحجز: ' + e.message : 'تعذّر إتمام الحجز.')
+      setErr(translateRpcError(e, 'تعذّر إتمام الحجز.'))
     } finally {
       setBusy(false)
     }

@@ -178,21 +178,21 @@ function SubsPanel({ subs, loading, onReload }) {
         <Empty title="لا يوجد مشتركون بعد" hint="ستظهر الحملات هنا فور تسجيلها." />
       ) : (
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table className="tbl tbl-cards">
             <thead><tr><th>الحملة</th><th>الباقة</th><th>رحلات</th><th>معتمرون</th><th>مدفوع</th><th>المحصّل (﷼)</th><th>إجراء</th></tr></thead>
             <tbody>
               {subs.map((s) => (
                 <tr key={s.id}>
-                  <td>
+                  <td data-label="الحملة">
                     {s.org_name}
                     <div className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)', fontSize: 11 }}>/j/{s.slug}</code></div>
                   </td>
-                  <td><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
-                  <td>{s.trips_count || 0}</td>
-                  <td>{s.pax_count || 0}</td>
-                  <td>{s.paid_count || 0}</td>
-                  <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{money(s.collected)}</td>
-                  <td>
+                  <td data-label="الباقة"><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
+                  <td data-label="رحلات">{s.trips_count || 0}</td>
+                  <td data-label="معتمرون">{s.pax_count || 0}</td>
+                  <td data-label="مدفوع">{s.paid_count || 0}</td>
+                  <td data-label="المحصّل (﷼)" style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{money(s.collected)}</td>
+                  <td data-label="إجراء">
                     <button className="icon-btn" onClick={() => togglePlan(s)} disabled={busyId === s.id}>
                       {busyId === s.id ? <span className="spinner" /> : (s.plan === 'paid' ? 'إرجاع لتجريبية' : 'ترقية لمدفوعة')}
                     </button>

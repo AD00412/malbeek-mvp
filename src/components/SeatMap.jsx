@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import Icon from './Icon'
 import { buildSeats, isAllowed, allowedFor, policyLabel, DEFAULT_ROWS, DEFAULT_BACK } from '../lib/busLayout'
+import { useUI } from '../lib/useUI'
+
+const AREA_AR = { male: 'الرجال', female: 'النساء', family: 'العوائل' }
 
 /**
  * مخطّط الباص التفاعلي — واقعيّ، الأبواب يمينًا والسائق/المساعد أعلى اليسار.
@@ -18,6 +21,7 @@ export default function SeatMap({
   policy = 'all_male', rows = DEFAULT_ROWS, back = DEFAULT_BACK,
   passengers = [], selected, onSelect, forPassenger, readOnly,
 }) {
+  const { toast } = useUI()
   const seats = useMemo(() => buildSeats(rows, back), [rows, back])
   const R = Math.max(1, Math.min(20, rows | 0))
   const B = Math.max(0, Math.min(6, back | 0))
@@ -48,7 +52,16 @@ export default function SeatMap({
   function pick(seat) {
     if (readOnly) return
     const s = seatState(seat)
-    if (s.kind === 'taken' || s.kind === 'locked') return
+    // اشرح سبب تعذّر الاختيار بدل صمتٍ على اللمس (لا يظهر title على الجوال).
+    if (s.kind === 'taken') {
+      const nm = s.holder?.full_name ? ` (${s.holder.full_name})` : ''
+      toast(`المقعد ${seat.no} محجوزٌ${nm}`, { type: 'info' })
+      return
+    }
+    if (s.kind === 'locked') {
+      toast(s.a ? `المقعد ${seat.no} مخصّصٌ لمنطقة ${AREA_AR[s.a] || ''}` : `المقعد ${seat.no} غير متاحٍ لهذا الاختيار`, { type: 'info' })
+      return
+    }
     onSelect?.(String(seat.no))
   }
 
@@ -107,6 +120,8 @@ export default function SeatMap({
   )
 }
 
+const KIND_AR = { available: 'متاح', selected: 'مختار', taken: 'محجوز', locked: 'مقيّد' }
+
 function SeatBtn({ seat, state, onPick }) {
   const cls = `seat3d seat-${state.kind} ${state.a ? 'a-' + state.a : ''}`
   const holder = state.holder
@@ -114,13 +129,17 @@ function SeatBtn({ seat, state, onPick }) {
   const firstName = hasName ? holder.full_name.trim().split(/\s+/)[0] : (holder ? '•' : '')
   const title = hasName ? `${holder.full_name} · مقعد ${seat.no}`
     : holder ? `محجوز · مقعد ${seat.no}` : `مقعد ${seat.no}`
+  const blocked = state.kind === 'taken' || state.kind === 'locked'
+  // لا نستخدم disabled كي تعمل اللمسة فتشرح سبب المنع عبر toast؛ نُعلِم الوصوليّة بـ aria.
   return (
     <button
       type="button"
       className={cls}
       onClick={() => onPick(seat)}
       title={title}
-      disabled={state.kind === 'taken' || state.kind === 'locked'}
+      aria-label={`مقعد ${seat.no} — ${KIND_AR[state.kind] || ''}${hasName ? ' · ' + holder.full_name : ''}`}
+      aria-pressed={state.kind === 'selected'}
+      aria-disabled={blocked || undefined}
     >
       <span className="s-head" />
       <span className="s-body">

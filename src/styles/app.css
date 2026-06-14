@@ -288,6 +288,21 @@
 .row-actions{display:flex;gap:8px;justify-content:flex-start}
 .cell-sub{color:var(--cr-300);font-weight:300;font-size:12px;margin-top:3px}
 
+/* جدولٌ يتحوّل إلى بطاقاتٍ مكدّسةٍ على الجوال (cards-instead-of-tables) */
+@media (max-width:760px){
+  .tbl.tbl-cards thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .tbl.tbl-cards,.tbl.tbl-cards tbody,.tbl.tbl-cards tr,.tbl.tbl-cards td{display:block;width:100%}
+  .tbl.tbl-cards tr{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;background:var(--surface)}
+  .tbl.tbl-cards tbody tr:hover td{background:none}
+  .tbl.tbl-cards td{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:7px 0;border:none;text-align:end}
+  .tbl.tbl-cards td::before{content:attr(data-label);color:var(--gd-300);font-family:var(--font-display);font-size:12px;font-weight:600;text-align:start}
+  .tbl.tbl-cards td:first-child{justify-content:flex-start;font-weight:700;color:var(--cr-50);
+    padding-bottom:10px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+  .tbl.tbl-cards td:first-child::before{display:none}
+  .tbl.tbl-cards td:last-child{padding-top:10px}
+  .tbl.tbl-cards td:last-child .icon-btn{width:100%;justify-content:center}
+}
+
 /* الشارات */
 .st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 11px;border-radius:var(--r-pill);font-weight:600}
 .st.ok{background:rgba(43,182,140,.16);color:var(--ok-ink)}
@@ -550,7 +565,8 @@
 .seat3d .s-nm{font-size:8px;color:var(--cr-300);font-weight:500;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
 .seat3d:hover:not(:disabled){transform:translateY(-2px)}
 .seat3d:hover:not(:disabled) .s-body{border-color:rgba(226,194,119,.5);background:rgba(196,154,69,.1)}
-.seat3d:disabled{cursor:not-allowed}
+.seat3d:disabled,.seat3d[aria-disabled="true"]{cursor:not-allowed}
+.seat3d[aria-disabled="true"]:hover{transform:none}
 
 /* تلوين المناطق */
 .seat-available.a-male .s-body{border-color:rgba(58,160,179,.4);background:rgba(58,160,179,.07)}
