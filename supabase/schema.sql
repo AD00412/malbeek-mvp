@@ -775,6 +775,7 @@ language sql stable security definer set search_path = public as $$
       or public.my_role() = 'admin'
     );
 $$;
+revoke all on function public.trip_seat_occupancy(uuid, uuid) from public;
 grant execute on function public.trip_seat_occupancy(uuid, uuid) to authenticated;
 
 -- ============================================================
@@ -1204,6 +1205,7 @@ returns int language sql stable security definer set search_path = public as $$
     and (profile_id = auth.uid()
          or (public.my_role() = 'admin' and audience = 'admin'));
 $$;
+revoke all on function public.unread_notifications_count() from public;
 grant execute on function public.unread_notifications_count() to authenticated;
 
 -- ★ نظرةٌ تشغيليّةٌ وماليّةٌ للإدارة عبر كلّ الحملات (مقصورةٌ على admin، SECURITY DEFINER)
@@ -1225,6 +1227,7 @@ language sql stable security definer set search_path = public as $$
   where public.my_role() = 'admin'      -- غير الأدمن: لا صفوف (رغم SECURITY DEFINER)
   order by s.created_at desc;
 $$;
+revoke all on function public.admin_campaign_stats() from public;
 grant execute on function public.admin_campaign_stats() to authenticated;
 
 -- ★ استنساخُ رحلةٍ (مع باصاتها) — مع إزاحة التواريخ ولاحقة الاسم.
@@ -1283,6 +1286,7 @@ begin
 
   return v_new;
 end $$;
+revoke all on function public.duplicate_trip(uuid, text, int) from public;
 grant execute on function public.duplicate_trip(uuid, text, int) to authenticated;
 
 -- ★ تريغر: إشعارات passengers (حجزٌ جديد للمشترك، تأكيد الدفع/الصعود/التسكين للعميل، إلغاء حجز)
