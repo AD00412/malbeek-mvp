@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import CompassMark from './CompassMark'
 import { SEATING_POLICIES } from '../lib/busLayout'
+import { translateTripError } from '../lib/rpcErrors'
 
 const STATUS_OPTIONS = [
   { v: 'draft', t: 'مسودة' },
@@ -82,12 +83,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
       if (result.error) throw result.error
       onSaved?.()
     } catch (e) {
-      const msg = String(e?.message || '')
-      if (msg.includes('TRIAL_TRIP_LIMIT')) {
-        setErr('باقتك التجريبية تسمح برحلةٍ واحدة فقط. رقِّ إلى باقة ملبّيك (٢٤٩ ﷼) لإضافة رحلاتٍ غير محدودة.')
-      } else {
-        setErr(msg ? 'تعذّر الحفظ: ' + msg : 'تعذّر حفظ الرحلة. حاول مرة أخرى.')
-      }
+      setErr(translateTripError(e, 'تعذّر حفظ الرحلة. حاول مرة أخرى.'))
     } finally {
       setBusy(false)
     }

@@ -928,20 +928,25 @@ grant execute on function public.admin_campaign_stats() to authenticated;
 -- ★ استنساخُ رحلةٍ (مع باصاتها) — مع إزاحة التواريخ ولاحقة الاسم.
 --   لا يستنسخ الركّاب ولا قائمة الانتظار ولا المدفوعات (يبدأ "فوجًا جديدًا").
 --   مقيّدٌ بمالك الحملة فقط. يحترم enforce_trial_trip_limit عبر تريغر INSERT.
+--   يُرجع الصفّ كاملًا ليفتحه المالك في الواجهة بلا قراءةٍ إضافيّة.
 create or replace function public.duplicate_trip(
   p_trip_id uuid, p_name_suffix text default ' — نسخة',
   p_shift_days int default 0
-) returns uuid language plpgsql security definer set search_path = public as $$
-declare v_new uuid; v_old record; v_owner boolean;
+) returns public.trips language plpgsql security definer set search_path = public as $$
+declare v_old public.trips; v_new public.trips; v_owner boolean;
 begin
   select * into v_old from public.trips where id = p_trip_id;
-  if not found then raise exception 'الرحلة غير موجودة.'; end if;
+  if not found then
+    raise exception 'TRIP_NOT_FOUND' using hint = 'الرحلة غير موجودة.';
+  end if;
 
   -- مالك الحملة فقط (أو الإدارة)
   select (exists (select 1 from public.subscribers s
                   where s.id = v_old.subscriber_id and s.owner_id = auth.uid())
           or public.my_role() = 'admin') into v_owner;
-  if not v_owner then raise exception 'غير مصرّحٍ بهذه العمليّة.'; end if;
+  if not v_owner then
+    raise exception 'NOT_AUTHORIZED' using hint = 'غير مصرّحٍ بهذه العمليّة.';
+  end if;
 
   insert into public.trips (
     subscriber_id, title, route_from, route_to,
@@ -954,23 +959,24 @@ begin
     v_old.subscriber_id,
     coalesce(v_old.title,'رحلة') || coalesce(p_name_suffix,''),
     v_old.route_from, v_old.route_to,
-    case when v_old.depart_at is not null and p_shift_days <> 0
-         then v_old.depart_at + (p_shift_days || ' days')::interval else v_old.depart_at end,
-    case when v_old.return_at is not null and p_shift_days <> 0
-         then v_old.return_at + (p_shift_days || ' days')::interval else v_old.return_at end,
+    -- null + interval = null; ts + '0 days' = ts → لا حاجة لـ CASE
+    v_old.depart_at + (p_shift_days || ' days')::interval,
+    v_old.return_at + (p_shift_days || ' days')::interval,
     v_old.capacity, v_old.bus_label, v_old.boarding_point,
     'draft', v_old.notes,                          -- ابدأ مسودّة، يفتحها المالك عند الجاهزيّة
     v_old.bus_plate, v_old.driver_name, v_old.driver_phone,
     v_old.assistant_name, v_old.assistant_phone,
     v_old.supervisor_name, v_old.supervisor_phone,
     v_old.seating_policy, v_old.bus_rows, v_old.bus_back_row, v_old.price
-  ) returning id into v_new;
+  ) returning * into v_new;
 
-  -- استنساخ الباصات ٢+ (الباص ١ يُنشأ تلقائيًّا عبر ensure_primary_bus من بيانات trips)
+  -- استنساخ الباصات. ON CONFLICT DO NOTHING يحفظ ذرّيًّا تعايشَ تريغر ensure_primary_bus
+  -- (الذي ينشئ الباص ١ تلقائيًّا) دون اقترانٍ خفيٍّ على bus_number > 1.
   insert into public.trip_buses (trip_id, subscriber_id, bus_number, label, plate, bus_rows, bus_back_row, seating_policy)
-  select v_new, b.subscriber_id, b.bus_number, b.label, b.plate, b.bus_rows, b.bus_back_row, b.seating_policy
+  select v_new.id, b.subscriber_id, b.bus_number, b.label, b.plate, b.bus_rows, b.bus_back_row, b.seating_policy
   from public.trip_buses b
-  where b.trip_id = p_trip_id and b.bus_number > 1;
+  where b.trip_id = p_trip_id
+  on conflict (trip_id, bus_number) do nothing;
 
   return v_new;
 end $$;

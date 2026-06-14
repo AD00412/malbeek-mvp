@@ -12,6 +12,7 @@ import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
 import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
+import { translateTripError } from '../../lib/rpcErrors'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -39,10 +40,11 @@ function fmt(v) {
  * شاشة إدارة رحلةٍ واحدة: المعتمرون + المقاعد + الطاقم + الكشف الرسمي.
  * @param {object} trip
  * @param {object} sub      بيانات المؤسسة
- * @param {Function} onBack
+ * @param {Function} onBack         إغلاق الشاشة والعودة للقائمة
  * @param {Function} onTripChanged  لإعادة تحميل قائمة الرحلات في الأب عند تغيّر الطاقم
+ * @param {Function} onOpenTrip     لفتح رحلةٍ أخرى مباشرةً (مثل النسخة الجديدة بعد الاستنساخ)
  */
-export default function TripManage({ trip: initialTrip, sub, onBack, onTripChanged }) {
+export default function TripManage({ trip: initialTrip, sub, onBack, onTripChanged, onOpenTrip }) {
   const [trip, setTrip] = useState(initialTrip)
   const [passengers, setPassengers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -405,7 +407,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         open={dupOpen}
         sourceTitle={trip?.title}
         onClose={() => setDupOpen(false)}
-        onDone={(newId) => { setDupOpen(false); onTripChanged?.(); onBack?.(newId) }}
+        onDone={(newTrip) => { setDupOpen(false); onTripChanged?.(); onOpenTrip?.(newTrip) }}
         sourceId={trip?.id}
       />
 
@@ -559,18 +561,8 @@ function DuplicateTripSheet({ open, sourceId, sourceTitle, onClose, onDone }) {
       p_shift_days: Number(shift) || 0,
     })
     setBusy(false)
-    if (error) {
-      const m = String(error.message || '')
-      if (m.includes('TRIAL_TRIP_LIMIT')) {
-        setErr('باقتك التجريبية تسمح برحلةٍ واحدة فقط. رقِّ الباقة لإضافة فوجٍ آخر.')
-      } else if (m.includes('غير مصرّح')) {
-        setErr('غير مصرّحٍ لك باستنساخ هذه الرحلة.')
-      } else {
-        setErr(m || 'تعذّر الاستنساخ.')
-      }
-      return
-    }
-    onDone?.(data)
+    if (error) { setErr(translateTripError(error, 'تعذّر الاستنساخ.')); return }
+    onDone?.(data)   // data = صفّ الرحلة الجديدة كاملًا
   }
 
   return (

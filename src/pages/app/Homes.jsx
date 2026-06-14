@@ -351,16 +351,8 @@ export function SubscriberHome() {
           <TripManage
             trip={managing}
             sub={sub}
-            onBack={async (newTripId) => {
-              // عند الاستنساخ تصل newTripId — افتح الرحلة الجديدة بعد إعادة التحميل
-              if (newTripId) {
-                await load()
-                const { data } = await supabase.from('trips').select('*').eq('id', newTripId).maybeSingle()
-                setManaging(data || null)
-              } else {
-                setManaging(null)
-              }
-            }}
+            onBack={() => setManaging(null)}
+            onOpenTrip={(newTrip) => { if (newTrip) setManaging(newTrip) }}
             onTripChanged={load}
           />
         ) : (
