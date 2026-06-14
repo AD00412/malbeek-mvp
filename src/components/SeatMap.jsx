@@ -85,12 +85,16 @@ export default function SeatMap({
           <b>مخرج</b>
         </span>
 
-        {/* المقدّمة: زجاجٌ أماميٌّ مقوّس + كابينة السائق يسارًا */}
+        {/* المقدّمة: زجاجٌ أماميٌّ مقوّس + السائق ثمّ المساعد بجانبه */}
         <div className="bus3d-cab">
           <div className="cab-windshield" aria-hidden="true" />
           <div className="cab-driver">
             <span className="wheel" />
             <span className="cab-lbl">السائق</span>
+          </div>
+          <div className="cab-assist">
+            <Icon name="user" size={15} />
+            <span className="cab-lbl">المساعد</span>
           </div>
         </div>
 

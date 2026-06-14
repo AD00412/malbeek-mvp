@@ -545,16 +545,19 @@
 .bus-door-front{top:56px}
 .bus-door-mid{top:48%}
 
-/* مقدّمة الباص (الكابينة): زجاجٌ مقوّسٌ في الوسط + السائق يسارًا فيزيائيًّا */
-.bus3d-cab{position:relative;height:82px;margin-bottom:10px;border-bottom:2px dashed rgba(226,194,119,.3)}
+/* مقدّمة الباص (الكابينة): زجاجٌ مقوّسٌ أعلى + السائق ثمّ المساعد بجانبه (يسارًا فيزيائيًّا) */
+.bus3d-cab{position:relative;height:84px;margin-bottom:10px;border-bottom:2px dashed rgba(226,194,119,.3)}
 /* الزجاج الأمامي المقوّس */
-.cab-windshield{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:46%;height:16px;
+.cab-windshield{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40%;height:14px;
   border-radius:0 0 55% 55% / 0 0 100% 100%;
   background:linear-gradient(180deg,rgba(176,224,255,.32),rgba(176,224,255,.05));
   border-top:2px solid rgba(226,194,119,.32);box-shadow:0 0 10px rgba(176,224,255,.15)}
-.cab-driver{position:absolute;left:14px;bottom:12px;
-  display:flex;flex-direction:column;align-items:center;gap:4px;width:56px;padding:8px 4px;
+.cab-driver,.cab-assist{position:absolute;bottom:10px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;width:58px;padding:7px 4px;
   border:1px solid var(--line);border-radius:12px;background:rgba(0,0,0,.2);color:var(--cr-300);font-size:10px}
+.cab-driver{left:14px}
+.cab-assist{left:80px}
+.cab-assist svg{color:var(--gd-300)}
 .cab-driver .wheel{width:24px;height:24px;border-radius:50%;border:3px solid var(--gd-400);position:relative}
 .cab-driver .wheel::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--gd-400)}
 .cab-driver .wheel::after{content:"";position:absolute;top:50%;left:50%;width:14px;height:3px;background:var(--gd-400);transform:translate(-50%,-50%)}
