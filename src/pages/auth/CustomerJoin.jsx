@@ -45,6 +45,7 @@ export default function CustomerJoin() {
   const [fullName, setFullName] = useState('')
   const [nationalId, setNationalId] = useState('')
   const [phone, setPhone] = useState('')
+  const [pickupLocation, setPickupLocation] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -133,6 +134,7 @@ export default function CustomerJoin() {
         full_name: cleanFullName,
         national_id: cleanId,
         phone: cleanPhone,
+        pickup_location: pickupLocation.trim() || null,
       })
 
       let insErr = (await insertCustomer()).error
@@ -237,6 +239,16 @@ export default function CustomerJoin() {
           <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone}
             onChange={(e) => setPhone(e.target.value)} onBlur={() => markTouched('phone')} required />
           {touched.phone && errors.phone && <span className="hint">{errors.phone}</span>}
+        </div>
+
+        <div className="field with-ic">
+          <label>مكان الركوب <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
+          <span className="f-ic"><Icon name="location" size={17} /></span>
+          <input type="text" placeholder="مثال: محطّة جازان المركزيّة"
+            value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} />
+          <span className="hint" style={{ color: 'var(--cr-300)' }}>
+            يُملأ تلقائيًّا في حجوزاتك القادمة — تستطيع تغييره عند الحجز.
+          </span>
         </div>
 
         <div className={fieldCls('email', 'ltr')}>

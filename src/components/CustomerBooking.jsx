@@ -41,6 +41,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [isFamily, setIsFamily] = useState(false)
   const [seatNo, setSeatNo] = useState('')
   const [paymentRef, setPaymentRef] = useState('')
+  const [boardingPoint, setBoardingPoint] = useState('')
   const [payBusy, setPayBusy] = useState(false)
   const [buses, setBuses] = useState([])
   const [busId, setBusId] = useState(null)
@@ -73,8 +74,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       setPhone(mine.phone ?? ''); setGender(mine.gender ?? 'male')
       setIsFamily(!!mine.is_family); setSeatNo(mine.seat_no ?? '')
       setPaymentRef(mine.payment_ref ?? '')
+      setBoardingPoint(mine.boarding_point ?? '')
     } else {
       setFullName(profile?.full_name ?? ''); setPhone(profile?.phone ?? '')
+      // تحضير افتراضيٍّ لمكان الركوب: من سجلّ العميل أوّلًا، ثمّ من إعداد الرحلة
+      const { data: myCustomer } = await supabase
+        .from('customers').select('pickup_location').eq('profile_id', user.id).maybeSingle()
+      setBoardingPoint(myCustomer?.pickup_location || trip?.boarding_point || '')
     }
     setLoading(false)
   }
@@ -176,7 +182,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       phone: normalizePhone(phone) || null,
       gender, is_family: isFamily,
       seat_no: seatNo,
-      boarding_point: trip?.boarding_point || null,
+      boarding_point: boardingPoint.trim() || trip?.boarding_point || null,
       payment_ref: paymentRef.trim() || null,
       // الحالة تبقى "مسجّل"؛ تأكيد الدفع يتمّ من الحملة بعد مراجعة المرجع.
       status: 'registered',
@@ -306,6 +312,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: -4 }}>
                 <span className="muted" style={{ fontSize: 13 }}>مقعدك:</span>
                 <strong style={{ color: 'var(--gd-300)', fontFamily: 'var(--font-display)' }}>{seatNo || '— لم يُختر —'}</strong>
+              </div>
+
+              <div className="field" style={{ marginTop: 12 }}>
+                <label>مكان الركوب</label>
+                <input type="text"
+                  placeholder={trip?.boarding_point || 'مثال: محطّة جازان المركزيّة'}
+                  value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
               </div>
 
               {trip?.price != null && (

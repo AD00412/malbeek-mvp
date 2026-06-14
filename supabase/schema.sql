@@ -407,6 +407,7 @@ create table if not exists public.customers (
   phone         text,
   created_at    timestamptz not null default now()
 );
+alter table public.customers add column if not exists pickup_location text;  -- مكانٌ افتراضيٌّ للركوب (يُملأ في حجوزاته)
 create index if not exists idx_customers_subscriber on public.customers(subscriber_id);
 create index if not exists idx_customers_profile    on public.customers(profile_id);
 

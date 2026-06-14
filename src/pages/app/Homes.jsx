@@ -19,6 +19,8 @@ import { tableToDocx } from '../../lib/docx'
 import { htmlToPdf } from '../../lib/pdf'
 import TripManage from './TripManage'
 
+const LazyScanner = lazy(() => import('../../components/Scanner'))
+
 /* ---------- أدوات عرض مشتركة ---------- */
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
 const STATUS_TAG   = { draft: 'muted', open: 'ok', closed: 'warn', done: 'info' }
@@ -210,6 +212,7 @@ export function SubscriberHome() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [scanMode, setScanMode] = useState(null)    // null | 'pick' | 'board' | 'checkin'
   const [copied, setCopied] = useState(false)
   const [filter, setFilter] = useState('all')   // all | upcoming | active | done
   const [search, setSearch] = useState('')
@@ -391,6 +394,7 @@ export function SubscriberHome() {
                   onCreate={openCreate}
                   onShare={() => setShareOpen(true)}
                   onAnalytics={() => setView('analytics')}
+                  onScan={() => setScanMode('pick')}
                 />
                 <OnboardingChecklist
                   sub={sub}
@@ -461,13 +465,45 @@ export function SubscriberHome() {
       </button>
       <FeedbackSheet open={feedbackOpen} audience="subscriber" onClose={() => setFeedbackOpen(false)} />
 
+      {/* اختيارُ نوع المسح */}
+      <BottomSheet
+        open={scanMode === 'pick'}
+        onClose={() => setScanMode(null)}
+        title="مسح تذكرة"
+        actions={<button className="btn btn-ghost btn-block" onClick={() => setScanMode(null)}>إلغاء</button>}
+      >
+        <p className="muted" style={{ fontSize: 13, marginTop: -4 }}>
+          اختر ما تريد تسجيله للمعتمر بعد مسح باركود تذكرته:
+        </p>
+        <div className="actions" style={{ marginTop: 6 }}>
+          <button className="action info" onClick={() => setScanMode('board')}>
+            <Icon name="bus" size={18} /> تأكيد صعود الحافلة
+          </button>
+          <button className="action warn" onClick={() => setScanMode('checkin')}>
+            <Icon name="bed" size={18} /> تأكيد استلام الغرفة
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* الماسح الحيّ — يفحص أيّ تذكرةٍ في حملتك */}
+      {(scanMode === 'board' || scanMode === 'checkin') && (
+        <Suspense fallback={<div className="muted" style={{ padding: 16 }}>تحميل الماسح…</div>}>
+          <LazyScanner
+            trip={null}
+            mode={scanMode}
+            onClose={() => setScanMode(null)}
+            onUpdated={load}
+          />
+        </Suspense>
+      )}
+
       <Roadmap />
     </>
   )
 }
 
 /* ---------- نظرة عامة ---------- */
-function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate, onShare, onAnalytics }) {
+function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate, onShare, onAnalytics, onScan }) {
   const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   return (
@@ -501,8 +537,8 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate
         <button className="action primary" onClick={onCreate}>
           <Icon name="plus" size={18} /> إنشاء رحلة عمرة
         </button>
-        <button className="action info" disabled>
-          <Icon name="qr" size={18} /> مسح تذكرة <span className="tag muted" style={{ marginInlineStart: 'auto', fontSize: 10 }}>قريبًا</span>
+        <button className="action info" onClick={onScan} disabled={!trips.length}>
+          <Icon name="qr" size={18} /> مسح تذكرة
         </button>
         <button className="action ok" onClick={onShare} disabled={!sub?.slug}>
           <Icon name="share" size={18} /> مشاركة رابط الحجز
