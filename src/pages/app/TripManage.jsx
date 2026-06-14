@@ -9,6 +9,7 @@ import Manifest from '../../components/Manifest'
 import SeatMap from '../../components/SeatMap'
 import BusEditor from '../../components/BusEditor'
 import HotelsManager from '../../components/HotelsManager'
+import AuditLogSheet from '../../components/AuditLogSheet'
 import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
@@ -82,6 +83,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [seatMapOpen, setSeatMapOpen] = useState(false)
   const [busEditOpen, setBusEditOpen] = useState(false)
   const [hotelsOpen, setHotelsOpen] = useState(false)
+  const [auditOpen, setAuditOpen] = useState(false)
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
   const [waitlist, setWaitlist] = useState([])
@@ -296,9 +298,14 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
             <Icon name="message" size={18} /> إرسال عرض
           </button>
         </div>
-        <button className="action" onClick={exportRoster} disabled={count === 0}>
-          <Icon name="download" size={18} /> تصدير الكشف (CSV / Excel)
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="action" style={{ flex: 1 }} onClick={exportRoster} disabled={count === 0}>
+            <Icon name="download" size={18} /> تصدير الكشف
+          </button>
+          <button className="action" style={{ flex: 1 }} onClick={() => setAuditOpen(true)}>
+            <Icon name="manifest" size={18} /> سجلّ النشاط
+          </button>
+        </div>
         <button className="action" onClick={() => setDupOpen(true)}>
           <Icon name="copy" size={18} /> استنساخ هذه الرحلة (لفوجٍ جديد)
         </button>
@@ -458,6 +465,8 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         onDone={(newTrip) => { setDupOpen(false); onTripChanged?.(); onOpenTrip?.(newTrip) }}
         sourceId={trip?.id}
       />
+
+      <AuditLogSheet open={auditOpen} tripId={trip?.id} onClose={() => setAuditOpen(false)} />
 
       {paxOpen && (
         <PassengerFormModal

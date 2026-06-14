@@ -203,6 +203,130 @@ create policy "rooms customer read" on public.hotel_rooms for select
 drop policy if exists "rooms admin read" on public.hotel_rooms;
 create policy "rooms admin read" on public.hotel_rooms for select using (public.my_role() = 'admin');
 
+-- ============================================================
+--  سجلّ التدقيق — مصدرُ حقيقةٍ لمن غيّر ماذا متى (لا يُمكن تخطّيه)
+-- ============================================================
+create table if not exists public.audit_logs (
+  id            uuid primary key default gen_random_uuid(),
+  actor_id      uuid references auth.users(id) on delete set null,
+  actor_email   text,                                                -- لقطةٌ لحظة التسجيل
+  actor_role    text,                                                -- 'admin' | 'subscriber' | 'customer' | 'system'
+  subscriber_id uuid references public.subscribers(id) on delete cascade,
+  trip_id       uuid references public.trips(id) on delete set null,
+  entity        text not null,                                       -- passenger | trip | bus | hotel | room
+  entity_id     uuid,
+  entity_label  text,                                                -- لقطةٌ نصّيّةٌ للعرض (الاسم/الرقم)
+  action        text not null,                                       -- create | update | delete | status_change | seat_assign | room_assign | payment_confirmed
+  changes       jsonb,
+  created_at    timestamptz not null default now()
+);
+create index if not exists idx_audit_subscriber on public.audit_logs(subscriber_id, created_at desc);
+create index if not exists idx_audit_trip       on public.audit_logs(trip_id, created_at desc);
+create index if not exists idx_audit_entity     on public.audit_logs(entity, entity_id);
+
+alter table public.audit_logs enable row level security;
+-- المالك يقرأ سجلّ حملته فقط
+drop policy if exists "audit owner read" on public.audit_logs;
+create policy "audit owner read" on public.audit_logs for select
+  using (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+-- الإدارة تقرأ الكلّ
+drop policy if exists "audit admin read" on public.audit_logs;
+create policy "audit admin read" on public.audit_logs for select using (public.my_role() = 'admin');
+-- لا كتابة من العميل: التريغرات تكتب بـ SECURITY DEFINER وتتجاوز RLS.
+
+-- ★ helper: يلتقط بيانات المُنفِّذ من JWT (يصلح للسياقات الموثوقة بـ actor_id=null)
+create or replace function public.audit_actor()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_email text; v_role text;
+begin
+  if auth.uid() is null then
+    return jsonb_build_object('actor_id', null, 'actor_email', null, 'actor_role', 'system');
+  end if;
+  select email into v_email from auth.users where id = auth.uid();
+  v_role := coalesce(public.my_role()::text, 'unknown');
+  return jsonb_build_object('actor_id', auth.uid(), 'actor_email', v_email, 'actor_role', v_role);
+end $$;
+
+-- ★ تريغر: سجلّ تغييرات passengers
+create or replace function public.audit_passenger_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  a jsonb := public.audit_actor();
+  v_changes jsonb := '{}'::jsonb;
+  v_action text;
+  v_sub uuid; v_trip uuid; v_eid uuid; v_label text;
+begin
+  if tg_op = 'INSERT' then
+    v_action := 'create';
+    v_sub := new.subscriber_id; v_trip := new.trip_id; v_eid := new.id;
+    v_label := new.full_name;
+    v_changes := jsonb_build_object('seat_no', new.seat_no, 'status', new.status);
+  elsif tg_op = 'DELETE' then
+    v_action := 'delete';
+    v_sub := old.subscriber_id; v_trip := old.trip_id; v_eid := old.id;
+    v_label := old.full_name;
+    v_changes := jsonb_build_object('seat_no', old.seat_no, 'status', old.status);
+  else
+    if new.status     is distinct from old.status     then v_changes := v_changes || jsonb_build_object('status',  jsonb_build_object('old', old.status,  'new', new.status));  end if;
+    if new.seat_no    is distinct from old.seat_no    then v_changes := v_changes || jsonb_build_object('seat_no', jsonb_build_object('old', old.seat_no, 'new', new.seat_no)); end if;
+    if new.bus_id     is distinct from old.bus_id     then v_changes := v_changes || jsonb_build_object('bus_id',  jsonb_build_object('old', old.bus_id,  'new', new.bus_id));  end if;
+    if new.room_id    is distinct from old.room_id    then v_changes := v_changes || jsonb_build_object('room_id', jsonb_build_object('old', old.room_id, 'new', new.room_id)); end if;
+    if new.amount     is distinct from old.amount     then v_changes := v_changes || jsonb_build_object('amount',  jsonb_build_object('old', old.amount,  'new', new.amount));  end if;
+    if new.paid_at    is distinct from old.paid_at    then v_changes := v_changes || jsonb_build_object('paid_at', jsonb_build_object('old', old.paid_at, 'new', new.paid_at)); end if;
+    if v_changes = '{}'::jsonb then return new; end if;
+    v_action := case
+      when new.status  is distinct from old.status  then (case when new.status = 'paid' then 'payment_confirmed' else 'status_change' end)
+      when new.seat_no is distinct from old.seat_no then 'seat_assign'
+      when new.bus_id  is distinct from old.bus_id  then 'bus_assign'
+      when new.room_id is distinct from old.room_id then 'room_assign'
+      when new.amount  is distinct from old.amount  then 'amount_change'
+      else 'update'
+    end;
+    v_sub := new.subscriber_id; v_trip := new.trip_id; v_eid := new.id;
+    v_label := new.full_name;
+  end if;
+
+  insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, trip_id, entity, entity_id, entity_label, action, changes)
+  values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role', v_sub, v_trip, 'passenger', v_eid, v_label, v_action, v_changes);
+  return coalesce(new, old);
+end $$;
+drop trigger if exists trg_audit_passenger on public.passengers;
+create trigger trg_audit_passenger
+  after insert or update or delete on public.passengers
+  for each row execute function public.audit_passenger_change();
+
+-- ★ تريغر: سجلّ تغييرات trips (للحالة/السعر/السعة فقط — تجنّب الضوضاء)
+create or replace function public.audit_trip_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare a jsonb := public.audit_actor(); v_changes jsonb := '{}'::jsonb; v_action text;
+begin
+  if tg_op = 'INSERT' then
+    v_action := 'create';
+    insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, trip_id, entity, entity_id, entity_label, action, changes)
+    values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role', new.subscriber_id, new.id, 'trip', new.id, new.title, 'create',
+            jsonb_build_object('status', new.status, 'price', new.price));
+    return new;
+  elsif tg_op = 'DELETE' then
+    insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, trip_id, entity, entity_id, entity_label, action, changes)
+    values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role', old.subscriber_id, old.id, 'trip', old.id, old.title, 'delete',
+            jsonb_build_object('status', old.status));
+    return old;
+  else
+    if new.status   is distinct from old.status   then v_changes := v_changes || jsonb_build_object('status',   jsonb_build_object('old', old.status,   'new', new.status));   end if;
+    if new.price    is distinct from old.price    then v_changes := v_changes || jsonb_build_object('price',    jsonb_build_object('old', old.price,    'new', new.price));    end if;
+    if new.capacity is distinct from old.capacity then v_changes := v_changes || jsonb_build_object('capacity', jsonb_build_object('old', old.capacity, 'new', new.capacity)); end if;
+    if v_changes = '{}'::jsonb then return new; end if;
+    v_action := case when new.status is distinct from old.status then 'status_change' else 'update' end;
+    insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, trip_id, entity, entity_id, entity_label, action, changes)
+    values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role', new.subscriber_id, new.id, 'trip', new.id, new.title, v_action, v_changes);
+    return new;
+  end if;
+end $$;
+drop trigger if exists trg_audit_trip on public.trips;
+create trigger trg_audit_trip
+  after insert or update or delete on public.trips
+  for each row execute function public.audit_trip_change();
+
 -- منع حجز مقعدٍ مكرّر في نفس الرحلة (يسمح بالـ NULL لمقاعد غير مخصّصة بعد)
 create unique index if not exists uniq_passengers_trip_seat
   on public.passengers(trip_id, seat_no) where seat_no is not null;
