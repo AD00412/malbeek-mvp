@@ -23,7 +23,7 @@ import { tripLifecycle } from '../../lib/tripLifecycle'
 import { SkeletonList } from '../../components/Skeleton'
 import TeamSheet from '../../components/TeamSheet'
 import PendingInviteBanner from '../../components/PendingInviteBanner'
-import TripManage from './TripManage'
+const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
 
@@ -389,13 +389,15 @@ export function SubscriberHome() {
         {err && !managing && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
 
         {managing ? (
-          <TripManage
-            trip={managing}
-            sub={sub}
-            onBack={() => setManaging(null)}
-            onOpenTrip={(newTrip) => { if (newTrip) setManaging(newTrip) }}
-            onTripChanged={load}
-          />
+          <Suspense fallback={<SkeletonList count={6} />}>
+            <TripManage
+              trip={managing}
+              sub={sub}
+              onBack={() => setManaging(null)}
+              onOpenTrip={(newTrip) => { if (newTrip) setManaging(newTrip) }}
+              onTripChanged={load}
+            />
+          </Suspense>
         ) : (
           <>
             {view === 'overview' && (

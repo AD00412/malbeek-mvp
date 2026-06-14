@@ -20,6 +20,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
   const busyRef = useRef(false)            // تزامنٌ بلا إعادة بناء handleCode
 
   const [camError, setCamError] = useState('')
+  const [starting, setStarting] = useState(true)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
   const [manual, setManual] = useState('')
@@ -94,6 +95,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         if (!v) return
         v.srcObject = stream
         await v.play().catch(() => {})
+        if (!stopped) setStarting(false)
 
         timer = setInterval(async () => {
           if (stopped || !videoRef.current) return
@@ -143,7 +145,11 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
           <>
             <video ref={videoRef} className="scanner-video" muted playsInline />
             <div className="scanner-frame"><span /><span /><span /><span /></div>
-            <div className="scanner-hint">وجّه الكاميرا نحو باركود التذكرة</div>
+            {starting ? (
+              <div className="scanner-hint" role="status"><span className="spinner" /> جارٍ تشغيل الكاميرا…</div>
+            ) : (
+              <div className="scanner-hint">وجّه الكاميرا نحو باركود التذكرة</div>
+            )}
           </>
         )}
       </div>
