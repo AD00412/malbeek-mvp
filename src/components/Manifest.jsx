@@ -1,11 +1,23 @@
 import { useRef, useState } from 'react'
-import CompassMark from './CompassMark'
 import Icon from './Icon'
 import { busName } from '../lib/buses'
 import { htmlsToPdf } from '../lib/pdf'
 import { useUI } from '../lib/useUI'
 
 const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
+
+/* ترتيبٌ تلقائيٌّ حسب مكان الركوب ثمّ الاسم — يجمع ركّاب كلّ نقطةٍ معًا للسائق */
+function sortByBoarding(rows) {
+  return [...rows].sort((a, b) => {
+    const ba = (a.boarding_point || '').trim()
+    const bb = (b.boarding_point || '').trim()
+    if (!ba && bb) return 1
+    if (ba && !bb) return -1
+    const c = ba.localeCompare(bb, 'ar')
+    if (c !== 0) return c
+    return (a.full_name || '').localeCompare(b.full_name || '', 'ar')
+  })
+}
 
 /* تنسيق تاريخ ميلادي مختصر للكشف */
 function fmt(v) {
@@ -33,11 +45,13 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, pageBreak }) {
     <div className="manifest-sheet" dir="rtl" style={pageBreak ? { pageBreakBefore: 'always' } : undefined}>
       <header className="mf-head">
         <div className="mf-brand">
-          <CompassMark size={54} variant="gold" />
+          {sub?.logo_url
+            ? <img className="mf-logo" src={sub.logo_url} alt={sub?.org_name || 'الحملة'} crossOrigin="anonymous" />
+            : null}
           <div>
-            <div className="mf-org">{sub?.org_name || 'مؤسسة النقل'}</div>
+            <div className="mf-org">{sub?.org_name || 'الحملة'}</div>
             <div className="mf-sub">
-              {sub?.license_no ? `تصريح رقم: ${sub.license_no}` : 'كشف رسمي لرحلة عُمرة'}
+              {sub?.license_no ? `تصريح رقم: ${sub.license_no}` : 'كشفٌ رسميّ'}
               {sub?.contact_phone ? ` · ${sub.contact_phone}` : ''}
             </div>
           </div>
@@ -100,16 +114,13 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, pageBreak }) {
 
       <footer className="mf-foot">
         <div className="mf-note">
-          صُدر هذا الكشف من منصّة ملبّيك بتاريخ {fmt(new Date().toISOString())}.
+          كشفٌ رسميٌّ صادرٌ عن {sub?.org_name || 'الحملة'} — بتاريخ {fmt(new Date().toISOString())}.
         </div>
         <div className="mf-stamp">
           {stampUrl ? (
             <img className="mf-stamp-img" src={stampUrl} alt="الختم الإلكتروني" crossOrigin="anonymous" />
           ) : stamp ? (
-            <div className="mf-stamp-e">
-              <CompassMark size={30} variant="gold" />
-              <span>{stamp}</span>
-            </div>
+            <div className="mf-stamp-e"><span>{stamp}</span></div>
           ) : (
             <div className="mf-stamp-m">الختم والتوقيع</div>
           )}
@@ -134,11 +145,11 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
   const groups = multi
     ? buses.map((b) => ({
         key: b.id,
-        rows: passengers.filter((p) => p.bus_id === b.id),
+        rows: sortByBoarding(passengers.filter((p) => p.bus_id === b.id)),
         busLabel: busName(b),
         busPlate: b.plate || '—',
       }))
-    : [{ key: 'single', rows: passengers, busLabel: trip?.bus_label, busPlate: trip?.bus_plate }]
+    : [{ key: 'single', rows: sortByBoarding(passengers), busLabel: trip?.bus_label, busPlate: trip?.bus_plate }]
 
   const sheetRefs = useRef([])
   const [busy, setBusy] = useState(false)
