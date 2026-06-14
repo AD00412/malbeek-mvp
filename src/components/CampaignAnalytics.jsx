@@ -28,11 +28,11 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
   ]
 
   // تفاصيلٌ زمنية + نقاط الركوب + التحصيل — تُحمَّل مرّةً عند تغيّر الحملة
-  const [detail, setDetail] = useState({ daily: [], topBoarding: [], collected: 0 })
+  const [detail, setDetail] = useState({ daily: [], topBoarding: [], collected: 0, refunded: 0, refundPending: 0, refundPendingCount: 0 })
   const [loadErr, setLoadErr] = useState(false)
   useEffect(() => {
     let cancel = false
-    if (!subscriberId) { setDetail({ daily: [], topBoarding: [], collected: 0 }); return }
+    if (!subscriberId) { setDetail({ daily: [], topBoarding: [], collected: 0, refunded: 0, refundPending: 0, refundPendingCount: 0 }); return }
     ;(async () => {
       setLoadErr(false)
       const since = new Date(Date.now() - 30 * 86400000).toISOString()
@@ -72,7 +72,16 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
       if (cancel) return
       const collected = (payRows ?? []).reduce((s, r) => s + (Number(r.amount) || 0), 0)
 
-      setDetail({ daily, topBoarding, collected })
+      // الاستردادات (المرحلة ٧): المُعاد فعلًا + المعلّق بانتظار المعالجة
+      const { data: refRows } = await supabase
+        .from('refunds').select('amount, status')
+        .eq('subscriber_id', subscriberId).in('status', ['requested', 'refunded'])
+      if (cancel) return
+      const refunded = (refRows ?? []).filter((r) => r.status === 'refunded').reduce((s, r) => s + (Number(r.amount) || 0), 0)
+      const pend = (refRows ?? []).filter((r) => r.status === 'requested')
+      const refundPending = pend.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+
+      setDetail({ daily, topBoarding, collected, refunded, refundPending, refundPendingCount: pend.length })
     })()
     return () => { cancel = true }
   }, [subscriberId])
@@ -122,21 +131,36 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
         )}
       </section>
 
-      {hasPricing && (
+      {(hasPricing || detail.refunded > 0 || detail.refundPending > 0) && (
         <section className="panel">
           <div className="panel-head">
             <h3>التحصيل المالي</h3>
             <span className="sub">عبر الحملة</span>
             <span style={{ flex: 1 }} />
-            <span className={`tag ${expectedRevenue > 0 && detail.collected >= expectedRevenue ? 'ok' : 'warn'}`}>
-              {pct(detail.collected, expectedRevenue)}% محصّل
-            </span>
+            {hasPricing && (
+              <span className={`tag ${expectedRevenue > 0 && detail.collected >= expectedRevenue ? 'ok' : 'warn'}`}>
+                {pct(detail.collected, expectedRevenue)}% محصّل
+              </span>
+            )}
           </div>
-          <div className="an-row" style={{ marginTop: 4 }}>
-            <div className="an-head"><span>المحصّل من المتوقّع</span><strong>{money(detail.collected)} / {money(expectedRevenue)} ﷼</strong></div>
-            <div className="bar"><span className="fill-ok" style={{ width: pct(detail.collected, expectedRevenue) + '%' }} /></div>
-            <div className="an-sub">المتبقّي: {money(Math.max(0, expectedRevenue - detail.collected))} ﷼</div>
+          {hasPricing && (
+            <div className="an-row" style={{ marginTop: 4 }}>
+              <div className="an-head"><span>المحصّل من المتوقّع</span><strong>{money(detail.collected)} / {money(expectedRevenue)} ﷼</strong></div>
+              <div className="bar"><span className="fill-ok" style={{ width: pct(detail.collected, expectedRevenue) + '%' }} /></div>
+              <div className="an-sub">المتبقّي: {money(Math.max(0, expectedRevenue - detail.collected))} ﷼</div>
+            </div>
+          )}
+          <div className="stats" style={{ marginTop: 12 }}>
+            <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>المحصّل</div><div className="v" style={{ fontSize: 20 }}>{money(detail.collected)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
+            <div className="stat"><div className="top"><span className="ic"><Icon name="trash" size={15} /></span>المُسترَد</div><div className="v" style={{ fontSize: 20 }}>{money(detail.refunded)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
+            <div className="stat info"><div className="top"><span className="ic"><Icon name="badge" size={15} /></span>الصافي</div><div className="v" style={{ fontSize: 20 }}>{money(detail.collected - detail.refunded)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
           </div>
+          {detail.refundPending > 0 && (
+            <div className="alert warn" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="bell" size={16} />
+              <span>{detail.refundPendingCount} طلب استردادٍ بانتظار المعالجة — بمبلغ {money(detail.refundPending)} ﷼. عالِجها من «طلبات الاسترداد» داخل الرحلة.</span>
+            </div>
+          )}
         </section>
       )}
 
