@@ -759,7 +759,8 @@
   .manifest-overlay{position:static;background:#fff}
   .manifest-scroll{overflow:visible;padding:0;display:block;gap:0}
   .manifest-sheet{position:static;width:100%;max-width:none;box-shadow:none;border-radius:0;padding:0 4mm}
-  .ticket{position:absolute;inset-inline-start:50%;top:10mm;transform:translateX(-50%);box-shadow:none}
+  .ticket{position:fixed;top:0;left:0;right:0;width:auto;max-width:360px;margin-inline:auto;
+    box-shadow:none;border:1px solid #e6dcc4;page-break-inside:avoid}
   .no-print{display:none !important}
   .mf-table tr{page-break-inside:avoid}
   @page{size:A4;margin:12mm}
