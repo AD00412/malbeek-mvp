@@ -12,6 +12,7 @@ import BusEditor from '../../components/BusEditor'
 import HotelsManager from '../../components/HotelsManager'
 import AuditLogSheet from '../../components/AuditLogSheet'
 import BottomSheet from '../../components/BottomSheet'
+import SignedImage from '../../components/SignedImage'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
 import { tableToDocx } from '../../lib/docx'
@@ -75,6 +76,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [search, setSearch] = useState('')
+  const [proofFor, setProofFor] = useState(null)   // المعتمر لعرض إيصال دفعه
   const { confirm, toast } = useUI()
 
   const [paxOpen, setPaxOpen] = useState(false)
@@ -101,7 +103,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, room_id, amount, paid_at, payment_provider, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, payment_proof_url, profile_id, bus_id, room_id, amount, paid_at, payment_provider, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -369,6 +371,13 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                     {p.payment_ref && p.status === 'registered' && (
                       <><span>·</span><span style={{ color: 'var(--warn-ink)' }}>دفع بانتظار التأكيد: {p.payment_ref}</span></>
                     )}
+                    {p.payment_proof_url && p.status === 'registered' && (
+                      <><span>·</span>
+                        <button type="button" className="tag warn" style={{ cursor: 'pointer', border: 'none' }} onClick={() => setProofFor(p)}>
+                          <Icon name="eye" size={12} /> إيصالٌ مرفق
+                        </button>
+                      </>
+                    )}
                     {p.paid_at && (p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in') && (
                       <><span>·</span><span style={{ color: 'var(--ok-ink)' }}>
                         {p.amount != null ? `${Number(p.amount).toLocaleString('en-US')}﷼ ` : ''}
@@ -379,7 +388,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                 </div>
                 <span className={`st ${STATUS_CLS[p.status] || 'muted'}`}>{STATUS_AR[p.status] || p.status}</span>
                 <div className="pax-actions">
-                  {p.payment_ref && p.status === 'registered' && (
+                  {(p.payment_ref || p.payment_proof_url) && p.status === 'registered' && (
                     <button className="icon-btn" title="تأكيد الدفع" onClick={async () => {
                       const { error } = await supabase.from('passengers').update({ status: 'paid' }).eq('id', p.id)
                       if (error) toast(translateRpcError(error, 'تعذّر تأكيد الدفع.'), { type: 'error' })
@@ -486,6 +495,31 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       />
 
       <AuditLogSheet open={auditOpen} tripId={trip?.id} onClose={() => setAuditOpen(false)} />
+
+      <BottomSheet
+        open={!!proofFor}
+        title={`إيصال دفع · ${proofFor?.full_name || ''}`}
+        onClose={() => setProofFor(null)}
+        actions={
+          <>
+            <button className="btn btn-ghost" onClick={() => setProofFor(null)}>إغلاق</button>
+            {proofFor?.status === 'registered' && (
+              <button className="btn btn-gold" onClick={async () => {
+                const { error } = await supabase.from('passengers').update({ status: 'paid' }).eq('id', proofFor.id)
+                if (error) toast(translateRpcError(error, 'تعذّر تأكيد الدفع.'), { type: 'error' })
+                else { toast('تم تأكيد الدفع', { type: 'success' }); setProofFor(null); loadPassengers() }
+              }}><Icon name="check" size={16} /> تأكيد الدفع</button>
+            )}
+          </>
+        }
+      >
+        {proofFor?.payment_ref && (
+          <p className="muted" style={{ fontSize: 13 }}>رقم العملية: <strong style={{ color: 'var(--cr-50)' }}>{proofFor.payment_ref}</strong></p>
+        )}
+        {proofFor?.payment_proof_url
+          ? <SignedImage bucket="payment-proofs" path={proofFor.payment_proof_url} maxHeight={420} showOpenFull />
+          : <div className="empty">لا توجد صورة إيصالٍ مرفقة.</div>}
+      </BottomSheet>
 
       {paxOpen && (
         <PassengerFormModal

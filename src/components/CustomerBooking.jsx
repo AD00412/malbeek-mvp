@@ -1,13 +1,17 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from 'react'
+import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
+import SignedImage from './SignedImage'
 import CompassMark from './CompassMark'
-import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
+import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, safeExt } from '../lib/format'
 import { loadTripBuses, busLayout, busName } from '../lib/buses'
 import { translateRpcError } from '../lib/rpcErrors'
 import { useUI } from '../lib/useUI'
+
+const PROOF_MAX = 5 * 1024 * 1024
+const PROOF_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 const Ticket = lazy(() => import('./Ticket'))
 
@@ -48,6 +52,35 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [payBusy, setPayBusy] = useState(false)
   const [buses, setBuses] = useState([])
   const [busId, setBusId] = useState(null)
+  const [proofBusy, setProofBusy] = useState(false)
+  const proofRef = useRef(null)
+
+  // رفع صورة إثبات الدفع (لقطة إتمام طلب المتجر) وربطها بحجز المعتمر.
+  async function uploadProof(e) {
+    const file = e.target.files?.[0]
+    if (proofRef.current) proofRef.current.value = ''
+    if (!file || !booking?.id) return
+    const subId = sub?.id ?? trip?.subscriber_id
+    if (!PROOF_TYPES.includes(file.type)) { toast('الصيغة غير مدعومة — استخدم PNG/JPG/WebP.', { type: 'error' }); return }
+    if (file.size > PROOF_MAX) { toast('حجم الصورة كبير (٥ ميغابايت كحدٍّ أقصى).', { type: 'error' }); return }
+    if (!subId || !user?.id) return
+    setProofBusy(true)
+    try {
+      const ext = safeExt(file)
+      const path = `${subId}/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('payment-proofs').upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type })
+      if (upErr) throw upErr
+      const { error: updErr } = await supabase.from('passengers').update({ payment_proof_url: path }).eq('id', booking.id)
+      if (updErr) throw updErr
+      setBooking((b) => ({ ...b, payment_proof_url: path }))
+      toast('تم إرفاق إيصال الدفع ✓ بانتظار تأكيد الحملة', { type: 'success' })
+    } catch (e2) {
+      toast(translateRpcError(e2, 'تعذّر رفع الإيصال — حاول مجدّدًا.'), { type: 'error' })
+    } finally {
+      setProofBusy(false)
+    }
+  }
 
   const multiBus = buses.length > 1
   const activeBus = buses.find((b) => b.id === busId) || buses[0] || null
@@ -61,7 +94,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     const subId = sub?.id ?? trip?.subscriber_id
     const [{ data: mine }, bs, { data: myCustomer }] = await Promise.all([
       supabase.from('passengers')
-        .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref, bus_id')
+        .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref, payment_proof_url, bus_id')
         .eq('trip_id', trip.id).eq('profile_id', user.id).maybeSingle(),
       loadTripBuses(trip.id),
       subId
@@ -198,11 +231,11 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       let result, row
       if (booking?.id) {
         result = await supabase.from('passengers').update(payload).eq('id', booking.id)
-          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, bus_id').maybeSingle()
+          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, payment_proof_url, bus_id').maybeSingle()
       } else {
         result = await supabase.from('passengers')
           .insert({ ...payload, trip_id: trip.id, subscriber_id: sub.id, profile_id: user.id })
-          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, bus_id').maybeSingle()
+          .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, payment_proof_url, bus_id').maybeSingle()
       }
       if (result.error) {
         if (result.error.code === '23505') { setErr('عذرًا، هذا المقعد حُجز للتوّ — اختر مقعدًا آخر.'); await load(); return }
@@ -348,15 +381,43 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
 
               {sub?.store_url && (
                 <div className="form" style={{ marginTop: 14 }}>
-                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع يدويًّا' : 'الدفع'}</div>
+                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع عبر المتجر' : 'الدفع عبر المتجر'}</div>
                   <a className="btn btn-em btn-block" href={sub.store_url} target="_blank" rel="noopener noreferrer">
-                    <Icon name="external" size={16} /> ادفع عبر متجر الحملة
+                    <Icon name="external" size={16} /> ادفع عبر متجر الحملة (زد/سلة)
                   </a>
+
+                  {/* إثبات الدفع: لقطة إتمام الطلب (متاحٌ بعد تأكيد الحجز) */}
+                  {booking?.id ? (
+                    <div className="field" style={{ marginTop: 6 }}>
+                      <label>أرفِق صورة إتمام الطلب <span className="muted" style={{ fontSize: 12 }}>(لقطة شاشة من المتجر)</span></label>
+                      <input ref={proofRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }} onChange={uploadProof} />
+                      {booking.payment_proof_url ? (
+                        <div className="img-upload preview" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ok-ink)', fontSize: 13, fontWeight: 700 }}>
+                            <Icon name="check" size={15} /> تمّ إرفاق الإيصال — بانتظار تأكيد الحملة
+                          </div>
+                          <SignedImage bucket="payment-proofs" path={booking.payment_proof_url} maxHeight={200} />
+                          <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 6 }} onClick={() => proofRef.current?.click()} disabled={proofBusy}>
+                            {proofBusy ? <span className="spinner" /> : <><Icon name="refresh" size={14} /> استبدال الصورة</>}
+                          </button>
+                        </div>
+                      ) : (
+                        <button type="button" className="img-upload dropzone" onClick={() => proofRef.current?.click()} disabled={proofBusy}>
+                          {proofBusy ? <span className="spinner" /> : <Icon name="download" size={22} style={{ transform: 'rotate(180deg)' }} />}
+                          <strong>{proofBusy ? 'جارٍ رفع الإيصال…' : 'إرفاق صورة الدفع'}</strong>
+                          <span className="muted" style={{ fontSize: 12 }}>PNG/JPG/WebP · يراها صاحب الحملة فقط</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="muted" style={{ fontSize: 12.5 }}>أكّد حجزك أوّلًا، ثمّ ادفع عبر المتجر وأرفِق صورة إتمام الطلب من تذكرتك في حسابك.</p>
+                  )}
+
                   <div className="field">
-                    <label>مرجع/رقم عملية الدفع (بعد الدفع)</label>
-                    <input type="text" placeholder="الصق رقم العملية لإثبات الدفع" value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
+                    <label>أو الصق رقم العملية <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
+                    <input type="text" placeholder="رقم عملية الدفع لإثباتٍ إضافيّ" value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
                   </div>
-                  <p className="muted" style={{ fontSize: 12.5 }}>يُراجع رقم العملية من الحملة ويُؤكَّد الدفع — يبقى حجزك «مسجّلًا» حتى التأكيد.</p>
+                  <p className="muted" style={{ fontSize: 12.5 }}>يراجع صاحب الحملة الإيصال ويؤكّد الدفع — يبقى حجزك «مسجّلًا» حتى التأكيد.</p>
                 </div>
               )}
 

@@ -340,6 +340,8 @@ create unique index if not exists uniq_passengers_ticket on public.passengers(ti
 -- ربط الراكب بحساب العميل (لتدفّق الحجز الذاتي) + مرجع الدفع
 alter table public.passengers add column if not exists profile_id  uuid references public.profiles(id) on delete set null;
 alter table public.passengers add column if not exists payment_ref text;
+-- مسار صورة إثبات الدفع (لقطة إتمام الطلب من متجر زد/سلة) في bucket خاصّ
+alter table public.passengers add column if not exists payment_proof_url text;
 create index if not exists idx_passengers_profile on public.passengers(profile_id);
 -- رابط المتجر الخارجي للمشترك (سلة/زد) لخطوة الدفع
 alter table public.subscribers add column if not exists store_url text;
@@ -1417,6 +1419,45 @@ create policy "feedback-attach self delete" on storage.objects for delete
   using (
     bucket_id = 'feedback-attachments'
     and ((storage.foldername(name))[1] = auth.uid()::text or public.my_role() = 'admin')
+  );
+
+-- ============================================================
+--  Storage — إثبات الدفع (لقطة إتمام طلب المتجر). bucket خاصٌّ:
+--  المسار = {subscriber_id}/{auth.uid}/ملف. المعتمر يرفع/يقرأ مجلّده فقط،
+--  وصاحب الحملة يقرأ كلّ إثباتات معتمري حملته، والإدارة الكلّ.
+-- ============================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('payment-proofs', 'payment-proofs', false, 5242880,                      -- ٥ ميغابايت
+        array['image/png','image/jpeg','image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "pay-proof read" on storage.objects;
+create policy "pay-proof read" on storage.objects for select
+  using (
+    bucket_id = 'payment-proofs'
+    and (
+      (storage.foldername(name))[2] = auth.uid()::text                                          -- المعتمر: مجلّده فقط
+      or (public.my_role() = 'subscriber' and (storage.foldername(name))[1] = public.my_subscriber_id()::text)  -- صاحب الحملة: حملته
+      or public.my_role() = 'admin'
+    )
+  );
+
+drop policy if exists "pay-proof write" on storage.objects;
+create policy "pay-proof write" on storage.objects for insert
+  with check (
+    bucket_id = 'payment-proofs'
+    and (storage.foldername(name))[2] = auth.uid()::text
+    and (storage.foldername(name))[1] = public.my_subscriber_id()::text
+  );
+
+drop policy if exists "pay-proof delete" on storage.objects;
+create policy "pay-proof delete" on storage.objects for delete
+  using (
+    bucket_id = 'payment-proofs'
+    and ((storage.foldername(name))[2] = auth.uid()::text or public.my_role() = 'admin')
   );
 
 -- ============================================================
