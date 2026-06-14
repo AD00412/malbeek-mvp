@@ -1488,6 +1488,32 @@ drop trigger if exists trg_notify_refunds on public.refunds;
 create trigger trg_notify_refunds after insert or update on public.refunds
   for each row execute function public.notify_refund_change();
 
+-- ★ تذكيرٌ جماعيّ: صاحب الحملة يُرسل إشعارًا لكلّ معتمري رحلته (قبل الانطلاق مثلًا).
+--   صلاحيّةٌ مرتفعةٌ (العميل لا يملك insert على notifications) مع فحص ملكيّةٍ صريح.
+create or replace function public.remind_trip(p_trip uuid, p_message text default null)
+returns integer language plpgsql security definer set search_path = public as $$
+declare v_n int; v_title text; v_depart timestamptz; v_body text;
+begin
+  if not (exists (select 1 from public.trips t join public.subscribers s on s.id = t.subscriber_id
+                  where t.id = p_trip and s.owner_id = auth.uid())
+          or public.my_role() = 'admin') then
+    raise exception 'NOT_AUTHORIZED' using hint = 'غير مصرّحٍ لك بهذا الإجراء.';
+  end if;
+  select title, depart_at into v_title, v_depart from public.trips where id = p_trip;
+  v_body := coalesce(nullif(btrim(coalesce(p_message,'')), ''),
+            'تذكيرٌ برحلتك «' || coalesce(v_title,'') || '»'
+            || case when v_depart is not null then ' — الذهاب ' || to_char(v_depart, 'YYYY-MM-DD') else '' end
+            || '. جهّز تذكرتك وكن على الموعد.');
+  insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+  select distinct p.profile_id, 'customer', 'trip_changed', 'تذكيرٌ برحلتك', v_body, p_trip
+  from public.passengers p
+  where p.trip_id = p_trip and p.profile_id is not null;
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+revoke all on function public.remind_trip(uuid, text) from public;
+grant execute on function public.remind_trip(uuid, text) to authenticated;
+
 -- تفعيل البثّ الحيّ (Realtime) لتحديث المقاعد + التغذية الراجعة + الباقات
 do $$ begin alter publication supabase_realtime add table public.passengers;  exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.feedback;    exception when duplicate_object then null; when others then null; end $$;

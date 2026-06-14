@@ -188,6 +188,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     }
   }
 
+  async function remindPassengers() {
+    const n = passengers.filter((p) => p.profile_id).length
+    if (n === 0) { toast('لا يوجد معتمرون بحساباتٍ لتذكيرهم.', { type: 'info' }); return }
+    const ok = await confirm({ title: 'تذكير المعتمرين', message: `إرسال تذكيرٍ بالرحلة إلى ${n} معتمرٍ مسجّلٍ بحسابه؟ سيصلهم إشعارٌ داخل التطبيق.`, confirmText: 'إرسال التذكير' })
+    if (!ok) return
+    const { data, error } = await supabase.rpc('remind_trip', { p_trip: trip.id })
+    if (error) toast(translateRpcError(error, 'تعذّر إرسال التذكير.'), { type: 'error' })
+    else toast(`أُرسل التذكير إلى ${data ?? 0} معتمرًا ✓`, { type: 'success' })
+  }
+
   async function removePax(p) {
     if (!p?.id) return
     if (!(await confirm({ title: 'حذف معتمر', message: `حذف «${p.full_name}» من الكشف؟`, confirmText: 'حذف', danger: true }))) return
@@ -330,6 +340,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         </button>
         <button className="action" onClick={() => setRefundsOpen(true)}>
           <Icon name="payments" size={18} /> طلبات الاسترداد
+        </button>
+        <button className="action" onClick={remindPassengers} disabled={count === 0}>
+          <Icon name="bell" size={18} /> تذكير المعتمرين
         </button>
         <button className="action" onClick={() => setDupOpen(true)}>
           <Icon name="copy" size={18} /> استنساخ هذه الرحلة (لفوجٍ جديد)
