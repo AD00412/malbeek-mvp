@@ -929,6 +929,8 @@ grant execute on function public.admin_campaign_stats() to authenticated;
 --   لا يستنسخ الركّاب ولا قائمة الانتظار ولا المدفوعات (يبدأ "فوجًا جديدًا").
 --   مقيّدٌ بمالك الحملة فقط. يحترم enforce_trial_trip_limit عبر تريغر INSERT.
 --   يُرجع الصفّ كاملًا ليفتحه المالك في الواجهة بلا قراءةٍ إضافيّة.
+-- DROP أوّلًا لأنّ نوع الإرجاع تغيّر من uuid إلى trips (PostgreSQL يمنع تغييره عبر REPLACE).
+drop function if exists public.duplicate_trip(uuid, text, int);
 create or replace function public.duplicate_trip(
   p_trip_id uuid, p_name_suffix text default ' — نسخة',
   p_shift_days int default 0
