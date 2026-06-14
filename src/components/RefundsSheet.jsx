@@ -41,7 +41,7 @@ export default function RefundsSheet({ open, tripId, onClose }) {
   }, [tripId, filter])
 
   useEffect(() => { if (open) load() }, [open, load])
-  useRealtime('refunds', open && tripId ? [{ table: 'refunds' }] : [], load, 250, [open, tripId, load])
+  useRealtime('refunds', open && tripId ? [{ table: 'refunds', filter: `trip_id=eq.${tripId}` }] : [], load, 250, [open, tripId, load])
 
   async function resolve(row, status) {
     if (status === 'refunded') {

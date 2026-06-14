@@ -249,8 +249,9 @@ export function SubscriberHome() {
       s = row
     }
 
-    // لا حملةَ مُدارة ⇒ مالكٌ جديدٌ بلا حملة ⇒ ننشئ له واحدةً تلقائيًّا (لا يحدث لعضو فريق).
-    if (!s && !creatingRef.current) {
+    // لا حملةَ مُدارة ⇒ مالكٌ جديدٌ بلا حملة ⇒ ننشئ له واحدةً تلقائيًّا.
+    // نشترط !managedId (لا !s) كي لا يُنشئ عضوُ فريقٍ حملةً ثانيةً لو تعثّرت قراءة صفّه لحظيًّا.
+    if (!managedId && !creatingRef.current) {
       creatingRef.current = true
       const slug = 'hamla-' + Math.random().toString(36).slice(2, 8)
       const orgName = profile?.full_name ? `حملة ${profile.full_name}` : 'حملتي'
@@ -472,8 +473,8 @@ export function SubscriberHome() {
           }
         >
           <div className="stats" style={{ marginTop: 0 }}>
-            <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>مدفوع</div><div className="v">0</div></div>
-            <div className="stat info"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>مقاعد محجوزة</div><div className="v">0/{totalSeats}</div></div>
+            <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>مدفوع</div><div className="v">{paxStats.totals.paid}</div></div>
+            <div className="stat info"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>مقاعد محجوزة</div><div className="v">{paxStats.totals.count}/{totalSeats}</div></div>
           </div>
           <div className="share-box" style={{ marginTop: 14 }}>
             <code>{shareUrl || '—'}</code>
