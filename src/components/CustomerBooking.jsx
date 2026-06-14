@@ -41,6 +41,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [isFamily, setIsFamily] = useState(false)
   const [seatNo, setSeatNo] = useState('')
   const [paymentRef, setPaymentRef] = useState('')
+  const [payBusy, setPayBusy] = useState(false)
   const [buses, setBuses] = useState([])
   const [busId, setBusId] = useState(null)
 
@@ -78,6 +79,17 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     setLoading(false)
   }
   useEffect(() => { load() }, [trip?.id, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // عودةٌ من بوّابة الدفع: ?paid=<id> → أظهر رسالة شكرٍ ونظّف الـ URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('paid')) {
+      url.searchParams.delete('paid')
+      window.history.replaceState({}, '', url)
+      setTimeout(() => load(), 500)  // الـ webhook ربّما لم يصل بعد — حدّث بعد لحظة
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // تحديثٌ حيٌّ للمقاعد بلا PII:
   // - اشتراك Realtime يلتقط تغيّر سجلّ العميل نفسه (يعمل ضمن RLS الخاصّة به).
@@ -118,6 +130,26 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const totalSeats = (layout.rows || 0) * 4 + (layout.back || 0)
   const isFull = totalSeats > 0 && occupancy.length >= totalSeats && !booking
   const [waitlistJoined, setWaitlistJoined] = useState(false)
+
+  /** ادفع الآن — ينشئ جلسة دفعٍ مُستضافةً عبر Edge Function ويُحوّل العميل إلى البوّابة. */
+  async function payNow() {
+    if (payBusy || !booking?.id) return
+    setPayBusy(true); setErr('')
+    const { data, error } = await supabase.functions.invoke('create-payment', {
+      body: { passenger_id: booking.id },
+    })
+    if (error || !data?.url) {
+      setPayBusy(false)
+      const code = data?.error || error?.message || ''
+      const msg = code === 'no_price' ? 'لا يوجد سعرٌ مضبوطٌ لهذه الرحلة. تواصل مع الحملة.'
+        : code === 'already_paid' ? 'هذا الحجز مدفوعٌ مسبقًا.'
+        : code === 'not_authorized' ? 'لا تملك هذا الحجز.'
+        : code === 'unauthenticated' ? 'انتهت جلستك. سجّل دخولك مجدّدًا.'
+        : 'تعذّر فتح صفحة الدفع.'
+      setErr(msg); return
+    }
+    window.location.href = data.url
+  }
 
   async function joinWaitlist() {
     if (!user?.id || !trip?.id || !sub?.id) return
@@ -283,9 +315,21 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 </div>
               )}
 
-              {sub?.store_url && (
+              {(booking?.id && trip?.price != null && booking?.status === 'registered') && (
                 <div className="form" style={{ marginTop: 14 }}>
                   <div className="sec-label">الدفع</div>
+                  <button type="button" className="btn btn-gold btn-block" onClick={payNow} disabled={payBusy}>
+                    {payBusy ? <span className="spinner" /> : (<><Icon name="payments" size={16} /> ادفع الآن — تأكيدٌ آليّ</>)}
+                  </button>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6, textAlign: 'center' }}>
+                    دفعٌ آمنٌ مباشرٌ عبر بوّابة الحملة. سيُؤكَّد حجزك تلقائيًّا بعد إتمام الدفع.
+                  </p>
+                </div>
+              )}
+
+              {sub?.store_url && (
+                <div className="form" style={{ marginTop: 14 }}>
+                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع يدويًّا' : 'الدفع'}</div>
                   <a className="btn btn-em btn-block" href={sub.store_url} target="_blank" rel="noopener noreferrer">
                     <Icon name="external" size={16} /> ادفع عبر متجر الحملة
                   </a>
