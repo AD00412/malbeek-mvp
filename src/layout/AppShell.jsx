@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
-import NotificationsCenter, { useUnreadCount } from '../components/NotificationsCenter'
+import NotificationsCenter from '../components/NotificationsCenter'
+import { useUnreadCount } from '../lib/useUnreadCount'
 
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
 

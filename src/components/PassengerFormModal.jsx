@@ -5,13 +5,7 @@ import Icon from './Icon'
 import SeatMap from './SeatMap'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 import { busLayout, busName } from '../lib/buses'
-
-export const PASSENGER_STATUS = [
-  { v: 'registered', t: 'مسجّل' },
-  { v: 'paid',       t: 'مدفوع' },
-  { v: 'boarded',    t: 'صعد الحافلة' },
-  { v: 'checked_in', t: 'استلم الغرفة' },
-]
+import { PASSENGER_STATUS } from '../lib/passengerStatus'
 
 const GENDERS = [
   { v: 'male',   t: 'ذكر' },

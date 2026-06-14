@@ -24,26 +24,6 @@ function fmt(v) {
   } catch { return '' }
 }
 
-/**
- * عدّاد غير المقروء — يُستخدم في شارة الجرس داخل الرأس.
- */
-export function useUnreadCount() {
-  const { user } = useAuth()
-  const [count, setCount] = useState(0)
-
-  const load = useCallback(async () => {
-    if (!user?.id) return
-    const { data } = await supabase.rpc('unread_notifications_count')
-    if (typeof data === 'number') setCount(data)
-    else if (Array.isArray(data) && typeof data[0] === 'number') setCount(data[0])
-  }, [user])
-
-  useEffect(() => { load() }, [load])
-  useRealtime('notif-count', user?.id ? [{ table: 'notifications' }] : [], load, 250, [user?.id, load])
-
-  return [count, load]
-}
-
 /** ورقةُ مركز الإشعارات */
 export default function NotificationsCenter({ open, onClose, onChanged }) {
   const { user } = useAuth()

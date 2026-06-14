@@ -59,9 +59,7 @@ export default function CustomerJoin() {
     let active = true
     ;(async () => {
       const { data, error } = await supabase
-        .from('public_subscribers')
-        .select('id, org_name')
-        .eq('slug', slug)
+        .rpc('subscriber_by_slug', { p_slug: slug })
         .maybeSingle()
       if (!active) return
       if (error || !data) { setNotFound(true) }

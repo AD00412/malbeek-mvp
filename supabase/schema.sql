@@ -1420,12 +1420,26 @@ create policy "feedback-attach self delete" on storage.objects for delete
   );
 
 -- ============================================================
---  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة
---  يكشف (id, org_name, slug) فقط — بيانات غير حساسة لازمة للرابط
+--  دالّةٌ عامّةٌ لصفحة انضمام العميل: تحوّل slug واحدًا إلى اسم الحملة.
+--  بديلٌ آمنٌ عن العرض العام السابق الذي كان يكشف كلّ المشتركين لـ anon
+--  (تعدادٌ للمستأجرين). الآن تُرجع صفًّا واحدًا فقط مطابقًا للـ slug،
+--  ولا تكشف بقيّة المكاتب. SECURITY DEFINER لتجاوز RLS بأمانٍ مضبوط.
 -- ============================================================
-create or replace view public.public_subscribers as
-  select id, org_name, slug from public.subscribers;
-grant select on public.public_subscribers to anon, authenticated;
+drop view if exists public.public_subscribers;
+create or replace function public.subscriber_by_slug(p_slug text)
+returns table (id uuid, org_name text)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select s.id, s.org_name
+  from public.subscribers s
+  where s.slug = p_slug
+  limit 1;
+$$;
+revoke all on function public.subscriber_by_slug(text) from public;
+grant execute on function public.subscriber_by_slug(text) to anon, authenticated;
 
 -- ============================================================
 --  (اختياري) ترقية مستخدم إلى إدارة بعد إنشائه من لوحة Supabase Auth:
