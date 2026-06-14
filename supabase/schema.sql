@@ -1376,7 +1376,8 @@ create table if not exists public.refunds (
   passenger_name text,
   national_id    text,
   amount         numeric,
-  status         text not null default 'requested',   -- requested | refunded | rejected
+  status         text not null default 'requested'
+                 check (status in ('requested','refunded','rejected')),
   reason         text,                                 -- سبب الإلغاء (من العميل)
   refund_ref     text,                                 -- مرجع/ملاحظة صاحب الحملة
   requested_at   timestamptz not null default now(),
@@ -1384,6 +1385,10 @@ create table if not exists public.refunds (
 );
 create index if not exists idx_refunds_subscriber on public.refunds(subscriber_id, status);
 create index if not exists idx_refunds_profile    on public.refunds(profile_id);
+-- قيد الحالة (idempotent) — يحمي دورة الحياة من قيمٍ حرّةٍ لو وُجد الجدول مسبقًا
+do $$ begin
+  alter table public.refunds add constraint refunds_status_chk check (status in ('requested','refunded','rejected'));
+exception when duplicate_object then null; when duplicate_table then null; end $$;
 
 alter table public.refunds enable row level security;
 -- العميل: يقرأ طلباته فقط (الإنشاء يتمّ عبر RPC الموثوق أدناه)
@@ -1432,7 +1437,8 @@ declare
   v_price numeric;
   v_refunded boolean := false;
 begin
-  select * into v_p from public.passengers where id = p_passenger;
+  -- FOR UPDATE: يُسلسِل نداءَي إلغاءٍ متزامنين على الحجز نفسه فيمنع تكرار سجلّ الاسترداد.
+  select * into v_p from public.passengers where id = p_passenger for update;
   if not found then raise exception 'NOT_FOUND' using hint = 'الحجز غير موجود.'; end if;
   -- المالك (auth.uid) فقط، أو صاحب الحملة، أو الإدارة
   if not (v_p.profile_id = auth.uid()
