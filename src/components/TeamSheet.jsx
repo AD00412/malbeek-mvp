@@ -45,13 +45,19 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
     const { error } = await supabase.rpc('invite_member', { p_sub: subscriberId, p_email: email.trim(), p_role: role })
     setBusy(false)
     if (error) toast(translateRpcError(error, 'تعذّرت الدعوة.'), { type: 'error' })
-    else { toast('تمت الدعوة ✓ تظهر للعضو عند دخوله ليقبلها', { type: 'success' }); setEmail(''); load() }
+    else { toast('تمت الدعوة ✓ انسخ رابطها أدناه وأرسله للموظّف', { type: 'success' }); setEmail(''); load() }
   }
 
   async function revokeInvite(id) {
     const { error } = await supabase.from('subscriber_invites').delete().eq('id', id)
     if (error) toast(translateRpcError(error, 'تعذّر الإلغاء.'), { type: 'error' })
     else { toast('أُلغيت الدعوة', { type: 'info' }); load() }
+  }
+
+  async function copyInviteLink(id) {
+    const link = `${window.location.origin}/join-team/${id}`
+    try { await navigator.clipboard.writeText(link); toast('نُسخ رابط الدعوة ✓ أرسله للموظّف عبر البريد/واتساب', { type: 'success' }) }
+    catch { toast(link, { type: 'info' }) }
   }
 
   async function removeMember(m) {
@@ -104,6 +110,7 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
                   <div className="ltr" style={{ fontSize: 13, color: 'var(--cr-50)', textAlign: 'right' }}>{iv.email}</div>
                   <div className="muted" style={{ fontSize: 12 }}>{ROLE_AR[iv.role] || iv.role} · بانتظار القبول</div>
                 </div>
+                <button className="icon-btn" onClick={() => copyInviteLink(iv.invite_id)} aria-label="نسخ رابط الدعوة"><Icon name="copy" size={15} /> رابط</button>
                 <button className="icon-btn danger" onClick={() => revokeInvite(iv.invite_id)} aria-label="إلغاء الدعوة"><Icon name="trash" size={15} /></button>
               </div>
             ))}

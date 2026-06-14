@@ -5,6 +5,7 @@ import RequireAuth, { homeForRole, ScreenLoader } from './RequireAuth'
 import Login from '../pages/auth/Login'
 import Signup from '../pages/auth/Signup'
 import CustomerJoin from '../pages/auth/CustomerJoin'
+import JoinTeam from '../pages/auth/JoinTeam'
 import { AdminHome, SubscriberHome, CustomerHome } from '../pages/app/Homes'
 
 // الجذر: يوجّه كل مستخدمٍ إلى لوحته، وغير المسجّل إلى الدخول
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/j/:slug" element={<CustomerJoin />} />
+      <Route path="/join-team/:id" element={<JoinTeam />} />
 
       {/* محميّة حسب الدور */}
       <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminHome /></RequireAuth>} />

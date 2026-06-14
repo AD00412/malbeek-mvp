@@ -1942,3 +1942,16 @@ begin
 end $$;
 revoke all on function public.accept_invite(uuid) from public;
 grant execute on function public.accept_invite(uuid) to authenticated;
+
+-- ★ معلومات دعوةٍ عبر رابطها (لصفحة الانضمام قبل الدخول) — متاحٌ لـ anon
+--   يُرجع اسم الحملة والدور والبريد المدعوّ لدعوةٍ معلّقةٍ فقط (الرابط هو الإثبات).
+create or replace function public.invite_info(p_invite uuid)
+returns table (org_name text, role text, email text)
+language sql stable security definer set search_path = public as $$
+  select s.org_name, i.role, i.email
+  from public.subscriber_invites i
+  join public.subscribers s on s.id = i.subscriber_id
+  where i.id = p_invite and i.accepted_at is null;
+$$;
+revoke all on function public.invite_info(uuid) from public;
+grant execute on function public.invite_info(uuid) to anon, authenticated;
