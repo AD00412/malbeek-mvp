@@ -24,6 +24,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
   const [roomOpen, setRoomOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState(null)
   const [picking, setPicking] = useState(null)        // {room}
+  const [assigning, setAssigning] = useState(null)     // {passenger} — تسكينٌ من المعتمر
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const { confirm, toast } = useUI()
@@ -136,10 +137,10 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
                   <h3>{activeHotel.name}</h3>
                   <span className="sub">{activeHotel.city || '—'}</span>
                   <span style={{ flex: 1 }} />
-                  <button className="icon-btn" title="تعديل" onClick={() => { setEditingHotel(activeHotel); setHotelOpen(true) }}>
+                  <button className="icon-btn" title="تعديل" aria-label="تعديل الفندق" onClick={() => { setEditingHotel(activeHotel); setHotelOpen(true) }}>
                     <Icon name="edit" size={15} />
                   </button>
-                  <button className="icon-btn danger" title="حذف" onClick={() => removeHotel(activeHotel)}>
+                  <button className="icon-btn danger" title="حذف" aria-label="حذف الفندق" onClick={() => removeHotel(activeHotel)}>
                     <Icon name="trash" size={15} />
                   </button>
                 </div>
@@ -172,10 +173,10 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
                               {r.gender === 'male' ? 'رجال' : r.gender === 'female' ? 'نساء' : 'عائلات'}
                             </span>
                             <span style={{ flex: 1 }} />
-                            <button className="icon-btn" title="تعديل" onClick={() => { setEditingRoom(r); setRoomOpen(true) }}>
+                            <button className="icon-btn" title="تعديل" aria-label="تعديل الغرفة" onClick={() => { setEditingRoom(r); setRoomOpen(true) }}>
                               <Icon name="edit" size={13} />
                             </button>
-                            <button className="icon-btn danger" title="حذف" onClick={() => removeRoom(r)}>
+                            <button className="icon-btn danger" title="حذف" aria-label="حذف الغرفة" onClick={() => removeRoom(r)}>
                               <Icon name="trash" size={13} />
                             </button>
                           </div>
@@ -188,7 +189,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
                             ) : list.map((p) => (
                               <div key={p.id} className="occ-row">
                                 <span className="occ-name">{p.full_name}</span>
-                                <button className="icon-btn danger" title="إخراج" onClick={() => unassign(p)}>
+                                <button className="icon-btn danger" title="إخراج" aria-label="إخراج من الغرفة" onClick={() => unassign(p)}>
                                   <Icon name="trash" size={12} />
                                 </button>
                               </div>
@@ -216,13 +217,17 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
               {unassigned.length === 0 ? (
                 <div className="muted" style={{ fontSize: 13 }}>كلّ المعتمرين مسكَّنون ✓</div>
               ) : (
-                <div className="chip-list">
-                  {unassigned.map((p) => (
-                    <span key={p.id} className={`chip ${p.gender === 'female' ? 'warn' : 'info'}`}>
-                      {p.full_name}
-                    </span>
-                  ))}
-                </div>
+                <>
+                  <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>اضغط على معتمرٍ لاختيار غرفته مباشرةً.</div>
+                  <div className="chip-list">
+                    {unassigned.map((p) => (
+                      <button key={p.id} type="button" className={`chip ${p.gender === 'female' ? 'warn' : 'info'}`}
+                        style={{ cursor: 'pointer' }} onClick={() => setAssigning(p)} aria-label={`تسكين ${p.full_name}`}>
+                        {p.full_name} <Icon name="bed" size={12} />
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </section>
           </>
@@ -261,7 +266,64 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
           }}
         />
       )}
+      {assigning && (
+        <PickRoom
+          passenger={assigning}
+          hotels={hotels}
+          rooms={rooms}
+          occupancy={occupancy}
+          onClose={() => setAssigning(null)}
+          onPick={async (roomId) => {
+            const ok = await assignPassenger(roomId, assigning.id)
+            if (ok) setAssigning(null)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+/* اختيار غرفةٍ لمعتمرٍ بعينه (تسكينٌ من المعتمر) — يعرض الغرف المتوافقة وغير الممتلئة */
+function PickRoom({ passenger, hotels, rooms, occupancy, onClose, onPick }) {
+  const hotelName = (id) => hotels.find((h) => h.id === id)?.name || 'فندق'
+  const compatible = rooms.filter((r) => {
+    const used = occupancy.get(r.id) || 0
+    const free = (r.capacity || 0) - used > 0
+    const genderOk = r.gender === 'mixed' || r.gender === passenger.gender
+    return free && genderOk
+  })
+  return (
+    <BottomSheet
+      open
+      onClose={onClose}
+      title={`تسكين «${passenger.full_name}»`}
+      actions={<button className="btn btn-gold btn-block" onClick={onClose}>إلغاء</button>}
+    >
+      {compatible.length === 0 ? (
+        <div className="empty">
+          <div className="em-ttl">لا توجد غرفةٌ متاحة</div>
+          <div>أضِف غرفةً جديدةً أو فرّغ مقعدًا — يجب أن تتوافق مع جنس المعتمر وتتّسع له.</div>
+        </div>
+      ) : (
+        <div className="pax-list">
+          {compatible.map((r) => {
+            const used = occupancy.get(r.id) || 0
+            return (
+              <button key={r.id} type="button" className="pax-row" onClick={() => onPick(r.id)} style={{ cursor: 'pointer', textAlign: 'start' }}>
+                <div className="pax-seat"><Icon name="bed" size={15} /></div>
+                <div className="pax-main">
+                  <div className="pax-name">غرفة {r.room_number} · {hotelName(r.hotel_id)}</div>
+                  <div className="pax-meta">
+                    {r.gender === 'female' ? 'نساء' : r.gender === 'male' ? 'رجال' : 'مختلطة'} · {used}/{r.capacity} مشغول
+                  </div>
+                </div>
+                <Icon name="check" size={15} />
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </BottomSheet>
   )
 }
 
