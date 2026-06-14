@@ -71,16 +71,22 @@ export default function SeatMap({
   return (
     <div className="bus3d">
       <div className="bus3d-body">
-        {/* بابان على الجدار الأيمن: دخولٌ أماميّ · خروجٌ أوسط */}
-        <span className="bus-door bus-door-front" aria-hidden="true"><span>دخول</span></span>
-        <span className="bus-door bus-door-mid" aria-hidden="true"><span>خروج</span></span>
+        {/* هوائيّان عند المقدّمة */}
+        <span className="bus-antenna left" aria-hidden="true" />
+        <span className="bus-antenna right" aria-hidden="true" />
 
-        {/* مقدّمة الباص: زجاجٌ أمامي مقوّس + مقعد المساعد يمينًا + كابينة السائق يسارًا */}
+        {/* باب الخروج الأوسط على الجدار الأيمن */}
+        <span className="bus-door bus-door-mid" aria-hidden="true">
+          <Icon name="arrowRight" size={11} />
+          <b>مخرج</b>
+        </span>
+
+        {/* المقدّمة: زجاجٌ مقوّس + بابُ الدخول يمينًا + كابينة السائق يسارًا */}
         <div className="bus3d-cab">
           <div className="cab-windshield" aria-hidden="true" />
-          <div className="cab-assist">
-            <Icon name="customers" size={13} />
-            <span className="cab-lbl">المساعد</span>
+          <div className="cab-entry" aria-hidden="true">
+            <Icon name="arrowLeft" size={12} />
+            <b>مدخل</b>
           </div>
           <div className="cab-driver">
             <span className="wheel" />
@@ -115,6 +121,9 @@ export default function SeatMap({
             </div>
           )}
         </div>
+
+        {/* الصادم الخلفيّ */}
+        <div className="bus-rear" aria-hidden="true" />
       </div>
 
       <Legend policy={policy} />
