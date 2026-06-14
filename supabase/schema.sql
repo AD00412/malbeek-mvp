@@ -817,10 +817,24 @@ declare
   v_cap int;
   v_room_gender text;
   v_used int;
+  v_trip_status trip_status;
+  v_trip_depart timestamptz;
 begin
   select (exists (select 1 from public.subscribers s
                   where s.id = new.subscriber_id and s.owner_id = auth.uid())
           or public.my_role() = 'admin') into v_owner;
+
+  -- ★ دورة حياة الرحلة: لا يُنشئ العميلُ حجزًا في رحلةٍ غير مفتوحةٍ أو فات موعدها.
+  --   (المالك/الإدارة مستثنون لإدارةٍ تشغيليّةٍ كاملة، والتعديل/الإلغاء غير محظور.)
+  if not v_owner and tg_op = 'INSERT' then
+    select status, depart_at into v_trip_status, v_trip_depart from public.trips where id = new.trip_id;
+    if v_trip_status is distinct from 'open' then
+      raise exception 'TRIP_NOT_BOOKABLE' using hint = 'الحجز مغلقٌ على هذه الرحلة حاليًّا.';
+    end if;
+    if v_trip_depart is not null and v_trip_depart < now() then
+      raise exception 'TRIP_DEPARTED' using hint = 'انطلقت هذه الرحلة — تعذّر الحجز.';
+    end if;
+  end if;
 
   -- إسناد/تحقّق الباص: يجب أن ينتمي الباص للرحلة نفسها؛ وإلّا (أو إن كان فارغًا)
   -- يُربط الراكب بأوّل باصٍ في الرحلة. يمنع إسناد باصٍ من رحلةٍ أخرى (تماسك البيانات).
@@ -1266,6 +1280,29 @@ drop trigger if exists trg_notify_passengers on public.passengers;
 create trigger trg_notify_passengers
   after insert or update or delete on public.passengers
   for each row execute function public.notify_passengers_change();
+
+-- ★ تريغر دورة حياة الرحلة: إغلاق الحجز/انتهاء الرحلة → إشعار كلّ معتمريها
+create or replace function public.notify_trip_lifecycle()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.status is distinct from old.status and new.status in ('closed','done') then
+    insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+    select distinct p.profile_id, 'customer', 'trip_changed',
+           case new.status when 'closed' then 'أُغلق الحجز على رحلتك'
+                           else 'انتهت رحلتك — تقبّل الله طاعتكم' end,
+           'رحلة «' || coalesce(new.title,'') || '»'
+             || case new.status when 'closed' then ' — لم يعد الحجز متاحًا.'
+                                else ' — نسأل الله أن يتقبّل منكم.' end,
+           new.id
+    from public.passengers p
+    where p.trip_id = new.id and p.profile_id is not null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_notify_trip_lifecycle on public.trips;
+create trigger trg_notify_trip_lifecycle
+  after update on public.trips
+  for each row execute function public.notify_trip_lifecycle();
 
 -- ★ تريغر: ردّ الإدارة على ملاحظة → إشعار للمرسِل
 create or replace function public.notify_feedback_reply()

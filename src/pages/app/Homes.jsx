@@ -19,6 +19,7 @@ import { tableToDocx } from '../../lib/docx'
 import { htmlToPdf } from '../../lib/pdf'
 import { useUI } from '../../lib/useUI'
 import { translateRpcError } from '../../lib/rpcErrors'
+import { tripLifecycle } from '../../lib/tripLifecycle'
 import TripManage from './TripManage'
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -874,13 +875,15 @@ export function CustomerHome() {
 /* تذكرة العميل — غلافٌ كسولٌ لمكوّن Ticket */
 const CustomerTicket = lazy(() => import('../../components/Ticket'))
 
-/* بطاقة رحلةٍ للعميل: تعرض زرّ الحجز أو التذكرة حسب حالته */
+/* بطاقة رحلةٍ للعميل: تعرض زرّ الحجز أو التذكرة حسب حالته ودورة حياة الرحلة */
 function CustomerTripCard({ trip, booking, onBook, onTicket }) {
+  const lc = tripLifecycle(trip)
   return (
     <article className="trip-card">
       <div className="tags">
         <span className="tag gold">عمرة</span>
-        <span className={`tag ${STATUS_TAG[trip.status] || 'muted'}`}>{STATUS_FUTURE_LABEL[trip.status] || STATUS_LABEL[trip.status]}</span>
+        <span className={`tag ${lc.cls}`}>{lc.label}</span>
+        {lc.soon && <span className="tag warn">قريبًا</span>}
         {booking && <span className="tag ok">محجوز · مقعد {booking.seat_no || '—'}</span>}
       </div>
       <h3>{trip.title || 'رحلة'}</h3>
@@ -894,8 +897,10 @@ function CustomerTripCard({ trip, booking, onBook, onTicket }) {
             <button className="btn btn-gold" onClick={() => onTicket(booking)}><Icon name="qr" size={16} /> تذكرتي</button>
             <button className="icon-btn" onClick={onBook}><Icon name="edit" size={15} /> تعديل الحجز</button>
           </>
-        ) : (
+        ) : lc.bookable ? (
           <button className="btn btn-gold" onClick={onBook}><Icon name="seat" size={16} /> احجز مقعدي</button>
+        ) : (
+          <span className="muted" style={{ fontSize: 13 }}><Icon name="lock" size={14} /> {lc.reason}</span>
         )}
       </div>
     </article>

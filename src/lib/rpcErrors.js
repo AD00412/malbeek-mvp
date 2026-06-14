@@ -9,6 +9,8 @@ const MAP = {
   ROOM_FULL: 'الغرفة مكتملة. اختر غرفةً أخرى.',
   ROOM_GENDER_MISMATCH: 'الغرفة لا تتوافق مع جنس المعتمر.',
   ROOM_TRIP_MISMATCH: 'الغرفة لا تنتمي لهذه الرحلة.',
+  TRIP_NOT_BOOKABLE: 'الحجز مغلقٌ على هذه الرحلة حاليًّا.',
+  TRIP_DEPARTED: 'انطلقت هذه الرحلة — تعذّر الحجز.',
 }
 
 const isArabic = (s) => /[؀-ۿ]/.test(s)

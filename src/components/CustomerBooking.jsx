@@ -8,6 +8,7 @@ import CompassMark from './CompassMark'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, safeExt } from '../lib/format'
 import { loadTripBuses, busLayout, busName } from '../lib/buses'
 import { translateRpcError } from '../lib/rpcErrors'
+import { tripLifecycle } from '../lib/tripLifecycle'
 import { useUI } from '../lib/useUI'
 
 const PROOF_MAX = 5 * 1024 * 1024
@@ -82,6 +83,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     }
   }
 
+  const lc = tripLifecycle(trip)
+  const blockedNew = !booking?.id && !lc.bookable   // محاولة حجزٍ جديدٍ في رحلةٍ غير متاحة
   const multiBus = buses.length > 1
   const activeBus = buses.find((b) => b.id === busId) || buses[0] || null
   const layout = multiBus && activeBus ? busLayout(activeBus)
@@ -209,6 +212,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
 
   async function confirm() {
     if (busy) return
+    // قفل دورة الحياة: لا حجزَ جديدٌ في رحلةٍ مغلقةٍ/منتهيةٍ أو فات موعدها (القاعدة تحرس أيضًا).
+    if (!booking?.id && !lc.bookable) { setErr(lc.reason); return }
     if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
     if (nationalId.trim() && !isValidNationalId(nationalId)) { setErr('رقم الهوية/الإقامة غير صحيح (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
     if (phone.trim() && !isValidSaPhone(phone)) { setErr('رقم الجوال غير صحيح (مثال: 05XXXXXXXX).'); return }
@@ -421,9 +426,15 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 </div>
               )}
 
+              {blockedNew && (
+                <div className="alert warn" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="bell" size={16} /> {lc.reason}
+                </div>
+              )}
+
               {err && <div className="alert err" style={{ marginTop: 12 }}>{err}</div>}
 
-              <button className="btn btn-gold btn-block" style={{ marginTop: 16 }} onClick={confirm} disabled={busy}>
+              <button className="btn btn-gold btn-block" style={{ marginTop: 16 }} onClick={confirm} disabled={busy || blockedNew}>
                 {busy ? <span className="spinner" /> : <><Icon name="check" size={17} /> {booking ? 'حفظ وعرض التذكرة' : 'تأكيد الحجز'}</>}
               </button>
             </>
