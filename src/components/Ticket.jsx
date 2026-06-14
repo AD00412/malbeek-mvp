@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import CompassMark from './CompassMark'
 import Icon from './Icon'
 import { busName } from '../lib/buses'
+import { elementToPngBlob } from '../lib/pdf'
+import { downloadICS } from '../lib/ics'
+import { useUI } from '../lib/useUI'
 
 function fmt(v) {
   if (!v) return '—'
@@ -21,9 +24,14 @@ const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صع
  * تُحمّل مكتبة qrcode ديناميكيًّا؛ إن غابت تعرض الرمز نصيًّا (تدهورٌ لطيف).
  */
 export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
+  const { toast } = useUI()
+  const ticketRef = useRef(null)
   const [qrUrl, setQrUrl] = useState('')
   const [qrFailed, setQrFailed] = useState(false)
+  const [busy, setBusy] = useState('')   // '' | 'save' | 'share'
+  const canShare = typeof navigator !== 'undefined' && !!navigator.share
   const code = passenger?.ticket_code || passenger?.id || ''
+  const fileBase = `تذكرة-${(passenger?.full_name || 'معتمر').replace(/\s+/g, '_')}`
   // اسم باص المعتمر عند تعدّد الباصات؛ وإلّا اسم باص الرحلة (السلوك السابق)
   const ticketBus = buses.find((b) => b.id === passenger?.bus_id)
   const busLabel = (ticketBus && busName(ticketBus)) || trip?.bus_label || '—'
@@ -43,33 +51,92 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
     return () => { cancelled = true }
   }, [code])
 
-  function downloadPng() {
-    if (!qrUrl) return
-    const a = document.createElement('a')
-    a.href = qrUrl
-    a.download = `تذكرة-${(passenger?.full_name || 'معتمر').replace(/\s+/g, '_')}.png`
-    a.click()
+  // يلتقط بطاقة التذكرة كاملةً (لا الباركود وحده) صورةً عالية الدقّة.
+  async function captureBlob() {
+    if (!ticketRef.current) throw new Error('no_ticket')
+    return await elementToPngBlob(ticketRef.current, { backgroundColor: '#ffffff', scale: 2.5 })
+  }
+
+  // حفظ التذكرة كاملةً كصورة (تذهب لمعرض الصور/الملفّات).
+  async function saveImage() {
+    if (busy) return
+    setBusy('save')
+    try {
+      const blob = await captureBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = fileBase + '.png'
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 2000)
+      toast('تم حفظ التذكرة كصورة ✓', { type: 'success' })
+    } catch (e) {
+      // تدهورٌ لطيف: نزّل الباركود على الأقلّ إن تعذّر التقاط البطاقة
+      if (qrUrl) { const a = document.createElement('a'); a.href = qrUrl; a.download = fileBase + '.png'; a.click() }
+      else toast('تعذّر حفظ الصورة — جرّب «طباعة» أو لقطة شاشة.', { type: 'error' })
+    } finally { setBusy('') }
+  }
+
+  // مشا_ركة عبر قائمة الجوال: حفظ بالصور/الملفّات/تطبيقات المحفظة الرقميّة.
+  async function shareTicket() {
+    if (busy) return
+    setBusy('share')
+    try {
+      const blob = await captureBlob()
+      const file = new File([blob], fileBase + '.png', { type: 'image/png' })
+      const data = { files: [file], title: 'تذكرة العمرة', text: `تذكرتي في «${trip?.title || 'رحلة عمرة'}» — ${sub?.org_name || 'ملبّيك'}` }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share(data)
+      } else if (navigator.share) {
+        await navigator.share({ title: data.title, text: data.text })
+      } else {
+        await saveImage(); return
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') toast('تعذّرت المشاركة — استخدم «حفظ كصورة».', { type: 'error' })
+    } finally { setBusy('') }
+  }
+
+  // إضافة موعد الرحلة إلى تقويم الجوال.
+  function addToCalendar() {
+    const ok = downloadICS({
+      uid: code,
+      start: trip?.depart_at,
+      durationMin: 180,
+      title: `رحلة عمرة — ${trip?.title || ''}`.trim(),
+      location: passenger?.boarding_point || trip?.boarding_point || trip?.route_from || '',
+      description: `مقعد ${passenger?.seat_no || '—'} · ${busLabel} · ${sub?.org_name || 'ملبّيك'} · رمز التذكرة ${code}`,
+    }, fileBase)
+    if (ok) toast('أُضيف موعد الرحلة — افتحه في التقويم', { type: 'success' })
+    else toast('تعذّرت إضافة الموعد (تاريخ الرحلة غير محدّد).', { type: 'info' })
   }
 
   const boarded = passenger?.status === 'boarded' || passenger?.status === 'checked_in'
 
   return (
     <div className="manifest-overlay">
-      <div className="manifest-toolbar no-print">
+      <div className="manifest-toolbar no-print" style={{ flexWrap: 'wrap', gap: 8 }}>
         <button className="btn btn-ghost btn-sm" onClick={onClose}>
           <Icon name="arrowRight" size={16} /> رجوع
         </button>
         <span style={{ flex: 1 }} />
-        <button className="btn btn-ghost btn-sm" onClick={downloadPng} disabled={!qrUrl}>
-          <Icon name="download" size={16} /> حفظ كصورة
+        {canShare && (
+          <button className="btn btn-gold btn-sm" onClick={shareTicket} disabled={!!busy}>
+            {busy === 'share' ? <span className="spinner" /> : <><Icon name="share" size={16} /> مشاركة / حفظ</>}
+          </button>
+        )}
+        <button className="btn btn-ghost btn-sm" onClick={saveImage} disabled={!!busy}>
+          {busy === 'save' ? <span className="spinner" /> : <><Icon name="download" size={16} /> حفظ كصورة</>}
         </button>
-        <button className="btn btn-gold btn-sm" onClick={() => window.print()}>
-          <Icon name="qr" size={16} /> طباعة
+        <button className="btn btn-ghost btn-sm" onClick={addToCalendar}>
+          <Icon name="calendar" size={16} /> تقويم
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
+          <Icon name="manifest" size={16} /> طباعة
         </button>
       </div>
 
       <div className="manifest-scroll">
-        <div className="ticket" dir="rtl">
+        <div className="ticket" dir="rtl" ref={ticketRef}>
           <div className="ticket-top">
             <div className="tk-brand">
               <CompassMark size={34} variant="gold" />

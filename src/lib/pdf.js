@@ -82,3 +82,17 @@ function friendly(e) {
   }
   return e instanceof Error ? e : new Error(msg)
 }
+
+/** يلتقط عنصر DOM إلى Blob صورة PNG (للحفظ أو المشاركة عبر قائمة الجوال). */
+export async function elementToPngBlob(element, { backgroundColor = null, scale = 2 } = {}) {
+  if (!element) throw new Error('no_element')
+  try {
+    const html2canvas = await loadHtml2Canvas()
+    const canvas = await html2canvas(element, { scale, useCORS: true, backgroundColor, logging: false })
+    const blob = await new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'))
+    if (!blob) throw new Error('canvas_blob_failed')
+    return blob
+  } catch (e) {
+    throw friendly(e)
+  }
+}
