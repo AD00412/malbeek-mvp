@@ -12,7 +12,7 @@ import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
 import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
-import { translateTripError } from '../../lib/rpcErrors'
+import { translateRpcError } from '../../lib/rpcErrors'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -561,7 +561,7 @@ function DuplicateTripSheet({ open, sourceId, sourceTitle, onClose, onDone }) {
       p_shift_days: Number(shift) || 0,
     })
     setBusy(false)
-    if (error) { setErr(translateTripError(error, 'تعذّر الاستنساخ.')); return }
+    if (error) { setErr(translateRpcError(error, 'تعذّر الاستنساخ.')); return }
     onDone?.(data)   // data = صفّ الرحلة الجديدة كاملًا
   }
 

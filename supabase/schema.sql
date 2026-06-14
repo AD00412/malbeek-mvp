@@ -930,8 +930,9 @@ grant execute on function public.admin_campaign_stats() to authenticated;
 --   مقيّدٌ بمالك الحملة فقط. يحترم enforce_trial_trip_limit عبر تريغر INSERT.
 --   يُرجع الصفّ كاملًا ليفتحه المالك في الواجهة بلا قراءةٍ إضافيّة.
 -- DROP أوّلًا لأنّ نوع الإرجاع تغيّر من uuid إلى trips (PostgreSQL يمنع تغييره عبر REPLACE).
+-- بعد DROP لا حاجة لـ `or replace` — الدالّة معدومة.
 drop function if exists public.duplicate_trip(uuid, text, int);
-create or replace function public.duplicate_trip(
+create function public.duplicate_trip(
   p_trip_id uuid, p_name_suffix text default ' — نسخة',
   p_shift_days int default 0
 ) returns public.trips language plpgsql security definer set search_path = public as $$
