@@ -25,7 +25,7 @@ export default function FeedbackInbox() {
   const load = useCallback(async () => {
     setLoading(true)
     let q = supabase.from('feedback')
-      .select('id, audience, kind, subject, body, reply, status, replied_at, created_at, profile_id, subscriber_id, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
+      .select('id, audience, kind, subject, body, reply, status, replied_at, created_at, profile_id, subscriber_id, attachment_url, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
       .order('created_at', { ascending: false }).limit(200)
     if (filter !== 'all') q = q.eq('status', filter)
     const { data } = await q
@@ -85,6 +85,7 @@ export default function FeedbackInbox() {
               </div>
               {f.subject && <div style={{ fontWeight: 700, color: 'var(--cr-50)', marginTop: 6 }}>{f.subject}</div>}
               <div className="muted" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
+              {f.attachment_url && <AdminAttachment path={f.attachment_url} />}
 
               {f.reply && (
                 <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)' }}>
@@ -131,5 +132,31 @@ export default function FeedbackInbox() {
         </div>
       )}
     </section>
+  )
+}
+
+/** عرض مرفق الملاحظة للإدارة عبر signed URL (الـ bucket خاص). */
+function AdminAttachment({ path }) {
+  const [url, setUrl] = useState('')
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      const { data } = await supabase.storage
+        .from('feedback-attachments')
+        .createSignedUrl(path, 60 * 60)
+      if (alive && data?.signedUrl) setUrl(data.signedUrl)
+    })()
+    return () => { alive = false }
+  }, [path])
+  if (!url) return (
+    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}><Icon name="external" size={12} /> جارٍ تحميل المرفق…</div>
+  )
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
+      <img src={url} alt="مرفق" style={{ maxWidth: '100%', maxHeight: 260, borderRadius: 10, border: '1px solid var(--line)' }} />
+      <div style={{ fontSize: 11, color: 'var(--gd-300)', marginTop: 4 }}>
+        <Icon name="external" size={11} /> فتح بحجمٍ كامل
+      </div>
+    </a>
   )
 }

@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import { useAuth } from '../app/useAuth'
+
+const MAX_BYTES = 5 * 1024 * 1024
+const OK_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 const KINDS = [
   { v: 'suggestion', t: 'اقتراح' },
@@ -34,26 +37,63 @@ export default function FeedbackSheet({ open, audience, onClose }) {
   const [err, setErr] = useState('')
   const [mine, setMine] = useState([])
   const [loading, setLoading] = useState(false)
+  const [file, setFile] = useState(null)            // الصورة قبل الرفع (للمعاينة)
+  const [previewUrl, setPreviewUrl] = useState('')  // object URL محلّيٌّ للمعاينة
+  const fileRef = useRef(null)
 
   const loadMine = useCallback(async () => {
     if (!user?.id) return
     setLoading(true)
     const { data } = await supabase
       .from('feedback')
-      .select('id, kind, subject, body, reply, status, replied_at, created_at')
+      .select('id, kind, subject, body, reply, status, replied_at, created_at, attachment_url')
       .eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50)
     setMine(data ?? [])
     setLoading(false)
   }, [user])
 
   useEffect(() => { if (open && view === 'mine') loadMine() }, [open, view, loadMine])
-  useEffect(() => { if (!open) { setOk(''); setErr(''); setSubject(''); setBody(''); setKind('suggestion'); setView('new') } }, [open])
+  useEffect(() => {
+    if (!open) {
+      setOk(''); setErr(''); setSubject(''); setBody(''); setKind('suggestion'); setView('new')
+      setFile(null); setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return '' })
+    }
+  }, [open])
+
+  function pickFile() { fileRef.current?.click() }
+  function clearFile() {
+    setFile(null)
+    setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return '' })
+    if (fileRef.current) fileRef.current.value = ''
+  }
+  function onFile(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!OK_TYPES.includes(f.type)) { setErr('الصيغة غير مدعومة. استخدم PNG / JPG / WebP.'); return }
+    if (f.size > MAX_BYTES)        { setErr('حجم الصورة كبير (٥ ميغابايت كحدٍّ أقصى).'); return }
+    setErr('')
+    setFile(f)
+    setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return URL.createObjectURL(f) })
+  }
 
   async function send() {
     if (busy) return
     if (!body.trim()) { setErr('اكتب نصّ الملاحظة.'); return }
     setErr(''); setOk(''); setBusy(true)
     try {
+      // ١) ارفع المرفق أوّلًا (إن وُجد) — تحت مجلّد profile_id الخاصّ بك (RLS تحرس)
+      let attachment_url = null
+      if (file && user?.id) {
+        const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4) || 'png'
+        const path = `${user.id}/${Date.now()}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('feedback-attachments')
+          .upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type })
+        if (upErr) throw upErr
+        attachment_url = path   // نخزّن المسار، الإدارة تجلب signed URL وقت العرض
+      }
+
+      // ٢) أدرج الملاحظة
       const { error } = await supabase.from('feedback').insert({
         profile_id: user.id,
         subscriber_id: subscriberId || null,
@@ -61,10 +101,11 @@ export default function FeedbackSheet({ open, audience, onClose }) {
         kind,
         subject: subject.trim() || null,
         body: body.trim(),
+        attachment_url,
       })
       if (error) throw error
       setOk('وصلت ملاحظتك ✓ سنرجع لك بأقرب وقت.')
-      setBody(''); setSubject('')
+      setBody(''); setSubject(''); clearFile()
       if (view === 'mine') loadMine()
     } catch (e) {
       setErr(e?.message ? 'تعذّر الإرسال: ' + e.message : 'تعذّر الإرسال.')
@@ -100,6 +141,36 @@ export default function FeedbackSheet({ open, audience, onClose }) {
             <label>التفاصيل <span className="req">*</span></label>
             <textarea rows={5} placeholder="اكتب لنا بصراحة — كل ملاحظةٍ تساعدنا على تحسين تجربتك." value={body} onChange={(e) => setBody(e.target.value)} />
           </div>
+
+          <div className="field">
+            <label>لقطة شاشة أو صورة <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
+            <input
+              ref={fileRef} type="file"
+              accept="image/png,image/jpeg,image/webp"
+              style={{ display: 'none' }}
+              onChange={onFile}
+            />
+            {previewUrl ? (
+              <div className="img-upload preview">
+                <img src={previewUrl} alt="معاينة" />
+                <div className="img-upload-actions">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={pickFile} disabled={busy}>
+                    <Icon name="refresh" size={14} /> استبدال
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={clearFile} disabled={busy} style={{ color: 'var(--danger)' }}>
+                    <Icon name="trash" size={14} /> إزالة
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="img-upload dropzone" onClick={pickFile} disabled={busy}>
+                <Icon name="download" size={22} style={{ transform: 'rotate(180deg)' }} />
+                <strong>أرفِق لقطة شاشة للخطأ</strong>
+                <span className="muted" style={{ fontSize: 12 }}>PNG/JPG/WebP · ٥ ميغابايت كحدٍّ أقصى · ترى الإدارة فقط</span>
+              </button>
+            )}
+          </div>
+
           {ok && <div className="alert ok">{ok}</div>}
           {err && <div className="alert err">{err}</div>}
           <button className="btn btn-gold btn-block" onClick={send} disabled={busy}>
@@ -124,6 +195,9 @@ export default function FeedbackSheet({ open, audience, onClose }) {
               </div>
               {f.subject && <div style={{ fontWeight: 700, color: 'var(--cr-50)', marginTop: 6 }}>{f.subject}</div>}
               <div className="muted" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
+              {f.attachment_url && (
+                <FeedbackAttachment path={f.attachment_url} />
+              )}
               {f.reply && (
                 <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)' }}>
                   <div style={{ fontSize: 12, color: 'var(--ok-ink)', fontWeight: 700, marginBottom: 4 }}>ردّ إدارة ملبّيك · {fmt(f.replied_at)}</div>
@@ -135,5 +209,26 @@ export default function FeedbackSheet({ open, audience, onClose }) {
         </div>
       )}
     </BottomSheet>
+  )
+}
+
+/** يولّد signed URL للمرفق ويعرضه (الـ bucket خاصٌّ → لا يصلح الرابط العامّ). */
+function FeedbackAttachment({ path }) {
+  const [url, setUrl] = useState('')
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      const { data } = await supabase.storage
+        .from('feedback-attachments')
+        .createSignedUrl(path, 60 * 60)   // ساعةٌ من العرض
+      if (alive && data?.signedUrl) setUrl(data.signedUrl)
+    })()
+    return () => { alive = false }
+  }, [path])
+  if (!url) return null
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
+      <img src={url} alt="مرفق" style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 10, border: '1px solid var(--line)' }} />
+    </a>
   )
 }

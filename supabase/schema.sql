@@ -942,6 +942,7 @@ create table if not exists public.feedback (
   replied_at    timestamptz,
   created_at    timestamptz not null default now()
 );
+alter table public.feedback add column if not exists attachment_url text;  -- لقطةُ شاشةٍ للخطأ (اختياريّة)
 create index if not exists idx_feedback_profile    on public.feedback(profile_id);
 create index if not exists idx_feedback_subscriber on public.feedback(subscriber_id);
 create index if not exists idx_feedback_status     on public.feedback(status);
@@ -1382,6 +1383,40 @@ create policy "org-assets owner delete" on storage.objects for delete
     and (storage.foldername(name))[1] in (
       select id::text from public.subscribers where owner_id = auth.uid()
     )
+  );
+
+-- ============================================================
+--  Storage — مرفقات الملاحظات (لقطات الخطأ). bucket خاصٌّ (غير عام):
+--  المستخدم يرفع داخل مجلّدٍ باسم profile_id الخاصّ به، يقرأ مرفقاته فقط،
+--  والإدارة تقرأ كلّ المرفقات (للمساعدة في حلّ المشكلة).
+-- ============================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('feedback-attachments', 'feedback-attachments', false, 5242880,        -- ٥ ميغابايت
+        array['image/png','image/jpeg','image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "feedback-attach self read" on storage.objects;
+create policy "feedback-attach self read" on storage.objects for select
+  using (
+    bucket_id = 'feedback-attachments'
+    and ((storage.foldername(name))[1] = auth.uid()::text or public.my_role() = 'admin')
+  );
+
+drop policy if exists "feedback-attach self write" on storage.objects;
+create policy "feedback-attach self write" on storage.objects for insert
+  with check (
+    bucket_id = 'feedback-attachments'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "feedback-attach self delete" on storage.objects;
+create policy "feedback-attach self delete" on storage.objects for delete
+  using (
+    bucket_id = 'feedback-attachments'
+    and ((storage.foldername(name))[1] = auth.uid()::text or public.my_role() = 'admin')
   );
 
 -- ============================================================
