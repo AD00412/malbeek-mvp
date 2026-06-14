@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
+import SignedImage from './SignedImage'
 
 const KIND_AR = { suggestion: 'اقتراح', problem: 'مشكلة', question: 'سؤال', feature: 'ميزة' }
 const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمّت' }
@@ -15,6 +16,7 @@ function fmt(v) {
 /** صندوق وارد التغذية الراجعة لإدارة ملبّيك. */
 export default function FeedbackInbox() {
   const [rows, setRows] = useState([])
+  const [attachUrls, setAttachUrls] = useState({})
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('open')   // 'all' | 'open' | 'in_progress' | 'resolved'
   const [editing, setEditing] = useState(null)
@@ -29,7 +31,17 @@ export default function FeedbackInbox() {
       .order('created_at', { ascending: false }).limit(200)
     if (filter !== 'all') q = q.eq('status', filter)
     const { data } = await q
-    setRows(data ?? []); setLoading(false)
+    const all = data ?? []
+    setRows(all)
+    const paths = all.map((r) => r.attachment_url).filter(Boolean)
+    if (paths.length) {
+      const { data: signed } = await supabase.storage
+        .from('feedback-attachments').createSignedUrls(paths, 60 * 60)
+      const map = {}
+      for (const s of signed ?? []) if (s.path && s.signedUrl) map[s.path] = s.signedUrl
+      setAttachUrls(map)
+    } else setAttachUrls({})
+    setLoading(false)
   }, [filter])
   useEffect(() => { load() }, [load])
 
@@ -85,7 +97,15 @@ export default function FeedbackInbox() {
               </div>
               {f.subject && <div style={{ fontWeight: 700, color: 'var(--cr-50)', marginTop: 6 }}>{f.subject}</div>}
               <div className="muted" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
-              {f.attachment_url && <AdminAttachment path={f.attachment_url} />}
+              {f.attachment_url && (
+                <SignedImage
+                  bucket="feedback-attachments"
+                  path={f.attachment_url}
+                  presignedUrl={attachUrls[f.attachment_url]}
+                  maxHeight={260}
+                  showOpenFull
+                />
+              )}
 
               {f.reply && (
                 <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)' }}>
@@ -135,28 +155,3 @@ export default function FeedbackInbox() {
   )
 }
 
-/** عرض مرفق الملاحظة للإدارة عبر signed URL (الـ bucket خاص). */
-function AdminAttachment({ path }) {
-  const [url, setUrl] = useState('')
-  useEffect(() => {
-    let alive = true
-    ;(async () => {
-      const { data } = await supabase.storage
-        .from('feedback-attachments')
-        .createSignedUrl(path, 60 * 60)
-      if (alive && data?.signedUrl) setUrl(data.signedUrl)
-    })()
-    return () => { alive = false }
-  }, [path])
-  if (!url) return (
-    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}><Icon name="external" size={12} /> جارٍ تحميل المرفق…</div>
-  )
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
-      <img src={url} alt="مرفق" style={{ maxWidth: '100%', maxHeight: 260, borderRadius: 10, border: '1px solid var(--line)' }} />
-      <div style={{ fontSize: 11, color: 'var(--gd-300)', marginTop: 4 }}>
-        <Icon name="external" size={11} /> فتح بحجمٍ كامل
-      </div>
-    </a>
-  )
-}

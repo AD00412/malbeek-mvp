@@ -21,6 +21,10 @@ import TripManage from './TripManage'
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
 
+/** قائمةُ أعمدة المؤسسة المشتركة بين الـ select قراءاتٍ متعدّدة (تفادي الانحراف). */
+const SUBSCRIBER_COLS =
+  'id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url'
+
 /* ---------- أدوات عرض مشتركة ---------- */
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
 const STATUS_TAG   = { draft: 'muted', open: 'ok', closed: 'warn', done: 'info' }
@@ -227,7 +231,7 @@ export function SubscriberHome() {
 
     const { data: rows, error: sErr } = await supabase
       .from('subscribers')
-      .select('id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url')
+      .select(SUBSCRIBER_COLS)
       .eq('owner_id', user.id)
       .order('created_at', { ascending: true })
       .limit(1)
@@ -242,12 +246,12 @@ export function SubscriberHome() {
       const { data: created, error: insErr } = await supabase
         .from('subscribers')
         .insert({ owner_id: user.id, org_name: orgName, slug, plan: 'trial' })
-        .select('id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url')
+        .select(SUBSCRIBER_COLS)
         .maybeSingle()
       if (insErr) {
         if (insErr.code === '23505') {
           const { data: again } = await supabase
-            .from('subscribers').select('id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url')
+            .from('subscribers').select(SUBSCRIBER_COLS)
             .eq('owner_id', user.id).order('created_at', { ascending: true }).limit(1).maybeSingle()
           s = again ?? null
         } else {

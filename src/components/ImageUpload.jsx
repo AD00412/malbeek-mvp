@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { safeExt } from '../lib/format'
 import Icon from './Icon'
 
 /**
@@ -27,7 +28,7 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
 
     setBusy(true); setErr('')
     try {
-      const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4) || 'png'
+      const ext = safeExt(file)
       const path = `${subscriberId}/${slot}-${Date.now()}.${ext}`
       const { error } = await supabase.storage
         .from('org-assets')

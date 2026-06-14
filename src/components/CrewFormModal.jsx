@@ -64,6 +64,8 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         stamp_url: stampUrl || null,
         logo_url: logoUrl || null,
         store_url: storeUrl.trim() || null,
+        // إن وُجدت صورة ختمٍ، امسح النصّ القديم حتّى لا يعود لو حُذفت الصورة لاحقًا
+        ...(stampUrl ? { stamp_text: null } : {}),
       }
       const r2 = await supabase.from('subscribers').update(orgPayload).eq('id', sub.id)
       if (r2.error) throw r2.error

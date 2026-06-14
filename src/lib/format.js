@@ -37,6 +37,15 @@ export function toWaPhone(raw = '') {
   return /^05[0-9]{8}$/.test(p) ? '966' + p.slice(1) : ''
 }
 
+/** يستخرج امتداد ملفٍّ آمنًا (٤ أحرف لاتينيّةٍ أو رقميّةٍ حصرًا)، مع fallback. */
+export function safeExt(file, fallback = 'png') {
+  const name = file?.name ?? ''
+  const dot = name.lastIndexOf('.')
+  if (dot <= 0) return fallback
+  const raw = name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4)
+  return raw || fallback
+}
+
 /** تنسيق تاريخ/وقت ميلاديٍّ مختصر للعرض/التصدير */
 export function fmtDateTime(v) {
   if (!v) return ''

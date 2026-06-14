@@ -54,17 +54,21 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   async function load() {
     if (!trip?.id || !user?.id) return
     setLoading(true); setErr('')
-    // حجز العميل الحالي لهذه الرحلة (إن وُجد)
-    const { data: mine } = await supabase
-      .from('passengers')
-      .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref, bus_id')
-      .eq('trip_id', trip.id).eq('profile_id', user.id).maybeSingle()
-    // باصات الرحلة + تحديد الباص النشِط (باص الحجز الحالي أو الأوّل)
-    const bs = await loadTripBuses(trip.id)
+    // قراءاتٌ متوازيةٌ: حجز العميل الحالي + باصات الرحلة + سجلّ العميل لهذه الحملة (إن لزم).
+    const subId = sub?.id ?? trip?.subscriber_id
+    const [{ data: mine }, bs, { data: myCustomer }] = await Promise.all([
+      supabase.from('passengers')
+        .select('id, full_name, national_id, phone, gender, is_family, seat_no, status, ticket_code, boarded_at, boarding_point, payment_ref, bus_id')
+        .eq('trip_id', trip.id).eq('profile_id', user.id).maybeSingle(),
+      loadTripBuses(trip.id),
+      subId
+        ? supabase.from('customers').select('pickup_location')
+            .eq('profile_id', user.id).eq('subscriber_id', subId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ])
     setBuses(bs)
     const activeId = mine?.bus_id ?? bs[0]?.id ?? null
     setBusId(activeId)
-    // إشغال المقاعد (بلا أسماء) — للباص المختار عند تعدّد الباصات
     const occArgs = bs.length > 1 && activeId ? { p_trip: trip.id, p_bus: activeId } : { p_trip: trip.id }
     const { data: occ } = await supabase.rpc('trip_seat_occupancy', occArgs)
     setOccupancy(occ ?? [])
@@ -77,9 +81,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       setBoardingPoint(mine.boarding_point ?? '')
     } else {
       setFullName(profile?.full_name ?? ''); setPhone(profile?.phone ?? '')
-      // تحضير افتراضيٍّ لمكان الركوب: من سجلّ العميل أوّلًا، ثمّ من إعداد الرحلة
-      const { data: myCustomer } = await supabase
-        .from('customers').select('pickup_location').eq('profile_id', user.id).maybeSingle()
+      // مكان الركوب: من سجلّ العميل لهذه الحملة (جُلب أعلاه بالتوازي) ثمّ من الرحلة احتياطًا
       setBoardingPoint(myCustomer?.pickup_location || trip?.boarding_point || '')
     }
     setLoading(false)

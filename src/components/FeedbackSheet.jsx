@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { safeExt } from '../lib/format'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import SignedImage from './SignedImage'
 import { useAuth } from '../app/useAuth'
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -36,6 +38,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
   const [ok, setOk] = useState('')
   const [err, setErr] = useState('')
   const [mine, setMine] = useState([])
+  const [attachUrls, setAttachUrls] = useState({})    // {path: signedUrl} مُجمَّعٌ مسبقًا
   const [loading, setLoading] = useState(false)
   const [file, setFile] = useState(null)            // الصورة قبل الرفع (للمعاينة)
   const [previewUrl, setPreviewUrl] = useState('')  // object URL محلّيٌّ للمعاينة
@@ -48,7 +51,17 @@ export default function FeedbackSheet({ open, audience, onClose }) {
       .from('feedback')
       .select('id, kind, subject, body, reply, status, replied_at, created_at, attachment_url')
       .eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50)
-    setMine(data ?? [])
+    const rows = data ?? []
+    setMine(rows)
+    // جلبٌ مجمَّعٌ لروابط المرفقات (يُلغي طلب signed URL لكلّ صفٍّ على حدة)
+    const paths = rows.map((r) => r.attachment_url).filter(Boolean)
+    if (paths.length) {
+      const { data: signed } = await supabase.storage
+        .from('feedback-attachments').createSignedUrls(paths, 60 * 60)
+      const map = {}
+      for (const s of signed ?? []) if (s.path && s.signedUrl) map[s.path] = s.signedUrl
+      setAttachUrls(map)
+    } else setAttachUrls({})
     setLoading(false)
   }, [user])
 
@@ -84,8 +97,10 @@ export default function FeedbackSheet({ open, audience, onClose }) {
       // ١) ارفع المرفق أوّلًا (إن وُجد) — تحت مجلّد profile_id الخاصّ بك (RLS تحرس)
       let attachment_url = null
       if (file && user?.id) {
-        const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4) || 'png'
-        const path = `${user.id}/${Date.now()}.${ext}`
+        // مزجٌ بين الزمن ومُعرّفٍ عشوائيٍّ يمنع التصادم عند تكرار النقرة في الـ ms ذاتها
+        const ext = safeExt(file)
+        const rand = Math.random().toString(36).slice(2, 6)
+        const path = `${user.id}/${Date.now()}-${rand}.${ext}`
         const { error: upErr } = await supabase.storage
           .from('feedback-attachments')
           .upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type })
@@ -196,7 +211,11 @@ export default function FeedbackSheet({ open, audience, onClose }) {
               {f.subject && <div style={{ fontWeight: 700, color: 'var(--cr-50)', marginTop: 6 }}>{f.subject}</div>}
               <div className="muted" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
               {f.attachment_url && (
-                <FeedbackAttachment path={f.attachment_url} />
+                <SignedImage
+                  bucket="feedback-attachments"
+                  path={f.attachment_url}
+                  presignedUrl={attachUrls[f.attachment_url]}
+                />
               )}
               {f.reply && (
                 <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)' }}>
@@ -212,23 +231,3 @@ export default function FeedbackSheet({ open, audience, onClose }) {
   )
 }
 
-/** يولّد signed URL للمرفق ويعرضه (الـ bucket خاصٌّ → لا يصلح الرابط العامّ). */
-function FeedbackAttachment({ path }) {
-  const [url, setUrl] = useState('')
-  useEffect(() => {
-    let alive = true
-    ;(async () => {
-      const { data } = await supabase.storage
-        .from('feedback-attachments')
-        .createSignedUrl(path, 60 * 60)   // ساعةٌ من العرض
-      if (alive && data?.signedUrl) setUrl(data.signedUrl)
-    })()
-    return () => { alive = false }
-  }, [path])
-  if (!url) return null
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
-      <img src={url} alt="مرفق" style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 10, border: '1px solid var(--line)' }} />
-    </a>
-  )
-}
