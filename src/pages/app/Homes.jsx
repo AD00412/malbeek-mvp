@@ -22,6 +22,7 @@ import { translateRpcError } from '../../lib/rpcErrors'
 import { tripLifecycle } from '../../lib/tripLifecycle'
 import { SkeletonList } from '../../components/Skeleton'
 import TeamSheet from '../../components/TeamSheet'
+import PendingInviteBanner from '../../components/PendingInviteBanner'
 import TripManage from './TripManage'
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -398,6 +399,7 @@ export function SubscriberHome() {
           <>
             {view === 'overview' && (
               <>
+                <PendingInviteBanner />
                 <TrialBanner sub={sub} />
                 <Overview
                   sub={sub}
@@ -796,6 +798,7 @@ export function CustomerHome() {
       >
         {view === 'trips' && (
           <>
+            <PendingInviteBanner />
             <section className="hero">
               <span className="tag">حملتي</span>
               <h2>{orgName || 'رحلاتي المتاحة'}</h2>

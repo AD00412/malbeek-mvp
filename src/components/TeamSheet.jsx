@@ -18,6 +18,7 @@ const ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظّف
 export default function TeamSheet({ open, subscriberId, onClose }) {
   const { toast, confirm } = useUI()
   const [rows, setRows] = useState([])
+  const [invites, setInvites] = useState([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('staff')
@@ -26,21 +27,31 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
   const load = useCallback(async () => {
     if (!subscriberId) return
     setLoading(true)
-    const { data } = await supabase.rpc('list_team_members', { p_sub: subscriberId })
-    setRows(data ?? [])
+    const [{ data: mem }, { data: inv }] = await Promise.all([
+      supabase.rpc('list_team_members', { p_sub: subscriberId }),
+      supabase.rpc('list_pending_invites', { p_sub: subscriberId }),
+    ])
+    setRows(mem ?? [])
+    setInvites(inv ?? [])
     setLoading(false)
   }, [subscriberId])
 
   useEffect(() => { if (open) load() }, [open, load])
 
-  async function addMember() {
+  async function inviteMember() {
     if (busy) return
     if (!isValidEmail(email.trim())) { toast('أدخل بريدًا إلكترونيًّا صحيحًا.', { type: 'error' }); return }
     setBusy(true)
-    const { error } = await supabase.rpc('add_team_member', { p_sub: subscriberId, p_email: email.trim(), p_role: role })
+    const { error } = await supabase.rpc('invite_member', { p_sub: subscriberId, p_email: email.trim(), p_role: role })
     setBusy(false)
-    if (error) toast(translateRpcError(error, 'تعذّرت إضافة العضو.'), { type: 'error' })
-    else { toast('أُضيف العضو للفريق ✓', { type: 'success' }); setEmail(''); load() }
+    if (error) toast(translateRpcError(error, 'تعذّرت الدعوة.'), { type: 'error' })
+    else { toast('تمت الدعوة ✓ تظهر للعضو عند دخوله ليقبلها', { type: 'success' }); setEmail(''); load() }
+  }
+
+  async function revokeInvite(id) {
+    const { error } = await supabase.from('subscriber_invites').delete().eq('id', id)
+    if (error) toast(translateRpcError(error, 'تعذّر الإلغاء.'), { type: 'error' })
+    else { toast('أُلغيت الدعوة', { type: 'info' }); load() }
   }
 
   async function removeMember(m) {
@@ -60,8 +71,8 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
   return (
     <BottomSheet open={open} onClose={onClose} title="الفريق والصلاحيّات">
       <p className="muted" style={{ fontSize: 13, marginTop: -6 }}>
-        أضِف مشرفين/موظّفين لمساعدتك في إدارة الحملة. يصلون لكلّ العمليّات (الرحلات، المعتمرون، التسكين، الكشوفات) —
-        لكنّ إدارة الفريق والباقة تبقى لك وحدك.
+        ادعُ مشرفين/موظّفين لمساعدتك في إدارة الحملة. يصلون لكلّ العمليّات (الرحلات، المعتمرون، التسكين، الكشوفات) —
+        لكنّ إدارة الفريق والباقة تبقى لك وحدك. تظهر الدعوة للعضو ليقبلها بنفسه (بلا تحويلٍ تلقائيّ).
       </p>
 
       <div className="form" style={{ marginTop: 8 }}>
@@ -77,11 +88,28 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
               <option value="manager">مشرف</option>
             </select>
           </div>
-          <button className="btn btn-gold" style={{ alignSelf: 'flex-end', height: 46 }} onClick={addMember} disabled={busy}>
-            {busy ? <span className="spinner" /> : <><Icon name="plus" size={16} /> إضافة</>}
+          <button className="btn btn-gold" style={{ alignSelf: 'flex-end', height: 46 }} onClick={inviteMember} disabled={busy}>
+            {busy ? <span className="spinner" /> : <><Icon name="message" size={16} /> دعوة</>}
           </button>
         </div>
       </div>
+
+      {invites.length > 0 && (
+        <>
+          <div className="sec-label" style={{ marginTop: 12 }}>دعواتٌ معلّقة ({invites.length})</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {invites.map((iv) => (
+              <div key={iv.invite_id} className="trip-card" style={{ padding: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="ltr" style={{ fontSize: 13, color: 'var(--cr-50)', textAlign: 'right' }}>{iv.email}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{ROLE_AR[iv.role] || iv.role} · بانتظار القبول</div>
+                </div>
+                <button className="icon-btn danger" onClick={() => revokeInvite(iv.invite_id)} aria-label="إلغاء الدعوة"><Icon name="trash" size={15} /></button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="sec-label" style={{ marginTop: 14 }}>الأعضاء {rows.length > 0 && `(${rows.length})`}</div>
       {loading ? (

@@ -1874,3 +1874,97 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.list_team_members(uuid) from public;
 grant execute on function public.list_team_members(uuid) to authenticated;
+
+-- ============================================================
+--  المرحلة ٨-ب — دعواتُ الفريق بقبولٍ من المدعوّ (احترامُ الموافقة)
+--  المالك يُنشئ دعوةً معلّقة؛ لا يُحوَّل أيّ حسابٍ إلّا بقبول صاحبه.
+-- ============================================================
+create table if not exists public.subscriber_invites (
+  id            uuid primary key default gen_random_uuid(),
+  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
+  email         text not null,
+  role          text not null default 'staff' check (role in ('manager','staff')),
+  created_by    uuid references public.profiles(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  accepted_at   timestamptz
+);
+create unique index if not exists uniq_invite_pending
+  on public.subscriber_invites(subscriber_id, lower(email)) where accepted_at is null;
+create index if not exists idx_invites_email on public.subscriber_invites(lower(email)) where accepted_at is null;
+
+alter table public.subscriber_invites enable row level security;
+-- المالك يدير دعوات حملته؛ المدعوّ يطّلع عليها عبر RPC بالبريد (لا قراءةَ عامّة)
+drop policy if exists "invites owner manage" on public.subscriber_invites;
+create policy "invites owner manage" on public.subscriber_invites for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()) or public.my_role() = 'admin')
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()) or public.my_role() = 'admin');
+
+-- ★ دعوة عضوٍ بالبريد (المالك فقط) — تُنشئ دعوةً معلّقة، بلا تحويلِ حساب.
+create or replace function public.invite_member(p_sub uuid, p_email text, p_role text default 'staff')
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.subscribers where id = p_sub and owner_id = auth.uid()) then
+    raise exception 'NOT_AUTHORIZED' using hint = 'إدارة الفريق لمالك الحملة فقط.'; end if;
+  if p_role not in ('manager','staff') then raise exception 'BAD_ROLE' using hint = 'دورٌ غير صالح.'; end if;
+  if btrim(coalesce(p_email,'')) = '' then raise exception 'BAD_EMAIL' using hint = 'أدخل بريدًا صحيحًا.'; end if;
+  insert into public.subscriber_invites (subscriber_id, email, role, created_by)
+  values (p_sub, lower(btrim(p_email)), p_role, auth.uid())
+  on conflict (subscriber_id, lower(email)) where accepted_at is null
+    do update set role = excluded.role, created_at = now();
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.invite_member(uuid, text, text) from public;
+grant execute on function public.invite_member(uuid, text, text) to authenticated;
+
+-- ★ دعواتي المعلّقة (المدعوّ): تُطابِق بريد المستخدم الحاليّ.
+create or replace function public.my_pending_invites()
+returns table (invite_id uuid, subscriber_id uuid, org_name text, role text, created_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select i.id, i.subscriber_id, s.org_name, i.role, i.created_at
+  from public.subscriber_invites i
+  join public.subscribers s on s.id = i.subscriber_id
+  join auth.users u on u.id = auth.uid()
+  where i.accepted_at is null and lower(i.email) = lower(coalesce(u.email,''))
+  order by i.created_at desc;
+$$;
+revoke all on function public.my_pending_invites() from public;
+grant execute on function public.my_pending_invites() to authenticated;
+
+-- ★ دعوات حملةٍ المعلّقة (للمالك/الأعضاء في لوحة الفريق)
+create or replace function public.list_pending_invites(p_sub uuid)
+returns table (invite_id uuid, email text, role text, created_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select i.id, i.email, i.role, i.created_at
+  from public.subscriber_invites i
+  where i.subscriber_id = p_sub and i.accepted_at is null
+    and (public.can_manage_sub(p_sub) or public.my_role() = 'admin')
+  order by i.created_at desc;
+$$;
+revoke all on function public.list_pending_invites(uuid) from public;
+grant execute on function public.list_pending_invites(uuid) to authenticated;
+
+-- ★ قبول دعوةٍ (المدعوّ نفسه فقط، بمطابقة البريد) — هنا فقط يُحوَّل الحساب بموافقته.
+create or replace function public.accept_invite(p_invite uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_email text; v_inv record; v_role user_role;
+begin
+  select email into v_email from auth.users where id = auth.uid();
+  select * into v_inv from public.subscriber_invites where id = p_invite and accepted_at is null;
+  if not found then raise exception 'NOT_FOUND' using hint = 'الدعوة غير موجودةٍ أو استُخدمت.'; end if;
+  if lower(v_inv.email) <> lower(coalesce(v_email, '')) then
+    raise exception 'NOT_AUTHORIZED' using hint = 'هذه الدعوة ليست لبريدك.'; end if;
+  select role into v_role from public.profiles where id = auth.uid();
+  if v_role = 'admin' then raise exception 'NOT_AUTHORIZED' using hint = 'حساب الإدارة لا ينضمّ كعضو.'; end if;
+  if exists (select 1 from public.subscribers where owner_id = auth.uid()) then
+    raise exception 'IS_OWNER' using hint = 'تملك حملةً خاصّةً بك — لا يمكنك الانضمام كعضوٍ بحسابٍ آخر.'; end if;
+
+  insert into public.subscriber_members (subscriber_id, profile_id, role)
+  values (v_inv.subscriber_id, auth.uid(), v_inv.role)
+  on conflict (subscriber_id, profile_id) do update set role = excluded.role;
+  perform set_config('malbeek.trusted', '1', true);
+  update public.profiles set role = 'subscriber', subscriber_id = v_inv.subscriber_id where id = auth.uid();
+  update public.subscriber_invites set accepted_at = now() where id = p_invite;
+  return jsonb_build_object('ok', true, 'subscriber_id', v_inv.subscriber_id);
+end $$;
+revoke all on function public.accept_invite(uuid) from public;
+grant execute on function public.accept_invite(uuid) to authenticated;
