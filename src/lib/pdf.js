@@ -1,6 +1,23 @@
 // تصدير PDF عبر html2canvas + jsPDF — يلتقط المظهر العربيّ كاملًا (الخطوط، الاتجاه، الختم).
 // المكتبتان تُحمَّلان كسولًا عند أوّل تصديرٍ ليبقى البندل الأوّليّ خفيفًا.
 
+/** يُرجع class jsPDF بصرف النظر عن شكل التصدير (default / named / namespace). */
+async function loadJsPDF() {
+  let mod
+  try { mod = await import('jspdf') }
+  catch (e) { throw new Error('install_missing:jspdf') }
+  return mod.jsPDF || mod.default || (mod.default && mod.default.jsPDF) || mod
+}
+
+/** يُرجع دالّة html2canvas بصرف النظر عن شكل التصدير. */
+async function loadHtml2Canvas() {
+  let mod
+  try { mod = await import('html2canvas') }
+  catch (e) { throw new Error('install_missing:html2canvas') }
+  return mod.default || mod.html2canvas || mod
+}
+
+/** يلتقط عنصرًا واحدًا ويضيفه إلى pdf (مع تقسيمٍ متعدّد الصفحات للجداول الطويلة). */
 async function captureToPdf(element, pdf, html2canvas) {
   const canvas = await html2canvas(element, {
     scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
@@ -20,17 +37,21 @@ async function captureToPdf(element, pdf, html2canvas) {
   }
 }
 
-/**
- * يحوّل عنصر DOM إلى PDF (A4 رأسيّ) مع تقسيمٍ تلقائيٍّ للصفحات الطويلة.
- */
+function saveAs(pdf, filename) {
+  pdf.save(filename.endsWith('.pdf') ? filename : filename + '.pdf')
+}
+
+/** يحوّل عنصر DOM إلى PDF (A4 رأسيّ) مع تقسيمٍ تلقائيٍّ للصفحات الطويلة. */
 export async function htmlToPdf(element, filename) {
   if (!element) throw new Error('no_element')
-  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-    import('jspdf'), import('html2canvas'),
-  ])
-  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
-  await captureToPdf(element, pdf, html2canvas)
-  pdf.save(filename.endsWith('.pdf') ? filename : filename + '.pdf')
+  try {
+    const [jsPDF, html2canvas] = await Promise.all([loadJsPDF(), loadHtml2Canvas()])
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
+    await captureToPdf(element, pdf, html2canvas)
+    saveAs(pdf, filename)
+  } catch (e) {
+    throw friendly(e)
+  }
 }
 
 /**
@@ -40,13 +61,24 @@ export async function htmlToPdf(element, filename) {
 export async function htmlsToPdf(elements, filename) {
   const list = (elements || []).filter(Boolean)
   if (!list.length) throw new Error('no_element')
-  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-    import('jspdf'), import('html2canvas'),
-  ])
-  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
-  for (let i = 0; i < list.length; i++) {
-    if (i > 0) pdf.addPage()
-    await captureToPdf(list[i], pdf, html2canvas)
+  try {
+    const [jsPDF, html2canvas] = await Promise.all([loadJsPDF(), loadHtml2Canvas()])
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
+    for (let i = 0; i < list.length; i++) {
+      if (i > 0) pdf.addPage()
+      await captureToPdf(list[i], pdf, html2canvas)
+    }
+    saveAs(pdf, filename)
+  } catch (e) {
+    throw friendly(e)
   }
-  pdf.save(filename.endsWith('.pdf') ? filename : filename + '.pdf')
+}
+
+/** يحوّل أخطاء التحميل/الـ Bundler إلى رسالةٍ عربيّةٍ واضحة. */
+function friendly(e) {
+  const msg = String(e?.message || e || '')
+  if (msg.startsWith('install_missing:') || /failed to resolve|cannot find module|jspdf|html2canvas/i.test(msg)) {
+    return new Error('مكتبات التصدير غير مثبّتة. أوقف الـ dev server وشغّل: npm install ثم npm run dev')
+  }
+  return e instanceof Error ? e : new Error(msg)
 }

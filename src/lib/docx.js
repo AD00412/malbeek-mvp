@@ -12,10 +12,15 @@
  * @param {string}   opts.filename    اسم الملفّ
  */
 export async function tableToDocx({ title, subtitle, headers, rows, meta = [], filename }) {
+  let docx
+  try { docx = await import('docx') }
+  catch (e) {
+    throw new Error('مكتبة Word غير مثبّتة. أوقف الـ dev server وشغّل: npm install ثم npm run dev')
+  }
   const {
     Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
     Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType,
-  } = await import('docx')
+  } = docx.default || docx
 
   const FONT = 'Arial'  // متوفّرٌ في كلّ نظام، يدعم العربيّة بالكامل
   const NAVY = '063D2C'
