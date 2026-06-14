@@ -13,7 +13,7 @@ import Icon from './Icon'
  */
 export default function OnboardingChecklist({ sub, trips = [], totals, onCreateTrip, onShare, onManageFirst }) {
   const hasTrip = trips.length > 0
-  const hasOrgInfo = !!(sub?.license_no || sub?.stamp_text || sub?.contact_phone)
+  const hasOrgInfo = !!(sub?.license_no || sub?.stamp_text || sub?.stamp_url || sub?.logo_url || sub?.contact_phone)
   const hasPassenger = (totals?.count || 0) > 0
   const hasStore = !!sub?.store_url
 

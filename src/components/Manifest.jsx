@@ -26,6 +26,7 @@ function HCell({ label, value }) {
 /* ورقة كشفٍ واحدة (باصٌ واحد) */
 function ManifestSheet({ trip, sub, rows, busLabel, busPlate, pageBreak }) {
   const count = rows.length
+  const stampUrl = sub?.stamp_url || ''
   const stamp = (sub?.stamp_text || '').trim()
   return (
     <div className="manifest-sheet" dir="rtl" style={pageBreak ? { pageBreakBefore: 'always' } : undefined}>
@@ -101,7 +102,9 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, pageBreak }) {
           صُدر هذا الكشف من منصّة ملبّيك بتاريخ {fmt(new Date().toISOString())}.
         </div>
         <div className="mf-stamp">
-          {stamp ? (
+          {stampUrl ? (
+            <img className="mf-stamp-img" src={stampUrl} alt="الختم الإلكتروني" crossOrigin="anonymous" />
+          ) : stamp ? (
             <div className="mf-stamp-e">
               <CompassMark size={30} variant="gold" />
               <span>{stamp}</span>

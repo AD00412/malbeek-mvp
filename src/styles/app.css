@@ -429,6 +429,7 @@
 .manifest-sheet .mf-stamp-e{display:flex;align-items:center;gap:8px;border:2px solid #8a6a1f;color:#8a6a1f;
   border-radius:10px;padding:8px 16px;font-family:var(--font-display);font-weight:700;font-size:13px;transform:rotate(-4deg)}
 .manifest-sheet .mf-stamp-m{border:1.5px dashed #9aa89f;color:#7a8a82;border-radius:8px;padding:18px 40px;font-size:12px}
+.manifest-sheet .mf-stamp-img{max-width:150px;max-height:90px;object-fit:contain;transform:rotate(-4deg)}
 
 @media(max-width:560px){
   .manifest-sheet{padding:16px}
@@ -599,6 +600,17 @@
   background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px}
 .chip.info{color:var(--info-ink);border-color:rgba(58,160,179,.3)}
 .chip.warn{color:var(--warn-ink);border-color:rgba(224,168,46,.3)}
+
+/* رفع صورة (ختم/شعار) */
+.img-upload.dropzone{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:24px 14px;background:var(--surface-3);border:2px dashed var(--line-strong);
+  border-radius:var(--r-md);color:var(--cr-100);cursor:pointer;transition:.15s;font-family:inherit;font-size:14px}
+.img-upload.dropzone:hover:not(:disabled){border-color:var(--gd-500);background:rgba(196,154,69,.05)}
+.img-upload.dropzone:disabled{opacity:.55;cursor:not-allowed}
+.img-upload.preview{display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface-3);
+  border:1px solid var(--line);border-radius:var(--r-md)}
+.img-upload.preview img{max-width:120px;max-height:80px;border-radius:8px;background:#fff;padding:6px;object-fit:contain}
+.img-upload-actions{display:flex;gap:6px;flex-wrap:wrap}
 
 /* سجلّ التدقيق */
 .audit-list{display:flex;flex-direction:column;gap:6px}

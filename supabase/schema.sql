@@ -77,7 +77,8 @@ create index if not exists idx_trips_subscriber on public.trips(subscriber_id);
 
 -- ترويسة المؤسسة في الكشف الرسمي
 alter table public.subscribers add column if not exists license_no  text;  -- رقم تصريح/ترخيص النقل
-alter table public.subscribers add column if not exists stamp_text  text;  -- نص الختم الإلكتروني
+alter table public.subscribers add column if not exists stamp_text  text;  -- نص الختم الإلكتروني (احتياطيٌّ — الآن نستخدم stamp_url)
+alter table public.subscribers add column if not exists stamp_url   text;  -- صورة الختم الإلكتروني (PNG شفّاف يُفضَّل)
 alter table public.subscribers add column if not exists logo_url    text;  -- شعار المؤسسة (اختياري)
 alter table public.subscribers add column if not exists contact_phone text;
 
@@ -1331,6 +1332,56 @@ do $$ begin alter publication supabase_realtime add table public.notifications; 
 do $$ begin alter publication supabase_realtime add table public.waitlist;      exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.hotels;        exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.hotel_rooms;   exception when duplicate_object then null; when others then null; end $$;
+
+-- ============================================================
+--  Storage — bucket لأختام المؤسّسات وشعاراتها (قراءةٌ عامّةٌ للعرض على الكشف،
+--  كتابةٌ مقصورةٌ على المالك داخل مجلّدٍ باسم subscriber_id الخاصّ به).
+-- ============================================================
+-- SVG مرفوضٌ عمدًا: يستطيع حمل سكربتاتٍ تُنفَّذ عند فتح الرابط مباشرةً (XSS).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('org-assets', 'org-assets', true, 2097152,                      -- ٢ ميغابايت
+        array['image/png','image/jpeg','image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "org-assets public read" on storage.objects;
+create policy "org-assets public read" on storage.objects for select
+  using (bucket_id = 'org-assets');
+
+drop policy if exists "org-assets owner write" on storage.objects;
+create policy "org-assets owner write" on storage.objects for insert
+  with check (
+    bucket_id = 'org-assets'
+    and (storage.foldername(name))[1] in (
+      select id::text from public.subscribers where owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "org-assets owner update" on storage.objects;
+create policy "org-assets owner update" on storage.objects for update
+  using (
+    bucket_id = 'org-assets'
+    and (storage.foldername(name))[1] in (
+      select id::text from public.subscribers where owner_id = auth.uid()
+    )
+  )
+  with check (
+    bucket_id = 'org-assets'
+    and (storage.foldername(name))[1] in (
+      select id::text from public.subscribers where owner_id = auth.uid()
+    )
+  );
+
+drop policy if exists "org-assets owner delete" on storage.objects;
+create policy "org-assets owner delete" on storage.objects for delete
+  using (
+    bucket_id = 'org-assets'
+    and (storage.foldername(name))[1] in (
+      select id::text from public.subscribers where owner_id = auth.uid()
+    )
+  );
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة

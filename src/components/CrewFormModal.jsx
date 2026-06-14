@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import ImageUpload from './ImageUpload'
 import { normalizePhone, isValidSaPhone } from '../lib/format'
 
 /**
@@ -22,7 +23,8 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
   const [orgName, setOrgName] = useState(sub?.org_name ?? '')
   const [licenseNo, setLicenseNo] = useState(sub?.license_no ?? '')
   const [contactPhone, setContactPhone] = useState(sub?.contact_phone ?? '')
-  const [stampText, setStampText] = useState(sub?.stamp_text ?? '')
+  const [stampUrl, setStampUrl] = useState(sub?.stamp_url ?? '')
+  const [logoUrl, setLogoUrl] = useState(sub?.logo_url ?? '')
   const [storeUrl, setStoreUrl] = useState(sub?.store_url ?? '')
 
   const [err, setErr] = useState('')
@@ -59,7 +61,8 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         org_name: orgName.trim() || sub.org_name || 'حملتي',
         license_no: licenseNo.trim() || null,
         contact_phone: normalizePhone(contactPhone) || null,
-        stamp_text: stampText.trim() || null,
+        stamp_url: stampUrl || null,
+        logo_url: logoUrl || null,
         store_url: storeUrl.trim() || null,
       }
       const r2 = await supabase.from('subscribers').update(orgPayload).eq('id', sub.id)
@@ -104,10 +107,21 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
             {contactErr && <span className="hint">{contactErr}</span>}
           </div>
         </div>
-        <div className="field">
-          <label>نص الختم الإلكتروني (اختياري)</label>
-          <input type="text" placeholder="مثال: مؤسسة مشاعر الرحمن — معتمد" value={stampText} onChange={(e) => setStampText(e.target.value)} />
-        </div>
+        <ImageUpload
+          subscriberId={sub?.id}
+          value={stampUrl}
+          onChange={setStampUrl}
+          label="الختم الإلكتروني (يظهر في الكشف الرسمي)"
+          slot="stamp"
+          hint="ارفع صورة الختم بصيغة PNG شفّاف للحصول على أفضل مظهرٍ على الكشف."
+        />
+        <ImageUpload
+          subscriberId={sub?.id}
+          value={logoUrl}
+          onChange={setLogoUrl}
+          label="شعار المؤسسة (اختياري)"
+          slot="logo"
+        />
         <div className="field ltr">
           <label>رابط متجر الدفع (سلة/زد — اختياري)</label>
           <input type="url" placeholder="https://your-store.salla.sa" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} />
