@@ -13,6 +13,7 @@ import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
 import { toCSV, downloadCSV, csvDate } from '../../lib/csv'
 import { translateRpcError } from '../../lib/rpcErrors'
+import { waMeLink } from '../../lib/format'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
 const Ticket = lazy(() => import('../../components/Ticket'))
@@ -34,6 +35,26 @@ function fmt(v) {
   if (!v) return '—'
   try { return new Date(v).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) }
   catch { return '—' }
+}
+
+/** يبني رسالة واتساب موحّدة للمعتمر (تذكيرٌ بحجزه ضمن الرحلة). */
+function waMessage(p, trip, sub) {
+  const greet = p.gender === 'female' ? 'الأخت الكريمة' : 'الأخ الكريم'
+  const lines = [
+    `السلام عليكم ورحمة الله،`,
+    ``,
+    `${greet} ${p.full_name || ''}،`,
+    `تذكيرٌ بحجزك في رحلة العمرة «${trip?.title || ''}»:`,
+    trip?.depart_at ? `• الذهاب: ${fmt(trip.depart_at)}` : null,
+    p.seat_no ? `• المقعد: ${p.seat_no}` : null,
+    p.boarding_point ? `• مكان الركوب: ${p.boarding_point}` : (trip?.boarding_point ? `• مكان الركوب: ${trip.boarding_point}` : null),
+    p.status === 'paid' ? `• الحالة: مدفوع ✓` : `• الحالة: بانتظار تأكيد الدفع`,
+    p.ticket_code ? `• رمز التذكرة: ${p.ticket_code}` : null,
+    ``,
+    `بالتوفيق وتقبّل الله طاعتكم.`,
+    sub?.org_name ? `— ${sub.org_name}` : null,
+  ].filter(Boolean)
+  return lines.join('\n')
 }
 
 /**
@@ -325,6 +346,17 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                     }}><Icon name="check" size={15} /></button>
                   )}
                   <button className="icon-btn" onClick={() => setTicketFor(p)} aria-label="التذكرة"><Icon name="qr" size={15} /></button>
+                  {p.phone && (
+                    <a
+                      className="icon-btn"
+                      href={waMeLink(p.phone, waMessage(p, trip, sub))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`إرسال على واتساب لـ ${p.full_name}`}
+                      aria-label="إرسال على واتساب"
+                      style={{ color: '#25D366' }}
+                    ><Icon name="whatsapp" size={15} /></a>
+                  )}
                   <button className="icon-btn" onClick={() => openEdit(p)} aria-label="تعديل"><Icon name="edit" size={15} /></button>
                   <button className="icon-btn danger" onClick={() => removePax(p)} aria-label="حذف"><Icon name="trash" size={15} /></button>
                 </div>
@@ -482,7 +514,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 }
 
 /* ---------- إرسال عرضٍ جماعيٍّ عبر واتساب/الإيميل ---------- */
-function normalizePhone(p) {
+function toWaPhoneIntl(p) {
   let d = String(p || '').replace(/[^\d]/g, '')
   if (!d) return ''
   if (d.startsWith('00')) d = d.slice(2)
@@ -492,12 +524,12 @@ function normalizePhone(p) {
 }
 
 function OffersSheet({ open, onClose, passengers, trip, sub, msg, setMsg }) {
-  const withPhone = passengers.filter((p) => normalizePhone(p.phone))
+  const withPhone = passengers.filter((p) => toWaPhoneIntl(p.phone))
   const defaultMsg = `السلام عليكم، من ${sub?.org_name || 'حملتنا'} بخصوص رحلة «${trip?.title || 'العمرة'}». `
   const text = (msg && msg.trim()) ? msg : defaultMsg
 
   function waOne(p) {
-    const ph = normalizePhone(p.phone)
+    const ph = toWaPhoneIntl(p.phone)
     if (!ph) return
     window.open(`https://wa.me/${ph}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
   }
