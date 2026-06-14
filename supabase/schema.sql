@@ -1792,39 +1792,9 @@ create policy "payments team read" on public.payments for select using (public.c
 drop policy if exists "audit team read" on public.audit_logs;
 create policy "audit team read" on public.audit_logs for select using (public.can_manage_sub(subscriber_id));
 
--- ★ إضافة عضوٍ بالبريد (المالك فقط): يربط حسابًا قائمًا بالحملة ويمنحه دور subscriber.
-create or replace function public.add_team_member(p_sub uuid, p_email text, p_role text default 'staff')
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare v_uid uuid; v_role user_role;
-begin
-  if not exists (select 1 from public.subscribers where id = p_sub and owner_id = auth.uid()) then
-    raise exception 'NOT_AUTHORIZED' using hint = 'إدارة الفريق لمالك الحملة فقط.';
-  end if;
-  if p_role not in ('manager','staff') then raise exception 'BAD_ROLE' using hint = 'دورٌ غير صالح.'; end if;
-  select id into v_uid from auth.users where lower(email) = lower(btrim(p_email)) limit 1;
-  if v_uid is null then raise exception 'NO_ACCOUNT' using hint = 'لا يوجد حسابٌ بهذا البريد — اطلب منه إنشاء حسابٍ أوّلًا.'; end if;
-  if v_uid = auth.uid() then raise exception 'SELF' using hint = 'أنت مالك الحملة بالفعل.'; end if;
-  select role into v_role from public.profiles where id = v_uid;
-  if v_role = 'admin' then raise exception 'NOT_AUTHORIZED' using hint = 'لا يمكن إضافة حساب إدارة.'; end if;
-  if exists (select 1 from public.subscribers where owner_id = v_uid) then
-    raise exception 'IS_OWNER' using hint = 'هذا الحساب يملك حملةً خاصّةً به.'; end if;
-  -- حمايةُ الموافقة والبيانات: لا نخطف معتمرًا مرتبطًا بحملةٍ أخرى.
-  if v_role = 'customer'
-     and (select subscriber_id from public.profiles where id = v_uid) is distinct from null
-     and (select subscriber_id from public.profiles where id = v_uid) <> p_sub then
-    raise exception 'LINKED_ELSEWHERE' using hint = 'هذا الحساب معتمرٌ مرتبطٌ بحملةٍ أخرى — اطلب منه التسجيل بحسابٍ مستقلّ.';
-  end if;
-
-  insert into public.subscriber_members (subscriber_id, profile_id, role)
-  values (p_sub, v_uid, p_role)
-  on conflict (subscriber_id, profile_id) do update set role = excluded.role;
-
-  perform set_config('malbeek.trusted', '1', true);      -- يسمح للحارس بإسناد الدور/الحملة
-  update public.profiles set role = 'subscriber', subscriber_id = p_sub where id = v_uid;
-  return jsonb_build_object('ok', true, 'profile_id', v_uid, 'role', p_role);
-end $$;
-revoke all on function public.add_team_member(uuid, text, text) from public;
-grant execute on function public.add_team_member(uuid, text, text) to authenticated;
+-- ملاحظة: أُلغيت add_team_member (التحويل المباشر بلا موافقة) لصالح
+-- مسار الدعوة/القبول (invite_member + accept_invite) أدناه — حمايةً للموافقة.
+drop function if exists public.add_team_member(uuid, text, text);
 
 -- ★ إزالة عضوٍ (المالك فقط، ولا يُزال المالك)
 create or replace function public.remove_team_member(p_sub uuid, p_profile uuid)
