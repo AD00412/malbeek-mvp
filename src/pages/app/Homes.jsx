@@ -842,12 +842,20 @@ export function CustomerHome() {
                       <div className="actions-row">
                         <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
                         {b.status === 'registered' && t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
-                        {b.status === 'registered' ? (
+                        {(b.status === 'registered' || b.status === 'paid') ? (
                           <button className="icon-btn danger" onClick={async () => {
-                            if (!(await confirm({ title: 'إلغاء الحجز', message: `إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`, confirmText: 'إلغاء الحجز', cancelText: 'تراجع', danger: true }))) return
-                            const { error } = await supabase.from('passengers').delete().eq('id', b.id)
+                            const paid = b.status === 'paid'
+                            const ok = await confirm({
+                              title: 'إلغاء الحجز',
+                              message: paid
+                                ? `سيُلغى حجزك في «${t?.title || 'هذه الرحلة'}» ويُسجَّل طلبُ استردادٍ لمبلغك يعالجه صاحب الحملة. متابعة؟`
+                                : `إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`,
+                              confirmText: 'إلغاء الحجز', cancelText: 'تراجع', danger: true,
+                            })
+                            if (!ok) return
+                            const { data, error } = await supabase.rpc('cancel_booking', { p_passenger: b.id })
                             if (error) toast(translateRpcError(error, 'تعذّر إلغاء الحجز.'), { type: 'error' })
-                            else { toast('تم إلغاء الحجز', { type: 'info' }); load() }
+                            else { toast(data?.refund_requested ? 'أُلغي الحجز وسُجّل طلب الاسترداد ✓' : 'تم إلغاء الحجز', { type: 'info' }); load() }
                           }}><Icon name="trash" size={15} /> إلغاء</button>
                         ) : (
                           <span className="muted" style={{ fontSize: 12 }}>للتعديل أو الإلغاء تواصل مع الحملة</span>

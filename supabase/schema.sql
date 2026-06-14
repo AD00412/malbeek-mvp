@@ -1363,6 +1363,125 @@ create trigger trg_notify_new_subscriber
   after insert on public.subscribers
   for each row execute function public.notify_new_subscriber();
 
+-- ============================================================
+--  المرحلة ٧ — طلبات الاسترداد (إلغاء حجزٍ مدفوع)
+--  عند إلغاء العميل حجزًا مدفوعًا يُفرَّغ المقعد ويُسجَّل طلب استردادٍ
+--  لصاحب الحملة ليعالجه عبر متجره (زد/سلة). لقطةٌ ماليّةٌ للأثر.
+-- ============================================================
+create table if not exists public.refunds (
+  id             uuid primary key default gen_random_uuid(),
+  subscriber_id  uuid not null references public.subscribers(id) on delete cascade,
+  trip_id        uuid references public.trips(id) on delete set null,
+  profile_id     uuid references public.profiles(id) on delete set null,
+  passenger_name text,
+  national_id    text,
+  amount         numeric,
+  status         text not null default 'requested',   -- requested | refunded | rejected
+  reason         text,                                 -- سبب الإلغاء (من العميل)
+  refund_ref     text,                                 -- مرجع/ملاحظة صاحب الحملة
+  requested_at   timestamptz not null default now(),
+  resolved_at    timestamptz
+);
+create index if not exists idx_refunds_subscriber on public.refunds(subscriber_id, status);
+create index if not exists idx_refunds_profile    on public.refunds(profile_id);
+
+alter table public.refunds enable row level security;
+-- العميل: يقرأ طلباته فقط (الإنشاء يتمّ عبر RPC الموثوق أدناه)
+drop policy if exists "refunds customer read" on public.refunds;
+create policy "refunds customer read" on public.refunds for select using (profile_id = auth.uid());
+-- صاحب الحملة: يقرأ ويعالج طلبات حملته
+drop policy if exists "refunds owner read" on public.refunds;
+create policy "refunds owner read" on public.refunds for select
+  using (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+drop policy if exists "refunds owner update" on public.refunds;
+create policy "refunds owner update" on public.refunds for update
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+-- الإدارة تقرأ الكل
+drop policy if exists "refunds admin read" on public.refunds;
+create policy "refunds admin read" on public.refunds for select using (public.my_role() = 'admin');
+
+-- ★ حارس أعمدة: صاحب الحملة يحدّث الحالة/المرجع فقط، ولا يزوّر اللقطة الماليّة
+create or replace function public.guard_refund_columns()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(public.my_role(),'customer') <> 'admin' then
+    new.subscriber_id  := old.subscriber_id;
+    new.trip_id        := old.trip_id;
+    new.profile_id     := old.profile_id;
+    new.passenger_name := old.passenger_name;
+    new.national_id    := old.national_id;
+    new.amount         := old.amount;
+    new.requested_at   := old.requested_at;
+  end if;
+  if new.status in ('refunded','rejected') and old.status = 'requested' and new.resolved_at is null then
+    new.resolved_at := now();
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_refunds on public.refunds;
+create trigger trg_guard_refunds before update on public.refunds
+  for each row execute function public.guard_refund_columns();
+
+-- ★ إلغاء حجزٍ ذرّيٌّ آمن: يتحقّق من ملكيّة العميل، ويسجّل استردادًا للمدفوع،
+--   ثمّ يحذف الراكب (يُفرَّغ المقعد). يعمل بصلاحيّاتٍ مرتفعةٍ مع فحصٍ صريح.
+create or replace function public.cancel_booking(p_passenger uuid, p_reason text default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_p public.passengers%rowtype;
+  v_price numeric;
+  v_refunded boolean := false;
+begin
+  select * into v_p from public.passengers where id = p_passenger;
+  if not found then raise exception 'NOT_FOUND' using hint = 'الحجز غير موجود.'; end if;
+  -- المالك (auth.uid) فقط، أو صاحب الحملة، أو الإدارة
+  if not (v_p.profile_id = auth.uid()
+          or exists (select 1 from public.subscribers s where s.id = v_p.subscriber_id and s.owner_id = auth.uid())
+          or public.my_role() = 'admin') then
+    raise exception 'NOT_AUTHORIZED' using hint = 'غير مصرّحٍ لك بإلغاء هذا الحجز.';
+  end if;
+
+  if v_p.status in ('paid','boarded','checked_in') then
+    select price into v_price from public.trips where id = v_p.trip_id;
+    insert into public.refunds(subscriber_id, trip_id, profile_id, passenger_name, national_id, amount, reason)
+    values (v_p.subscriber_id, v_p.trip_id, v_p.profile_id, v_p.full_name, v_p.national_id,
+            coalesce(v_p.amount, v_price), nullif(btrim(coalesce(p_reason,'')), ''));
+    v_refunded := true;
+  end if;
+
+  delete from public.passengers where id = p_passenger;
+  return jsonb_build_object('refund_requested', v_refunded);
+end $$;
+revoke all on function public.cancel_booking(uuid, text) from public;
+grant execute on function public.cancel_booking(uuid, text) to authenticated;
+
+-- ★ تريغر إشعارات الاسترداد: طلبٌ جديد → صاحب الحملة · إتمامه → العميل
+create or replace function public.notify_refund_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_owner uuid;
+begin
+  if tg_op = 'INSERT' then
+    select owner_id into v_owner from public.subscribers where id = new.subscriber_id;
+    if v_owner is not null then
+      insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+      values (v_owner, 'subscriber', 'booking_canceled',
+              'طلب استرداد: ' || coalesce(new.passenger_name,'معتمر'),
+              'مبلغ ' || coalesce(new.amount::text,'—') || ' ﷼ — عالِجه عبر متجرك ثمّ علّمه «تمّ».',
+              new.trip_id);
+    end if;
+  elsif tg_op = 'UPDATE' and new.status is distinct from old.status and new.profile_id is not null then
+    insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+    values (new.profile_id, 'customer', 'booking_canceled',
+            case new.status when 'refunded' then 'تمّ ردّ مبلغك ✓' when 'rejected' then 'تحديثٌ على طلب الاسترداد' else 'تحديثٌ على طلب الاسترداد' end,
+            case new.status when 'refunded' then 'أُعيد مبلغ ' || coalesce(new.amount::text,'') || ' ﷼ — تحقّق من وسيلة دفعك.' else 'يرجى التواصل مع الحملة لمزيدٍ من التفاصيل.' end,
+            new.trip_id);
+  end if;
+  return coalesce(new, old);
+end $$;
+drop trigger if exists trg_notify_refunds on public.refunds;
+create trigger trg_notify_refunds after insert or update on public.refunds
+  for each row execute function public.notify_refund_change();
+
 -- تفعيل البثّ الحيّ (Realtime) لتحديث المقاعد + التغذية الراجعة + الباقات
 do $$ begin alter publication supabase_realtime add table public.passengers;  exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.feedback;    exception when duplicate_object then null; when others then null; end $$;
@@ -1373,6 +1492,7 @@ do $$ begin alter publication supabase_realtime add table public.notifications; 
 do $$ begin alter publication supabase_realtime add table public.waitlist;      exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.hotels;        exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.hotel_rooms;   exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.refunds;       exception when duplicate_object then null; when others then null; end $$;
 
 -- ============================================================
 --  Storage — bucket لأختام المؤسّسات وشعاراتها (قراءةٌ عامّةٌ للعرض على الكشف،

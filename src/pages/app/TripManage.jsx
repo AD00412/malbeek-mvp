@@ -11,6 +11,7 @@ import SeatMap from '../../components/SeatMap'
 import BusEditor from '../../components/BusEditor'
 import HotelsManager from '../../components/HotelsManager'
 import AuditLogSheet from '../../components/AuditLogSheet'
+import RefundsSheet from '../../components/RefundsSheet'
 import BottomSheet from '../../components/BottomSheet'
 import SignedImage from '../../components/SignedImage'
 import { policyLabel } from '../../lib/busLayout'
@@ -89,6 +90,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [busEditOpen, setBusEditOpen] = useState(false)
   const [hotelsOpen, setHotelsOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
+  const [refundsOpen, setRefundsOpen] = useState(false)
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
   const [waitlist, setWaitlist] = useState([])
@@ -325,6 +327,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <button className="action" onClick={() => setAuditOpen(true)}>
           <Icon name="manifest" size={18} /> سجلّ النشاط
         </button>
+        <button className="action" onClick={() => setRefundsOpen(true)}>
+          <Icon name="payments" size={18} /> طلبات الاسترداد
+        </button>
         <button className="action" onClick={() => setDupOpen(true)}>
           <Icon name="copy" size={18} /> استنساخ هذه الرحلة (لفوجٍ جديد)
         </button>
@@ -495,6 +500,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       />
 
       <AuditLogSheet open={auditOpen} tripId={trip?.id} onClose={() => setAuditOpen(false)} />
+      <RefundsSheet open={refundsOpen} tripId={trip?.id} onClose={() => setRefundsOpen(false)} />
 
       <BottomSheet
         open={!!proofFor}
