@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
@@ -25,6 +25,18 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // حارسٌ ضدّ التعليق الأبديّ: لو نجح الدخول لكن تعذّر تحميل الملفّ الشخصي
+  // (صفٌّ مفقود/خطأ RLS)، يبقى <Navigate> معطّلًا (يشترط session && profile)
+  // والـ spinner دائرًا للأبد. بعد مهلةٍ نوقفه ونعرض رسالةً واضحة.
+  useEffect(() => {
+    if (!busy) return
+    const t = setTimeout(() => {
+      setBusy(false)
+      setErr('تمّ الدخول لكن تعذّر تحميل ملفّك الشخصي. حدّث الصفحة، وإن تكرّر الأمر تواصل مع الدعم.')
+    }, 8000)
+    return () => clearTimeout(t)
+  }, [busy])
 
   // مُسجَّلٌ بالفعل؟ وجّهه إلى لوحته (أو إلى الصفحة التي جاء منها) بلا إظهار النموذج.
   if (!loading && session && profile) {

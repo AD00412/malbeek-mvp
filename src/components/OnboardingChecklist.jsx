@@ -13,13 +13,15 @@ import Icon from './Icon'
  */
 export default function OnboardingChecklist({ sub, trips = [], totals, onCreateTrip, onShare, onManageFirst }) {
   const hasTrip = trips.length > 0
+  // «ضبط الباص» مُنجَزٌ فعلًا حين تحوي رحلةٌ صفوفًا وسياسة مقاعد — لا بمجرّد وجود رحلة.
+  const hasBusSetup = trips.some((t) => t?.bus_rows && t?.seating_policy)
   const hasOrgInfo = !!(sub?.license_no || sub?.stamp_text || sub?.stamp_url || sub?.logo_url || sub?.contact_phone)
   const hasPassenger = (totals?.count || 0) > 0
   const hasStore = !!sub?.store_url
 
   const steps = [
     { key: 'trip', done: hasTrip, label: 'أنشئ أوّل رحلة عُمرة', hint: 'حدّد العنوان والمسار والتاريخ والسعة.', icon: 'trips', action: onCreateTrip, cta: 'إنشاء رحلة' },
-    { key: 'bus', done: hasTrip, label: 'اضبط الباص وسياسة المقاعد', hint: 'الصفوف، السياسة (ذكور/إناث/عوائل)، والطاقم.', icon: 'seat', action: onManageFirst, cta: 'فتح الرحلة', need: hasTrip },
+    { key: 'bus', done: hasBusSetup, label: 'اضبط الباص وسياسة المقاعد', hint: 'الصفوف، السياسة (ذكور/إناث/عوائل)، والطاقم.', icon: 'seat', action: onManageFirst, cta: 'فتح الرحلة', need: hasTrip },
     { key: 'pax', done: hasPassenger, label: 'أضف أوّل معتمر', hint: 'أو شارك رابط الحجز ليُسجّل العملاء أنفسهم.', icon: 'customers', action: onManageFirst, cta: 'إضافة معتمر', need: hasTrip },
     { key: 'org', done: hasOrgInfo, label: 'أكمل بيانات المؤسسة للكشف', hint: 'الترخيص، الختم، وجوال التواصل.', icon: 'manifest', action: onManageFirst, cta: 'بيانات المؤسسة', need: hasTrip },
     { key: 'share', done: false, label: 'شارك رابط الحجز مع معتمريك', hint: 'كلٌّ يسجّل بياناته ويختار مقعده.', icon: 'share', action: onShare, cta: 'نسخ الرابط', optional: true },

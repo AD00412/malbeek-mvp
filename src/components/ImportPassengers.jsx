@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import { parseTextTable } from '../lib/textTable'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 import { busName } from '../lib/buses'
+import { translateRpcError } from '../lib/rpcErrors'
 
 /**
  * استيرادٌ جماعيٌّ للمعتمرين من نصٍّ ملصوقٍ (CSV أو منسوخٍ من Excel) لرحلةٍ معيّنة.
@@ -18,6 +19,12 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const multiBus = buses.length > 1
+
+  // إن وصلت الباصات بعد فتح المودال (تحميلٌ غير متزامن) ولم يُختَر باصٌ بعد،
+  // ثبّت الافتراضيّ على الأوّل كي لا يُسقَط bus_id صامتًا عند تعدّد الباصات.
+  useEffect(() => {
+    if (!busId && buses.length) setBusId(buses[0].id)
+  }, [buses, busId])
 
   const parsed = useMemo(() => {
     if (!text.trim()) return []
@@ -69,7 +76,7 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
       if (error) throw error
       onDone?.(valid.length)
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الاستيراد: ' + e.message : 'تعذّر الاستيراد.')
+      setErr(translateRpcError(e, 'تعذّر الاستيراد.'))
     } finally {
       setBusy(false)
     }

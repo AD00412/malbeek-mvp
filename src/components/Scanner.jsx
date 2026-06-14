@@ -17,6 +17,7 @@ const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صع
 export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
   const videoRef = useRef(null)
   const lastScanRef = useRef({ code: '', at: 0 })
+  const busyRef = useRef(false)            // تزامنٌ بلا إعادة بناء handleCode
 
   const [camError, setCamError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -28,7 +29,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
 
   const handleCode = useCallback(async (rawCode) => {
     const code = (rawCode || '').trim()
-    if (!code || busy) return
+    if (!code || busyRef.current) return
     const now = Date.now()
     if (lastScanRef.current.code === code && now - lastScanRef.current.at < 3000) return
 
@@ -37,7 +38,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code)
     if (!isTicket && !isUuid) { setResult({ ok: false, msg: 'هذا ليس باركود تذكرةٍ صالح.' }); return }
 
-    setBusy(true)
+    busyRef.current = true; setBusy(true)
     try {
       let q = supabase.from('passengers')
         .select('id, full_name, seat_no, boarding_point, status, trip_id, ticket_code, national_id')
@@ -64,11 +65,16 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     } catch (e) {
       setResult({ ok: false, msg: e?.message ? 'تعذّر التحديث: ' + e.message : 'تعذّر قراءة التذكرة.' })
     } finally {
-      setBusy(false)
+      busyRef.current = false; setBusy(false)
     }
-  }, [busy, mode, targetStatus, targetLabel, trip, onUpdated])
+  }, [mode, targetStatus, targetLabel, trip, onUpdated])
 
-  /* تشغيل الكاميرا + كشف الباركود عبر BarcodeDetector الأصلية */
+  // مرجعٌ حيٌّ لأحدث handleCode — يبقي effect الكاميرا مستقرًّا (deps فارغة)
+  // فلا تُعاد تهيئة الكاميرا مع كلّ مسحٍ ناجح.
+  const handlerRef = useRef(handleCode)
+  useEffect(() => { handlerRef.current = handleCode }, [handleCode])
+
+  /* تشغيل الكاميرا + كشف الباركود عبر BarcodeDetector الأصلية (مرّةً واحدة) */
   useEffect(() => {
     let stopped = false
     let stream = null
@@ -93,7 +99,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
           if (stopped || !videoRef.current) return
           try {
             const codes = await detector.detect(videoRef.current)
-            if (codes && codes.length) handleCode(codes[0].rawValue)
+            if (codes && codes.length) handlerRef.current(codes[0].rawValue)
           } catch (_) { /* تجاهل إطارًا فاشلًا */ }
         }, 280)
       } catch (e) {
@@ -115,7 +121,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
       if (timer) clearInterval(timer)
       try { stream?.getTracks().forEach((t) => t.stop()) } catch (_) {}
     }
-  }, [handleCode])
+  }, [])
 
   return (
     <div className="scanner-overlay">
@@ -158,7 +164,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
       </div>
 
       {result && (
-        <div className={`scan-result ${result.ok ? 'ok' : 'err'}`}>
+        <div className={`scan-result ${result.ok ? 'ok' : 'err'}`} role="status" aria-live="polite">
           <Icon name={result.ok ? 'check' : 'bell'} size={20} />
           <div>
             <div className="sr-msg">{result.msg}</div>
