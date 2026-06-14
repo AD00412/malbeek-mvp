@@ -4,6 +4,7 @@ import { useAuth } from '../app/useAuth'
 import { useRealtime } from '../lib/useRealtime'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import { SkeletonList } from './Skeleton'
 
 const KIND_ICON = {
   new_booking: 'customers', payment_pending: 'payments', booking_canceled: 'trash',
@@ -76,7 +77,7 @@ export default function NotificationsCenter({ open, onClose, onChanged }) {
       }
     >
       {loading ? (
-        <div className="empty">جارٍ التحميل…</div>
+        <SkeletonList count={5} />
       ) : err ? (
         <div className="alert err" style={{ marginTop: 4 }}>
           {err}

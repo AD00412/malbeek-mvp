@@ -12,6 +12,7 @@ import BusEditor from '../../components/BusEditor'
 import HotelsManager from '../../components/HotelsManager'
 import AuditLogSheet from '../../components/AuditLogSheet'
 import RefundsSheet from '../../components/RefundsSheet'
+import { SkeletonList } from '../../components/Skeleton'
 import BottomSheet from '../../components/BottomSheet'
 import SignedImage from '../../components/SignedImage'
 import { policyLabel } from '../../lib/busLayout'
@@ -351,7 +352,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         </div>
 
         {loading ? (
-          <div className="empty"><div className="em-mark"><CompassMark size={48} /></div>جارٍ التحميل…</div>
+          <SkeletonList count={5} />
         ) : filtered.length === 0 ? (
           <div className="empty">
             <div className="em-mark"><CompassMark size={52} /></div>

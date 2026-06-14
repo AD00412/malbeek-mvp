@@ -20,6 +20,7 @@ import { htmlToPdf } from '../../lib/pdf'
 import { useUI } from '../../lib/useUI'
 import { translateRpcError } from '../../lib/rpcErrors'
 import { tripLifecycle } from '../../lib/tripLifecycle'
+import { SkeletonList } from '../../components/Skeleton'
 import TripManage from './TripManage'
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -174,7 +175,7 @@ function SubsPanel({ subs, loading, onReload }) {
         </button>
       </div>
       {loading ? (
-        <Empty title="جارٍ التحميل…" />
+        <SkeletonList count={4} />
       ) : subs.length === 0 ? (
         <Empty title="لا يوجد مشتركون بعد" hint="ستظهر الحملات هنا فور تسجيلها." />
       ) : (
@@ -612,7 +613,7 @@ function TripsView({ trips, allCount, sub, loading, paxByTrip, filter, setFilter
 
       <div style={{ marginTop: 14 }}>
         {loading ? (
-          <Empty title="جارٍ التحميل…" />
+          <SkeletonList count={4} />
         ) : !sub ? (
           <Empty title="لم يتم العثور على حملتك" hint="حدّث الصفحة، أو تواصل مع الدعم إن استمرّ." />
         ) : trips.length === 0 ? (
@@ -793,7 +794,7 @@ export function CustomerHome() {
 
             <div style={{ marginTop: 14 }}>
               {loading ? (
-                <Empty title="جارٍ التحميل…" />
+                <SkeletonList count={4} />
               ) : trips.length === 0 ? (
                 <Empty title="لا توجد رحلاتٌ متاحةٌ حاليًا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
               ) : (
@@ -820,7 +821,7 @@ export function CustomerHome() {
             </section>
             <div style={{ marginTop: 14 }}>
               {loading ? (
-                <Empty title="جارٍ التحميل…" />
+                <SkeletonList count={4} />
               ) : myBookings.length === 0 ? (
                 <Empty title="لا حجوزات بعد" hint="احجز مقعدك من تبويب الرحلات لتظهر تذكرتك هنا." />
               ) : (

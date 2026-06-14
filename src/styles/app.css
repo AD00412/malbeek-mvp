@@ -790,3 +790,17 @@
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;
     transition-duration:.001ms !important;scroll-behavior:auto !important}
 }
+
+/* ============================================================
+   هياكل التحميل (skeletons) — لمعانٌ خفيفٌ بدل «جارٍ التحميل…»
+   ============================================================ */
+.sk-list{display:flex;flex-direction:column;gap:10px}
+.sk-card{border:1px solid var(--line);border-radius:var(--r-md);padding:14px;background:var(--surface)}
+.sk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.sk{display:block;border-radius:8px;
+  background:linear-gradient(100deg,rgba(255,255,255,.05) 30%,rgba(226,194,119,.14) 50%,rgba(255,255,255,.05) 70%);
+  background-size:220% 100%;animation:sk-shimmer 1.3s ease-in-out infinite}
+.sk-title{height:15px;width:55%;margin-bottom:12px}
+.sk-line{height:11px;margin-top:8px}
+.sk-stat{height:104px;border-radius:var(--r-lg)}
+@keyframes sk-shimmer{0%{background-position:180% 0}100%{background-position:-80% 0}}
