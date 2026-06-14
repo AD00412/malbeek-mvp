@@ -6,6 +6,9 @@ const MAP = {
   TRIP_NOT_FOUND: 'الرحلة غير موجودة.',
   NOT_AUTHORIZED: 'غير مصرّحٍ لك بهذه العمليّة.',
   SEAT_OUT_OF_RANGE: 'رقم المقعد خارج تخطيط الباص.',
+  ROOM_FULL: 'الغرفة مكتملة. اختر غرفةً أخرى.',
+  ROOM_GENDER_MISMATCH: 'الغرفة لا تتوافق مع جنس المعتمر.',
+  ROOM_TRIP_MISMATCH: 'الغرفة لا تنتمي لهذه الرحلة.',
 }
 
 const isArabic = (s) => /[؀-ۿ]/.test(s)

@@ -584,6 +584,22 @@
 .bus-tab.add{color:var(--gd-300);border-style:dashed}
 .bus-tab svg{flex:none}
 
+/* الفنادق والغرف */
+.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.room-card{background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r-md);padding:10px}
+.room-card.full{border-color:rgba(43,182,140,.4);background:rgba(43,182,140,.05)}
+.room-card .room-head{display:flex;align-items:center;gap:6px}
+.room-card .room-num{font-family:var(--font-display);font-weight:700;color:var(--gd-300)}
+.room-card .room-occupants{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.room-card .occ-row{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--cr-100);
+  background:rgba(255,255,255,.03);border-radius:8px;padding:4px 6px}
+.room-card .occ-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip-list{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px}
+.chip.info{color:var(--info-ink);border-color:rgba(58,160,179,.3)}
+.chip.warn{color:var(--warn-ink);border-color:rgba(224,168,46,.3)}
+
 /* مركز الإشعارات */
 .notif-badge{position:absolute;top:-4px;inset-inline-end:-4px;min-width:18px;height:18px;padding:0 5px;
   background:var(--danger);color:#fff;border-radius:999px;font-size:10.5px;font-weight:700;

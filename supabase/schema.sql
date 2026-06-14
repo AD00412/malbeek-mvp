@@ -141,6 +141,68 @@ create policy "payments owner read" on public.payments for select
 drop policy if exists "payments admin read" on public.payments;
 create policy "payments admin read" on public.payments for select using (public.my_role() = 'admin');
 
+-- ============================================================
+--  الفنادق والغرف (التسكين) — يحوّل ملبّيك إلى حلٍّ كامل: نقلٌ + سكن
+-- ============================================================
+create table if not exists public.hotels (
+  id            uuid primary key default gen_random_uuid(),
+  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
+  trip_id       uuid not null references public.trips(id) on delete cascade,
+  name          text not null,
+  city          text default 'مكة المكرمة',
+  check_in      date,
+  check_out     date,
+  distance_text text,                                                  -- مثل "٢٠٠م من الحرم"
+  notes         text,
+  created_at    timestamptz not null default now()
+);
+create index if not exists idx_hotels_trip on public.hotels(trip_id);
+
+create table if not exists public.hotel_rooms (
+  id            uuid primary key default gen_random_uuid(),
+  hotel_id      uuid not null references public.hotels(id) on delete cascade,
+  trip_id       uuid not null references public.trips(id) on delete cascade,
+  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
+  room_number   text not null,
+  capacity      int  not null default 2 check (capacity > 0),
+  gender        text not null default 'mixed' check (gender in ('male','female','mixed')),
+  notes         text,
+  created_at    timestamptz not null default now(),
+  unique (hotel_id, room_number)
+);
+create index if not exists idx_hotel_rooms_hotel on public.hotel_rooms(hotel_id);
+
+-- ربط الراكب بالغرفة (FK اختياريّ — تُسنَد عند التسكين)
+alter table public.passengers add column if not exists room_id uuid references public.hotel_rooms(id) on delete set null;
+create index if not exists idx_passengers_room on public.passengers(room_id);
+
+alter table public.hotels      enable row level security;
+alter table public.hotel_rooms enable row level security;
+-- المالك يدير فنادق حملته بالكامل
+drop policy if exists "hotels owner manage" on public.hotels;
+create policy "hotels owner manage" on public.hotels for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+-- العميل ضمن الحملة يقرأ فنادق الرحلات غير المسوّدة (للعرض في تذكرته)
+drop policy if exists "hotels customer read" on public.hotels;
+create policy "hotels customer read" on public.hotels for select
+  using (subscriber_id = public.my_subscriber_id()
+         and exists (select 1 from public.trips t where t.id = trip_id and t.status <> 'draft'));
+-- الإدارة تقرأ الكل
+drop policy if exists "hotels admin read" on public.hotels;
+create policy "hotels admin read" on public.hotels for select using (public.my_role() = 'admin');
+
+drop policy if exists "rooms owner manage" on public.hotel_rooms;
+create policy "rooms owner manage" on public.hotel_rooms for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()))
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
+drop policy if exists "rooms customer read" on public.hotel_rooms;
+create policy "rooms customer read" on public.hotel_rooms for select
+  using (subscriber_id = public.my_subscriber_id()
+         and exists (select 1 from public.trips t where t.id = trip_id and t.status <> 'draft'));
+drop policy if exists "rooms admin read" on public.hotel_rooms;
+create policy "rooms admin read" on public.hotel_rooms for select using (public.my_role() = 'admin');
+
 -- منع حجز مقعدٍ مكرّر في نفس الرحلة (يسمح بالـ NULL لمقاعد غير مخصّصة بعد)
 create unique index if not exists uniq_passengers_trip_seat
   on public.passengers(trip_id, seat_no) where seat_no is not null;
@@ -624,6 +686,9 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare
   v_owner boolean;
   v_total int;
+  v_cap int;
+  v_room_gender text;
+  v_used int;
 begin
   select (exists (select 1 from public.subscribers s
                   where s.id = new.subscriber_id and s.owner_id = auth.uid())
@@ -664,6 +729,30 @@ begin
     end if;
   end if;
 
+  -- ★ التسكين: تحقّق سعة الغرفة + توافق الجنس + انتماء الغرفة للرحلة نفسها.
+  --   نقفل صفّ الغرفة بـ FOR UPDATE لتفادي تجاوز السعة عند إسنادين متوازيين.
+  if new.room_id is not null and (tg_op = 'INSERT' or new.room_id is distinct from old.room_id) then
+    declare v_room_trip uuid;
+    begin
+      select capacity, gender, trip_id into v_cap, v_room_gender, v_room_trip
+        from public.hotel_rooms where id = new.room_id for update;
+      if v_room_trip is distinct from new.trip_id then
+        raise exception 'ROOM_TRIP_MISMATCH' using hint = 'الغرفة لا تنتمي لهذه الرحلة.';
+      end if;
+      if v_room_gender = 'male'   and new.gender = 'female' then
+        raise exception 'ROOM_GENDER_MISMATCH' using hint = 'هذه الغرفة مخصّصةٌ للرجال.';
+      end if;
+      if v_room_gender = 'female' and new.gender = 'male'   then
+        raise exception 'ROOM_GENDER_MISMATCH' using hint = 'هذه الغرفة مخصّصةٌ للنساء.';
+      end if;
+      select count(*) into v_used from public.passengers
+        where room_id = new.room_id and id <> new.id;
+      if v_used >= v_cap then
+        raise exception 'ROOM_FULL' using hint = 'الغرفة مكتملةٌ (' || v_cap || ' أشخاص).';
+      end if;
+    end;
+  end if;
+
   -- العميل لا يرفع حالته ذاتيًّا ولا يزوّر الحضور ولا ينقل حجزه.
   -- يُطبَّق على مستخدمٍ مصدَّقٍ فعليّ فقط (auth.uid() غير فارغ)؛ السياقات الموثوقة بلا JWT
   -- (service_role لبوّابة الدفع / محرّر SQL) معفاةٌ لتأكيد الدفع آليًّا — والعميل دائمًا مصدَّقٌ فيبقى محروسًا.
@@ -674,6 +763,7 @@ begin
       new.checked_in_at := null;
       new.amount := null;            -- العميل لا يضبط مبلغًا/ختم دفعٍ بنفسه
       new.paid_at := null;
+      new.room_id := null;            -- التسكين قرارٌ تشغيليٌّ من المالك فقط
     else
       new.status        := old.status;
       new.trip_id       := old.trip_id;
@@ -683,6 +773,7 @@ begin
       new.checked_in_at := old.checked_in_at;
       new.amount        := old.amount;     -- حقولٌ ماليّةٌ محميّةٌ من تلاعب العميل
       new.paid_at       := old.paid_at;
+      new.room_id       := old.room_id;    -- التسكين قرارُ المالك
     end if;
   end if;
 
@@ -1114,6 +1205,8 @@ do $$ begin alter publication supabase_realtime add table public.trips;       ex
 do $$ begin alter publication supabase_realtime add table public.trip_buses;  exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.notifications; exception when duplicate_object then null; when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.waitlist;      exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.hotels;        exception when duplicate_object then null; when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.hotel_rooms;   exception when duplicate_object then null; when others then null; end $$;
 
 -- ============================================================
 --  عرضٌ عام لصفحة انضمام العميل: يحوّل الـ slug إلى اسم الحملة

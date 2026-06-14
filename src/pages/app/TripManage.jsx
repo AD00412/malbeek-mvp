@@ -8,6 +8,7 @@ import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
 import SeatMap from '../../components/SeatMap'
 import BusEditor from '../../components/BusEditor'
+import HotelsManager from '../../components/HotelsManager'
 import BottomSheet from '../../components/BottomSheet'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
@@ -80,6 +81,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [scanMode, setScanMode] = useState(null)     // 'board' | 'checkin' | null
   const [seatMapOpen, setSeatMapOpen] = useState(false)
   const [busEditOpen, setBusEditOpen] = useState(false)
+  const [hotelsOpen, setHotelsOpen] = useState(false)
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
   const [waitlist, setWaitlist] = useState([])
@@ -94,7 +96,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     setLoading(true); setErr('')
     const { data, error } = await supabase
       .from('passengers')
-      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, amount, paid_at, payment_provider, created_at')
+      .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, profile_id, bus_id, room_id, amount, paid_at, payment_provider, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
@@ -200,6 +202,17 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       />
     )
   }
+  if (hotelsOpen) {
+    return (
+      <HotelsManager
+        trip={trip}
+        sub={sub}
+        passengers={passengers}
+        onClose={() => setHotelsOpen(false)}
+        onChanged={loadPassengers}
+      />
+    )
+  }
   if (ticketFor) {
     return (
       <Suspense fallback={<LazyLoading />}>
@@ -271,6 +284,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         </div>
         <button className="action" onClick={() => setCrewOpen(true)}>
           <Icon name="bus" size={18} /> الباص والطاقم (للكشف)
+        </button>
+        <button className="action info" onClick={() => setHotelsOpen(true)}>
+          <Icon name="bed" size={18} /> الفنادق والتسكين
         </button>
         <div style={{ display: 'flex', gap: 12 }}>
           <button className="action ok" style={{ flex: 1 }} onClick={() => setManifestOpen(true)}>
