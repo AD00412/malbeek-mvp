@@ -63,6 +63,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [buses, setBuses] = useState([])
   const [mapBusId, setMapBusId] = useState(null)   // الباص المعروض في خريطة المقاعد
   const [importOpen, setImportOpen] = useState(false)
+  const [dupOpen, setDupOpen] = useState(false)
   const [payments, setPayments] = useState([])
 
   const loadPassengers = useCallback(async () => {
@@ -259,6 +260,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <button className="action" onClick={exportRoster} disabled={count === 0}>
           <Icon name="download" size={18} /> تصدير الكشف (CSV / Excel)
         </button>
+        <button className="action" onClick={() => setDupOpen(true)}>
+          <Icon name="copy" size={18} /> استنساخ هذه الرحلة (لفوجٍ جديد)
+        </button>
       </div>
 
       {err && <div className="alert err" style={{ marginTop: 14 }}>{err}</div>}
@@ -397,6 +401,14 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         />
       )}
 
+      <DuplicateTripSheet
+        open={dupOpen}
+        sourceTitle={trip?.title}
+        onClose={() => setDupOpen(false)}
+        onDone={(newId) => { setDupOpen(false); onTripChanged?.(); onBack?.(newId) }}
+        sourceId={trip?.id}
+      />
+
       {paxOpen && (
         <PassengerFormModal
           open
@@ -524,6 +536,71 @@ function OffersSheet({ open, onClose, passengers, trip, sub, msg, setMsg }) {
             </button>
           ))}
         </div>
+      </div>
+    </BottomSheet>
+  )
+}
+
+/* ============================================================
+   استنساخ الرحلة — مودال صغير، يستدعي RPC duplicate_trip.
+   ============================================================ */
+function DuplicateTripSheet({ open, sourceId, sourceTitle, onClose, onDone }) {
+  const [suffix, setSuffix] = useState(' — الفوج التالي')
+  const [shift, setShift] = useState('30')   // إزاحة افتراضيّةٌ شهرٌ
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function doDuplicate() {
+    if (busy || !sourceId) return
+    setBusy(true); setErr('')
+    const { data, error } = await supabase.rpc('duplicate_trip', {
+      p_trip_id: sourceId,
+      p_name_suffix: suffix || '',
+      p_shift_days: Number(shift) || 0,
+    })
+    setBusy(false)
+    if (error) {
+      const m = String(error.message || '')
+      if (m.includes('TRIAL_TRIP_LIMIT')) {
+        setErr('باقتك التجريبية تسمح برحلةٍ واحدة فقط. رقِّ الباقة لإضافة فوجٍ آخر.')
+      } else if (m.includes('غير مصرّح')) {
+        setErr('غير مصرّحٍ لك باستنساخ هذه الرحلة.')
+      } else {
+        setErr(m || 'تعذّر الاستنساخ.')
+      }
+      return
+    }
+    onDone?.(data)
+  }
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={busy ? () => {} : onClose}
+      title="استنساخ الرحلة لفوجٍ جديد"
+      actions={
+        <>
+          <button className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>
+          <button className="btn btn-gold" onClick={doDuplicate} disabled={busy}>
+            {busy ? <span className="spinner" /> : <><Icon name="copy" size={16} /> استنساخ</>}
+          </button>
+        </>
+      }
+    >
+      <div className="form" style={{ marginTop: 0 }}>
+        <div className="alert info" style={{ fontSize: 12.5 }}>
+          نُنشئ رحلةً جديدةً (مسوّدة) بنفس إعدادات «{sourceTitle || 'الرحلة'}»: المسار، الباصات،
+          الطاقم، السعر، وسياسة المقاعد. لا يُستنسخ المعتمرون ولا قائمة الانتظار ولا المدفوعات.
+        </div>
+        <div className="field">
+          <label>لاحقة الاسم</label>
+          <input type="text" placeholder=" — الفوج التالي" value={suffix} onChange={(e) => setSuffix(e.target.value)} />
+        </div>
+        <div className="field ltr">
+          <label>إزاحة التواريخ (أيام) — موجبٌ يؤجِّل، سالبٌ يُقدِّم</label>
+          <input type="number" inputMode="numeric" placeholder="30" value={shift} onChange={(e) => setShift(e.target.value)} />
+        </div>
+        {err && <div className="alert err">{err}</div>}
       </div>
     </BottomSheet>
   )

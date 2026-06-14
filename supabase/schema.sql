@@ -357,8 +357,9 @@ create policy "trips owner manage" on public.trips for all
   with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()));
 -- ★ جوهر الخصوصية: العميل يرى رحلات حملته فقط
 drop policy if exists "trips customer read scoped" on public.trips;
+-- العميل لا يرى المسوّدات (drafts) — يحجب نسخ الفوج التالي قبل أن يفتحها المالك
 create policy "trips customer read scoped" on public.trips for select
-  using (subscriber_id = public.my_subscriber_id());
+  using (subscriber_id = public.my_subscriber_id() and status <> 'draft');
 -- الإدارة ترى كل الرحلات
 drop policy if exists "trips admin read" on public.trips;
 create policy "trips admin read" on public.trips for select using (public.my_role() = 'admin');
@@ -923,6 +924,57 @@ language sql stable security definer set search_path = public as $$
   order by s.created_at desc;
 $$;
 grant execute on function public.admin_campaign_stats() to authenticated;
+
+-- ★ استنساخُ رحلةٍ (مع باصاتها) — مع إزاحة التواريخ ولاحقة الاسم.
+--   لا يستنسخ الركّاب ولا قائمة الانتظار ولا المدفوعات (يبدأ "فوجًا جديدًا").
+--   مقيّدٌ بمالك الحملة فقط. يحترم enforce_trial_trip_limit عبر تريغر INSERT.
+create or replace function public.duplicate_trip(
+  p_trip_id uuid, p_name_suffix text default ' — نسخة',
+  p_shift_days int default 0
+) returns uuid language plpgsql security definer set search_path = public as $$
+declare v_new uuid; v_old record; v_owner boolean;
+begin
+  select * into v_old from public.trips where id = p_trip_id;
+  if not found then raise exception 'الرحلة غير موجودة.'; end if;
+
+  -- مالك الحملة فقط (أو الإدارة)
+  select (exists (select 1 from public.subscribers s
+                  where s.id = v_old.subscriber_id and s.owner_id = auth.uid())
+          or public.my_role() = 'admin') into v_owner;
+  if not v_owner then raise exception 'غير مصرّحٍ بهذه العمليّة.'; end if;
+
+  insert into public.trips (
+    subscriber_id, title, route_from, route_to,
+    depart_at, return_at, capacity, bus_label, boarding_point,
+    status, notes,
+    bus_plate, driver_name, driver_phone, assistant_name, assistant_phone,
+    supervisor_name, supervisor_phone,
+    seating_policy, bus_rows, bus_back_row, price
+  ) values (
+    v_old.subscriber_id,
+    coalesce(v_old.title,'رحلة') || coalesce(p_name_suffix,''),
+    v_old.route_from, v_old.route_to,
+    case when v_old.depart_at is not null and p_shift_days <> 0
+         then v_old.depart_at + (p_shift_days || ' days')::interval else v_old.depart_at end,
+    case when v_old.return_at is not null and p_shift_days <> 0
+         then v_old.return_at + (p_shift_days || ' days')::interval else v_old.return_at end,
+    v_old.capacity, v_old.bus_label, v_old.boarding_point,
+    'draft', v_old.notes,                          -- ابدأ مسودّة، يفتحها المالك عند الجاهزيّة
+    v_old.bus_plate, v_old.driver_name, v_old.driver_phone,
+    v_old.assistant_name, v_old.assistant_phone,
+    v_old.supervisor_name, v_old.supervisor_phone,
+    v_old.seating_policy, v_old.bus_rows, v_old.bus_back_row, v_old.price
+  ) returning id into v_new;
+
+  -- استنساخ الباصات ٢+ (الباص ١ يُنشأ تلقائيًّا عبر ensure_primary_bus من بيانات trips)
+  insert into public.trip_buses (trip_id, subscriber_id, bus_number, label, plate, bus_rows, bus_back_row, seating_policy)
+  select v_new, b.subscriber_id, b.bus_number, b.label, b.plate, b.bus_rows, b.bus_back_row, b.seating_policy
+  from public.trip_buses b
+  where b.trip_id = p_trip_id and b.bus_number > 1;
+
+  return v_new;
+end $$;
+grant execute on function public.duplicate_trip(uuid, text, int) to authenticated;
 
 -- ★ تريغر: إشعارات passengers (حجزٌ جديد للمشترك، تأكيد الدفع/الصعود/التسكين للعميل، إلغاء حجز)
 create or replace function public.notify_passengers_change()
