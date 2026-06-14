@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import RequireAuth, { homeForRole, ScreenLoader } from './RequireAuth'
@@ -23,6 +23,11 @@ function RootRedirect() {
 }
 
 export default function App() {
+  const { session } = useAuth()
+  // تحميلٌ مسبقٌ لحزمة اللوحة بمجرّد وجود جلسة، فينتقل المستخدم إليها بلا أيّ
+  // وميضِ تحميلٍ بعد الدخول (سلاسةٌ في الانتقال).
+  useEffect(() => { if (session) import('../pages/app/Homes') }, [session])
+
   return (
     <Suspense fallback={<ScreenLoader label="جارٍ تجهيز لوحتك…" />}>
       <Routes>
