@@ -21,13 +21,14 @@ import { useUI } from '../../lib/useUI'
 import { translateRpcError } from '../../lib/rpcErrors'
 import { tripLifecycle } from '../../lib/tripLifecycle'
 import { SkeletonList } from '../../components/Skeleton'
+import TeamSheet from '../../components/TeamSheet'
 import TripManage from './TripManage'
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
 
 /** قائمةُ أعمدة المؤسسة المشتركة بين الـ select قراءاتٍ متعدّدة (تفادي الانحراف). */
 const SUBSCRIBER_COLS =
-  'id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url'
+  'id, owner_id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url'
 
 /* ---------- أدوات عرض مشتركة ---------- */
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
@@ -222,6 +223,7 @@ export function SubscriberHome() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [teamOpen, setTeamOpen] = useState(false)
   const { confirm, toast } = useUI()
   const [scanMode, setScanMode] = useState(null)    // null | 'pick' | 'board' | 'checkin'
   const [copied, setCopied] = useState(false)
@@ -236,16 +238,17 @@ export function SubscriberHome() {
     if (!user?.id) return
     setLoading(true); setErr('')
 
-    const { data: rows, error: sErr } = await supabase
-      .from('subscribers')
-      .select(SUBSCRIBER_COLS)
-      .eq('owner_id', user.id)
-      .order('created_at', { ascending: true })
-      .limit(1)
-    if (sErr) { setErr('تعذّر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
+    // الحملة التي يديرها المستخدم: يملكها أو عضوُ فريقٍ فيها (RPC موثوق).
+    const { data: managedId } = await supabase.rpc('my_managed_subscriber_id')
+    let s = null
+    if (managedId) {
+      const { data: row, error: sErr } = await supabase
+        .from('subscribers').select(SUBSCRIBER_COLS).eq('id', managedId).maybeSingle()
+      if (sErr) { setErr('تعذّر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
+      s = row
+    }
 
-    let s = rows?.[0] ?? null
-
+    // لا حملةَ مُدارة ⇒ مالكٌ جديدٌ بلا حملة ⇒ ننشئ له واحدةً تلقائيًّا (لا يحدث لعضو فريق).
     if (!s && !creatingRef.current) {
       creatingRef.current = true
       const slug = 'hamla-' + Math.random().toString(36).slice(2, 8)
@@ -416,6 +419,11 @@ export function SubscriberHome() {
                   onShare={() => setShareOpen(true)}
                   onManageFirst={manageFirst}
                 />
+                {sub?.owner_id === user?.id && (
+                  <button className="action" style={{ marginTop: 12 }} onClick={() => setTeamOpen(true)}>
+                    <Icon name="customers" size={18} /> الفريق والصلاحيّات
+                  </button>
+                )}
               </>
             )}
 
@@ -447,6 +455,8 @@ export function SubscriberHome() {
         {modalOpen && sub && (
           <TripFormModal trip={editing} subscriberId={sub.id} onClose={closeModal} onSaved={handleSaved} />
         )}
+
+        {sub?.id && <TeamSheet open={teamOpen} subscriberId={sub.id} onClose={() => setTeamOpen(false)} />}
 
         <BottomSheet
           open={shareOpen}

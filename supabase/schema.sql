@@ -44,6 +44,73 @@ create table if not exists public.profiles (
 );
 create index if not exists idx_profiles_subscriber on public.profiles(subscriber_id);
 
+-- ============================================================
+--  فريق الحملة وصلاحيّاته (المرحلة ٨): لكلّ مشتركٍ مالكٌ + أعضاءُ فريق.
+--  الأدوار: owner (المالك، كامل الصلاحيّات) · manager (مشرف، تشغيلٌ كامل)
+--           · staff (موظّف، تشغيلٌ كامل حاليًّا — قابلٌ للتدقيق مستقبلًا).
+--  إدارة الأعضاء والباقة للمالك فقط. التسكين/التشغيل لكلّ الأعضاء.
+-- ============================================================
+create table if not exists public.subscriber_members (
+  id            uuid primary key default gen_random_uuid(),
+  subscriber_id uuid not null references public.subscribers(id) on delete cascade,
+  profile_id    uuid not null references public.profiles(id) on delete cascade,
+  role          text not null default 'staff' check (role in ('owner','manager','staff')),
+  created_at    timestamptz not null default now(),
+  unique (subscriber_id, profile_id)
+);
+create index if not exists idx_members_profile on public.subscriber_members(profile_id);
+
+-- المالك عضوٌ ضمنيّ: تهيئةٌ للحملات القائمة + تريغرٌ لكلّ حملةٍ جديدة.
+insert into public.subscriber_members (subscriber_id, profile_id, role)
+  select id, owner_id, 'owner' from public.subscribers
+  on conflict (subscriber_id, profile_id) do nothing;
+create or replace function public.add_owner_member()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.subscriber_members (subscriber_id, profile_id, role)
+  values (new.id, new.owner_id, 'owner')
+  on conflict (subscriber_id, profile_id) do nothing;
+  return new;
+end $$;
+drop trigger if exists trg_add_owner_member on public.subscribers;
+create trigger trg_add_owner_member after insert on public.subscribers
+  for each row execute function public.add_owner_member();
+
+-- ★ هل يدير المستخدم الحاليّ هذه الحملة؟ (مالكٌ أو عضوُ فريق). أساسُ صلاحيّات التشغيل.
+create or replace function public.can_manage_sub(p_sub uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.subscribers s where s.id = p_sub and s.owner_id = auth.uid())
+      or exists (select 1 from public.subscriber_members m where m.subscriber_id = p_sub and m.profile_id = auth.uid());
+$$;
+
+-- ★ الحملة التي يديرها المستخدم (يملكها أو عضوٌ فيها) — صفٌّ واحد.
+create or replace function public.my_managed_subscriber_id()
+returns uuid language sql stable security definer set search_path = public as $$
+  select id from public.subscribers where owner_id = auth.uid()
+  union
+  select subscriber_id from public.subscriber_members where profile_id = auth.uid()
+  limit 1;
+$$;
+
+-- ★ دورُ المستخدم في حملةٍ (للواجهة): owner|manager|staff|null
+create or replace function public.subscriber_my_role(p_sub uuid)
+returns text language sql stable security definer set search_path = public as $$
+  select case
+    when exists (select 1 from public.subscribers s where s.id = p_sub and s.owner_id = auth.uid()) then 'owner'
+    else (select role from public.subscriber_members where subscriber_id = p_sub and profile_id = auth.uid())
+  end;
+$$;
+
+alter table public.subscriber_members enable row level security;
+-- عضوُ الحملة يقرأ أعضاءها؛ المالك وحده يضيف/يحذف (عبر RPC الموثوق غالبًا)
+drop policy if exists "members read" on public.subscriber_members;
+create policy "members read" on public.subscriber_members for select
+  using (public.can_manage_sub(subscriber_id) or public.my_role() = 'admin');
+drop policy if exists "members owner manage" on public.subscriber_members;
+create policy "members owner manage" on public.subscriber_members for all
+  using      (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()) or public.my_role() = 'admin')
+  with check (subscriber_id in (select id from public.subscribers where owner_id = auth.uid()) or public.my_role() = 'admin');
+
 -- ---------- الرحلات ----------
 create table if not exists public.trips (
   id              uuid primary key default gen_random_uuid(),
@@ -467,6 +534,9 @@ create trigger on_auth_user_created
 create or replace function public.guard_profile_columns()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
+  -- سياقٌ موثوقٌ محصور: دوالّ إدارة الفريق (SECURITY DEFINER) تضبط هذا العلَم
+  -- محلّيًّا داخل معاملتها لتُسند دور/حملة العضو. العميل لا يملك مسارًا لضبطه.
+  if current_setting('malbeek.trusted', true) = '1' then return new; end if;
   -- يُجمَّد الدور/الربط فقط لمستخدمٍ مصدَّقٍ فعليٍّ غير admin.
   -- السياقات الموثوقة بلا JWT (محرّر SQL / service_role) تستطيع التهيئة وإنشاء أوّل admin —
   -- وهذا لا يمنح المستخدم العاديّ شيئًا (auth.uid() لديه غير فارغٍ دائمًا فيبقى مُجمَّدًا).
@@ -645,8 +715,7 @@ create or replace function public.guard_customer_columns()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if coalesce(public.my_role(), 'customer') <> 'admin'
-     and not exists (select 1 from public.subscribers
-                     where id = old.subscriber_id and owner_id = auth.uid()) then
+     and not public.can_manage_sub(old.subscriber_id) then
     new.subscriber_id := old.subscriber_id;
     new.profile_id    := old.profile_id;
     new.created_at    := old.created_at;
@@ -701,7 +770,7 @@ language sql stable security definer set search_path = public as $$
     and p.seat_no is not null
     and (p_bus is null or p.bus_id = p_bus)
     and (
-      t.subscriber_id in (select id from public.subscribers where owner_id = auth.uid())
+      public.can_manage_sub(t.subscriber_id)
       or t.subscriber_id = public.my_subscriber_id()
       or public.my_role() = 'admin'
     );
@@ -820,9 +889,8 @@ declare
   v_trip_status trip_status;
   v_trip_depart timestamptz;
 begin
-  select (exists (select 1 from public.subscribers s
-                  where s.id = new.subscriber_id and s.owner_id = auth.uid())
-          or public.my_role() = 'admin') into v_owner;
+  -- المالك أو عضوُ الفريق أو الإدارة = سلطةٌ تشغيليّة (ليس عميلًا).
+  select (public.can_manage_sub(new.subscriber_id) or public.my_role() = 'admin') into v_owner;
 
   -- ★ دورة حياة الرحلة: لا يُنشئ العميلُ حجزًا في رحلةٍ غير مفتوحةٍ أو فات موعدها.
   --   (المالك/الإدارة مستثنون لإدارةٍ تشغيليّةٍ كاملة، والتعديل/الإلغاء غير محظور.)
@@ -992,7 +1060,7 @@ begin
     new.audience := case when v_role = 'subscriber' then 'subscriber' else 'customer' end;
     -- ربط الحملة: المشترك بحملته فقط؛ العميل بحملته فقط؛ غير ذلك null
     if v_role = 'subscriber' then
-      new.subscriber_id := (select id from public.subscribers where owner_id = auth.uid() limit 1);
+      new.subscriber_id := public.my_managed_subscriber_id();
     elsif v_role = 'customer' then
       new.subscriber_id := v_mysub;
     else
@@ -1177,10 +1245,8 @@ begin
     raise exception 'TRIP_NOT_FOUND' using hint = 'الرحلة غير موجودة.';
   end if;
 
-  -- مالك الحملة فقط (أو الإدارة)
-  select (exists (select 1 from public.subscribers s
-                  where s.id = v_old.subscriber_id and s.owner_id = auth.uid())
-          or public.my_role() = 'admin') into v_owner;
+  -- مالك الحملة أو عضوُ فريقها (أو الإدارة)
+  select (public.can_manage_sub(v_old.subscriber_id) or public.my_role() = 'admin') into v_owner;
   if not v_owner then
     raise exception 'NOT_AUTHORIZED' using hint = 'غير مصرّحٍ بهذه العمليّة.';
   end if;
@@ -1442,7 +1508,7 @@ begin
   if not found then raise exception 'NOT_FOUND' using hint = 'الحجز غير موجود.'; end if;
   -- المالك (auth.uid) فقط، أو صاحب الحملة، أو الإدارة
   if not (v_p.profile_id = auth.uid()
-          or exists (select 1 from public.subscribers s where s.id = v_p.subscriber_id and s.owner_id = auth.uid())
+          or public.can_manage_sub(v_p.subscriber_id)
           or public.my_role() = 'admin') then
     raise exception 'NOT_AUTHORIZED' using hint = 'غير مصرّحٍ لك بإلغاء هذا الحجز.';
   end if;
@@ -1494,8 +1560,7 @@ create or replace function public.remind_trip(p_trip uuid, p_message text defaul
 returns integer language plpgsql security definer set search_path = public as $$
 declare v_n int; v_title text; v_depart timestamptz; v_body text;
 begin
-  if not (exists (select 1 from public.trips t join public.subscribers s on s.id = t.subscriber_id
-                  where t.id = p_trip and s.owner_id = auth.uid())
+  if not (exists (select 1 from public.trips t where t.id = p_trip and public.can_manage_sub(t.subscriber_id))
           or public.my_role() = 'admin') then
     raise exception 'NOT_AUTHORIZED' using hint = 'غير مصرّحٍ لك بهذا الإجراء.';
   end if;
@@ -1548,7 +1613,7 @@ create policy "org-assets owner write" on storage.objects for insert
   with check (
     bucket_id = 'org-assets'
     and (storage.foldername(name))[1] in (
-      select id::text from public.subscribers where owner_id = auth.uid()
+      select id::text from public.subscribers where public.can_manage_sub(id)
     )
   );
 
@@ -1557,13 +1622,13 @@ create policy "org-assets owner update" on storage.objects for update
   using (
     bucket_id = 'org-assets'
     and (storage.foldername(name))[1] in (
-      select id::text from public.subscribers where owner_id = auth.uid()
+      select id::text from public.subscribers where public.can_manage_sub(id)
     )
   )
   with check (
     bucket_id = 'org-assets'
     and (storage.foldername(name))[1] in (
-      select id::text from public.subscribers where owner_id = auth.uid()
+      select id::text from public.subscribers where public.can_manage_sub(id)
     )
   );
 
@@ -1572,7 +1637,7 @@ create policy "org-assets owner delete" on storage.objects for delete
   using (
     bucket_id = 'org-assets'
     and (storage.foldername(name))[1] in (
-      select id::text from public.subscribers where owner_id = auth.uid()
+      select id::text from public.subscribers where public.can_manage_sub(id)
     )
   );
 
@@ -1675,3 +1740,137 @@ grant execute on function public.subscriber_by_slug(text) to anon, authenticated
 --  (اختياري) ترقية مستخدم إلى إدارة بعد إنشائه من لوحة Supabase Auth:
 --  update public.profiles set role = 'admin' where id = '<USER_UUID>';
 -- ============================================================
+
+-- ============================================================
+--  المرحلة ٨ — وصول فريق الحملة (سياساتٌ إضافيّةٌ + دوالّ إدارة الأعضاء)
+--  إضافيّةٌ بحتة: تمنح أعضاء الفريق (manager/staff) صلاحيّةً تشغيليّةً كاملة
+--  عبر can_manage_sub دون المساس بسياسات المالك (الـ OR لا يكسر شيئًا).
+--  إدارة الأعضاء وتحديث صفّ الحملة/الباقة تبقى للمالك وحده.
+-- ============================================================
+
+-- المشترك: عضوُ الفريق يقرأ صفّ حملته (التحديث للمالك فقط عبر "subscriber owner all")
+drop policy if exists "subscriber member read" on public.subscribers;
+create policy "subscriber member read" on public.subscribers for select using (public.can_manage_sub(id));
+
+drop policy if exists "trips team manage" on public.trips;
+create policy "trips team manage" on public.trips for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "passengers team manage" on public.passengers;
+create policy "passengers team manage" on public.passengers for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "customers team manage" on public.customers;
+create policy "customers team manage" on public.customers for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "hotels team manage" on public.hotels;
+create policy "hotels team manage" on public.hotels for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "rooms team manage" on public.hotel_rooms;
+create policy "rooms team manage" on public.hotel_rooms for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "trip_buses team manage" on public.trip_buses;
+create policy "trip_buses team manage" on public.trip_buses for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "waitlist team manage" on public.waitlist;
+create policy "waitlist team manage" on public.waitlist for all
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "refunds team read" on public.refunds;
+create policy "refunds team read" on public.refunds for select using (public.can_manage_sub(subscriber_id));
+drop policy if exists "refunds team update" on public.refunds;
+create policy "refunds team update" on public.refunds for update
+  using (public.can_manage_sub(subscriber_id)) with check (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "payments team read" on public.payments;
+create policy "payments team read" on public.payments for select using (public.can_manage_sub(subscriber_id));
+
+drop policy if exists "audit team read" on public.audit_logs;
+create policy "audit team read" on public.audit_logs for select using (public.can_manage_sub(subscriber_id));
+
+-- ★ إضافة عضوٍ بالبريد (المالك فقط): يربط حسابًا قائمًا بالحملة ويمنحه دور subscriber.
+create or replace function public.add_team_member(p_sub uuid, p_email text, p_role text default 'staff')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_uid uuid; v_role user_role;
+begin
+  if not exists (select 1 from public.subscribers where id = p_sub and owner_id = auth.uid()) then
+    raise exception 'NOT_AUTHORIZED' using hint = 'إدارة الفريق لمالك الحملة فقط.';
+  end if;
+  if p_role not in ('manager','staff') then raise exception 'BAD_ROLE' using hint = 'دورٌ غير صالح.'; end if;
+  select id into v_uid from auth.users where lower(email) = lower(btrim(p_email)) limit 1;
+  if v_uid is null then raise exception 'NO_ACCOUNT' using hint = 'لا يوجد حسابٌ بهذا البريد — اطلب منه إنشاء حسابٍ أوّلًا.'; end if;
+  if v_uid = auth.uid() then raise exception 'SELF' using hint = 'أنت مالك الحملة بالفعل.'; end if;
+  select role into v_role from public.profiles where id = v_uid;
+  if v_role = 'admin' then raise exception 'NOT_AUTHORIZED' using hint = 'لا يمكن إضافة حساب إدارة.'; end if;
+  if exists (select 1 from public.subscribers where owner_id = v_uid) then
+    raise exception 'IS_OWNER' using hint = 'هذا الحساب يملك حملةً خاصّةً به.'; end if;
+  -- حمايةُ الموافقة والبيانات: لا نخطف معتمرًا مرتبطًا بحملةٍ أخرى.
+  if v_role = 'customer'
+     and (select subscriber_id from public.profiles where id = v_uid) is distinct from null
+     and (select subscriber_id from public.profiles where id = v_uid) <> p_sub then
+    raise exception 'LINKED_ELSEWHERE' using hint = 'هذا الحساب معتمرٌ مرتبطٌ بحملةٍ أخرى — اطلب منه التسجيل بحسابٍ مستقلّ.';
+  end if;
+
+  insert into public.subscriber_members (subscriber_id, profile_id, role)
+  values (p_sub, v_uid, p_role)
+  on conflict (subscriber_id, profile_id) do update set role = excluded.role;
+
+  perform set_config('malbeek.trusted', '1', true);      -- يسمح للحارس بإسناد الدور/الحملة
+  update public.profiles set role = 'subscriber', subscriber_id = p_sub where id = v_uid;
+  return jsonb_build_object('ok', true, 'profile_id', v_uid, 'role', p_role);
+end $$;
+revoke all on function public.add_team_member(uuid, text, text) from public;
+grant execute on function public.add_team_member(uuid, text, text) to authenticated;
+
+-- ★ إزالة عضوٍ (المالك فقط، ولا يُزال المالك)
+create or replace function public.remove_team_member(p_sub uuid, p_profile uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.subscribers where id = p_sub and owner_id = auth.uid()) then
+    raise exception 'NOT_AUTHORIZED' using hint = 'إدارة الفريق لمالك الحملة فقط.';
+  end if;
+  if exists (select 1 from public.subscribers where id = p_sub and owner_id = p_profile) then
+    raise exception 'CANNOT_REMOVE_OWNER' using hint = 'لا يمكن إزالة مالك الحملة.'; end if;
+  delete from public.subscriber_members where subscriber_id = p_sub and profile_id = p_profile;
+  perform set_config('malbeek.trusted', '1', true);
+  update public.profiles set subscriber_id = null where id = p_profile and subscriber_id = p_sub;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.remove_team_member(uuid, uuid) from public;
+grant execute on function public.remove_team_member(uuid, uuid) to authenticated;
+
+-- ★ تغيير دور عضو (المالك فقط)
+create or replace function public.set_member_role(p_sub uuid, p_profile uuid, p_role text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.subscribers where id = p_sub and owner_id = auth.uid()) then
+    raise exception 'NOT_AUTHORIZED' using hint = 'إدارة الفريق لمالك الحملة فقط.';
+  end if;
+  if p_role not in ('manager','staff') then raise exception 'BAD_ROLE' using hint = 'دورٌ غير صالح.'; end if;
+  if exists (select 1 from public.subscribers where id = p_sub and owner_id = p_profile) then
+    raise exception 'CANNOT_CHANGE_OWNER' using hint = 'لا يمكن تغيير دور المالك.'; end if;
+  update public.subscriber_members set role = p_role where subscriber_id = p_sub and profile_id = p_profile;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.set_member_role(uuid, uuid, text) from public;
+grant execute on function public.set_member_role(uuid, uuid, text) to authenticated;
+
+-- ★ أعضاء الحملة مع أسمائهم (للوحة الفريق) — المالك/الأعضاء فقط
+create or replace function public.list_team_members(p_sub uuid)
+returns table (profile_id uuid, full_name text, role text, is_owner boolean, created_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select m.profile_id, p.full_name, m.role,
+         (s.owner_id = m.profile_id) as is_owner, m.created_at
+  from public.subscriber_members m
+  join public.subscribers s on s.id = m.subscriber_id
+  left join public.profiles p on p.id = m.profile_id
+  where m.subscriber_id = p_sub
+    and (public.can_manage_sub(p_sub) or public.my_role() = 'admin')
+  order by (s.owner_id = m.profile_id) desc, m.created_at asc;
+$$;
+revoke all on function public.list_team_members(uuid) from public;
+grant execute on function public.list_team_members(uuid) to authenticated;
