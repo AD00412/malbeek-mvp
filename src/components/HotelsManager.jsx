@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { translateRpcError } from '../lib/rpcErrors'
+import { useUI } from '../lib/useUI'
 import Icon from './Icon'
 import BottomSheet from './BottomSheet'
 
@@ -25,6 +26,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
   const [picking, setPicking] = useState(null)        // {room}
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const { confirm, toast } = useUI()
 
   const load = useCallback(async () => {
     if (!trip?.id) return
@@ -60,27 +62,31 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
   const unassigned = passengers.filter((p) => !p.room_id)
 
   async function removeHotel(h) {
-    if (!window.confirm(`حذف فندق «${h.name}» وكلّ غرفه؟ سيُلغى إسناد ساكنيه.`)) return
+    if (!(await confirm({ title: 'حذف فندق', message: `حذف فندق «${h.name}» وكلّ غرفه؟ سيُلغى إسناد ساكنيه.`, confirmText: 'حذف', danger: true }))) return
     const { error } = await supabase.from('hotels').delete().eq('id', h.id)
     if (error) { setErr(translateRpcError(error)); return }
+    toast('تم حذف الفندق', { type: 'success' })
     onChanged?.(); load()
   }
   async function removeRoom(r) {
-    if (!window.confirm(`حذف غرفة ${r.room_number}؟`)) return
+    if (!(await confirm({ title: 'حذف غرفة', message: `حذف غرفة ${r.room_number}؟`, confirmText: 'حذف', danger: true }))) return
     const { error } = await supabase.from('hotel_rooms').delete().eq('id', r.id)
     if (error) { setErr(translateRpcError(error)); return }
+    toast('تم حذف الغرفة', { type: 'success' })
     onChanged?.(); load()
   }
   async function assignPassenger(roomId, passengerId) {
     setErr('')
     const { error } = await supabase.from('passengers').update({ room_id: roomId }).eq('id', passengerId)
     if (error) { setErr(translateRpcError(error)); return false }
+    toast('تم تسكين المعتمر', { type: 'success' })
     onChanged?.()
     return true
   }
   async function unassign(p) {
     const { error } = await supabase.from('passengers').update({ room_id: null }).eq('id', p.id)
     if (error) { setErr(translateRpcError(error)); return }
+    toast('تم إلغاء التسكين', { type: 'info' })
     onChanged?.()
   }
 

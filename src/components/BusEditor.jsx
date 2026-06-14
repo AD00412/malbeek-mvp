@@ -4,6 +4,7 @@ import Icon from './Icon'
 import SeatMap from './SeatMap'
 import { SEATING_POLICIES, seatCount, buildSeats, isAllowed, DEFAULT_ROWS, DEFAULT_BACK } from '../lib/busLayout'
 import { loadTripBuses, busName } from '../lib/buses'
+import { useUI } from '../lib/useUI'
 
 /**
  * مدير باصات الرحلة — تخطيطٌ قابلٌ للضبط مع معاينةٍ حيّة، ودعمٌ لعدّة باصات.
@@ -22,6 +23,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
   const [back, setBack] = useState(DEFAULT_BACK)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const { confirm, toast } = useUI()
 
   const fillFrom = useCallback((b) => {
     setBusLabel(b?.label ?? '')
@@ -129,7 +131,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
   async function deleteActive() {
     if (busy || !active || isPrimary) return
     if (busPax.length > 0) { setErr('لا يمكن حذف باصٍ يحوي معتمرين. انقلهم أوّلًا.'); return }
-    if (!window.confirm(`حذف «${busName(active)}»؟`)) return
+    if (!(await confirm({ title: 'حذف باص', message: `حذف «${busName(active)}»؟`, confirmText: 'حذف', danger: true }))) return
     setBusy(true); setErr('')
     try {
       const { error } = await supabase.from('trip_buses').delete().eq('id', activeId)
@@ -139,6 +141,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
           .reduce((s, b) => s + seatCount(b.bus_rows ?? DEFAULT_ROWS, b.bus_back_row ?? DEFAULT_BACK), 0),
       }).eq('id', trip.id)
       await load()
+      toast('تم حذف الباص', { type: 'success' })
       onSaved?.()
     } catch (e) {
       setErr(e?.message ? 'تعذّر حذف الباص: ' + e.message : 'تعذّر حذف الباص.')

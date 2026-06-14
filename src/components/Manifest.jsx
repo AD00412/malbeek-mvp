@@ -3,6 +3,7 @@ import CompassMark from './CompassMark'
 import Icon from './Icon'
 import { busName } from '../lib/buses'
 import { htmlsToPdf } from '../lib/pdf'
+import { useUI } from '../lib/useUI'
 
 const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
 
@@ -141,13 +142,18 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
 
   const sheetRefs = useRef([])
   const [busy, setBusy] = useState(false)
+  const { toast } = useUI()
 
   async function downloadPdf() {
     if (busy) return
     setBusy(true)
     try {
       await htmlsToPdf(sheetRefs.current.filter(Boolean), `كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`)
-    } catch (e) { alert('تعذّر إنشاء PDF: ' + (e?.message || e)) }
+      toast('تم تنزيل الكشف بنجاح', { type: 'success' })
+    } catch (e) {
+      console.error(e)
+      toast('تعذّر إنشاء ملفّ PDF — حاول مجدّدًا.', { type: 'error' })
+    }
     finally { setBusy(false) }
   }
 
@@ -160,7 +166,7 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
         {multi && <span className="muted" style={{ fontSize: 13 }}>{buses.length} باصات — كشفٌ لكلّ باص</span>}
         <span style={{ flex: 1 }} />
         <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-          <Icon name="qr" size={16} /> طباعة
+          <Icon name="manifest" size={16} /> طباعة
         </button>
         <button className="btn btn-gold btn-sm" onClick={downloadPdf} disabled={busy}>
           {busy ? <span className="spinner" /> : <><Icon name="download" size={16} /> تنزيل PDF</>}

@@ -16,6 +16,7 @@ import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
 import { tableToDocx } from '../../lib/docx'
 import { translateRpcError } from '../../lib/rpcErrors'
+import { useUI } from '../../lib/useUI'
 import { waMeLink, fmtDateTime } from '../../lib/format'
 
 // تحميلٌ كسولٌ — الماسح والتذكرة خارج الحزمة الأساسية (والتذكرة تُحمّل qrcode عند الحاجة)
@@ -74,6 +75,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [search, setSearch] = useState('')
+  const { confirm, toast } = useUI()
 
   const [paxOpen, setPaxOpen] = useState(false)
   const [editingPax, setEditingPax] = useState(null)
@@ -174,16 +176,19 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         rows: rosterRows(),
         filename: `كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`,
       })
+      toast('تم تنزيل ملفّ Word', { type: 'success' })
     } catch (e) {
-      alert('تعذّر إنشاء ملفّ Word: ' + (e?.message || e))
+      console.error(e)
+      toast('تعذّر إنشاء ملفّ Word — حاول مجدّدًا.', { type: 'error' })
     }
   }
 
   async function removePax(p) {
     if (!p?.id) return
-    if (!window.confirm(`حذف «${p.full_name}» من الكشف؟`)) return
+    if (!(await confirm({ title: 'حذف معتمر', message: `حذف «${p.full_name}» من الكشف؟`, confirmText: 'حذف', danger: true }))) return
     const { error } = await supabase.from('passengers').delete().eq('id', p.id)
-    if (error) { setErr('تعذّر الحذف: ' + error.message); return }
+    if (error) { setErr(translateRpcError(error, 'تعذّر الحذف.')); return }
+    toast('تم حذف المعتمر', { type: 'success' })
     loadPassengers()
   }
 
@@ -377,7 +382,8 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                   {p.payment_ref && p.status === 'registered' && (
                     <button className="icon-btn" title="تأكيد الدفع" onClick={async () => {
                       const { error } = await supabase.from('passengers').update({ status: 'paid' }).eq('id', p.id)
-                      if (error) alert('تعذّر التأكيد: ' + error.message); else loadPassengers()
+                      if (error) toast(translateRpcError(error, 'تعذّر تأكيد الدفع.'), { type: 'error' })
+                      else { toast('تم تأكيد الدفع', { type: 'success' }); loadPassengers() }
                     }}><Icon name="check" size={15} /></button>
                   )}
                   <button className="icon-btn" onClick={() => setTicketFor(p)} aria-label="التذكرة"><Icon name="qr" size={15} /></button>
@@ -421,9 +427,10 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                   </div>
                 </div>
                 <button className="icon-btn danger" onClick={async () => {
-                  if (!window.confirm('إزالة هذا الشخص من قائمة الانتظار؟')) return
+                  if (!(await confirm({ title: 'إزالة من الانتظار', message: 'إزالة هذا الشخص من قائمة الانتظار؟', confirmText: 'إزالة', danger: true }))) return
                   const { error } = await supabase.from('waitlist').delete().eq('id', w.id)
-                  if (error) alert('تعذّر الحذف: ' + error.message); else loadPassengers()
+                  if (error) toast(translateRpcError(error, 'تعذّر الحذف.'), { type: 'error' })
+                  else { toast('تمت الإزالة من قائمة الانتظار', { type: 'info' }); loadPassengers() }
                 }}><Icon name="trash" size={15} /></button>
               </div>
             ))}
@@ -466,7 +473,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           buses={buses}
           defaultBoarding={trip?.boarding_point}
           onClose={() => setImportOpen(false)}
-          onDone={(n) => { setImportOpen(false); setErr(''); loadPassengers(); alert(`تم استيراد ${n} معتمرٍ بنجاح.`) }}
+          onDone={(n) => { setImportOpen(false); setErr(''); loadPassengers(); toast(`تم استيراد ${n} معتمرٍ بنجاح`, { type: 'success' }) }}
         />
       )}
 

@@ -715,3 +715,31 @@
   .mf-table tr{page-break-inside:avoid}
   @page{size:A4;margin:12mm}
 }
+
+/* ============================================================
+   تنبيهات (toast) + نافذة تأكيد موحَّدة + احترام تقليل الحركة
+   ============================================================ */
+.toast-viewport{position:fixed;top:calc(12px + env(safe-area-inset-top));inset-inline:0;z-index:300;
+  display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 12px;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:480px;width:fit-content;
+  padding:11px 14px;border-radius:var(--r-md,12px);font-size:13.5px;font-weight:500;
+  background:linear-gradient(160deg,#0a3a27,var(--em-900));border:1px solid var(--line-strong);
+  color:var(--cr-50);box-shadow:var(--shadow-lg);animation:toast-in .26s ease}
+.toast-success{border-color:rgba(43,182,140,.5)}
+.toast-success .toast-ic{color:var(--ok-ink)}
+.toast-error{border-color:rgba(224,88,75,.5)}
+.toast-error .toast-ic{color:var(--danger-ink)}
+.toast-info .toast-ic{color:var(--gd-300)}
+.toast-ic{display:grid;place-items:center;flex:0 0 auto}
+.toast-msg{flex:1 1 auto;line-height:1.5}
+.toast-x{flex:0 0 auto;background:none;border:none;color:var(--cr-300);cursor:pointer;
+  font-size:18px;line-height:1;padding:0 2px;transition:.2s}
+.toast-x:hover{color:var(--cr-50)}
+@keyframes toast-in{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+
+.confirm-msg{color:var(--cr-100);font-size:14.5px;line-height:1.7;margin:0}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;scroll-behavior:auto !important}
+}

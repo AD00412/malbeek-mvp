@@ -17,6 +17,8 @@ import { useRealtime } from '../../lib/useRealtime'
 import { fmtDateTime } from '../../lib/format'
 import { tableToDocx } from '../../lib/docx'
 import { htmlToPdf } from '../../lib/pdf'
+import { useUI } from '../../lib/useUI'
+import { translateRpcError } from '../../lib/rpcErrors'
 import TripManage from './TripManage'
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -118,14 +120,15 @@ export function AdminHome() {
 
 function SubsPanel({ subs, loading, onReload }) {
   const [busyId, setBusyId] = useState(null)
+  const { toast } = useUI()
   const money = (n) => Number(n || 0).toLocaleString('en-US')
   async function togglePlan(s) {
     setBusyId(s.id)
     const next = s.plan === 'paid' ? 'trial' : 'paid'
     const { error } = await supabase.from('subscribers').update({ plan: next }).eq('id', s.id)
     setBusyId(null)
-    if (error) alert('تعذّر التحديث: ' + error.message)
-    else onReload?.()
+    if (error) toast(translateRpcError(error, 'تعذّر تحديث الباقة.'), { type: 'error' })
+    else { toast(next === 'paid' ? 'تمت ترقية الحملة لمدفوعة' : 'أُعيدت الحملة لتجريبية', { type: 'success' }); onReload?.() }
   }
   const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصّل (﷼)','تاريخ الاشتراك']
   function reportRows() {
@@ -145,15 +148,16 @@ function SubsPanel({ subs, loading, onReload }) {
         rows: reportRows(),
         filename: 'تقرير-الحملات',
       })
-    } catch (e) { alert('تعذّر إنشاء Word: ' + (e?.message || e)) }
+      toast('تم تنزيل تقرير Word', { type: 'success' })
+    } catch (e) { console.error(e); toast('تعذّر إنشاء ملفّ Word — حاول مجدّدًا.', { type: 'error' }) }
   }
   const reportRef = useRef(null)
   const [pdfBusy, setPdfBusy] = useState(false)
   async function exportReportPdf() {
     if (pdfBusy || !reportRef.current) return
     setPdfBusy(true)
-    try { await htmlToPdf(reportRef.current, 'تقرير-الحملات') }
-    catch (e) { alert('تعذّر إنشاء PDF: ' + (e?.message || e)) }
+    try { await htmlToPdf(reportRef.current, 'تقرير-الحملات'); toast('تم تنزيل تقرير PDF', { type: 'success' }) }
+    catch (e) { console.error(e); toast('تعذّر إنشاء ملفّ PDF — حاول مجدّدًا.', { type: 'error' }) }
     finally { setPdfBusy(false) }
   }
   return (
@@ -216,6 +220,7 @@ export function SubscriberHome() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const { confirm, toast } = useUI()
   const [scanMode, setScanMode] = useState(null)    // null | 'pick' | 'board' | 'checkin'
   const [copied, setCopied] = useState(false)
   const [filter, setFilter] = useState('all')   // all | upcoming | active | done
@@ -311,9 +316,10 @@ export function SubscriberHome() {
 
   async function remove(t) {
     if (!t?.id) return
-    if (!window.confirm(`هل تريد حذف رحلة «${t.title}»؟ لا يمكن التراجع.`)) return
+    if (!(await confirm({ title: 'حذف رحلة', message: `هل تريد حذف رحلة «${t.title}»؟ لا يمكن التراجع.`, confirmText: 'حذف', danger: true }))) return
     const { error } = await supabase.from('trips').delete().eq('id', t.id)
-    if (error) { setErr('تعذّر حذف الرحلة: ' + error.message); return }
+    if (error) { setErr(translateRpcError(error, 'تعذّر حذف الرحلة.')); return }
+    toast('تم حذف الرحلة', { type: 'success' })
     load()
   }
 
@@ -695,6 +701,7 @@ export function CustomerHome() {
   const [booking, setBooking] = useState(null)        // الرحلة قيد الحجز (شاشة كاملة)
   const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const { confirm, toast } = useUI()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -836,10 +843,10 @@ export function CustomerHome() {
                         {b.status === 'registered' && t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
                         {b.status === 'registered' ? (
                           <button className="icon-btn danger" onClick={async () => {
-                            if (!window.confirm(`إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`)) return
+                            if (!(await confirm({ title: 'إلغاء الحجز', message: `إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`, confirmText: 'إلغاء الحجز', cancelText: 'تراجع', danger: true }))) return
                             const { error } = await supabase.from('passengers').delete().eq('id', b.id)
-                            if (error) alert('تعذّر الإلغاء: ' + error.message)
-                            else load()
+                            if (error) toast(translateRpcError(error, 'تعذّر إلغاء الحجز.'), { type: 'error' })
+                            else { toast('تم إلغاء الحجز', { type: 'info' }); load() }
                           }}><Icon name="trash" size={15} /> إلغاء</button>
                         ) : (
                           <span className="muted" style={{ fontSize: 12 }}>للتعديل أو الإلغاء تواصل مع الحملة</span>
