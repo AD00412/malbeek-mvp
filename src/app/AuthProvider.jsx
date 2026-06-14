@@ -27,11 +27,14 @@ export function AuthProvider({ children }) {
     // التسجيل — مسموحٌ بسياسة "profile self insert".
     const { data: u } = await supabase.auth.getUser()
     const md = u?.user?.user_metadata ?? {}
+    // ★ أمان: لا نثق بالدور القادم من بيانات العميل (user_metadata) — قد يُحقَن
+    //   بـ 'admin' عبر استدعاء signUp مُلفّق. الأدمن يُمنح من قاعدة البيانات فقط.
+    let safeRole = md.role === 'subscriber' ? 'subscriber' : 'customer'
     const { data: created, error: insErr } = await supabase
       .from('profiles')
       .insert({
         id: uid,
-        role: md.role ?? 'customer',
+        role: safeRole,
         full_name: md.full_name ?? null,
         phone: md.phone ?? null,
         subscriber_id: md.subscriber_id ?? null,

@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
-import { ScreenLoader } from '../../app/RequireAuth'
+import { ScreenLoader, homeForRole } from '../../app/RequireAuth'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, isValidEmail, pwStrength, PW_LABEL } from '../../lib/format'
 
 function arError(msg = '') {
@@ -33,10 +33,12 @@ function validators() {
   }
 }
 
+const ROLE_AR = { admin: 'الإدارة', subscriber: 'صاحب حملة', customer: 'معتمر' }
+
 export default function CustomerJoin() {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const { refreshProfile } = useAuth()
+  const { refreshProfile, session, profile, role, subscriberId, loading: authLoading, signOut } = useAuth()
 
   const [resolving, setResolving] = useState(true)
   const [org, setOrg] = useState(null)          // { id, org_name }
@@ -154,6 +156,37 @@ export default function CustomerJoin() {
   }
 
   if (resolving) return <ScreenLoader label="جارٍ فتح صفحة التسجيل…" />
+
+  // مسجَّلٌ الدخول بالفعل؟ لا نعرض نموذج التسجيل ولا نتركه يُوجَّه للوحةٍ ليست له.
+  // نُظهر حدود الدور بوضوحٍ: كلٌّ إلى لوحته، ولا يُسجَّل كمعتمرٍ إلّا بعد خروجٍ صريح.
+  if (!authLoading && session && profile && !busy && org) {
+    const sameCampaign = role === 'customer' && subscriberId === org.id
+    return (
+      <AuthShell
+        heading={`حملة ${org.org_name}`}
+        blurb="أنت مسجّلٌ الدخول حاليًّا."
+        points={['كلّ دورٍ له لوحته الخاصّة', 'لا وصول لحساباتٍ أو لوحاتٍ أخرى', 'تسجيلٌ آمنٌ ومحمي']}
+      >
+        <div className="join-state">
+          <span className="join-state-ic ok"><Icon name="user" size={30} /></span>
+          <h2 className="ttl">أنت مسجّلٌ الدخول بالفعل</h2>
+          {sameCampaign ? (
+            <p className="desc">أنت منضمٌّ إلى «{org.org_name}». تابع حجوزاتك وتذاكرك من لوحتك.</p>
+          ) : role === 'customer' ? (
+            <p className="desc">حسابك معتمرٌ مرتبطٌ بحملةٍ أخرى. للانضمام إلى «{org.org_name}» سجّل خروجًا ثمّ أنشئ حسابًا جديدًا، أو ادخل لوحتك الحاليّة.</p>
+          ) : (
+            <p className="desc">أنت مسجّلٌ بحساب «{ROLE_AR[role] || 'مستخدم'}». هذه الصفحة لتسجيل المعتمرين الجدد — للتسجيل كمعتمرٍ، سجّل خروجًا أوّلًا.</p>
+          )}
+          <button className="btn btn-gold btn-block" style={{ marginTop: 18 }} onClick={() => navigate(homeForRole(role), { replace: true })}>
+            <Icon name="dashboard" size={16} /> الذهاب إلى لوحتي
+          </button>
+          <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => signOut()}>
+            <Icon name="logout" size={16} /> تسجيل الخروج للتسجيل كمعتمرٍ جديد
+          </button>
+        </div>
+      </AuthShell>
+    )
+  }
 
   if (notFound) {
     return (
