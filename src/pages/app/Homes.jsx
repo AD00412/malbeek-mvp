@@ -236,6 +236,7 @@ export function SubscriberHome() {
   const [filter, setFilter] = useState('all')   // all | upcoming | active | done
   const [search, setSearch] = useState('')
   const [managing, setManaging] = useState(null) // الرحلة قيد الإدارة (شاشة كاملة)
+  const [manageInitial, setManageInitial] = useState(null) // نموذجٌ يُفتح مباشرةً عند دخول الإدارة
   const [paxStats, setPaxStats] = useState({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } })
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const creatingRef = useRef(false)
@@ -374,6 +375,11 @@ export function SubscriberHome() {
     if (trips[0]) { setManaging(trips[0]); setView('trips') }
     else openCreate()
   }
+  // فتحٌ مباشرٌ لنموذج بيانات المؤسسة/الباص (الكشف) عند الضغط على خطوة «بيانات المؤسسة»
+  function manageFirstCrew() {
+    if (trips[0]) { setManageInitial('crew'); setManaging(trips[0]); setView('trips') }
+    else openCreate()
+  }
 
   function onTab(k) {
     setManaging(null)
@@ -401,6 +407,8 @@ export function SubscriberHome() {
               sub={sub}
               onBack={() => setManaging(null)}
               onOpenTrip={(newTrip) => { if (newTrip) setManaging(newTrip) }}
+              initialOpen={manageInitial}
+              onInitialConsumed={() => setManageInitial(null)}
               onTripChanged={load}
             />
           </Suspense>
@@ -431,6 +439,7 @@ export function SubscriberHome() {
                   onCreateTrip={openCreate}
                   onShare={() => setShareOpen(true)}
                   onManageFirst={manageFirst}
+                  onOrgData={manageFirstCrew}
                 />
                 {sub?.owner_id === user?.id && (
                   <button className="action" style={{ marginTop: 12 }} onClick={() => setTeamOpen(true)}>

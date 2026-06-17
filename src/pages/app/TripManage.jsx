@@ -72,7 +72,7 @@ function waMessage(p, trip, sub) {
  * @param {Function} onTripChanged  لإعادة تحميل قائمة الرحلات في الأب عند تغيّر الطاقم
  * @param {Function} onOpenTrip     لفتح رحلةٍ أخرى مباشرةً (مثل النسخة الجديدة بعد الاستنساخ)
  */
-export default function TripManage({ trip: initialTrip, sub, onBack, onTripChanged, onOpenTrip }) {
+export default function TripManage({ trip: initialTrip, sub, onBack, onTripChanged, onOpenTrip, initialOpen, onInitialConsumed }) {
   const [trip, setTrip] = useState(initialTrip)
   const [passengers, setPassengers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -102,6 +102,13 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [importOpen, setImportOpen] = useState(false)
   const [dupOpen, setDupOpen] = useState(false)
   const [payments, setPayments] = useState([])
+
+  // فتحٌ مباشرٌ لنموذجٍ معيّنٍ عند الدخول (مثلًا من جولة التهيئة: «بيانات المؤسسة»).
+  useEffect(() => {
+    if (initialOpen === 'crew') setCrewOpen(true)
+    onInitialConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
