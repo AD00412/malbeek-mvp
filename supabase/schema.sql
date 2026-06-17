@@ -2035,3 +2035,7 @@ begin
 exception when others then
   raise notice 'pg_cron غير مفعّل — تُخطّيت جدولة التذكير التلقائيّ. فعّل الامتداد من لوحة Supabase ثمّ أعد تشغيل هذا الـ DO block.';
 end $$;
+
+-- إخطار PostgREST بإعادة تحميل الـ schema بعد أيّ ترقيةٍ تضيف أعمدةً أو دوال.
+-- آمنٌ تمامًا (لا تأثير لو لم يكن PostgREST مستمعًا) — لكنّه يمنع تعليقاتٍ نادرةً.
+notify pgrst, 'reload schema';
