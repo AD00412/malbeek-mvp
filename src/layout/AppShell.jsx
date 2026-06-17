@@ -71,6 +71,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
                 className={`nav-item ${active === item.key ? 'active' : ''}`}
                 onClick={() => !item.disabled && onTab?.(item.key)}
                 disabled={item.disabled}
+                aria-current={active === item.key ? 'page' : undefined}
                 style={item.disabled ? { opacity: .5, cursor: 'not-allowed' } : undefined}
               >
                 <span className="ic"><Icon name={item.icon} size={20} /></span>
@@ -137,6 +138,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
               className={`tab ${active === t.key ? 'active' : ''}`}
               onClick={() => !t.disabled && onTab?.(t.key)}
               disabled={t.disabled}
+              aria-current={active === t.key ? 'page' : undefined}
               style={t.disabled ? { opacity: .45 } : undefined}
             >
               <span className="tb-ic"><Icon name={t.icon} size={20} /></span>

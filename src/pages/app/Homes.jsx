@@ -492,7 +492,7 @@ export function SubscriberHome() {
         </BottomSheet>
       </AppShell>
 
-      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} title="تواصل مع إدارة ملبّيك">
+      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} aria-label="تواصل مع إدارة ملبّيك" title="تواصل مع إدارة ملبّيك">
         <Icon name="message" size={18} />
       </button>
       <FeedbackSheet open={feedbackOpen} audience="subscriber" onClose={() => setFeedbackOpen(false)} />
@@ -895,7 +895,7 @@ export function CustomerHome() {
         </div>
       </AppShell>
 
-      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} title="تواصل مع إدارة ملبّيك">
+      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} aria-label="تواصل مع إدارة ملبّيك" title="تواصل مع إدارة ملبّيك">
         <Icon name="message" size={18} />
       </button>
       <FeedbackSheet open={feedbackOpen} audience="customer" onClose={() => setFeedbackOpen(false)} />
