@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
@@ -223,6 +223,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const expected = price != null ? price * count : null
   const money = (n) => Number(n || 0).toLocaleString('en-US')
 
+  // أرقام الهويّة المكرّرة داخل الرحلة (تُرفض في الكشوف الرسميّة) — للتنبيه
+  const dupIds = useMemo(() => {
+    const counts = {}
+    for (const p of passengers) {
+      const id = (p.national_id || '').trim()
+      if (id) counts[id] = (counts[id] || 0) + 1
+    }
+    return new Set(Object.keys(counts).filter((k) => counts[k] > 1))
+  }, [passengers])
+
   const q = search.trim().toLowerCase()
   const PAID = new Set(['paid', 'boarded', 'checked_in'])
   let filtered = q
@@ -385,6 +395,13 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           <button className="btn btn-gold btn-sm" onClick={openAdd}><Icon name="plus" size={16} /> إضافة</button>
         </div>
 
+        {dupIds.size > 0 && (
+          <div className="alert warn" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Icon name="bell" size={16} />
+            <span>تنبيه: {dupIds.size} رقم هويّةٍ مكرّر بين المعتمرين — تُرفض الكشوف الرسميّة بالمكرّرات. راجِع المعلّمين بـ«هويّة مكرّرة».</span>
+          </div>
+        )}
+
         <div className="field search" style={{ marginBottom: 4 }}>
           <span className="ic"><Icon name="search" size={17} /></span>
           <input type="text" placeholder="بحث: اسم / هوية / جوال / مقعد" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -421,6 +438,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                   <div className="pax-name">
                     {p.full_name}
                     {p.profile_id && <span className="tag muted" style={{ fontSize: 9, padding: '1px 6px', marginInlineStart: 6 }}>ذاتي</span>}
+                    {p.national_id && dupIds.has(p.national_id.trim()) && (
+                      <span className="tag danger" style={{ fontSize: 9, padding: '1px 6px', marginInlineStart: 6 }}>هويّة مكرّرة</span>
+                    )}
                   </div>
                   <div className="pax-meta">
                     <span className="ltr">{p.national_id || '—'}</span>
