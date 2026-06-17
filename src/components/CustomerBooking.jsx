@@ -285,6 +285,16 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
             <p>{(trip?.route_from || '—') + ' ← ' + (trip?.route_to || '—')} · {fmt(trip?.depart_at)}</p>
           </section>
 
+          {trip?.notes && trip.notes.trim() && (
+            <div className="alert info" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 2 }}>
+              <Icon name="bell" size={16} style={{ flex: 'none', marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>إرشادات الحملة</div>
+                <div style={{ whiteSpace: 'pre-wrap', fontSize: 13.5 }}>{trip.notes}</div>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="empty"><div className="em-mark"><CompassMark size={48} /></div>جارٍ التحميل…</div>
           ) : (
