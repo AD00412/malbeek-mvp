@@ -1955,3 +1955,36 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.invite_info(uuid) from public;
 grant execute on function public.invite_info(uuid) to anon, authenticated;
+
+-- ★ تدقيقُ تغييرات الفريق: إضافةُ/إزالة/تغيير دور عضو
+create or replace function public.audit_member_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare a jsonb := public.audit_actor(); v_label text;
+begin
+  select coalesce(p.full_name, u.email)
+    into v_label
+    from public.profiles p
+    join auth.users u on u.id = p.id
+    where p.id = coalesce(new.profile_id, old.profile_id);
+
+  if tg_op = 'INSERT' then
+    insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, entity, entity_id, entity_label, action, changes)
+    values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role',
+            new.subscriber_id, 'member', new.id, v_label, 'create',
+            jsonb_build_object('role', jsonb_build_object('new', new.role)));
+  elsif tg_op = 'DELETE' then
+    insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, entity, entity_id, entity_label, action, changes)
+    values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role',
+            old.subscriber_id, 'member', old.id, v_label, 'delete', null);
+  elsif tg_op = 'UPDATE' and new.role is distinct from old.role then
+    insert into public.audit_logs (actor_id, actor_email, actor_role, subscriber_id, entity, entity_id, entity_label, action, changes)
+    values ((a->>'actor_id')::uuid, a->>'actor_email', a->>'actor_role',
+            new.subscriber_id, 'member', new.id, v_label, 'role_change',
+            jsonb_build_object('role', jsonb_build_object('old', old.role, 'new', new.role)));
+  end if;
+  return coalesce(new, old);
+end $$;
+drop trigger if exists trg_audit_members on public.subscriber_members;
+create trigger trg_audit_members
+  after insert or update or delete on public.subscriber_members
+  for each row execute function public.audit_member_change();

@@ -17,7 +17,10 @@ const ACTION_AR = {
   bus_assign: { t: 'تغيير الحافلة', icon: 'bus', cls: 'info' },
   room_assign: { t: 'إسناد غرفة', icon: 'bed', cls: 'info' },
   amount_change: { t: 'تعديل المبلغ', icon: 'payments', cls: 'warn' },
+  role_change: { t: 'تغيير دور عضو', icon: 'customers', cls: 'info' },
 }
+
+const MEMBER_ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظّف' }
 
 const ROLE_AR = { admin: 'إدارة المنصّة', subscriber: 'المالك', customer: 'العميل', system: 'بوّابة الدفع', unknown: '—' }
 
@@ -44,6 +47,7 @@ function describeField(field, change) {
     case 'paid_at': return nv ? 'ختم وقت الدفع' : 'إلغاء ختم الدفع'
     case 'price':   return `سعر المقعد: ${ov ?? '—'} → ${nv ?? '—'}`
     case 'capacity':return `السعة: ${ov ?? '—'} → ${nv ?? '—'}`
+    case 'role':    return `الدور: ${MEMBER_ROLE_AR[ov] || ov || '—'} → ${MEMBER_ROLE_AR[nv] || nv || '—'}`
     default: return field
   }
 }
@@ -61,23 +65,34 @@ function describeAction(log) {
 /**
  * سجلّ نشاط الرحلة — يقرأ audit_logs مفلترةً بـ trip_id (RLS تحرس الملكيّة).
  */
-export default function AuditLogSheet({ open, tripId, onClose }) {
+export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
-  const [filter, setFilter] = useState('all')   // all | passenger | trip
+  const [filter, setFilter] = useState('all')   // all | passenger | trip | member
 
   const load = useCallback(async () => {
     if (!open || !tripId) return
     setLoading(true)
-    const { data } = await supabase
+    // أحداث الرحلة + أحداث الفريق (subscriber-scope بلا trip_id) معًا
+    const tripQ = supabase
       .from('audit_logs')
       .select('id, actor_email, actor_role, entity, entity_id, entity_label, action, changes, created_at')
       .eq('trip_id', tripId)
       .order('created_at', { ascending: false })
       .limit(200)
-    setLogs(data ?? [])
+    const memberQ = subscriberId
+      ? supabase.from('audit_logs')
+          .select('id, actor_email, actor_role, entity, entity_id, entity_label, action, changes, created_at')
+          .eq('subscriber_id', subscriberId).eq('entity', 'member')
+          .is('trip_id', null)
+          .order('created_at', { ascending: false }).limit(50)
+      : Promise.resolve({ data: [] })
+    const [t, m] = await Promise.all([tripQ, memberQ])
+    const merged = [...(t.data ?? []), ...(m.data ?? [])]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setLogs(merged)
     setLoading(false)
-  }, [open, tripId])
+  }, [open, tripId, subscriberId])
 
   useEffect(() => { load() }, [load])
 
@@ -99,6 +114,7 @@ export default function AuditLogSheet({ open, tripId, onClose }) {
           { v: 'all', t: 'الكلّ' },
           { v: 'passenger', t: 'المعتمرون' },
           { v: 'trip', t: 'الرحلة' },
+          { v: 'member', t: 'الفريق' },
         ].map((f) => (
           <button key={f.v} type="button"
             className={`bus-tab ${filter === f.v ? 'active' : ''}`}

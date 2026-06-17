@@ -526,7 +526,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         sourceId={trip?.id}
       />
 
-      <AuditLogSheet open={auditOpen} tripId={trip?.id} onClose={() => setAuditOpen(false)} />
+      <AuditLogSheet open={auditOpen} tripId={trip?.id} subscriberId={sub?.id} onClose={() => setAuditOpen(false)} />
       <RefundsSheet open={refundsOpen} tripId={trip?.id} onClose={() => setRefundsOpen(false)} />
 
       <BottomSheet
