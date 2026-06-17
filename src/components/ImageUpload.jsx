@@ -49,10 +49,11 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
   return (
     <div className="field">
       {label && <label>{label}</label>}
+      {/* بدون capture: iOS Safari يعرض قائمةً بثلاثة خياراتٍ (مكتبة الصور / التقاط صورة / اختيار ملفّ)
+          بدل فتح الكاميرا مباشرةً — تجربةٌ أكثر مرونةً ومطابقةٌ لتوقّعات المستخدم. */}
       <input
         ref={fileRef} type="file"
         accept="image/png,image/jpeg,image/webp"
-        capture="environment"
         style={{ display: 'none' }}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />

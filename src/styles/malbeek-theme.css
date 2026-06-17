@@ -334,8 +334,55 @@ input[type="time"]::-webkit-date-and-time-value{
 /* ==== الشاشة الفارغة ==== */
 :root[data-theme="light"] .empty{color:var(--cr-200)}
 
-/* ==== الماسح والكشف يبقيان داكنين عمدًا للقراءة الرسميّة ==== */
-/* لا تجاوزٌ على .scanner-overlay و .manifest — هي شاشاتٌ متخصّصة */
+/* ==== شريط الرجوع اللاصق في إدارة الرحلة ==== */
+:root[data-theme="light"] .tm-backbar{
+  background:linear-gradient(180deg,rgba(255,255,255,.85) 70%,transparent)
+}
+
+/* ==== الشاشات ملءَ الشاشة (الكشف/تعديل الباص/خريطة المقاعد) ==== */
+/* في الفاتح: الشاشة كلّها كريميّة بدل الـ #1a2420 الداكن — مع إبقاء الكشف
+   الرسميّ بخلفيّةٍ بيضاءَ للطباعة (لا يحتاج تعديلًا — هو أبيض أصلًا). */
+:root[data-theme="light"] .manifest-overlay{
+  background:#FBF7EE
+}
+:root[data-theme="light"] .manifest-toolbar{
+  background:rgba(255,255,255,.85);border-bottom-color:rgba(11,92,67,.10)
+}
+/* داخل تعديل الباص: الإطار العامّ لـ .bus-editor كان يستخدم خلفيّةً داكنة — نُفتّحه */
+:root[data-theme="light"] .bus-editor{
+  background:rgba(255,255,255,.7);border-color:rgba(11,92,67,.14)
+}
+
+/* ==== Toasts ==== */
+:root[data-theme="light"] .toast{
+  background:linear-gradient(160deg,#fff,#FBF7EE);
+  border-color:rgba(11,92,67,.20);
+  color:var(--cr-50);
+  box-shadow:0 14px 36px rgba(11,92,67,.18)
+}
+
+/* ==== المُنتقي والقوائم المنسدلة (select options) ==== */
+:root[data-theme="light"] .field select option{background:#fff;color:var(--cr-50)}
+
+/* ==== مدخلات تختار الزرّ (input أعمدة بسياسة الجلوس) ==== */
+:root[data-theme="light"] .seg{background:rgba(11,92,67,.04);border-color:rgba(11,92,67,.14)}
+:root[data-theme="light"] .seg button{color:var(--cr-200)}
+:root[data-theme="light"] .seg button.active{background:#fff;color:var(--cr-50);border-color:rgba(11,92,67,.20)}
+
+/* ==== الماسح وخريطة المقاعد ==== */
+/* الماسح يبقى داكنًا عمدًا (تباينٌ لقراءة QR + الإطار الذهبيّ). */
+/* خريطة المقاعد تبقى داكنةً عمدًا (تصميم باصٍ واقعيّ — لا منطقٌ بصريٌّ لجعله أبيض). */
+
+/* ==== رفع الصور (ImageUpload dropzone) ==== */
+:root[data-theme="light"] .img-upload.dropzone{
+  background:rgba(255,255,255,.55);
+  border:1.5px dashed rgba(196,154,69,.45);
+  color:var(--cr-100)
+}
+:root[data-theme="light"] .img-upload.dropzone:hover:not(:disabled){
+  background:#fff;border-color:rgba(196,154,69,.65)
+}
+:root[data-theme="light"] .img-upload.preview{background:rgba(255,255,255,.6);border-color:rgba(11,92,67,.14)}
 
 /* ============================================================
    التهيئة الأساسية
