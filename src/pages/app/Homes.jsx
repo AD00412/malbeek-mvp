@@ -99,6 +99,7 @@ export function AdminHome() {
   return (
     <>
       <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view} onTab={setView}>
+        <div key={view} className="view-fade">
         {view === 'overview' && (
           <>
             <div className="stats">
@@ -116,6 +117,7 @@ export function AdminHome() {
         )}
         {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} />}
         {view === 'feedback' && <FeedbackInbox />}
+        </div>
       </AppShell>
       <Roadmap />
     </>
@@ -399,7 +401,7 @@ export function SubscriberHome() {
             />
           </Suspense>
         ) : (
-          <>
+          <div key={view} className="view-fade">
             {view === 'overview' && (
               <>
                 <PendingInviteBanner />
@@ -454,7 +456,7 @@ export function SubscriberHome() {
                 onShare={() => setShareOpen(true)}
               />
             )}
-          </>
+          </div>
         )}
 
         {modalOpen && sub && (
@@ -799,6 +801,7 @@ export function CustomerHome() {
         active={view}
         onTab={onTab}
       >
+        <div key={view} className="view-fade">
         {view === 'trips' && (
           <>
             <PendingInviteBanner />
@@ -885,6 +888,7 @@ export function CustomerHome() {
             </div>
           </>
         )}
+        </div>
       </AppShell>
 
       <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} title="تواصل مع إدارة ملبّيك">
