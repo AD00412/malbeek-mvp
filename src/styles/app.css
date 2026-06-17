@@ -188,15 +188,46 @@
 /* الشريط الجانبي (سطح المكتب) */
 .sidebar{display:none}
 
-/* قائمة الحساب (الأڤتار في الرأس) — للجوّال وسطح المكتب معًا.
-   تعالج غياب «تسجيل خروج» من الجوال (كان في الشريط الجانبيّ فقط). */
+/* قائمة الحساب — Popover منسدلٌ بجانب الأڤتار في الرأس.
+   استبدلت BottomSheet لأنّ flex+RTL على iOS Safari كان يضع الورقة في الأعلى أحيانًا.
+   الـ Popover هنا يتموضع بـ position:absolute داخل الرأس الثابت — مضمونٌ كلّ المتصفّحات. */
+.acct-wrap{position:relative;flex:none}
 .acct-btn{background:linear-gradient(135deg,rgba(196,154,69,.22),rgba(196,154,69,.08));
   border:1px solid var(--line-strong);width:38px;height:38px;border-radius:50%;
   display:grid;place-items:center;cursor:pointer;transition:.18s;flex:none;padding:0}
 .acct-btn:hover{background:linear-gradient(135deg,rgba(196,154,69,.30),rgba(196,154,69,.12));transform:translateY(-1px)}
 .acct-btn:active{transform:scale(.95)}
-.acct-av{font-family:var(--font-display);font-weight:900;font-size:15px;color:var(--gd-300);
-  line-height:1;text-transform:uppercase}
+.acct-av{font-family:var(--font-display);font-weight:900;font-size:15px;color:var(--gd-300);line-height:1;text-transform:uppercase}
+
+.acct-pop{position:absolute;top:calc(100% + 8px);inset-inline-end:0;
+  width:min(300px, calc(100vw - 24px));z-index:90;
+  background:linear-gradient(160deg,#073322,var(--em-900));border:1px solid var(--line-strong);
+  border-radius:var(--r-md);padding:12px;box-shadow:0 18px 50px rgba(0,0,0,.55);
+  animation:pop-in .14s ease-out}
+@keyframes pop-in{from{opacity:0;transform:translateY(-6px) scale(.96)} to{opacity:1;transform:none}}
+.acct-pop-card{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--r-sm);
+  background:rgba(196,154,69,.06);border:1px solid rgba(196,154,69,.16)}
+.acct-pop-av{flex:none;width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gd-300),rgba(196,154,69,.55));
+  color:var(--em-950);display:grid;place-items:center;font-family:var(--font-display);
+  font-weight:900;font-size:19px;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.acct-pop-nm{color:var(--cr-50);font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct-pop-em{background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+  color:var(--cr-300);font-size:11.5px;margin-top:2px;font-family:inherit;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct-pop-em:hover{color:var(--gd-300)}
+.acct-pop-role{display:inline-block;margin-top:5px;font-family:var(--font-display);font-size:10px;
+  color:var(--em-950);background:var(--grad-gold);padding:2px 9px;border-radius:99px;font-weight:700}
+.acct-pop-divider{height:1px;background:var(--line);margin:10px 0}
+.acct-pop-item{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;
+  background:transparent;border:none;border-radius:var(--r-sm);cursor:pointer;
+  color:var(--cr-100);font-family:inherit;font-size:13.5px;font-weight:500;text-align:start;transition:.14s}
+.acct-pop-item:hover:not(:disabled){background:rgba(255,255,255,.05);color:var(--cr-50)}
+.acct-pop-item:disabled{opacity:.55;cursor:not-allowed}
+.acct-pop-item .acct-pop-soon{margin-inline-start:auto;font-size:10px;color:var(--cr-300);
+  background:rgba(255,255,255,.04);padding:2px 8px;border-radius:99px}
+.acct-pop-item.danger{color:var(--danger-ink)}
+.acct-pop-item.danger:hover:not(:disabled){background:rgba(224,88,75,.10)}
 
 .acct-card{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--line);
   border-radius:var(--r-md);background:linear-gradient(180deg,rgba(196,154,69,.06),rgba(255,255,255,.02))}
@@ -353,9 +384,11 @@
 /* ============================================================
    النوافذ المنبثقة (Modal) + الورقة السفلية (Bottom Sheet)
    ============================================================ */
-.modal-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;
+/* الورقة السفلية — flex-direction:column + justify-content:flex-end أكثر متانةً
+   على iOS Safari مع RTL من align-items:flex-end (الأخير كان يضع الورقة في الأعلى أحيانًا). */
+.modal-overlay{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
   background:rgba(2,16,11,.7);backdrop-filter:blur(5px);animation:fade-in .18s ease}
-.modal-card{width:100%;max-width:600px;max-height:92vh;overflow:auto;
+.modal-card{width:100%;max-width:600px;max-height:92vh;overflow:auto;flex:none;
   background:linear-gradient(160deg,#073322,var(--em-900));border:1px solid var(--line-strong);
   border-radius:var(--r-xl) var(--r-xl) 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom));
   box-shadow:var(--shadow-lg);animation:sheet-up .26s ease}
