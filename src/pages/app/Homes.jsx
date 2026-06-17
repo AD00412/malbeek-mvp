@@ -273,7 +273,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
                 <tr key={s.id} className="sub-row" onClick={() => onOpenDetail?.(s)} style={{ cursor: 'pointer' }}>
                   <td data-label="الحملة">
                     {s.org_name}
-                    <div className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)', fontSize: 11 }}>/{s.slug}</code></div>
+                    <div className="ltr" style={{ textAlign: 'right' }}><code className="link-chip">/{s.slug}</code></div>
                   </td>
                   <td data-label="الباقة"><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
                   <td data-label="رحلات">{s.trips_count || 0}</td>

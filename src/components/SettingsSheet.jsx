@@ -165,7 +165,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
               <p style={{ fontSize: 11.5, marginTop: 6, color: 'var(--danger-ink)' }}>{slugErr}</p>
             ) : (
               <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-                مشتقٌّ ذكيًّا من اسم حملتك (مثلًا «صفوة الرحمن» ← <code className="ltr" style={{ color: 'var(--gd-300)' }}>safwa-rahman</code>) — مشاركةٌ أسهل وتذكُّرٌ أسرع.
+                مشتقٌّ ذكيًّا من اسم حملتك (مثلًا «صفوة الرحمن» ← <code className="ltr link-chip">safwa-rahman</code>) — مشاركةٌ أسهل وتذكُّرٌ أسرع.
               </p>
             )}
           </div>

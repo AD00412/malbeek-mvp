@@ -150,6 +150,41 @@
   background:#fff;border-color:var(--gd-500)
 }
 
+/* ==== الروابط والـ slug chips: نصٌّ داكنٌ مقروء (لا ذهبيّ) ====
+   الذهبيّ يبقى للزخرفة (العناوين، الأيقونات، الـ CTA). الروابط تحتاج
+   تباينًا أفضل للقراءة وسهولة النسخ. */
+.link-chip,
+.link-chip-btn{
+  font-family:'Thmanyah', monospace, system-ui;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--cr-50);
+  background:rgba(11,92,67,.06);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:2px 8px;
+  letter-spacing:.02em;
+  display:inline-flex;align-items:center;gap:6px;
+  cursor:pointer;
+  transition:.15s;
+}
+.link-chip-btn:hover{background:rgba(11,92,67,.12);border-color:var(--line-strong)}
+/* الفاتح: نفس المنطق — خلفيّةٌ زمرّديّةٌ شفّافة، نصٌّ زمرّديٌّ داكن */
+:root[data-theme="light"] .link-chip,
+:root[data-theme="light"] .link-chip-btn{
+  color:var(--cr-50);
+  background:rgba(11,92,67,.06);
+  border-color:rgba(11,92,67,.18)
+}
+:root[data-theme="light"] .link-chip-btn:hover{
+  background:rgba(11,92,67,.12);
+  border-color:rgba(11,92,67,.30)
+}
+
+/* الـ <code> العامّ كذلك — لا ذهبٍ للنصوص التقنيّة. اعتمدنا cr-50 لأنّه
+   يقلب تلقائيًّا بين الكريم في الغامق والزمرّديّ الداكن في الفاتح. */
+code{color:var(--cr-50);font-family:'Thmanyah', monospace, system-ui}
+
 /* slug field على الفاتح: خلفيّةٌ بيضاء، بادئةٌ زمرّديّةٌ خفيفة */
 :root[data-theme="light"] .slug-input{background:#fff;border-color:rgba(11,92,67,.18)}
 :root[data-theme="light"] .slug-input .slug-prefix{background:rgba(11,92,67,.04);color:var(--cr-200);border-inline-end-color:rgba(11,92,67,.10)}

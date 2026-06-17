@@ -68,7 +68,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="acct-card-nm">{sub.org_name}</div>
-          <button className="acct-card-em ltr" onClick={() => copy(joinUrl, 'نُسخ رابط الحجز')} title="نسخ رابط الحجز">
+          <button className="acct-card-em ltr link-chip-btn" onClick={() => copy(joinUrl, 'نُسخ رابط الحجز')} title="نسخ رابط الحجز">
             /{sub.slug} <Icon name="copy" size={11} />
           </button>
           <span className="acct-role" style={{ background: sub.plan === 'paid'
