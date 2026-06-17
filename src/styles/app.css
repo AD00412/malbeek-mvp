@@ -402,12 +402,16 @@
 .stat .v{font-family:var(--font-display);font-weight:900;font-size:34px;color:var(--cr-50);margin-top:10px;line-height:1}
 .stat .v.text{font-size:20px;line-height:1.2}
 .stat .sub{font-size:11px;color:var(--cr-300);font-weight:300;margin-top:4px}
-.stat.ok .top .ic{color:var(--ok-ink);background:rgba(43,182,140,.14)}
-.stat.ok .v{color:var(--ok-ink)}
-.stat.info .top .ic{color:var(--info-ink);background:rgba(58,160,179,.14)}
-.stat.info .v{color:var(--info-ink)}
-.stat.warn .top .ic{color:var(--warn-ink);background:rgba(224,168,46,.14)}
-.stat.warn .v{color:var(--warn-ink)}
+/* هويّةٌ موحّدةٌ للإحصاءات: زمرّديّ للأرقام + ذهبيّ للأيقونات في كلّ الـ variants.
+   classNames .ok/.info/.warn تبقى للتوافق — لكن الإحصاءات تبدو متّسقةً بصريًّا.
+   (دلالاتُ الحالة تذهب إلى الـ .tag و .st الأصغر — لا الأرقام البطوليّة) */
+.stat.ok,.stat.info,.stat.warn{}
+.stat.ok .top .ic,
+.stat.info .top .ic,
+.stat.warn .top .ic{color:var(--gd-300);background:rgba(196,154,69,.12)}
+.stat.ok .v,
+.stat.info .v,
+.stat.warn .v{color:var(--cr-50)}
 
 /* إجراءاتٌ كبيرةٌ مكدّسة (CTA) — هويّةٌ موحّدةٌ: زمرّديٌّ هادئٌ + لمسةٌ ذهبيّة على الأيقونة.
    الأيقونة تحمل المعنى الدلاليّ (qr/bed/share…) — الزرّ نفسه يبقى متّسقًا بصريًّا. */
@@ -455,9 +459,10 @@
 .ministat{background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r-md);padding:10px;text-align:center}
 .ministat .top{display:flex;align-items:center;justify-content:center;gap:5px;color:var(--cr-300);font-size:11.5px}
 .ministat .v{font-family:var(--font-display);font-weight:900;font-size:20px;color:var(--cr-50);margin-top:4px;line-height:1}
-.ministat .v.ok{color:var(--ok-ink)}
-.ministat .v.info{color:var(--info-ink)}
-.ministat .v.warn{color:var(--warn-ink)}
+/* الأرقام موحَّدةٌ — الـ classNames تبقى للتوافق فقط */
+.ministat .v.ok,
+.ministat .v.info,
+.ministat .v.warn{color:var(--cr-50)}
 .trip-card .actions-row{display:flex;gap:8px}
 .trip-card .actions-row .btn{flex:1}
 
