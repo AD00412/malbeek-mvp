@@ -1,0 +1,17 @@
+{
+  "name": "ملبّيك · إدارة حملات العُمرة",
+  "short_name": "ملبّيك",
+  "description": "منصّة إدارة حملات العُمرة: الرحلات، المعتمرون، المقاعد، الكشوف، والتذاكر.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04261C",
+  "theme_color": "#063D2C",
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "maskable" }
+  ]
+}
