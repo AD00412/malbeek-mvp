@@ -409,18 +409,26 @@
 .stat.warn .top .ic{color:var(--warn-ink);background:rgba(224,168,46,.14)}
 .stat.warn .v{color:var(--warn-ink)}
 
-/* إجراءاتٌ كبيرةٌ مكدّسة (CTA) */
+/* إجراءاتٌ كبيرةٌ مكدّسة (CTA) — هويّةٌ موحّدةٌ: زمرّديٌّ هادئٌ + لمسةٌ ذهبيّة على الأيقونة.
+   الأيقونة تحمل المعنى الدلاليّ (qr/bed/share…) — الزرّ نفسه يبقى متّسقًا بصريًّا. */
 .actions{display:flex;flex-direction:column;gap:12px;margin-top:18px}
 .action{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px;border-radius:var(--r-lg);
   border:1px solid var(--line);background:var(--surface);color:var(--cr-100);font-family:var(--font-sans);
   font-weight:700;font-size:15px;cursor:pointer;transition:.18s}
 .action:hover{background:rgba(255,255,255,.05);border-color:var(--line-strong)}
+.action svg{color:var(--gd-300);flex:none}
+.action:disabled{opacity:.55;cursor:not-allowed}
+.action:disabled svg{color:var(--cr-300)}
+/* الزرّ الرئيسيّ الذهبيّ — هو وحده الذي يختلف بصريًّا (تأكيدٌ على الإجراء الأهمّ) */
 .action.primary{background:var(--grad-gold);color:var(--em-950);border-color:transparent;box-shadow:var(--glow-gold)}
+.action.primary svg{color:var(--em-950)}
 .action.primary:hover{transform:translateY(-2px)}
-.action.info{color:var(--info-ink)}
-.action.ok{color:var(--ok-ink)}
-.action.warn{color:var(--warn-ink)}
-.action.violet{color:#c9b5ff}
+/* المتغيّرات (info/ok/warn/violet) تبقى الـ classNames موجودةً للتوافق
+   لكن دلالةَ اللون نُزيلها — الكلّ يبدو متّسقًا. */
+.action.info,
+.action.ok,
+.action.warn,
+.action.violet{color:var(--cr-100)}
 
 /* بطاقة الرحلة (موبايل) */
 .trip-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:clamp(14px,4vw,18px);display:flex;flex-direction:column;gap:14px}
