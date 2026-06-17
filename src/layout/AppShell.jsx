@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
-import NotificationsCenter from '../components/NotificationsCenter'
+import NotificationsBell from '../components/NotificationsBell'
 import AccountMenu from '../components/AccountMenu'
-import { useUnreadCount } from '../lib/useUnreadCount'
 
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
 
@@ -34,17 +33,19 @@ function ConnectionPill() {
  * على الجوال: رأسٌ + محتوى + شريطٌ سفليٌّ للتنقّل (يأخذ `tabs`).
  * على سطح المكتب: شريطٌ جانبيٌّ يستخدم نفس `tabs`.
  *
- * @param {string}   title
- * @param {string}   subtitle
- * @param {Array}    tabs    [{ key, label, icon, badge, disabled, fab }]  fab=true يجعل العنصر FAB المركزي
- * @param {string}   active
- * @param {Function} onTab
- * @param {ReactNode} actions  أزرارٌ يسار الرأس (سطح المكتب)
+ * نمطٌ موحَّدٌ للأيقونات في الرأس (Popover): الإشعارات + الحساب
+ * — لا BottomSheet للقوائم العلويّة (تجنّب مشكلات flex+RTL على iOS).
+ *
+ * @param {string}    title
+ * @param {string}    subtitle
+ * @param {Array}     tabs    [{ key, label, icon, badge, disabled, fab }]
+ * @param {string}    active
+ * @param {Function}  onTab
+ * @param {ReactNode} actions   أزرارٌ يسار الرأس (سطح المكتب)
+ * @param {Function}  onNotifNavigate  معالج التنقّل من إشعار
  */
 export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate }) {
   const { profile, role } = useAuth()
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [unread] = useUnreadCount()
 
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
@@ -106,16 +107,12 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
           </div>
           <span style={{ flex: 1 }} />
           <span className="hide-mobile"><ConnectionPill /></span>
-          <button type="button" className="icon-bubble" aria-label="الإشعارات" onClick={() => setNotifOpen(true)} style={{ position: 'relative' }}>
-            <Icon name="bell" size={18} />
-            {unread > 0 && <span className="notif-badge">{unread > 99 ? '99+' : unread}</span>}
-          </button>
+          <NotificationsBell onNavigate={onNotifNavigate} />
           <AccountMenu />
           {actions}
         </header>
 
         <main className="content">{children}</main>
-        <NotificationsCenter open={notifOpen} onClose={() => setNotifOpen(false)} onNavigate={onNotifNavigate} />
       </div>
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
