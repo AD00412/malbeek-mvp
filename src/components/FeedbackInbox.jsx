@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 import SignedImage from './SignedImage'
+import { SkeletonList } from './Skeleton'
 
 const KIND_AR = { suggestion: 'اقتراح', problem: 'مشكلة', question: 'سؤال', feature: 'ميزة' }
 const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمّت' }
@@ -79,7 +80,7 @@ export default function FeedbackInbox() {
       {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
 
       {loading ? (
-        <div className="empty">جارٍ التحميل…</div>
+        <SkeletonList count={4} />
       ) : rows.length === 0 ? (
         <div className="empty"><div className="em-ttl">لا توجد ملاحظاتٌ في هذه التصفية</div></div>
       ) : (

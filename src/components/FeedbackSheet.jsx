@@ -4,6 +4,7 @@ import { safeExt } from '../lib/format'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import SignedImage from './SignedImage'
+import { SkeletonList } from './Skeleton'
 import { useAuth } from '../app/useAuth'
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -205,7 +206,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
       ) : (
         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {loading ? (
-            <div className="empty">جارٍ التحميل…</div>
+            <SkeletonList count={3} />
           ) : mine.length === 0 ? (
             <div className="empty">
               <div className="em-ttl">لم ترسل ملاحظاتٍ بعد</div>
