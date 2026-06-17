@@ -134,6 +134,7 @@
 .alert.err{background:rgba(224,88,75,.12);border-color:rgba(224,88,75,.4);color:var(--danger-ink)}
 .alert.ok{background:rgba(43,182,140,.12);border-color:rgba(43,182,140,.4);color:var(--ok-ink)}
 .alert.info{background:rgba(58,160,179,.12);border-color:rgba(58,160,179,.4);color:var(--info-ink)}
+.alert.warn{background:rgba(224,168,46,.12);border-color:rgba(224,168,46,.4);color:var(--warn-ink)}
 
 /* ============================================================
    هيكل اللوحة — موبايل أوّلًا
@@ -868,4 +869,4 @@
 
 /* شريط الرجوع الثابت في إدارة الرحلة */
 .tm-backbar{position:sticky;top:0;z-index:6;margin:-4px -4px 8px;padding:6px 4px;
-  background:linear-gradient(180deg,var(--bg) 65%,transparent)}
+  background:linear-gradient(180deg,var(--em-950) 70%,transparent)}
