@@ -416,10 +416,12 @@ export function SubscriberHome() {
                   totalSeats={totalSeats}
                   planLabel={planLabel}
                   totals={paxStats.totals}
+                  paxByTrip={paxStats.byTrip}
                   onCreate={openCreate}
                   onShare={() => setShareOpen(true)}
                   onAnalytics={() => setView('analytics')}
                   onScan={() => setScanMode('pick')}
+                  onManage={(t) => setManaging(t)}
                 />
                 <OnboardingChecklist
                   sub={sub}
@@ -534,10 +536,28 @@ export function SubscriberHome() {
   )
 }
 
+/* تسميةُ العدّ التنازليّ لموعد الرحلة */
+function daysLabel(depart) {
+  const d = Math.ceil((new Date(depart).getTime() - Date.now()) / 86400000)
+  if (d <= 0) return 'اليوم'
+  if (d === 1) return 'غدًا'
+  if (d === 2) return 'بعد يومين'
+  if (d <= 10) return `بعد ${d} أيّام`
+  return `بعد ${d} يومًا`
+}
+
 /* ---------- نظرة عامة ---------- */
-function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate, onShare, onAnalytics, onScan }) {
-  const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
+function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTrip, onCreate, onShare, onAnalytics, onScan, onManage }) {
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
+  const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
+  // الرحلة القادمة: أقرب رحلةٍ مفتوحةٍ/نشطةٍ لم يفت موعدها بعد
+  const now = Date.now()
+  const nextTrip = trips
+    .filter((t) => t.depart_at && new Date(t.depart_at).getTime() > now && t.status !== 'done' && t.status !== 'draft')
+    .sort((a, b) => new Date(a.depart_at) - new Date(b.depart_at))[0]
+  const ne = nextTrip ? (paxByTrip?.get(nextTrip.id) || { count: 0, paid: 0 }) : null
+  const neCap = Number(nextTrip?.capacity) || 0
+  const nePct = neCap > 0 ? Math.min(100, Math.round((ne.count / neCap) * 100)) : 0
   return (
     <>
       <section className="hero">
@@ -545,6 +565,27 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, onCreate
         <h2>أهلًا {profile?.full_name ? `· ${profile.full_name.split(' ')[0]}` : ''}</h2>
         <p>{sub?.org_name ? `${sub.org_name} — ` : ''}مركز قيادتك المركزي. كل رحلاتك، المعتمرون، والإشعارات في مكانٍ واحد.</p>
       </section>
+
+      {nextTrip && (
+        <section className="panel" style={{ borderColor: 'rgba(196,154,69,.35)' }}>
+          <div className="panel-head">
+            <span className="ic-badge"><Icon name="trips" size={18} /></span>
+            <div>
+              <h3 style={{ margin: 0 }}>الرحلة القادمة</h3>
+              <span className="sub">{daysLabel(nextTrip.depart_at)} · {fmtShort(nextTrip.depart_at)}</span>
+            </div>
+            <span style={{ flex: 1 }} />
+            <button className="btn btn-gold btn-sm" onClick={() => onManage?.(nextTrip)}>
+              <Icon name="arrowLeft" size={15} /> فتح
+            </button>
+          </div>
+          <div style={{ fontWeight: 700, color: 'var(--cr-50)', margin: '2px 0 8px' }}>{nextTrip.title || 'رحلة'}</div>
+          <div className="bar"><span style={{ width: nePct + '%' }} /></div>
+          <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+            {ne.count}/{neCap || '—'} مقعد ({nePct}%) · {ne.paid} مدفوع
+          </div>
+        </section>
+      )}
 
       <div className="stats">
         <div className="stat">
