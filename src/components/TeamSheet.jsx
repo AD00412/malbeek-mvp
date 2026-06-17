@@ -24,6 +24,7 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('staff')
   const [busy, setBusy] = useState(false)
+  const [acting, setActing] = useState(false)   // يحرس أزرار الصفوف من النقر المزدوج
 
   const load = useCallback(async () => {
     if (!subscriberId) return
@@ -50,7 +51,10 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
   }
 
   async function revokeInvite(id) {
+    if (acting) return
+    setActing(true)
     const { error } = await supabase.from('subscriber_invites').delete().eq('id', id)
+    setActing(false)
     if (error) toast(translateRpcError(error, 'تعذّر الإلغاء.'), { type: 'error' })
     else { toast('أُلغيت الدعوة', { type: 'info' }); load() }
   }
@@ -62,15 +66,21 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
   }
 
   async function removeMember(m) {
+    if (acting) return
     const ok = await confirm({ title: 'إزالة عضو', message: `إزالة «${m.full_name || 'العضو'}» من فريق الحملة؟ سيفقد الوصول فورًا.`, confirmText: 'إزالة', danger: true })
     if (!ok) return
+    setActing(true)
     const { error } = await supabase.rpc('remove_team_member', { p_sub: subscriberId, p_profile: m.profile_id })
+    setActing(false)
     if (error) toast(translateRpcError(error, 'تعذّرت الإزالة.'), { type: 'error' })
     else { toast('أُزيل العضو', { type: 'info' }); load() }
   }
 
   async function changeRole(m, newRole) {
+    if (acting) return
+    setActing(true)
     const { error } = await supabase.rpc('set_member_role', { p_sub: subscriberId, p_profile: m.profile_id, p_role: newRole })
+    setActing(false)
     if (error) toast(translateRpcError(error, 'تعذّر تغيير الدور.'), { type: 'error' })
     else { toast('حُدّث الدور', { type: 'success' }); load() }
   }
@@ -112,7 +122,7 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
                   <div className="muted" style={{ fontSize: 12 }}>{ROLE_AR[iv.role] || iv.role} · بانتظار القبول</div>
                 </div>
                 <button className="icon-btn" onClick={() => copyInviteLink(iv.invite_id)} aria-label="نسخ رابط الدعوة"><Icon name="copy" size={15} /> رابط</button>
-                <button className="icon-btn danger" onClick={() => revokeInvite(iv.invite_id)} aria-label="إلغاء الدعوة"><Icon name="trash" size={15} /></button>
+                <button className="icon-btn danger" onClick={() => revokeInvite(iv.invite_id)} disabled={acting} aria-label="إلغاء الدعوة"><Icon name="trash" size={15} /></button>
               </div>
             ))}
           </div>
@@ -132,11 +142,11 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
               </div>
               {!m.is_owner && (
                 <>
-                  <select value={m.role} onChange={(e) => changeRole(m, e.target.value)} style={{ width: 'auto', padding: '6px 10px' }}>
+                  <select value={m.role} onChange={(e) => changeRole(m, e.target.value)} disabled={acting} style={{ width: 'auto', padding: '6px 10px' }}>
                     <option value="staff">موظّف</option>
                     <option value="manager">مشرف</option>
                   </select>
-                  <button className="icon-btn danger" onClick={() => removeMember(m)} aria-label="إزالة"><Icon name="trash" size={15} /></button>
+                  <button className="icon-btn danger" onClick={() => removeMember(m)} disabled={acting} aria-label="إزالة"><Icon name="trash" size={15} /></button>
                 </>
               )}
             </div>

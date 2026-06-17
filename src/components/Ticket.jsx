@@ -71,8 +71,11 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
       toast('تم حفظ التذكرة كصورة ✓', { type: 'success' })
     } catch (e) {
       // تدهورٌ لطيف: نزّل الباركود على الأقلّ إن تعذّر التقاط البطاقة
-      if (qrUrl) { const a = document.createElement('a'); a.href = qrUrl; a.download = fileBase + '.png'; a.click() }
-      else toast('تعذّر حفظ الصورة — جرّب «طباعة» أو لقطة شاشة.', { type: 'error' })
+      // (نُلحق العنصر بالـ DOM ثمّ نزيله — Safari على iOS يتجاهل النقر على عنصرٍ غير مُلحَق)
+      if (qrUrl) {
+        const a = document.createElement('a'); a.href = qrUrl; a.download = fileBase + '.png'
+        document.body.appendChild(a); a.click(); a.remove()
+      } else toast('تعذّر حفظ الصورة — جرّب «طباعة» أو لقطة شاشة.', { type: 'error' })
     } finally { setBusy('') }
   }
 

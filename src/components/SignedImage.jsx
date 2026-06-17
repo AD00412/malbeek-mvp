@@ -19,17 +19,24 @@ export default function SignedImage({
   bucket, path, presignedUrl, maxHeight = 240, ttlSeconds = 3600, showOpenFull = false,
 }) {
   const [url, setUrl] = useState(presignedUrl || '')
+  const [failed, setFailed] = useState(false)
   useEffect(() => {
     if (presignedUrl) { setUrl(presignedUrl); return }
     if (!bucket || !path) return
     let alive = true
+    setFailed(false)
     ;(async () => {
-      const { data } = await supabase.storage.from(bucket).createSignedUrl(path, ttlSeconds)
-      if (alive && data?.signedUrl) setUrl(data.signedUrl)
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, ttlSeconds)
+      if (!alive) return
+      if (data?.signedUrl) setUrl(data.signedUrl)
+      else if (error) setFailed(true)
     })()
     return () => { alive = false }
   }, [bucket, path, presignedUrl, ttlSeconds])
 
+  if (failed) return (
+    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>تعذّر تحميل المرفق — تأكّد من الصلاحيّة أو أعد المحاولة.</div>
+  )
   if (!url) return (
     <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>جارٍ تحميل المرفق…</div>
   )

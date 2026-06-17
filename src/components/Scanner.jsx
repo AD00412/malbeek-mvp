@@ -88,11 +88,18 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
 
     ;(async () => {
       try {
+        // بعض المتصفّحات تعرّف BarcodeDetector دون دعم qr_code — تحقّق قبل البدء
+        try {
+          const fmts = await window.BarcodeDetector.getSupportedFormats?.()
+          if (fmts && !fmts.includes('qr_code')) {
+            setCamError('المسح المباشر لا يدعم رمز QR في هذا المتصفّح — استخدم الإدخال اليدوي بالأسفل.')
+            return
+          }
+        } catch (_) { /* لا getSupportedFormats — نُكمل ونعتمد على catch أدناه */ }
         const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-        if (stopped) { stream.getTracks().forEach((t) => t.stop()); return }
+        if (stopped || !videoRef.current) { stream.getTracks().forEach((t) => t.stop()); stream = null; return }
         const v = videoRef.current
-        if (!v) return
         v.srcObject = stream
         await v.play().catch(() => {})
         if (!stopped) setStarting(false)

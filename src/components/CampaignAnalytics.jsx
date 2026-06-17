@@ -236,7 +236,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
         <section className="panel">
           <div className="panel-head"><h3>مقارنة الرحلات</h3></div>
           <div className="tbl-wrap">
-            <table className="tbl">
+            <table className="tbl tbl-cards">
               <thead><tr><th>الرحلة</th><th>الإشغال</th><th>مدفوع</th><th>صعدوا</th><th>تسكين</th></tr></thead>
               <tbody>
                 {trips.map((t) => {
@@ -244,11 +244,11 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
                   const cap = Number(t.capacity) || 0
                   return (
                     <tr key={t.id}>
-                      <td>{t.title || '—'}</td>
-                      <td>{e.count}/{cap || '—'} <span className="muted">({pct(e.count, cap)}%)</span></td>
-                      <td>{e.paid}</td>
-                      <td>{e.boarded}</td>
-                      <td>{e.checked_in}</td>
+                      <td data-label="الرحلة">{t.title || '—'}</td>
+                      <td data-label="الإشغال">{e.count}/{cap || '—'} <span className="muted">({pct(e.count, cap)}%)</span></td>
+                      <td data-label="مدفوع">{e.paid}</td>
+                      <td data-label="صعدوا">{e.boarded}</td>
+                      <td data-label="تسكين">{e.checked_in}</td>
                     </tr>
                   )
                 })}

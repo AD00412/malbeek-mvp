@@ -101,6 +101,18 @@ returns text language sql stable security definer set search_path = public as $$
   end;
 $$;
 
+-- ★ دوال profiles المساعدة (SECURITY DEFINER) — تُعرَّف هنا مبكّرًا لأنّ السياسات
+--   أدناه (وفي جداولٍ لاحقة) تستدعيها وقت الإنشاء؛ تعتمد فقط على public.profiles.
+create or replace function public.my_role()
+returns user_role language sql stable security definer set search_path = public as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+create or replace function public.my_subscriber_id()
+returns uuid language sql stable security definer set search_path = public as $$
+  select subscriber_id from public.profiles where id = auth.uid();
+$$;
+
 alter table public.subscriber_members enable row level security;
 -- عضوُ الحملة يقرأ أعضاءها؛ المالك وحده يضيف/يحذف (عبر RPC الموثوق غالبًا)
 drop policy if exists "members read" on public.subscriber_members;
@@ -483,18 +495,8 @@ alter table public.customers add column if not exists pickup_location text;  -- 
 create index if not exists idx_customers_subscriber on public.customers(subscriber_id);
 create index if not exists idx_customers_profile    on public.customers(profile_id);
 
--- ============================================================
---  دوال مساعدة (SECURITY DEFINER لتفادي التكرار داخل سياسات profiles)
--- ============================================================
-create or replace function public.my_role()
-returns user_role language sql stable security definer set search_path = public as $$
-  select role from public.profiles where id = auth.uid();
-$$;
-
-create or replace function public.my_subscriber_id()
-returns uuid language sql stable security definer set search_path = public as $$
-  select subscriber_id from public.profiles where id = auth.uid();
-$$;
+-- ملاحظة: my_role() و my_subscriber_id() عُرِّفتا مبكّرًا (قبل سياسات الأعضاء)
+--   لأنّ PostgreSQL يحلّ أسماء الدوال وقت إنشاء السياسة.
 
 -- ============================================================
 --  إنشاء الملف الشخصي تلقائيًا عند التسجيل (يقرأ بيانات التسجيل)
@@ -582,7 +584,9 @@ create policy "profile self insert" on public.profiles for insert with check (id
 
 -- ---------- subscribers ----------
 drop policy if exists "subscriber owner all"        on public.subscribers;
-create policy "subscriber owner all"        on public.subscribers for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+create policy "subscriber owner all"        on public.subscribers for all
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid() and coalesce(public.my_role(), 'customer') <> 'customer');  -- ★ المعتمر لا ينشئ حملةً لنفسه
 drop policy if exists "subscriber admin read"       on public.subscribers;
 create policy "subscriber admin read"       on public.subscribers for select using (public.my_role() = 'admin');
 -- الإدارة تُحدّث المشترك (مثل ترقية الباقة trial ↔ paid)
@@ -1701,7 +1705,7 @@ create policy "pay-proof read" on storage.objects for select
     bucket_id = 'payment-proofs'
     and (
       (storage.foldername(name))[2] = auth.uid()::text                                          -- المعتمر: مجلّده فقط
-      or (public.my_role() = 'subscriber' and (storage.foldername(name))[1] = public.my_subscriber_id()::text)  -- صاحب الحملة: حملته
+      or (storage.foldername(name))[1] in (select id::text from public.subscribers where public.can_manage_sub(id))  -- صاحب الحملة وفريقه
       or public.my_role() = 'admin'
     )
   );

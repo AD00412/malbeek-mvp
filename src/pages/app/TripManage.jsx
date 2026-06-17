@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
@@ -110,9 +110,12 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const firstLoad = useRef(true)
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
-    setLoading(true); setErr('')
+    // نُظهر الهيكل العظميّ في التحميل الأوّل فقط — لا نُومض القائمة مع كلّ تحديثٍ حيّ
+    if (firstLoad.current) setLoading(true)
+    setErr('')
     const { data, error } = await supabase
       .from('passengers')
       .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, payment_proof_url, profile_id, bus_id, room_id, amount, paid_at, payment_provider, created_at')
@@ -120,7 +123,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       .order('seat_no', { ascending: true, nullsFirst: false })
     if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
     else setPassengers(data ?? [])
-    setLoading(false)
+    setLoading(false); firstLoad.current = false
 
     // قائمة الانتظار للرحلة
     const { data: w } = await supabase
@@ -149,14 +152,18 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
   useEffect(() => { loadPassengers() }, [loadPassengers])
 
-  // تحديثٌ حيٌّ: عند أي تغيّرٍ على passengers لهذه الرحلة، أعِد التحميل.
+  // تحديثٌ حيٌّ: عند أي تغيّرٍ على passengers لهذه الرحلة، أعِد التحميل (مع كبحٍ
+  // يجمع دفعات التغييرات المتتالية كالاستيراد فلا تتكرّر الجلبات ولا تومض القائمة).
   useEffect(() => {
     if (!trip?.id) return
+    let t = null
     const ch = supabase
       .channel(`pax-mgr:${trip.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, () => loadPassengers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, () => {
+        clearTimeout(t); t = setTimeout(() => loadPassengers(), 350)
+      })
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
+    return () => { clearTimeout(t); supabase.removeChannel(ch) }
   }, [trip?.id, loadPassengers])
 
   function openAdd() { setEditingPax(null); setPaxOpen(true) }
@@ -541,18 +548,18 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
             <h3>سجلّ مدفوعات البوّابة</h3><span className="sub">({payments.length})</span>
           </div>
           <div className="tbl-wrap">
-            <table className="tbl">
+            <table className="tbl tbl-cards">
               <thead><tr><th>المعتمر</th><th>المزوّد</th><th>المبلغ</th><th>المرجع</th><th>التاريخ</th></tr></thead>
               <tbody>
                 {payments.map((pm) => {
                   const px = passengers.find((p) => p.id === pm.passenger_id)
                   return (
                     <tr key={pm.id}>
-                      <td>{px?.full_name || <span className="muted">غير مرتبط</span>}</td>
-                      <td>{pm.provider}</td>
-                      <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{pm.amount != null ? `${Number(pm.amount).toLocaleString('en-US')} ${pm.currency || '﷼'}` : '—'}</td>
-                      <td className="ltr" style={{ textAlign: 'right' }}><code style={{ fontSize: 11 }}>{pm.provider_ref}</code></td>
-                      <td>{fmtDateTime(pm.created_at)}</td>
+                      <td data-label="المعتمر">{px?.full_name || <span className="muted">غير مرتبط</span>}</td>
+                      <td data-label="المزوّد">{pm.provider}</td>
+                      <td data-label="المبلغ" style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{pm.amount != null ? `${Number(pm.amount).toLocaleString('en-US')} ${pm.currency || '﷼'}` : '—'}</td>
+                      <td data-label="المرجع" className="ltr" style={{ textAlign: 'right' }}><code style={{ fontSize: 11 }}>{pm.provider_ref}</code></td>
+                      <td data-label="التاريخ">{fmtDateTime(pm.created_at)}</td>
                     </tr>
                   )
                 })}
@@ -702,7 +709,8 @@ function OffersSheet({ open, onClose, passengers, trip, sub, msg, setMsg }) {
   }
   function mailAll() {
     // لا إيميل في سجلّ الراكب — نفتح رسالةً فارغةً بالنصّ للنسخ (احتياطي)
-    window.open(`mailto:?subject=${encodeURIComponent('عرض ' + (sub?.org_name || 'الحملة'))}&body=${encodeURIComponent(text)}`, '_blank')
+    // نستخدم location.href لا window.open('_blank') — الأخير يترك about:blank على الجوال
+    window.location.href = `mailto:?subject=${encodeURIComponent('عرض ' + (sub?.org_name || 'الحملة'))}&body=${encodeURIComponent(text)}`
   }
 
   return (

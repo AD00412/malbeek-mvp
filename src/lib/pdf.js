@@ -17,11 +17,23 @@ async function loadHtml2Canvas() {
   return mod.default || mod.html2canvas || mod
 }
 
+// حدّ مساحة الـ canvas في Safari/iOS ≈ ١٦.٧ مليون بكسل — نُقيّد الدقّة (scale)
+// لئلّا يخرج كشفٌ طويلٌ بصورةٍ بيضاء صامتة. نحسب أعلى scale آمنٍ من حجم العنصر.
+const CANVAS_MAX_PX = 16000000
+function safeScale(element, desired = 2) {
+  const w = element?.offsetWidth || element?.scrollWidth || 800
+  const h = element?.scrollHeight || element?.offsetHeight || 1000
+  if (!w || !h) return desired
+  const maxScale = Math.sqrt(CANVAS_MAX_PX / (w * h))
+  return Math.max(1, Math.min(desired, maxScale))
+}
+
 /** يلتقط عنصرًا واحدًا ويضيفه إلى pdf (مع تقسيمٍ متعدّد الصفحات للجداول الطويلة). */
 async function captureToPdf(element, pdf, html2canvas) {
   const canvas = await html2canvas(element, {
-    scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
+    scale: safeScale(element, 2), useCORS: true, backgroundColor: '#ffffff', logging: false,
   })
+  if (!canvas.width || !canvas.height) throw new Error('canvas_blank')
   const pageW = pdf.internal.pageSize.getWidth()
   const pageH = pdf.internal.pageSize.getHeight()
   const imgH = (canvas.height * pageW) / canvas.width
@@ -88,7 +100,8 @@ export async function elementToPngBlob(element, { backgroundColor = null, scale 
   if (!element) throw new Error('no_element')
   try {
     const html2canvas = await loadHtml2Canvas()
-    const canvas = await html2canvas(element, { scale, useCORS: true, backgroundColor, logging: false })
+    const canvas = await html2canvas(element, { scale: safeScale(element, scale), useCORS: true, backgroundColor, logging: false })
+    if (!canvas.width || !canvas.height) throw new Error('canvas_blank')
     const blob = await new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'))
     if (!blob) throw new Error('canvas_blob_failed')
     return blob

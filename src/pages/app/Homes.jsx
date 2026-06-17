@@ -972,8 +972,6 @@ export function CustomerHome() {
         <Icon name="message" size={18} />
       </button>
       <FeedbackSheet open={feedbackOpen} audience="customer" onClose={() => setFeedbackOpen(false)} />
-
-      <Roadmap />
     </>
   )
 }
