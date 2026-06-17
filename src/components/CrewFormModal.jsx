@@ -4,6 +4,7 @@ import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import ImageUpload from './ImageUpload'
 import { normalizePhone, isValidSaPhone } from '../lib/format'
+import { translateRpcError } from '../lib/rpcErrors'
 
 /**
  * تحرير بيانات الباص والطاقم (تظهر في ترويسة الكشف الرسمي) + بيانات المؤسسة.
@@ -72,7 +73,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
 
       onSaved?.()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر حفظ البيانات.')
+      setErr(translateRpcError(e, 'تعذّر حفظ البيانات.'))
     } finally {
       setBusy(false)
     }
@@ -93,6 +94,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
       }
     >
       <div className="form" style={{ marginTop: 0 }}>
+        {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
         <div className="sec-label">المؤسسة</div>
         <div className="field">
           <label>اسم المؤسسة / الحملة</label>
@@ -176,7 +178,6 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
           </div>
         </div>
 
-        {err && <div className="alert err">{err}</div>}
       </div>
     </BottomSheet>
   )

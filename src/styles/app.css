@@ -827,3 +827,7 @@
 .tl-step.current .tl-dot{border-color:var(--gd-300);background:var(--grad-gold,linear-gradient(180deg,var(--gd-300),var(--gd-500)));color:#04261c;
   box-shadow:0 0 0 4px rgba(196,154,69,.2)}
 .tl-step.current .tl-lbl{color:var(--gd-300);font-weight:800}
+
+/* لمعةٌ خفيفةٌ على لافتة الخطأ لإبراز ظهورها داخل النماذج الطويلة */
+.alert.err{animation:err-flash .4s ease 1}
+@keyframes err-flash{0%{box-shadow:0 0 0 0 rgba(224,88,75,.4)}100%{box-shadow:0 0 0 8px rgba(224,88,75,0)}}

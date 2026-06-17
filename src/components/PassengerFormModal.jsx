@@ -5,6 +5,7 @@ import Icon from './Icon'
 import SeatMap from './SeatMap'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 import { busLayout, busName } from '../lib/buses'
+import { translateRpcError } from '../lib/rpcErrors'
 import { PASSENGER_STATUS } from '../lib/passengerStatus'
 
 const GENDERS = [
@@ -89,7 +90,7 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
       }
       onSaved?.()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر حفظ المعتمر.')
+      setErr(translateRpcError(e, 'تعذّر حفظ المعتمر.'))
     } finally {
       setBusy(false)
     }
@@ -110,6 +111,7 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
       }
     >
       <div className="form" style={{ marginTop: 0 }}>
+        {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
         <div className="field with-ic">
           <label>الاسم الرباعي <span className="req">*</span></label>
           <span className="f-ic"><Icon name="user" size={17} /></span>
@@ -192,7 +194,6 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
           <label>ملاحظات (اختياري)</label>
           <textarea placeholder="أي ملاحظةٍ على المعتمر…" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
-        {err && <div className="alert err">{err}</div>}
       </div>
     </BottomSheet>
   )
