@@ -369,9 +369,106 @@ input[type="time"]::-webkit-date-and-time-value{
 :root[data-theme="light"] .seg button{color:var(--cr-200)}
 :root[data-theme="light"] .seg button.active{background:#fff;color:var(--cr-50);border-color:rgba(11,92,67,.20)}
 
-/* ==== الماسح وخريطة المقاعد ==== */
-/* الماسح يبقى داكنًا عمدًا (تباينٌ لقراءة QR + الإطار الذهبيّ). */
-/* خريطة المقاعد تبقى داكنةً عمدًا (تصميم باصٍ واقعيّ — لا منطقٌ بصريٌّ لجعله أبيض). */
+/* ==== الماسح في الوضع الفاتح ==== */
+/* مرحلة العرض (الفيديو) تبقى داكنةً (مهمٌّ لتباين باركود QR والإطار الذهبيّ). */
+/* لكنّ الرأس وشريط الإدخال اليدويّ يحترمان الوضع — لقراءةٍ أوضح. */
+:root[data-theme="light"] .scanner-head{
+  background:rgba(255,255,255,.92);
+  border-bottom-color:rgba(11,92,67,.10);
+  color:var(--cr-50)
+}
+:root[data-theme="light"] .scanner-head .sc-title{color:var(--cr-50)}
+:root[data-theme="light"] .scanner-manual{
+  background:rgba(255,255,255,.95);
+  border-top-color:rgba(11,92,67,.12);
+}
+/* «جارٍ تشغيل الكاميرا…» / «وجّه الكاميرا...» — كبسولةٌ كريميّةٌ شفّافة على الفيديو */
+:root[data-theme="light"] .scanner-hint{
+  background:rgba(255,255,255,.85);
+  color:var(--cr-50);
+  border:1px solid rgba(11,92,67,.16);
+}
+/* أمّا scanner-fallback (الـ #04120d الداكن) يبقى كما هو لأنّ الفيديو خلفه = أسود طبيعيّ */
+
+/* ==== خريطة المقاعد في الوضع الفاتح — هيكلُ باصٍ كريميٌّ بمقاعدَ زمرّديّة ==== */
+:root[data-theme="light"] .bus3d-body{
+  background:
+    linear-gradient(180deg,rgba(11,92,67,.04),transparent 130px),
+    linear-gradient(180deg,#FBF7EE 0%,#F4ECDB 55%,#EFE6CD 100%);
+  border-color:#c49a45;
+  box-shadow:inset 0 3px 0 rgba(196,154,69,.20),inset 0 0 55px rgba(196,154,69,.08),0 22px 52px rgba(11,92,67,.18);
+}
+/* الخطّ المتقطّع تحت المقدّمة والصفوف الخلفيّة */
+:root[data-theme="light"] .bus3d-cab,
+:root[data-theme="light"] .cabin-back{
+  border-color:rgba(196,154,69,.42)
+}
+/* صندوقا السائق والمساعد */
+:root[data-theme="light"] .cab-driver,
+:root[data-theme="light"] .cab-assist{
+  background:rgba(255,255,255,.55);
+  border-color:rgba(11,92,67,.16);
+  color:var(--cr-200)
+}
+/* الزجاج الأمامي المقوّس */
+:root[data-theme="light"] .cab-windshield{
+  background:linear-gradient(180deg,rgba(176,224,255,.6),rgba(176,224,255,.18));
+  border-top-color:rgba(196,154,69,.45);
+}
+/* الممرّ الأوسط */
+:root[data-theme="light"] .aisle-gap{
+  background:
+    linear-gradient(90deg,transparent 46%,rgba(196,154,69,.30) 46% 54%,transparent 54%),
+    repeating-linear-gradient(0deg,rgba(196,154,69,.08) 0 6px,transparent 6px 12px);
+}
+/* الصادم الخلفيّ */
+:root[data-theme="light"] .bus-rear{
+  background:rgba(196,154,69,.40);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+}
+/* الأبواب — تبقى ذهبيّةً (جذّابةٌ في الحالتين) */
+
+/* المقاعد الأساسيّة — تفصيلٌ زمرّديٌّ ناعمٌ على الكريم */
+:root[data-theme="light"] .seat3d .s-body{
+  border-color:rgba(11,92,67,.22);
+  background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.4));
+  box-shadow:inset 0 -3px 6px rgba(11,92,67,.08),inset 0 2px 0 rgba(255,255,255,.5);
+}
+:root[data-theme="light"] .seat3d .s-head{
+  background:linear-gradient(180deg,rgba(196,154,69,.55),rgba(196,154,69,.32));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+:root[data-theme="light"] .seat3d .s-body::before{
+  background:linear-gradient(180deg,rgba(11,92,67,.06),rgba(11,92,67,.14));
+  box-shadow:inset 0 2px 5px rgba(11,92,67,.12),inset 0 0 0 1px rgba(255,255,255,.3);
+}
+:root[data-theme="light"] .seat3d .s-no{color:var(--cr-50)}
+:root[data-theme="light"] .seat3d .s-nm{color:var(--cr-200)}
+:root[data-theme="light"] .seat3d:hover:not([aria-disabled="true"]) .s-body{
+  border-color:rgba(196,154,69,.65);background:rgba(196,154,69,.10)
+}
+
+/* المتاحة حسب الجنس — توضيحٌ أعمق على خلفيّةٍ فاتحة */
+:root[data-theme="light"] .seat-available.a-male .s-body{border-color:rgba(58,160,179,.55);background:rgba(58,160,179,.10)}
+:root[data-theme="light"] .seat-available.a-male .s-head{background:rgba(58,160,179,.50)}
+:root[data-theme="light"] .seat-available.a-female .s-body{border-color:rgba(232,121,189,.55);background:rgba(232,121,189,.10)}
+:root[data-theme="light"] .seat-available.a-female .s-head{background:rgba(232,121,189,.50)}
+:root[data-theme="light"] .seat-available.a-family .s-body{border-color:rgba(196,154,69,.55);background:rgba(196,154,69,.10)}
+:root[data-theme="light"] .seat-available.a-family .s-head{background:rgba(196,154,69,.55)}
+
+/* المختار: ذهبيٌّ بارزٌ — يبقى كما هو (واضحٌ تمامًا في الحالتين) */
+/* المحجوزة (seat-taken): زمرّديّةٌ هادئةٌ، نصٌّ زمرّديٌّ */
+:root[data-theme="light"] .seat-taken .s-body{background:rgba(43,182,140,.16);border-color:rgba(43,182,140,.50)}
+:root[data-theme="light"] .seat-taken .s-head{background:rgba(43,182,140,.55)}
+:root[data-theme="light"] .seat-taken .s-no{color:#0E7152}
+:root[data-theme="light"] .seat-taken .s-nm{color:var(--cr-100)}
+
+/* المقفلة (seat-locked) */
+:root[data-theme="light"] .seat-locked .s-body{
+  background:repeating-linear-gradient(45deg,rgba(11,92,67,.04) 0 4px,transparent 4px 8px);
+  border-color:rgba(11,92,67,.18)
+}
+:root[data-theme="light"] .seat-locked .s-head{background:rgba(11,92,67,.15)}
 
 /* ==== رفع الصور (ImageUpload dropzone) ==== */
 :root[data-theme="light"] .img-upload.dropzone{
