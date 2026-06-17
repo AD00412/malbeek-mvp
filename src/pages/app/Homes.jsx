@@ -24,6 +24,7 @@ import { SkeletonList } from '../../components/Skeleton'
 import TeamSheet from '../../components/TeamSheet'
 import PendingInviteBanner from '../../components/PendingInviteBanner'
 import StatusTimeline from '../../components/StatusTimeline'
+import PilgrimSearch from '../../components/PilgrimSearch'
 const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -230,6 +231,7 @@ export function SubscriberHome() {
   const [editing, setEditing] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [teamOpen, setTeamOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const { confirm, toast } = useUI()
   const [scanMode, setScanMode] = useState(null)    // null | 'pick' | 'board' | 'checkin'
   const [copied, setCopied] = useState(false)
@@ -431,6 +433,7 @@ export function SubscriberHome() {
                   onAnalytics={() => setView('analytics')}
                   onScan={() => setScanMode('pick')}
                   onManage={(t) => setManaging(t)}
+                  onSearch={() => setSearchOpen(true)}
                 />
                 <OnboardingChecklist
                   sub={sub}
@@ -479,6 +482,14 @@ export function SubscriberHome() {
         )}
 
         {sub?.id && <TeamSheet open={teamOpen} subscriberId={sub.id} onClose={() => setTeamOpen(false)} />}
+        {sub?.id && (
+          <PilgrimSearch
+            open={searchOpen}
+            subscriberId={sub.id}
+            onClose={() => setSearchOpen(false)}
+            onOpenTrip={(tripId) => { const t = trips.find((x) => x.id === tripId); if (t) setManaging(t) }}
+          />
+        )}
 
         <BottomSheet
           open={shareOpen}
@@ -557,7 +568,7 @@ function daysLabel(depart) {
 }
 
 /* ---------- نظرة عامة ---------- */
-function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTrip, onCreate, onShare, onAnalytics, onScan, onManage }) {
+function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTrip, onCreate, onShare, onAnalytics, onScan, onManage, onSearch }) {
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
   // الرحلة القادمة: أقرب رحلةٍ مفتوحةٍ/نشطةٍ لم يفت موعدها بعد
@@ -622,6 +633,9 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
         </button>
         <button className="action info" onClick={onScan} disabled={!trips.length}>
           <Icon name="qr" size={18} /> مسح تذكرة
+        </button>
+        <button className="action" onClick={onSearch} disabled={!trips.length}>
+          <Icon name="search" size={18} /> بحثٌ عن معتمر
         </button>
         <button className="action ok" onClick={onShare} disabled={!sub?.slug}>
           <Icon name="share" size={18} /> مشاركة رابط الحجز
