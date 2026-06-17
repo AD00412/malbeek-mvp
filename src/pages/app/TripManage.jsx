@@ -96,6 +96,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [refundsOpen, setRefundsOpen] = useState(false)
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
+  const [remindOpen, setRemindOpen] = useState(false)
   const [waitlist, setWaitlist] = useState([])
   const [buses, setBuses] = useState([])
   const [mapBusId, setMapBusId] = useState(null)   // الباص المعروض في خريطة المقاعد
@@ -206,14 +207,11 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     }
   }
 
-  async function remindPassengers() {
-    const n = passengers.filter((p) => p.profile_id).length
-    if (n === 0) { toast('لا يوجد معتمرون بحساباتٍ لتذكيرهم.', { type: 'info' }); return }
-    const ok = await confirm({ title: 'تذكير المعتمرين', message: `إرسال تذكيرٍ بالرحلة إلى ${n} معتمرٍ مسجّلٍ بحسابه؟ سيصلهم إشعارٌ داخل التطبيق.`, confirmText: 'إرسال التذكير' })
-    if (!ok) return
+  // إشعارٌ داخل التطبيق للمعتمرين المسجّلين بحساب (تُستدعى من نافذة التذكير الجماعيّ).
+  async function sendInAppReminder() {
     const { data, error } = await supabase.rpc('remind_trip', { p_trip: trip.id })
-    if (error) toast(translateRpcError(error, 'تعذّر إرسال التذكير.'), { type: 'error' })
-    else toast(`أُرسل التذكير إلى ${data ?? 0} معتمرًا ✓`, { type: 'success' })
+    if (error) { toast(translateRpcError(error, 'تعذّر إرسال التذكير.'), { type: 'error' }); return }
+    toast(`أُرسل إشعارٌ داخل التطبيق إلى ${data ?? 0} معتمرًا ✓`, { type: 'success' })
   }
 
   async function removePax(p) {
@@ -255,14 +253,20 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     : passengers
   if (paxFilter === 'unpaid') filtered = filtered.filter((p) => !PAID.has(p.status))
   else if (paxFilter === 'paid') filtered = filtered.filter((p) => PAID.has(p.status))
-  if (paxSort !== 'default') {
-    const by = {
-      name: (a, b) => (a.full_name || '').localeCompare(b.full_name || '', 'ar'),
-      boarding: (a, b) => (a.boarding_point || '').localeCompare(b.boarding_point || '', 'ar') || (a.full_name || '').localeCompare(b.full_name || '', 'ar'),
-      seat: (a, b) => (parseInt(a.seat_no, 10) || 9999) - (parseInt(b.seat_no, 10) || 9999),
-    }[paxSort]
-    if (by) filtered = [...filtered].sort(by)
+  // ترتيبٌ طبيعيٌّ للمقاعد: «٢» قبل «١٠» (لا ترتيبٌ نصّيّ)، ويدعم المقاعد الأبجديّة (A2 قبل A10)
+  const seatCmp = (a, b) => {
+    const sa = String(a.seat_no || ''), sb = String(b.seat_no || '')
+    if (!sa) return sb ? 1 : 0
+    if (!sb) return -1
+    return sa.localeCompare(sb, undefined, { numeric: true, sensitivity: 'base' })
   }
+  const by = {
+    default: seatCmp,
+    seat: seatCmp,
+    name: (a, b) => (a.full_name || '').localeCompare(b.full_name || '', 'ar'),
+    boarding: (a, b) => (a.boarding_point || '').localeCompare(b.boarding_point || '', 'ar') || (a.full_name || '').localeCompare(b.full_name || '', 'ar'),
+  }[paxSort]
+  if (by) filtered = [...filtered].sort(by)
 
   if (manifestOpen) {
     return <Manifest trip={trip} sub={sub} passengers={passengers} buses={buses} onClose={() => setManifestOpen(false)} />
@@ -344,7 +348,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           <button className="action primary" style={{ flex: 1 }} onClick={openAdd}><Icon name="plus" size={18} /> إضافة معتمر</button>
           <button className="action" style={{ flex: 1 }} onClick={() => setImportOpen(true)}><Icon name="download" size={18} /> استيراد قائمة</button>
         </div>
-        <button className="action" onClick={remindPassengers} disabled={count === 0}>
+        <button className="action" onClick={() => setRemindOpen(true)} disabled={count === 0}>
           <Icon name="bell" size={18} /> تذكير المعتمرين بالرحلة
         </button>
 
@@ -683,6 +687,15 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         msg={offerMsg}
         setMsg={setOfferMsg}
       />
+
+      <RemindSheet
+        open={remindOpen}
+        onClose={() => setRemindOpen(false)}
+        passengers={passengers}
+        trip={trip}
+        sub={sub}
+        onSendInApp={sendInAppReminder}
+      />
     </>
   )
 }
@@ -745,6 +758,127 @@ function OffersSheet({ open, onClose, passengers, trip, sub, msg, setMsg }) {
             </button>
           ))}
         </div>
+      </div>
+    </BottomSheet>
+  )
+}
+
+/* ---------- تذكير المعتمرين جماعيًّا: إشعارٌ داخل التطبيق + واتساب متسلسل ---------- */
+function RemindSheet({ open, onClose, passengers, trip, sub, onSendInApp }) {
+  const withAccount = passengers.filter((p) => p.profile_id)
+  const withPhone = passengers.filter((p) => toWaPhoneIntl(p.phone))
+  const storeKey = `malbeek.remind.${trip?.id || ''}`
+  const [done, setDone] = useState(() => new Set())
+  const [inAppBusy, setInAppBusy] = useState(false)
+
+  // نحفظ مَن تواصلنا معهم محلّيًّا — فتح واتساب يغادر التطبيق، فيبقى التقدّم عند العودة.
+  useEffect(() => {
+    if (!open) return
+    try { const raw = localStorage.getItem(storeKey); setDone(new Set(raw ? JSON.parse(raw) : [])) }
+    catch { setDone(new Set()) }
+  }, [open, storeKey])
+
+  function persist(next) {
+    setDone(next)
+    try { localStorage.setItem(storeKey, JSON.stringify([...next])) } catch (_) {}
+  }
+  function markDone(id) { const n = new Set(done); n.add(id); persist(n) }
+  function toggleDone(id) { const n = new Set(done); n.has(id) ? n.delete(id) : n.add(id); persist(n) }
+
+  const remaining = withPhone.filter((p) => !done.has(p.id))
+  const nextPax = remaining[0]
+  const sentCount = withPhone.length - remaining.length
+
+  // يفتح واتساب لأوّل معتمرٍ لم نتواصل معه ويعلّمه (نقرة المستخدم تتجاوز حاجب النوافذ).
+  function openNext() {
+    if (!nextPax) return
+    window.open(waMeLink(nextPax.phone, waMessage(nextPax, trip, sub)), '_blank', 'noopener')
+    markDone(nextPax.id)
+  }
+
+  async function sendInApp() {
+    if (inAppBusy) return
+    setInAppBusy(true)
+    await onSendInApp()
+    setInAppBusy(false)
+  }
+
+  return (
+    <BottomSheet open={open} onClose={onClose} title="تذكير المعتمرين بالرحلة"
+      actions={<button className="btn btn-gold btn-block" onClick={onClose}>تم</button>}>
+      <p className="muted" style={{ fontSize: 13, marginTop: -6 }}>
+        ذكّر معتمري الرحلة بموعدها ومقاعدهم — عبر إشعارٍ داخل التطبيق لمن لديه حساب،
+        وعبر واتساب (برسالةٍ شخصيّةٍ جاهزة) للجميع.
+      </p>
+
+      {/* إشعارٌ داخل التطبيق */}
+      <div className="panel" style={{ padding: 14, marginTop: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="action-ic info"><Icon name="bell" size={18} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--cr-50)' }}>إشعارٌ داخل التطبيق</div>
+            <div className="muted" style={{ fontSize: 12.5 }}>{withAccount.length} معتمرٍ لديه حسابٌ في ملبّيك.</div>
+          </div>
+        </div>
+        <button className="btn btn-ghost btn-block btn-sm" style={{ marginTop: 10 }}
+          onClick={sendInApp} disabled={inAppBusy || withAccount.length === 0}>
+          {inAppBusy ? <span className="spinner" /> : <><Icon name="bell" size={15} /> إرسال إشعارٍ للجميع</>}
+        </button>
+      </div>
+
+      {/* تذكير واتساب جماعيّ متسلسل */}
+      <div className="panel" style={{ padding: 14, marginTop: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="action-ic ok"><Icon name="message" size={18} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--cr-50)' }}>تذكير عبر واتساب</div>
+            <div className="muted" style={{ fontSize: 12.5 }}>
+              {withPhone.length === 0 ? 'لا معتمرَ برقم جوال.' : `تواصلتَ مع ${sentCount} من ${withPhone.length}.`}
+            </div>
+          </div>
+          {sentCount > 0 && (
+            <button className="btn btn-ghost btn-sm" onClick={() => persist(new Set())}>تصفير</button>
+          )}
+        </div>
+
+        {withPhone.length > 0 && (
+          <>
+            <div className="remind-bar" style={{ marginTop: 10 }}>
+              <span style={{ width: `${Math.round((sentCount / withPhone.length) * 100)}%` }} />
+            </div>
+            <button className="btn btn-gold btn-block" style={{ marginTop: 10 }} onClick={openNext} disabled={!nextPax}>
+              {nextPax
+                ? <><Icon name="message" size={16} /> فتح واتساب — {nextPax.full_name}</>
+                : <><Icon name="check" size={16} /> تواصلتَ مع الجميع</>}
+            </button>
+            <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 6 }}>
+              يفتح محادثةً جاهزةً بالرسالة — أرسِلها ثمّ عُد واضغط ثانيةً للتالي.
+            </p>
+
+            <div className="pax-list" style={{ marginTop: 8 }}>
+              {withPhone.map((p) => {
+                const sent = done.has(p.id)
+                return (
+                  <div className="pax-row" key={p.id} style={{ opacity: sent ? 0.62 : 1 }}>
+                    <button type="button" className="rmd-check" aria-label={sent ? 'إلغاء العلامة' : 'تعليمٌ كمُرسَل'}
+                      onClick={() => toggleDone(p.id)}>
+                      <Icon name={sent ? 'check' : 'bell'} size={15} />
+                    </button>
+                    <div className="pax-main">
+                      <div className="pax-name">{p.full_name}</div>
+                      <div className="pax-meta ltr">{p.phone}</div>
+                    </div>
+                    <a className="icon-btn" href={waMeLink(p.phone, waMessage(p, trip, sub))}
+                      target="_blank" rel="noopener noreferrer" onClick={() => markDone(p.id)}
+                      aria-label={`واتساب لـ ${p.full_name}`}>
+                      <Icon name="message" size={15} />
+                    </a>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
     </BottomSheet>
   )

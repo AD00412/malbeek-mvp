@@ -137,17 +137,17 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
               {invalid > 0 && <span style={{ color: 'var(--danger)' }}> · {invalid} بها أخطاء</span>}
             </div>
             <div className="tbl-wrap" style={{ maxHeight: 240, overflow: 'auto' }}>
-              <table className="tbl">
+              <table className="tbl tbl-cards">
                 <thead><tr><th>#</th><th>الاسم</th><th>الهوية</th><th>الجوال</th><th>الجنس</th><th>الحالة</th></tr></thead>
                 <tbody>
                   {parsed.map((p) => (
                     <tr key={p.i} style={p.errors.length ? { background: 'rgba(224,88,75,.08)' } : undefined}>
-                      <td>{p.i + 1}</td>
-                      <td className="mf-name" style={{ textAlign: 'right' }}>{p.full_name || '—'}</td>
-                      <td className="ltr">{p.national_id || '—'}</td>
-                      <td className="ltr">{p.phone || '—'}</td>
-                      <td>{p.gender === 'female' ? 'أنثى' : 'ذكر'}</td>
-                      <td>{p.errors.length
+                      <td data-label="#">{p.i + 1}</td>
+                      <td data-label="الاسم" className="mf-name" style={{ textAlign: 'right' }}>{p.full_name || '—'}</td>
+                      <td data-label="الهوية" className="ltr">{p.national_id || '—'}</td>
+                      <td data-label="الجوال" className="ltr">{p.phone || '—'}</td>
+                      <td data-label="الجنس">{p.gender === 'female' ? 'أنثى' : 'ذكر'}</td>
+                      <td data-label="الحالة">{p.errors.length
                         ? <span style={{ color: 'var(--danger)', fontSize: 12 }}>{p.errors.join('، ')}</span>
                         : <span className="tag ok"><Icon name="check" size={13} /></span>}</td>
                     </tr>

@@ -406,6 +406,16 @@
 .pax-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--cr-300);font-size:12px;margin-top:2px}
 .pax-actions{display:flex;gap:6px;flex:none}
 
+/* تذكير جماعيّ: شارة أيقونة + شريط تقدّم + زرّ التعليم */
+.action-ic{flex:none;width:38px;height:38px;border-radius:var(--r-sm);display:grid;place-items:center;
+  background:rgba(196,154,69,.12);color:var(--gd-300)}
+.action-ic.info{background:rgba(58,160,179,.14);color:var(--info-ink)}
+.action-ic.ok{background:rgba(43,182,140,.14);color:var(--ok-ink)}
+.remind-bar{height:7px;border-radius:99px;background:var(--surface);overflow:hidden;border:1px solid var(--line)}
+.remind-bar>span{display:block;height:100%;background:linear-gradient(90deg,rgba(43,182,140,.9),var(--gd-300));transition:width .25s}
+.rmd-check{flex:none;width:38px;height:38px;border-radius:var(--r-sm);border:1px solid var(--line);cursor:pointer;
+  background:rgba(43,182,140,.10);color:var(--ok-ink);display:grid;place-items:center}
+
 /* ============================================================
    الكشف الرسمي (Manifest) — ورقة بيضاء رسمية + طباعة
    ============================================================ */
