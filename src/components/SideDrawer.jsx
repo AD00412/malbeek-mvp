@@ -111,11 +111,16 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
           <div className="drawer-plan">
             <div className="drawer-plan-row">
               <span style={{ flex: 1, color: 'var(--cr-100)', fontSize: 13, fontWeight: 600 }}>استهلاك الباقة</span>
-              <span style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)', fontWeight: 700 }}>
+              <span style={{ fontFamily: 'var(--font-display)', color: usagePct >= 100 ? 'var(--danger-ink)' : 'var(--gd-300)', fontWeight: 700 }}>
                 {planUsage.used}/{planUsage.limit}
               </span>
             </div>
-            <div className="drawer-plan-bar"><span style={{ width: usagePct + '%' }} /></div>
+            <div className={`drawer-plan-bar ${usagePct >= 100 ? 'full' : ''}`}><span style={{ width: usagePct + '%' }} /></div>
+            {usagePct >= 100 && (
+              <div className="drawer-plan-hint">
+                وصلتَ سقف الباقة التجريبيّة — اطلب ترقيةً للوصول لحملاتٍ غير محدودة.
+              </div>
+            )}
           </div>
         )}
 

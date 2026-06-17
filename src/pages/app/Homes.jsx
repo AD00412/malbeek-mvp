@@ -312,9 +312,12 @@ export function SubscriberHome() {
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const creatingRef = useRef(false)
 
+  const firstLoadRef = useRef(true)
   const load = useCallback(async () => {
     if (!user?.id) return
-    setLoading(true); setErr('')
+    // لا نُومض الـ Skeleton مع كلّ تحديثٍ حيٍّ — فقط في التحميل الأوّل.
+    if (firstLoadRef.current) setLoading(true)
+    setErr('')
 
     // الحملة التي يديرها المستخدم: يملكها أو عضوُ فريقٍ فيها (RPC موثوق).
     const { data: managedId } = await supabase.rpc('my_managed_subscriber_id')
@@ -382,6 +385,7 @@ export function SubscriberHome() {
       setPaxStats({ byTrip, totals })
     } else { setTrips([]); setPaxStats({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } }) }
     setLoading(false)
+    firstLoadRef.current = false
   }, [user, profile, refreshProfile])
 
   useEffect(() => { load() }, [load])
@@ -871,9 +875,11 @@ export function CustomerHome() {
   const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const { confirm, toast } = useUI()
+  const firstLoadRef = useRef(true)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    // لا نُومض الـ Skeleton مع كلّ تحديثٍ حيّ (Realtime يستدعي load بكثرة).
+    if (firstLoadRef.current) setLoading(true)
     let sq = supabase.from('subscribers').select('id, org_name, store_url, logo_url')
     sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
     const { data: s } = await sq.maybeSingle()
@@ -895,6 +901,7 @@ export function CustomerHome() {
       setMyBookings(b ?? [])
     }
     setLoading(false)
+    firstLoadRef.current = false
   }, [subscriberId, user])
 
   useEffect(() => { load() }, [load])

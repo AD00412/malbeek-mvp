@@ -81,8 +81,13 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     let stream = null
     let timer = null
 
+    // كثيرٌ من متصفّحات iOS Safari تفتقر BarcodeDetector. نعرض رسالةً ودودةً ونوجّه
+    // المستخدم للإدخال اليدويّ (الذي يعمل بكفاءة تامّة).
     if (!('BarcodeDetector' in window)) {
-      setCamError('المسح المباشر غير مدعومٍ في هذا المتصفّح — استخدم الإدخال اليدوي بالأسفل (يعمل على Chrome/Android).')
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+      setCamError(isIOS
+        ? 'مسح QR المباشر غير مدعومٍ على متصفّحات iPhone حاليًّا — ألصق رمز التذكرة (TKT-XXXX) في الحقل بالأسفل أو افتح بالكاميرا واضغط على «إضافة إلى الجوّال». يعمل المسح المباشر على Chrome (Android/سطح المكتب).'
+        : 'المسح المباشر غير مدعومٍ في هذا المتصفّح — استخدم الإدخال اليدوي بالأسفل (يعمل على Chrome على Android/سطح المكتب).')
       return
     }
 

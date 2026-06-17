@@ -282,6 +282,9 @@
 .drawer-plan-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.05);overflow:hidden;
   border:1px solid var(--line)}
 .drawer-plan-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--gd-300),rgba(43,182,140,.85));transition:width .3s}
+.drawer-plan-bar.full>span{background:linear-gradient(90deg,rgba(224,88,75,.7),rgba(224,88,75,.95))}
+.drawer-plan-hint{margin-top:8px;font-size:11.5px;color:var(--cr-200);line-height:1.5;
+  background:rgba(196,154,69,.06);border:1px solid rgba(196,154,69,.18);border-radius:var(--r-sm);padding:8px 10px}
 
 .drawer-logout{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
   padding:13px;border-radius:var(--r-md);cursor:pointer;font-family:var(--font-display);
@@ -551,14 +554,20 @@
   margin-top:6px;padding-bottom:2px;border-bottom:1px solid var(--line)}
 
 .pax-list{display:flex;flex-direction:column;gap:8px}
-.pax-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);
+.pax-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);
   background:var(--surface-3)}
 .pax-seat{flex:none;width:38px;height:38px;border-radius:var(--r-sm);background:rgba(196,154,69,.12);color:var(--gd-300);
   display:grid;place-items:center;font-family:var(--font-display);font-weight:900;font-size:15px}
-.pax-main{flex:1;min-width:0}
+.pax-main{flex:1 1 60%;min-width:0}
 .pax-name{color:var(--cr-50);font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pax-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--cr-300);font-size:12px;margin-top:2px}
-.pax-actions{display:flex;gap:6px;flex:none}
+/* أزرار الإجراءات: على الجوال تنزل لسطرٍ جديدٍ كاملٍ بمحاذاة موزَّعةٍ — أوسع للضغط */
+.pax-actions{display:flex;gap:6px;flex:none;margin-inline-start:auto}
+@media (max-width:560px){
+  .pax-actions{flex-basis:100%;justify-content:flex-end;padding-top:8px;margin-top:4px;
+    border-top:1px dashed var(--line);margin-inline-start:0}
+  .pax-actions .icon-btn{flex:1 1 0;min-width:42px;height:38px;justify-content:center}
+}
 
 /* تذكير جماعيّ: شارة أيقونة + شريط تقدّم + زرّ التعليم */
 .action-ic{flex:none;width:38px;height:38px;border-radius:var(--r-sm);display:grid;place-items:center;

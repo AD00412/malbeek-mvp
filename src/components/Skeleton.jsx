@@ -5,7 +5,7 @@
  */
 
 /** صفوفُ بطاقاتٍ وهميّة (لقوائم الرحلات/المعتمرين/الإشعارات). */
-export function SkeletonList({ count = 4, lines = 2 }) {
+export function SkeletonList({ count = 2, lines = 2 }) {
   return (
     <div className="sk-list" aria-busy="true" aria-live="polite">
       {Array.from({ length: count }).map((_, i) => (
