@@ -23,6 +23,7 @@ import { tripLifecycle } from '../../lib/tripLifecycle'
 import { SkeletonList } from '../../components/Skeleton'
 import TeamSheet from '../../components/TeamSheet'
 import PendingInviteBanner from '../../components/PendingInviteBanner'
+import StatusTimeline from '../../components/StatusTimeline'
 const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -861,6 +862,7 @@ export function CustomerHome() {
                         <div className="row"><span className="ic"><Icon name="calendar" size={16} /></span><span>{fmtShort(t?.depart_at)}</span></div>
                         <div className="row"><span className="ic"><Icon name="seat" size={16} /></span><span>مقعد {b.seat_no || '—'}</span></div>
                       </div>
+                      <StatusTimeline status={b.status} />
                       <div className="actions-row">
                         <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
                         {b.status === 'registered' && t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
