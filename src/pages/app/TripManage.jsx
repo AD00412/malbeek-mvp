@@ -78,6 +78,8 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [search, setSearch] = useState('')
+  const [paxFilter, setPaxFilter] = useState('all')   // all | unpaid | paid
+  const [paxSort, setPaxSort] = useState('default')    // default | name | boarding | seat
   const [proofFor, setProofFor] = useState(null)   // المعتمر لعرض إيصال دفعه
   const { confirm, toast } = useUI()
 
@@ -222,10 +224,21 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const money = (n) => Number(n || 0).toLocaleString('en-US')
 
   const q = search.trim().toLowerCase()
-  const filtered = q
+  const PAID = new Set(['paid', 'boarded', 'checked_in'])
+  let filtered = q
     ? passengers.filter((p) => [p.full_name, p.national_id, p.phone, p.seat_no, p.boarding_point]
         .filter(Boolean).join(' ').toLowerCase().includes(q))
     : passengers
+  if (paxFilter === 'unpaid') filtered = filtered.filter((p) => !PAID.has(p.status))
+  else if (paxFilter === 'paid') filtered = filtered.filter((p) => PAID.has(p.status))
+  if (paxSort !== 'default') {
+    const by = {
+      name: (a, b) => (a.full_name || '').localeCompare(b.full_name || '', 'ar'),
+      boarding: (a, b) => (a.boarding_point || '').localeCompare(b.boarding_point || '', 'ar') || (a.full_name || '').localeCompare(b.full_name || '', 'ar'),
+      seat: (a, b) => (parseInt(a.seat_no, 10) || 9999) - (parseInt(b.seat_no, 10) || 9999),
+    }[paxSort]
+    if (by) filtered = [...filtered].sort(by)
+  }
 
   if (manifestOpen) {
     return <Manifest trip={trip} sub={sub} passengers={passengers} buses={buses} onClose={() => setManifestOpen(false)} />
@@ -375,6 +388,20 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <div className="field search" style={{ marginBottom: 4 }}>
           <span className="ic"><Icon name="search" size={17} /></span>
           <input type="text" placeholder="بحث: اسم / هوية / جوال / مقعد" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+
+        <div className="chips" style={{ marginTop: 2, marginBottom: 8, alignItems: 'center' }}>
+          {[{ k: 'all', t: 'الكلّ' }, { k: 'unpaid', t: 'غير المدفوعين' }, { k: 'paid', t: 'المدفوعون' }].map((f) => (
+            <button key={f.k} type="button" className={`chip ${paxFilter === f.k ? 'active' : ''}`} onClick={() => setPaxFilter(f.k)}>{f.t}</button>
+          ))}
+          <span style={{ flex: 1 }} />
+          <select value={paxSort} onChange={(e) => setPaxSort(e.target.value)} aria-label="الترتيب"
+            style={{ width: 'auto', padding: '6px 10px', fontSize: 13 }}>
+            <option value="default">الترتيب: تلقائيّ</option>
+            <option value="name">الاسم</option>
+            <option value="boarding">مكان الركوب</option>
+            <option value="seat">المقعد</option>
+          </select>
         </div>
 
         {loading ? (
