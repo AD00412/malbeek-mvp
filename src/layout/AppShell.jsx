@@ -4,6 +4,7 @@ import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
 import NotificationsBell from '../components/NotificationsBell'
 import AccountMenu from '../components/AccountMenu'
+import SideDrawer from '../components/SideDrawer'
 
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
 
@@ -44,8 +45,9 @@ function ConnectionPill() {
  * @param {ReactNode} actions   أزرارٌ يسار الرأس (سطح المكتب)
  * @param {Function}  onNotifNavigate  معالج التنقّل من إشعار
  */
-export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate }) {
+export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate, planLabel, planUsage }) {
   const { profile, role } = useAuth()
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
@@ -101,6 +103,10 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
       {/* ---------- المنطقة الرئيسة ---------- */}
       <div className="main" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <header className="topbar">
+          <button type="button" className="icon-bubble tb-menu" aria-label="القائمة"
+            onClick={() => setDrawerOpen(true)}>
+            <Icon name="menu" size={18} />
+          </button>
           <div className="tb-titles">
             <div className="pg-title">{title}</div>
             {subtitle && <div className="pg-sub">{subtitle}</div>}
@@ -114,6 +120,11 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
 
         <main className="content">{children}</main>
       </div>
+
+      {/* ---------- الدرج الجانبي (☰ على الجوال) ---------- */}
+      <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
+        tabs={tabs} active={active} onTab={onTab}
+        planLabel={planLabel} planUsage={planUsage} />
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
       <nav className="tabbar" aria-label="تنقّل سفلي">

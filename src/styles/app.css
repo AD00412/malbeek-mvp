@@ -229,6 +229,68 @@
 .acct-pop-item.danger{color:var(--danger-ink)}
 .acct-pop-item.danger:hover:not(:disabled){background:rgba(224,88,75,.10)}
 
+/* درجٌ جانبيٌّ (Hamburger Menu) — ينزلق من جهة البدء (يمين في RTL).
+   لا نعتمد على align-items مع flex+RTL (تفاديًا لحالاتٍ شاذّةٍ على iOS).
+   نستخدم position:absolute صراحةً على البطاقة لتموضعٍ مضمون. */
+.drawer-overlay{position:fixed;inset:0;z-index:110;background:rgba(2,16,11,.72);
+  backdrop-filter:blur(5px);animation:fade-in .18s ease}
+.drawer-card{position:absolute;top:0;bottom:0;inset-inline-start:0;width:min(86vw, 340px);
+  background:linear-gradient(180deg,#073322,var(--em-900));border-inline-end:1px solid var(--line-strong);
+  display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.5);
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  animation:drawer-in .26s cubic-bezier(.16,.84,.44,1);outline:none}
+@keyframes drawer-in{from{transform:translateX(-100%)} to{transform:translateX(0)}}
+[dir=rtl] .drawer-card{animation-name:drawer-in-rtl}
+@keyframes drawer-in-rtl{from{transform:translateX(100%)} to{transform:translateX(0)}}
+
+.drawer-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;
+  border-bottom:1px solid var(--line);margin-bottom:12px}
+.drawer-user{display:flex;align-items:center;gap:11px;flex:1;min-width:0}
+.drawer-av{flex:none;width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gd-300),rgba(196,154,69,.55));
+  color:var(--em-950);display:grid;place-items:center;font-family:var(--font-display);
+  font-weight:900;font-size:18px;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.drawer-nm{color:var(--cr-50);font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer-sub{color:var(--cr-300);font-size:11.5px;margin-top:2px}
+.drawer-close{flex:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.04);
+  border:1px solid var(--line);color:var(--cr-200);cursor:pointer;font-size:22px;line-height:1;
+  display:grid;place-items:center;transition:.15s}
+.drawer-close:hover{color:var(--cr-50);background:rgba(255,255,255,.08)}
+
+.drawer-nav{flex:1;overflow:auto;display:flex;flex-direction:column;gap:3px;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.drawer-sec{font-family:var(--font-display);font-size:11px;color:var(--gd-300);
+  text-transform:uppercase;letter-spacing:.05em;margin:14px 8px 6px;font-weight:700}
+.drawer-item{display:flex;align-items:center;gap:12px;padding:12px 12px;background:transparent;
+  border:none;border-radius:var(--r-md);cursor:pointer;color:var(--cr-100);font-family:inherit;
+  font-size:14px;font-weight:500;text-align:start;transition:.14s;width:100%}
+.drawer-item:hover:not(:disabled){background:rgba(255,255,255,.04);color:var(--cr-50)}
+.drawer-item.active{background:rgba(196,154,69,.10);color:var(--gd-300);
+  box-shadow:inset 3px 0 0 var(--gd-300)}
+[dir=rtl] .drawer-item.active{box-shadow:inset -3px 0 0 var(--gd-300)}
+.drawer-item:disabled{opacity:.45;cursor:not-allowed}
+.drawer-ic{flex:none;width:32px;height:32px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.04);display:grid;place-items:center;color:inherit}
+.drawer-item.active .drawer-ic{background:rgba(196,154,69,.16)}
+.drawer-lb{flex:1;min-width:0}
+.drawer-badge{flex:none;background:rgba(58,160,179,.15);color:var(--info-ink);
+  font-family:var(--font-display);font-weight:700;font-size:11px;
+  padding:2px 9px;border-radius:99px;min-width:22px;text-align:center}
+
+.drawer-plan{margin-top:12px;padding:12px 8px;border-top:1px solid var(--line)}
+.drawer-plan-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.drawer-plan-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.05);overflow:hidden;
+  border:1px solid var(--line)}
+.drawer-plan-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--gd-300),rgba(43,182,140,.85));transition:width .3s}
+
+.drawer-logout{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px;border-radius:var(--r-md);cursor:pointer;font-family:var(--font-display);
+  font-weight:700;font-size:14px;background:rgba(224,88,75,.10);border:1px solid rgba(224,88,75,.30);
+  color:var(--danger-ink);transition:.16s;width:100%}
+.drawer-logout:hover{background:rgba(224,88,75,.18)}
+
+.drawer-foot{margin-top:10px;display:flex;align-items:center;justify-content:center;color:var(--cr-300)}
+
 /* الإشعارات Popover — أعرض قليلًا، مع رأسٍ ومحتوى قابلٍ للتمرير */
 .notif-pop{width:min(360px, calc(100vw - 20px));padding:0;overflow:hidden}
 .notif-pop-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);
@@ -259,11 +321,24 @@
 .sub-row:hover{background:rgba(196,154,69,.05)}
 .sub-row:active{transform:scale(.998)}
 
+/* «نشطٌ الآن» — بطاقة حالة سريعة تحت الهيرو */
+.live-row{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:rgba(43,182,140,.06);border:1px solid rgba(43,182,140,.18);
+  border-radius:var(--r-md);margin:10px 0 14px}
+.live-row .live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 3px rgba(43,182,140,.18);animation:pulse 1.8s ease-in-out infinite;flex:none}
+.live-row .live-lb{font-size:13px;color:var(--cr-200);font-weight:500}
+.live-row .live-v{font-family:var(--font-display);font-weight:900;font-size:20px;color:var(--ok-ink);line-height:1}
+
 /* تنظيف الرأس على الجوال — العنوان لا يدفع الأزرار خارج الشاشة */
 .tb-titles{min-width:0;overflow:hidden}
 .tb-titles .pg-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hide-mobile{display:none}
 @media (min-width:560px){ .hide-mobile{display:inline-flex} }
+
+/* زرّ ☰ في الرأس — يظهر على الجوال فقط (سطح المكتب لديه الشريط الجانبي) */
+.tb-menu{display:grid}
+@media (min-width:820px){ .tb-menu{display:none} }
 
 /* ============================================================
    البطاقات واللوحات

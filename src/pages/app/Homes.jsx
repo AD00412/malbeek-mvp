@@ -468,6 +468,8 @@ export function SubscriberHome() {
         active={view}
         onTab={onTab}
         onNotifNavigate={(n) => { const t = trips.find((x) => x.id === n.ref_trip); if (t) setManaging(t) }}
+        planLabel={sub?.plan === 'paid' ? 'باقة ملبّيك' : 'الباقة التجريبية'}
+        planUsage={sub?.plan === 'paid' ? null : { used: trips.length, limit: 1 }}
       >
         {err && !managing && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
 
@@ -648,6 +650,9 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
   const ne = nextTrip ? (paxByTrip?.get(nextTrip.id) || { count: 0, paid: 0 }) : null
   const neCap = Number(nextTrip?.capacity) || 0
   const nePct = neCap > 0 ? Math.min(100, Math.round((ne.count / neCap) * 100)) : 0
+  // عددٌ تشغيليٌّ سريع: المعتمرون المسجّلون اليوم (تقريبٌ بسيطٌ من السجلات)
+  const liveCount = tt.count - tt.checked_in   // مَن لم يكتمل تسكينهم بعد
+
   return (
     <>
       <section className="hero">
@@ -655,6 +660,14 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
         <h2>أهلًا {profile?.full_name ? `· ${profile.full_name.split(' ')[0]}` : ''}</h2>
         <p>{sub?.org_name ? `${sub.org_name} — ` : ''}مركز قيادتك المركزي. كل رحلاتك، المعتمرون، والإشعارات في مكانٍ واحد.</p>
       </section>
+
+      <div className="live-row">
+        <span className="live-dot" />
+        <span className="live-lb">نشطٌ الآن</span>
+        <span className="live-v">{liveCount}</span>
+        <span style={{ flex: 1 }} />
+        <span className="muted" style={{ fontSize: 12 }}>تحديثٌ حيٌّ</span>
+      </div>
 
       {nextTrip && (
         <section className="panel" style={{ borderColor: 'rgba(196,154,69,.35)' }}>
