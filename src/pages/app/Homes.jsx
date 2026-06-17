@@ -931,7 +931,14 @@ export function CustomerHome() {
                       <StatusTimeline status={b.status} />
                       <div className="actions-row">
                         <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
-                        {b.status === 'registered' && t && <button className="icon-btn" onClick={() => setBooking(t)}><Icon name="edit" size={15} /> تعديل</button>}
+                        {b.status === 'registered' && t && (() => {
+                          const payable = !!(sub?.store_url || t?.price != null)
+                          return (
+                            <button className="icon-btn" onClick={() => setBooking(t)} style={payable ? { color: 'var(--gd-300)' } : undefined}>
+                              <Icon name={payable ? 'payments' : 'edit'} size={15} /> {payable ? 'الدفع وإرفاق الإيصال' : 'تعديل الحجز'}
+                            </button>
+                          )
+                        })()}
                         {(b.status === 'registered' || b.status === 'paid') ? (
                           <button className="icon-btn danger" onClick={async () => {
                             const paid = b.status === 'paid'
