@@ -369,7 +369,33 @@ input[type="time"]::-webkit-date-and-time-value{
 :root[data-theme="light"] .seg button{color:var(--cr-200)}
 :root[data-theme="light"] .seg button.active{background:#fff;color:var(--cr-50);border-color:rgba(11,92,67,.20)}
 
-/* ==== الماسح في الوضع الفاتح ==== */
+/* ==== التذكرة (.ticket) في الوضع الفاتح ====
+   التذكرة مصمَّمةٌ كبطاقةٍ ماديّةٍ — رأسٌ ملوَّنٌ + جسمٌ كريميّ.
+   في الفاتح: نُلطّف الرأس من الزمرّديّ العميق إلى تدرّجٍ كريميٍّ + ذهبيٍّ
+   يتناغم مع الصفحة المحيطة، مع الحفاظ على هيبة البطاقة. */
+:root[data-theme="light"] .ticket{
+  background:linear-gradient(165deg,#fff,#FBF7EE);
+  box-shadow:0 14px 40px rgba(11,92,67,.18);
+  border-color:rgba(196,154,69,.32)
+}
+:root[data-theme="light"] .ticket .ticket-top{
+  background:linear-gradient(180deg,#FBF7EE,#F1E9D6);
+  color:var(--cr-50);
+  border-bottom:1px solid rgba(196,154,69,.30)
+}
+:root[data-theme="light"] .ticket .tk-org{color:var(--cr-50)}
+:root[data-theme="light"] .ticket .tk-kind{color:var(--gd-700)}
+/* «مدفوع» الـ pill أعلى التذكرة: حدودٌ ذهبيّةٌ خفيفة + نصٌّ زمرّديّ */
+:root[data-theme="light"] .ticket .ticket-top .st{
+  background:rgba(43,182,140,.12);
+  color:#0E7152;
+  border-color:rgba(43,182,140,.32)
+}
+:root[data-theme="light"] .ticket .ticket-top .st.muted{
+  background:rgba(11,92,67,.06);
+  color:var(--cr-200);
+  border-color:rgba(11,92,67,.18)
+}
 /* مرحلة العرض (الفيديو) تبقى داكنةً (مهمٌّ لتباين باركود QR والإطار الذهبيّ). */
 /* لكنّ الرأس وشريط الإدخال اليدويّ يحترمان الوضع — لقراءةٍ أوضح. */
 :root[data-theme="light"] .scanner-head{
