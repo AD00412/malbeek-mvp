@@ -841,3 +841,31 @@
 .timeline.light .tl-step.done .tl-lbl{color:#13211c}
 .timeline.light .tl-step.current .tl-dot{border-color:var(--gd-500);color:#04261c}
 .timeline.light .tl-step.current .tl-lbl{color:#8a6a1f;font-weight:800}
+
+/* ============================================================
+   لمساتُ تفاعلٍ احترافيّة: ضغطةٌ حسّيّة · تركيزٌ واضح · تمريرٌ سلس · سرعة
+   ============================================================ */
+/* إزالةُ تأخّر النقر ٣٠٠ms على الجوال — استجابةٌ فوريّة */
+.btn,.action,.icon-btn,.chip,.bus-tab,.tab,.nav-item,.seat3d,.tab-cta,.icon-bubble{touch-action:manipulation}
+
+/* ضغطةٌ حسّيّةٌ موحَّدةٌ تعطي إحساسًا بالتحكّم */
+.btn:active:not(:disabled),.icon-btn:active,.chip:active,.bus-tab:active,
+.tab:active,.nav-item:active,.icon-bubble:active{transform:scale(.96)}
+.action:active{transform:scale(.985)}
+
+/* انتقالُ الإجراءات أسرعُ وأنعم، مع عمقٍ خفيفٍ عند المرور */
+.action{transition:transform .14s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease}
+.action:hover{box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.trip-card{transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+
+/* تركيزٌ واضحٌ للوحة المفاتيح (وصوليّة + مظهرٌ احترافيّ) — لا يظهر بالنقر */
+.btn:focus-visible,.action:focus-visible,.icon-btn:focus-visible,.chip:focus-visible,
+.bus-tab:focus-visible,.tab:focus-visible,.nav-item:focus-visible,.icon-bubble:focus-visible,
+.seat3d:focus-visible,.m-close:focus-visible{outline:2px solid var(--gd-300);outline-offset:2px}
+
+/* تمريرٌ سلسٌ مع منع تسلسل التمرير بين الطبقات (لا يهتزّ ما خلف الورقة) */
+.modal-card,.manifest-scroll,.content,.notif-list,.pax-list,.rooms-grid{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+
+/* شريط الرجوع الثابت في إدارة الرحلة */
+.tm-backbar{position:sticky;top:0;z-index:6;margin:-4px -4px 8px;padding:6px 4px;
+  background:linear-gradient(180deg,var(--bg) 65%,transparent)}

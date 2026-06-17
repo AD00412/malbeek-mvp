@@ -298,10 +298,12 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
   return (
     <>
-      {/* رأس الشاشة */}
-      <button className="btn btn-ghost btn-sm" onClick={onBack} style={{ marginBottom: 6 }}>
-        <Icon name="arrowRight" size={16} /> رجوع للرحلات
-      </button>
+      {/* رأس الشاشة — شريط رجوعٍ ثابتٌ يبقى في المتناول أثناء التمرير */}
+      <div className="tm-backbar">
+        <button className="btn btn-ghost btn-sm" onClick={onBack}>
+          <Icon name="arrowRight" size={16} /> رجوع للرحلات
+        </button>
+      </div>
 
       <section className="hero">
         <div className="tags">
