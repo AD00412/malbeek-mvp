@@ -211,6 +211,10 @@
 .acct-role{display:inline-block;margin-top:6px;font-family:var(--font-display);font-size:11px;
   color:var(--em-950);background:var(--grad-gold);padding:3px 10px;border-radius:99px;font-weight:700}
 
+/* صفوف المشتركين قابلةٌ للنقر — تأثيرٌ بصريٌّ خفيف */
+.sub-row:hover{background:rgba(196,154,69,.05)}
+.sub-row:active{transform:scale(.998)}
+
 /* تنظيف الرأس على الجوال — العنوان لا يدفع الأزرار خارج الشاشة */
 .tb-titles{min-width:0;overflow:hidden}
 .tb-titles .pg-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

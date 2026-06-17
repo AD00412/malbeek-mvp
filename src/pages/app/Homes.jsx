@@ -25,6 +25,9 @@ import TeamSheet from '../../components/TeamSheet'
 import PendingInviteBanner from '../../components/PendingInviteBanner'
 import StatusTimeline from '../../components/StatusTimeline'
 import PilgrimSearch from '../../components/PilgrimSearch'
+import AdminAllTrips from '../../components/AdminAllTrips'
+import AdminPilgrimSearch from '../../components/AdminPilgrimSearch'
+import AdminSubDetail from '../../components/AdminSubDetail'
 const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -67,6 +70,7 @@ export function AdminHome() {
   const [view, setView] = useState('overview')
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [detailSub, setDetailSub] = useState(null)   // الحملة المفتوحة في ورقة التفاصيل
 
   const load = useCallback(async () => {
     // نظرةٌ تشغيليّةٌ وماليّةٌ مجمّعةٌ عبر كلّ الحملات (دالّةٌ آمنةٌ مقصورةٌ على الأدمن)
@@ -90,6 +94,8 @@ export function AdminHome() {
     { section: 'الإدارة' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     { key: 'subs', label: 'المشتركون', icon: 'building', badge: subs.length || undefined },
+    { key: 'trips', label: 'الرحلات', icon: 'trips' },
+    { key: 'search', label: 'البحث', icon: 'search' },
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message' },
   ]
   const money = (n) => Number(n || 0).toLocaleString('en-US')
@@ -97,6 +103,7 @@ export function AdminHome() {
   const trips = subs.reduce((a, s) => a + (s.trips_count || 0), 0)
   const pax = subs.reduce((a, s) => a + (s.pax_count || 0), 0)
   const collected = subs.reduce((a, s) => a + (Number(s.collected) || 0), 0)
+  const recent7 = subs.filter((s) => s.created_at && (Date.now() - new Date(s.created_at).getTime()) < 7 * 86400000).length
 
   return (
     <>
@@ -105,7 +112,7 @@ export function AdminHome() {
         {view === 'overview' && (
           <>
             <div className="stats">
-              <div className="stat"><div className="top"><span className="ic"><Icon name="building" size={15} /></span>المشتركون</div><div className="v">{subs.length}</div></div>
+              <div className="stat"><div className="top"><span className="ic"><Icon name="building" size={15} /></span>المشتركون</div><div className="v">{subs.length}{recent7 > 0 && <span style={{ fontSize: 12, color: 'var(--ok-ink)', marginInlineStart: 8 }}>+{recent7} هذا الأسبوع</span>}</div></div>
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>الباقات المدفوعة</div><div className="v">{paid}</div></div>
               <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>الرحلات</div><div className="v">{trips}</div></div>
               <div className="stat warn"><div className="top"><span className="ic"><Icon name="customers" size={15} /></span>المعتمرون</div><div className="v">{pax}</div></div>
@@ -113,24 +120,41 @@ export function AdminHome() {
             <div className="stats" style={{ marginTop: 12 }}>
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>إجمالي المحصّل عبر المنصّة</div><div className="v" style={{ fontSize: 26 }}>{money(collected)} <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>﷼</span></div></div>
             </div>
-            <SubsPanel subs={subs} loading={loading} onReload={load} />
-            <FeedbackInbox />
+
+            <div className="actions" style={{ marginTop: 16 }}>
+              <div className="sec-label">إجراءاتٌ سريعة</div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <button className="action" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('subs')}><Icon name="building" size={17} /> كلّ الحملات</button>
+                <button className="action info" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('trips')}><Icon name="trips" size={17} /> كلّ الرحلات</button>
+                <button className="action warn" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('search')}><Icon name="search" size={17} /> بحث المعتمرين</button>
+              </div>
+            </div>
+
+            <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />
           </>
         )}
-        {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} />}
+        {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />}
+        {view === 'trips' && <AdminAllTrips />}
+        {view === 'search' && <AdminPilgrimSearch />}
         {view === 'feedback' && <FeedbackInbox />}
         </div>
       </AppShell>
-      <Roadmap />
+
+      <AdminSubDetail open={!!detailSub} sub={detailSub} onClose={() => setDetailSub(null)} onChanged={() => { load(); setDetailSub(null) }} />
     </>
   )
 }
 
-function SubsPanel({ subs, loading, onReload }) {
+function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
   const [busyId, setBusyId] = useState(null)
+  const [q, setQ] = useState('')
+  const [planFilter, setPlanFilter] = useState('all')   // all | paid | trial
+  const [sortBy, setSortBy] = useState('recent')        // recent | name | pax | collected
   const { toast } = useUI()
   const money = (n) => Number(n || 0).toLocaleString('en-US')
-  async function togglePlan(s) {
+
+  async function togglePlan(s, ev) {
+    ev?.stopPropagation?.()
     setBusyId(s.id)
     const next = s.plan === 'paid' ? 'trial' : 'paid'
     const { error } = await supabase.from('subscribers').update({ plan: next }).eq('id', s.id)
@@ -138,9 +162,27 @@ function SubsPanel({ subs, loading, onReload }) {
     if (error) toast(translateRpcError(error, 'تعذّر تحديث الباقة.'), { type: 'error' })
     else { toast(next === 'paid' ? 'تمت ترقية الحملة لمدفوعة' : 'أُعيدت الحملة لتجريبية', { type: 'success' }); onReload?.() }
   }
+
+  const filtered = useMemo(() => {
+    const safe = q.trim().toLowerCase()
+    let arr = subs.filter((s) => {
+      if (planFilter !== 'all' && s.plan !== planFilter) return false
+      if (!safe) return true
+      return (s.org_name || '').toLowerCase().includes(safe) || (s.slug || '').toLowerCase().includes(safe)
+    })
+    const by = {
+      recent: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
+      name: (a, b) => (a.org_name || '').localeCompare(b.org_name || '', 'ar'),
+      pax: (a, b) => (b.pax_count || 0) - (a.pax_count || 0),
+      collected: (a, b) => (Number(b.collected) || 0) - (Number(a.collected) || 0),
+    }[sortBy]
+    if (by) arr = [...arr].sort(by)
+    return arr
+  }, [subs, q, planFilter, sortBy])
+
   const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصّل (﷼)','تاريخ الاشتراك']
   function reportRows() {
-    return subs.map((s) => [
+    return filtered.map((s) => [
       s.org_name || '', `/j/${s.slug}`, s.plan === 'paid' ? 'مدفوعة' : 'تجريبية',
       s.trips_count || 0, s.pax_count || 0, s.paid_count || 0,
       Number(s.collected) || 0, fmtDateTime(s.created_at),
@@ -182,17 +224,44 @@ function SubsPanel({ subs, loading, onReload }) {
           <Icon name="edit" size={15} /> Word
         </button>
       </div>
+      {!loading && subs.length > 0 && (
+        <>
+          <div className="field search" style={{ marginBottom: 8 }}>
+            <span className="ic"><Icon name="search" size={16} /></span>
+            <input type="text" placeholder="ابحث باسم الحملة أو الرابط…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+          <div className="bus-tabs" style={{ marginBottom: 8 }}>
+            {[
+              { k: 'all', l: 'الكل' },
+              { k: 'paid', l: 'مدفوعة' },
+              { k: 'trial', l: 'تجريبية' },
+            ].map((x) => (
+              <button key={x.k} className={`bus-tab ${planFilter === x.k ? 'active' : ''}`} onClick={() => setPlanFilter(x.k)}>{x.l}</button>
+            ))}
+            <span style={{ flex: 1 }} />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ width: 'auto', padding: '6px 10px', fontSize: 12 }}>
+              <option value="recent">الأحدث</option>
+              <option value="name">بالاسم</option>
+              <option value="pax">الأكثر معتمرين</option>
+              <option value="collected">الأعلى تحصيلًا</option>
+            </select>
+          </div>
+        </>
+      )}
+
       {loading ? (
         <SkeletonList count={4} />
       ) : subs.length === 0 ? (
         <Empty title="لا يوجد مشتركون بعد" hint="ستظهر الحملات هنا فور تسجيلها." />
+      ) : filtered.length === 0 ? (
+        <div className="empty"><div className="em-ttl">لا نتائج</div><div>غيّر البحث أو الفلتر.</div></div>
       ) : (
         <div className="tbl-wrap">
           <table className="tbl tbl-cards">
             <thead><tr><th>الحملة</th><th>الباقة</th><th>رحلات</th><th>معتمرون</th><th>مدفوع</th><th>المحصّل (﷼)</th><th>إجراء</th></tr></thead>
             <tbody>
-              {subs.map((s) => (
-                <tr key={s.id}>
+              {filtered.map((s) => (
+                <tr key={s.id} className="sub-row" onClick={() => onOpenDetail?.(s)} style={{ cursor: 'pointer' }}>
                   <td data-label="الحملة">
                     {s.org_name}
                     <div className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)', fontSize: 11 }}>/j/{s.slug}</code></div>
@@ -203,7 +272,7 @@ function SubsPanel({ subs, loading, onReload }) {
                   <td data-label="مدفوع">{s.paid_count || 0}</td>
                   <td data-label="المحصّل (﷼)" style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{money(s.collected)}</td>
                   <td data-label="إجراء">
-                    <button className="icon-btn" onClick={() => togglePlan(s)} disabled={busyId === s.id}>
+                    <button className="icon-btn" onClick={(e) => togglePlan(s, e)} disabled={busyId === s.id}>
                       {busyId === s.id ? <span className="spinner" /> : (s.plan === 'paid' ? 'إرجاع لتجريبية' : 'ترقية لمدفوعة')}
                     </button>
                   </td>
