@@ -116,7 +116,7 @@
 :root[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(11,92,67,.22)}
 :root[data-theme="light"] ::selection{background:rgba(11,92,67,.16);color:var(--cr-50)}
 
-/* الحقول في الوضع الفاتح: خلفيّةٌ بيضاء، حدودٌ زمرّديّةٌ خفيفة، placeholder رماديّ */
+/* ==== الحقول ==== */
 :root[data-theme="light"] .field input,
 :root[data-theme="light"] .field select,
 :root[data-theme="light"] .field textarea{
@@ -131,6 +131,170 @@
 :root[data-theme="light"] .field textarea:focus{
   background:#fff;border-color:var(--gd-500)
 }
+
+/* ==== الرأس (Topbar) ==== */
+:root[data-theme="light"] .topbar{
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.78));
+  border-bottom-color:rgba(11,92,67,.10);
+  color:var(--cr-50);
+}
+:root[data-theme="light"] .icon-bubble{
+  background:rgba(11,92,67,.05);
+  border-color:rgba(11,92,67,.14);
+  color:var(--cr-100);
+}
+:root[data-theme="light"] .icon-bubble:hover{
+  background:rgba(11,92,67,.10);border-color:rgba(11,92,67,.22)
+}
+
+/* ==== الشريط السفليّ (Tabbar) ==== */
+:root[data-theme="light"] .tabbar{
+  background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.98));
+  border-top-color:rgba(11,92,67,.10);
+}
+:root[data-theme="light"] .tab{color:var(--cr-200)}
+:root[data-theme="light"] .tab:hover{color:var(--cr-50)}
+:root[data-theme="light"] .tab.active{color:var(--em-600)}
+:root[data-theme="light"] .tab.active::before{background:var(--em-500)}
+
+/* ==== الشريط الجانبي (سطح المكتب) ==== */
+:root[data-theme="light"] .sidebar{
+  background:linear-gradient(180deg,#fff,#FBF7EE);
+  border-inline-end:1px solid rgba(11,92,67,.10)
+}
+:root[data-theme="light"] .nav-item{color:var(--cr-100)}
+:root[data-theme="light"] .nav-item:hover{background:rgba(11,92,67,.05)}
+:root[data-theme="light"] .nav-item.active{background:rgba(196,154,69,.14);color:var(--em-700)}
+
+/* ==== الدرج الجانبيّ (Drawer) ==== */
+:root[data-theme="light"] .drawer-overlay{background:rgba(11,92,67,.32)}
+:root[data-theme="light"] .drawer-card{
+  background:linear-gradient(180deg,#fff,#FBF7EE);
+  border-inline-end-color:rgba(11,92,67,.14)
+}
+:root[data-theme="light"] .drawer-nm{color:var(--cr-50)}
+:root[data-theme="light"] .drawer-sub{color:var(--cr-200)}
+:root[data-theme="light"] .drawer-close{
+  background:rgba(11,92,67,.05);border-color:rgba(11,92,67,.14);color:var(--cr-100)
+}
+:root[data-theme="light"] .drawer-item{color:var(--cr-100)}
+:root[data-theme="light"] .drawer-item:hover:not(:disabled){background:rgba(11,92,67,.05);color:var(--cr-50)}
+:root[data-theme="light"] .drawer-item.active{background:rgba(196,154,69,.14);color:var(--em-700)}
+:root[data-theme="light"] .drawer-ic{background:rgba(11,92,67,.06);color:var(--cr-100)}
+:root[data-theme="light"] .drawer-item.active .drawer-ic{background:rgba(196,154,69,.20);color:var(--gd-700)}
+:root[data-theme="light"] .drawer-plan-bar{background:rgba(11,92,67,.06);border-color:rgba(11,92,67,.14)}
+:root[data-theme="light"] .drawer-sec{color:var(--gd-700)}
+:root[data-theme="light"] .drawer-logout{
+  background:rgba(224,88,75,.06);
+  border-color:rgba(224,88,75,.22);
+  color:var(--danger-ink)
+}
+:root[data-theme="light"] .drawer-logout:hover{background:rgba(224,88,75,.12)}
+
+/* ==== الأوراق السفليّة والمودالات (Modal/Sheet) ==== */
+:root[data-theme="light"] .modal-overlay{background:rgba(11,92,67,.32);backdrop-filter:blur(6px)}
+:root[data-theme="light"] .modal-card{
+  background:linear-gradient(180deg,#fff,#FBF7EE);
+  border-color:rgba(11,92,67,.14);
+  color:var(--cr-50)
+}
+:root[data-theme="light"] .modal-card .m-head h3{color:var(--cr-50)}
+:root[data-theme="light"] .modal-card .m-close{
+  background:rgba(11,92,67,.05);border-color:rgba(11,92,67,.14);color:var(--cr-100)
+}
+:root[data-theme="light"] .modal-card .grabber{background:rgba(11,92,67,.18)}
+
+/* ==== Popovers (Notifications + AccountMenu) ==== */
+:root[data-theme="light"] .acct-pop{
+  background:#fff;border-color:rgba(11,92,67,.18);
+  box-shadow:0 18px 50px rgba(11,92,67,.22)
+}
+:root[data-theme="light"] .acct-pop-card{background:rgba(196,154,69,.06);border-color:rgba(196,154,69,.18)}
+:root[data-theme="light"] .acct-pop-nm{color:var(--cr-50)}
+:root[data-theme="light"] .acct-pop-em{color:var(--cr-200)}
+:root[data-theme="light"] .acct-pop-divider{background:rgba(11,92,67,.10)}
+:root[data-theme="light"] .acct-pop-item{color:var(--cr-100)}
+:root[data-theme="light"] .acct-pop-item:hover:not(:disabled){background:rgba(11,92,67,.05);color:var(--cr-50)}
+:root[data-theme="light"] .notif-pop-head{background:rgba(196,154,69,.05);border-bottom-color:rgba(11,92,67,.10);color:var(--cr-50)}
+:root[data-theme="light"] .notif-row{background:rgba(11,92,67,.03);border-color:rgba(11,92,67,.10)}
+:root[data-theme="light"] .notif-row.unread{background:rgba(196,154,69,.08);border-color:rgba(196,154,69,.22)}
+:root[data-theme="light"] .notif-title{color:var(--cr-50)}
+:root[data-theme="light"] .notif-body{color:var(--cr-200)}
+:root[data-theme="light"] .notif-time{color:var(--cr-300)}
+:root[data-theme="light"] .notif-ic{background:rgba(196,154,69,.10);color:var(--gd-700)}
+
+/* ==== البطاقات والألواح ==== */
+:root[data-theme="light"] .hero{
+  background:linear-gradient(155deg,rgba(255,255,255,.7),rgba(11,92,67,.04));
+  border-color:rgba(11,92,67,.12)
+}
+:root[data-theme="light"] .panel{
+  background:rgba(255,255,255,.7);border-color:rgba(11,92,67,.12)
+}
+:root[data-theme="light"] .trip-card{
+  background:rgba(255,255,255,.78);border-color:rgba(11,92,67,.12)
+}
+:root[data-theme="light"] .stat{
+  background:rgba(255,255,255,.78);border-color:rgba(11,92,67,.12);
+  box-shadow:0 2px 8px rgba(11,92,67,.06)
+}
+:root[data-theme="light"] .pax-row{background:rgba(255,255,255,.7);border-color:rgba(11,92,67,.12)}
+:root[data-theme="light"] .pax-seat{background:rgba(196,154,69,.12);color:var(--gd-700)}
+:root[data-theme="light"] .onb-step{background:rgba(255,255,255,.7);border-color:rgba(11,92,67,.12)}
+:root[data-theme="light"] .onb-check{background:rgba(11,92,67,.05);border-color:rgba(11,92,67,.14);color:var(--cr-200)}
+
+/* ==== العناصر التفاعليّة الصغيرة ==== */
+:root[data-theme="light"] .btn-ghost{
+  background:rgba(11,92,67,.04);color:var(--cr-50);border-color:rgba(11,92,67,.16)
+}
+:root[data-theme="light"] .btn-ghost:hover:not(:disabled){
+  background:rgba(11,92,67,.08);border-color:rgba(11,92,67,.28)
+}
+:root[data-theme="light"] .icon-btn{
+  background:rgba(11,92,67,.05);border-color:rgba(11,92,67,.14);color:var(--cr-100)
+}
+:root[data-theme="light"] .icon-btn:hover{border-color:rgba(11,92,67,.28);color:var(--cr-50)}
+:root[data-theme="light"] .chip{
+  background:rgba(255,255,255,.6);border-color:rgba(11,92,67,.14);color:var(--cr-200)
+}
+:root[data-theme="light"] .chip:hover{border-color:rgba(11,92,67,.28);color:var(--cr-50)}
+:root[data-theme="light"] .chip.active{background:rgba(196,154,69,.16);border-color:var(--gd-500);color:var(--gd-700)}
+:root[data-theme="light"] .bus-tab{
+  background:rgba(255,255,255,.6);border-color:rgba(11,92,67,.14);color:var(--cr-200)
+}
+:root[data-theme="light"] .bus-tab.active{background:rgba(196,154,69,.16);border-color:var(--gd-500);color:var(--gd-700)}
+
+/* ==== شريط التقدّم العامّ والترميز ==== */
+:root[data-theme="light"] .bar{background:rgba(11,92,67,.08)}
+
+/* ==== التنبيهات ==== */
+:root[data-theme="light"] .alert.info{background:rgba(58,160,179,.10);border-color:rgba(58,160,179,.30);color:var(--info-ink)}
+:root[data-theme="light"] .alert.ok{background:rgba(43,182,140,.10);border-color:rgba(43,182,140,.30);color:var(--ok-ink)}
+:root[data-theme="light"] .alert.warn{background:rgba(224,168,46,.10);border-color:rgba(224,168,46,.30);color:var(--warn-ink)}
+:root[data-theme="light"] .alert.err{background:rgba(224,88,75,.10);border-color:rgba(224,88,75,.30);color:var(--danger-ink)}
+
+/* ==== الحالات (status pills) ==== */
+:root[data-theme="light"] .status-pill{background:rgba(43,182,140,.10);border-color:rgba(43,182,140,.30);color:var(--ok-ink)}
+:root[data-theme="light"] .status-pill.offline{background:rgba(224,88,75,.10);border-color:rgba(224,88,75,.30);color:var(--danger-ink)}
+
+/* ==== شريط الباقة التجريبيّة ==== */
+:root[data-theme="light"] .trial-banner{
+  background:linear-gradient(95deg,rgba(196,154,69,.10),rgba(196,154,69,.03));
+  border-color:rgba(196,154,69,.30)
+}
+:root[data-theme="light"] .trial-banner .tb-ic{background:rgba(196,154,69,.18);color:var(--gd-700)}
+:root[data-theme="light"] .trial-banner .tb-title{color:var(--cr-50)}
+:root[data-theme="light"] .trial-banner .tb-sub{color:var(--cr-200)}
+:root[data-theme="light"] .trial-banner .tb-sub strong{color:var(--gd-700)}
+
+/* ==== الصفوف الحيّة وشريحات التذكير ==== */
+:root[data-theme="light"] .live-row{background:rgba(43,182,140,.05);border-color:rgba(43,182,140,.20)}
+
+/* ==== الشاشة الفارغة ==== */
+:root[data-theme="light"] .empty{color:var(--cr-200)}
+
+/* ==== الماسح والكشف يبقيان داكنين عمدًا للقراءة الرسميّة ==== */
+/* لا تجاوزٌ على .scanner-overlay و .manifest — هي شاشاتٌ متخصّصة */
 
 /* ============================================================
    التهيئة الأساسية
