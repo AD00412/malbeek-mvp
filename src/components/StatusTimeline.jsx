@@ -10,11 +10,12 @@ const STEPS = [
 /**
  * شريطُ تتبّعٍ لحالة المعتمر — يُبرز الخطوة الحاليّة وما اكتمل منها.
  * @param {string} status  registered | paid | boarded | checked_in
+ * @param {boolean} [light]  نسخةٌ لخلفيّةٍ فاتحة (بطاقة التذكرة)
  */
-export default function StatusTimeline({ status }) {
+export default function StatusTimeline({ status, light }) {
   const idx = Math.max(0, STEPS.findIndex((s) => s.k === status))
   return (
-    <div className="timeline" role="list" aria-label="حالة الحجز">
+    <div className={`timeline ${light ? 'light' : ''}`} role="list" aria-label="حالة الحجز">
       {STEPS.map((s, i) => {
         const state = i < idx ? 'done' : i === idx ? 'current' : 'todo'
         return (

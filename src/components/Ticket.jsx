@@ -4,6 +4,7 @@ import { busName } from '../lib/buses'
 import { elementToPngBlob } from '../lib/pdf'
 import { downloadICS } from '../lib/ics'
 import { useUI } from '../lib/useUI'
+import StatusTimeline from './StatusTimeline'
 
 function fmt(v) {
   if (!v) return '—'
@@ -158,6 +159,10 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
             <div><span className="k">المقعد</span><span className="v big">{passenger?.seat_no || '—'}</span></div>
             <div><span className="k">مكان الركوب</span><span className="v">{passenger?.boarding_point || trip?.boarding_point || '—'}</span></div>
             <div><span className="k">الباص</span><span className="v">{busLabel}</span></div>
+          </div>
+
+          <div style={{ margin: '4px 4px 2px' }}>
+            <StatusTimeline status={passenger?.status} light />
           </div>
 
           <div className="tk-qr">
