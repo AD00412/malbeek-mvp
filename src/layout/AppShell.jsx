@@ -4,6 +4,7 @@ import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
 import NotificationsBell from '../components/NotificationsBell'
 import SideDrawer from '../components/SideDrawer'
+import ThemeToggle from '../components/ThemeToggle'
 
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
 
@@ -112,6 +113,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
           </div>
           <span style={{ flex: 1 }} />
           <span className="hide-mobile"><ConnectionPill /></span>
+          <ThemeToggle />
           <NotificationsBell onNavigate={onNotifNavigate} />
           {actions}
         </header>

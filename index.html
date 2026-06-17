@@ -26,6 +26,15 @@
     <meta name="twitter:card" content="summary" />
   </head>
   <body>
+    <!-- طبّق الوضع المحفوظ قبل رسم React: يمنع وميض الانتقال بين الفاتح والغامق -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('malbeek-theme');
+          if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

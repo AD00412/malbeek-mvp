@@ -4,6 +4,7 @@ import { useAuth } from '../app/useAuth'
 import { useUI } from '../lib/useUI'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import ImageUpload from './ImageUpload'
 
 /**
  * إعدادات الحساب — ٣ تبويباتٍ: الملف الشخصيّ، حملتك (للمشتركين)، الهويّة البصريّة.
@@ -152,27 +153,25 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
         </div>
       )}
 
-      {/* الهويّة البصريّة */}
+      {/* الهويّة البصريّة — رفعٌ مباشرٌ من مكتبة الجوال/الكمبيوتر */}
       {tab === 'brand' && showOrg && (
         <div className="form">
-          <div className="field">
-            <label>رابط شعار الحملة (PNG / SVG)</label>
-            <input type="url" className="ltr" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." />
-            {logoUrl && (
-              <div style={{ marginTop: 8, padding: 10, background: 'rgba(255,255,255,.04)', borderRadius: 'var(--r-sm)', textAlign: 'center' }}>
-                <img src={logoUrl} alt="معاينة الشعار" style={{ maxHeight: 60, maxWidth: '100%' }} onError={(e) => { e.target.style.display = 'none' }} />
-              </div>
-            )}
-          </div>
-          <div className="field">
-            <label>رابط الختم الإلكترونيّ (PNG شفّاف)</label>
-            <input type="url" className="ltr" value={stampUrl} onChange={(e) => setStampUrl(e.target.value)} placeholder="https://..." />
-            {stampUrl && (
-              <div style={{ marginTop: 8, padding: 10, background: 'rgba(255,255,255,.04)', borderRadius: 'var(--r-sm)', textAlign: 'center' }}>
-                <img src={stampUrl} alt="معاينة الختم" style={{ maxHeight: 60, maxWidth: '100%' }} onError={(e) => { e.target.style.display = 'none' }} />
-              </div>
-            )}
-          </div>
+          <ImageUpload
+            subscriberId={sub.id}
+            value={logoUrl}
+            onChange={setLogoUrl}
+            label="شعار الحملة"
+            slot="logo"
+            hint="PNG / JPG / WebP — يظهر في الكشف الرسميّ والتذكرة."
+          />
+          <ImageUpload
+            subscriberId={sub.id}
+            value={stampUrl}
+            onChange={setStampUrl}
+            label="الختم الإلكترونيّ (PNG شفّاف يُفضَّل)"
+            slot="stamp"
+            hint="أفضل صيغة PNG شفّافٍ للحصول على أفضل مظهر في الكشف."
+          />
           <div className="alert info">
             تُستخدم الهويّة البصريّة في الكشف الرسميّ والتذكرة بدل علامة ملبّيك — حملتك تظهر بهويّتها الخاصّة.
           </div>

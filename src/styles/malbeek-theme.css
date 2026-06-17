@@ -78,6 +78,61 @@
 }
 
 /* ============================================================
+   الوضع الفاتح (Light Theme) — يُفعَّل بزرٍّ في الرأس + يُحفظ في localStorage.
+   لا نقلب الـ tokens الأساسيّة (gd/em) — نقلب الأسطح والنصوص فقط.
+   المُودالات والأوراق السفليّة تبقى داكنةً عمدًا (تركيزٌ بصريّ).
+   ============================================================ */
+:root[data-theme="light"]{
+  /* أسطحٌ كريميّةٌ ناعمةٌ */
+  --bg:radial-gradient(1100px 720px at 88% -12%,rgba(196,154,69,.10),transparent 56%),
+       linear-gradient(165deg,#FBF7EE 0%,#F4ECDB 48%,#F8F0DE 100%);
+  --surface:rgba(255,255,255,.78);
+  --surface-2:rgba(255,255,255,.92);
+  --surface-3:rgba(11,92,67,.04);
+
+  /* خطوطٌ زمرّديّةٌ خفيفةٌ (بدل ذهبيّةٍ شفّافة) */
+  --line:rgba(11,92,67,.14);
+  --line-strong:rgba(11,92,67,.28);
+
+  /* النصّ: زمرّدٌ داكنٌ بدل الكريمي */
+  --cr-50:#04261C;
+  --cr-100:#073322;
+  --cr-200:#0A4E3A;
+  --cr-300:#0E7152;
+
+  /* ظلالٌ أنعم على خلفيّةٍ فاتحة */
+  --shadow-sm:0 4px 14px rgba(11,92,67,.10);
+  --shadow-md:0 14px 36px rgba(11,92,67,.14);
+  --shadow-lg:0 24px 60px rgba(11,92,67,.20);
+
+  /* تأثيراتٌ دلاليّةٌ أوضح على خلفيّةٍ فاتحة */
+  --ok-ink:#0E7152;
+  --warn-ink:#A6822F;
+  --danger-ink:#A03b35;
+  --info-ink:#1E6A78;
+}
+
+:root[data-theme="light"] body{background:var(--bg);color:var(--cr-50)}
+:root[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(11,92,67,.22)}
+:root[data-theme="light"] ::selection{background:rgba(11,92,67,.16);color:var(--cr-50)}
+
+/* الحقول في الوضع الفاتح: خلفيّةٌ بيضاء، حدودٌ زمرّديّةٌ خفيفة، placeholder رماديّ */
+:root[data-theme="light"] .field input,
+:root[data-theme="light"] .field select,
+:root[data-theme="light"] .field textarea{
+  background:rgba(255,255,255,.7);
+  border-color:rgba(11,92,67,.18);
+  color:var(--cr-50);
+}
+:root[data-theme="light"] .field input::placeholder,
+:root[data-theme="light"] .field textarea::placeholder{color:rgba(11,92,67,.42)}
+:root[data-theme="light"] .field input:focus,
+:root[data-theme="light"] .field select:focus,
+:root[data-theme="light"] .field textarea:focus{
+  background:#fff;border-color:var(--gd-500)
+}
+
+/* ============================================================
    التهيئة الأساسية
    ============================================================ */
 *{box-sizing:border-box}

@@ -53,10 +53,20 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
   // تحقّقٌ حيّ: العودة بعد الذهاب (يطابق تريغر validate_trip في القاعدة)
   const dateErr = depart && ret && new Date(ret) < new Date(depart) ? 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب.' : ''
 
+  // محوّلٌ آمنٌ لتاريخٍ من <input type="datetime-local">: يردّ ISO أو null لتفادي
+  // RangeError على "Invalid Date" (قاعدة MUTAMIR ب-٤: التواريخ الفارغة → null).
+  const safeISO = (v) => {
+    if (!v) return null
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? null : d.toISOString()
+  }
+
   async function save() {
     if (busy) return
     if (!title.trim()) { setErr('عنوان الرحلة مطلوب.'); return }
-    if (!depart) { setErr('تاريخ ووقت الذهاب مطلوب.'); return }
+    const departISO = safeISO(depart)
+    if (!departISO) { setErr('تاريخ ووقت الذهاب مطلوب.'); return }
+    const returnISO = safeISO(ret)
     if (dateErr) { setErr(dateErr); return }
     setErr(''); setBusy(true)
 
@@ -64,8 +74,8 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
       title: title.trim(),
       route_from: routeFrom.trim() || null,
       route_to: routeTo.trim() || null,
-      depart_at: new Date(depart).toISOString(),
-      return_at: ret ? new Date(ret).toISOString() : null,
+      depart_at: departISO,
+      return_at: returnISO,
       capacity: capacity === '' ? 0 : Math.max(0, parseInt(capacity, 10) || 0),
       price: price === '' ? null : Math.max(0, parseFloat(price) || 0),
       bus_label: busLabel.trim() || null,
