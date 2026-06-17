@@ -40,7 +40,7 @@ function ConnectionPill() {
  * @param {Function} onTab
  * @param {ReactNode} actions  أزرارٌ يسار الرأس (سطح المكتب)
  */
-export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children }) {
+export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate }) {
   const { profile, role, signOut } = useAuth()
   const [notifOpen, setNotifOpen] = useState(false)
   const [unread] = useUnreadCount()
@@ -113,7 +113,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
         </header>
 
         <main className="content">{children}</main>
-        <NotificationsCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
+        <NotificationsCenter open={notifOpen} onClose={() => setNotifOpen(false)} onNavigate={onNotifNavigate} />
       </div>
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}

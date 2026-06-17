@@ -390,6 +390,7 @@ export function SubscriberHome() {
         tabs={tabs}
         active={view}
         onTab={onTab}
+        onNotifNavigate={(n) => { const t = trips.find((x) => x.id === n.ref_trip); if (t) setManaging(t) }}
       >
         {err && !managing && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
 
@@ -844,6 +845,7 @@ export function CustomerHome() {
         tabs={tabs}
         active={view}
         onTab={onTab}
+        onNotifNavigate={() => setView('tickets')}
       >
         <div key={view} className="view-fade">
         {view === 'trips' && (

@@ -26,7 +26,7 @@ function fmt(v) {
 }
 
 /** ورقةُ مركز الإشعارات */
-export default function NotificationsCenter({ open, onClose, onChanged }) {
+export default function NotificationsCenter({ open, onClose, onChanged, onNavigate }) {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -97,7 +97,10 @@ export default function NotificationsCenter({ open, onClose, onChanged }) {
               type="button"
               className={`notif-row ${n.read_at ? '' : 'unread'}`}
               key={n.id}
-              onClick={() => !n.read_at && markRead(n.id)}
+              onClick={() => {
+                if (!n.read_at) markRead(n.id)
+                if (n.ref_trip && onNavigate) { onNavigate(n); onClose?.() }
+              }}
             >
               <span className="notif-ic"><Icon name={KIND_ICON[n.kind] || 'bell'} size={16} /></span>
               <div className="notif-main">
@@ -105,6 +108,7 @@ export default function NotificationsCenter({ open, onClose, onChanged }) {
                 {n.body && <div className="notif-body">{n.body}</div>}
                 <div className="notif-time">{fmt(n.created_at)}</div>
               </div>
+              {n.ref_trip && onNavigate && <Icon name="chevron" size={15} />}
             </button>
           ))}
         </div>
