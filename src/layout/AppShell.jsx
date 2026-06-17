@@ -3,6 +3,7 @@ import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
 import NotificationsCenter from '../components/NotificationsCenter'
+import AccountMenu from '../components/AccountMenu'
 import { useUnreadCount } from '../lib/useUnreadCount'
 
 const ROLE_LABEL = { admin: 'الإدارة', subscriber: 'المشترك', customer: 'العميل' }
@@ -41,7 +42,7 @@ function ConnectionPill() {
  * @param {ReactNode} actions  أزرارٌ يسار الرأس (سطح المكتب)
  */
 export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate }) {
-  const { profile, role, signOut } = useAuth()
+  const { profile, role } = useAuth()
   const [notifOpen, setNotifOpen] = useState(false)
   const [unread] = useUnreadCount()
 
@@ -85,30 +86,31 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
         <div className="foot">
           <div className="user-box">
             <div className="av">{initials(profile?.full_name)}</div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div className="nm">{profile?.full_name || 'حسابي'}</div>
               <div className="ml">{ROLE_LABEL[role] || ''}</div>
             </div>
           </div>
-          <button className="btn btn-ghost btn-block btn-sm" style={{ marginTop: 10 }} onClick={signOut}>
-            <Icon name="logout" size={17} /> تسجيل الخروج
-          </button>
+          <div className="muted" style={{ marginTop: 8, fontSize: 11, textAlign: 'center' }}>
+            تسجيل الخروج من رمز الحساب في الأعلى ↑
+          </div>
         </div>
       </aside>
 
       {/* ---------- المنطقة الرئيسة ---------- */}
       <div className="main" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <header className="topbar">
-          <div>
+          <div className="tb-titles">
             <div className="pg-title">{title}</div>
             {subtitle && <div className="pg-sub">{subtitle}</div>}
           </div>
           <span style={{ flex: 1 }} />
-          <ConnectionPill />
+          <span className="hide-mobile"><ConnectionPill /></span>
           <button type="button" className="icon-bubble" aria-label="الإشعارات" onClick={() => setNotifOpen(true)} style={{ position: 'relative' }}>
             <Icon name="bell" size={18} />
             {unread > 0 && <span className="notif-badge">{unread > 99 ? '99+' : unread}</span>}
           </button>
+          <AccountMenu />
           {actions}
         </header>
 
