@@ -168,6 +168,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const rosterHeaders = ['الاسم الرباعي','رقم الهوية/الإقامة','الجوال','الجنسية','الجنس','الباص','المقعد','مكان الركوب','الحالة','المبلغ','وقت الدفع','رمز التذكرة']
 
   async function exportRosterDocx() {
+    toast('جارٍ تجهيز ملفّ Word…', { type: 'info' })
     try {
       await tableToDocx({
         title: `كشف معتمري رحلة «${trip?.title || ''}»`,

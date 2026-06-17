@@ -158,6 +158,7 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
   async function downloadPdf() {
     if (busy) return
     setBusy(true)
+    toast('جارٍ تجهيز الكشف… قد يستغرق لحظات', { type: 'info' })
     try {
       await htmlsToPdf(sheetRefs.current.filter(Boolean), `كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`)
       toast('تم تنزيل الكشف بنجاح', { type: 'success' })

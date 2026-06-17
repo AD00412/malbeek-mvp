@@ -145,6 +145,7 @@ function SubsPanel({ subs, loading, onReload }) {
     ])
   }
   async function exportReportDocx() {
+    toast('جارٍ تجهيز ملفّ Word…', { type: 'info' })
     try {
       await tableToDocx({
         title: 'تقرير حملات منصّة ملبّيك',
@@ -162,6 +163,7 @@ function SubsPanel({ subs, loading, onReload }) {
   async function exportReportPdf() {
     if (pdfBusy || !reportRef.current) return
     setPdfBusy(true)
+    toast('جارٍ تجهيز ملفّ PDF…', { type: 'info' })
     try { await htmlToPdf(reportRef.current, 'تقرير-الحملات'); toast('تم تنزيل تقرير PDF', { type: 'success' }) }
     catch (e) { console.error(e); toast('تعذّر إنشاء ملفّ PDF — حاول مجدّدًا.', { type: 'error' }) }
     finally { setPdfBusy(false) }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { AuthContext } from './useAuth'
 
@@ -8,6 +8,8 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)   // { id, role, full_name, phone, subscriber_id }
   const [loading, setLoading] = useState(true)
+  const profileRef = useRef(null)
+  profileRef.current = profile                    // مرآةٌ للملف الحاليّ (لتفادي جلبٍ مكرّر)
 
   /* تحميل الملف الشخصي (الدور + الحملة) — null-safe + self-heal */
   const loadProfile = useCallback(async (uid) => {
@@ -64,9 +66,14 @@ export function AuthProvider({ children }) {
     // onAuthStateChange يُطلق فورًا حدث INITIAL_SESSION بالجلسة الحالية،
     // ثم كل دخول/خروج/تجديد. مصدرٌ واحدٌ للحقيقة. مع القفل الصوري في
     // supabaseClient يصل الحدث الأوّل خلال أجزاء الثانية بلا أي تجمّد.
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (!active) return
       setSession(s ?? null)
+      // تجديد التوكن (كلّ ساعة) لا يغيّر الملف الشخصي — لا نعيد جلبه (تفادي طلبٍ مكرّر).
+      if (event === 'TOKEN_REFRESHED' && profileRef.current && profileRef.current.id === s?.user?.id) {
+        if (active) setLoading(false)
+        return
+      }
       try { await loadProfile(s?.user?.id) }
       catch (e) {
         // eslint-disable-next-line no-console
