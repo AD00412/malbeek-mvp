@@ -1991,3 +1991,43 @@ drop trigger if exists trg_audit_members on public.subscriber_members;
 create trigger trg_audit_members
   after insert or update or delete on public.subscriber_members
   for each row execute function public.audit_member_change();
+
+-- ============================================================
+--  (اختياري) أتمتةُ تذكير المعتمرين قبل الرحلة عبر pg_cron
+--  يتطلّب تفعيل امتداد pg_cron من لوحة Supabase (Database > Extensions)
+--  أو: create extension pg_cron;  — وإلّا يُتخطّى هذا القسم بأمانٍ تامّ.
+-- ============================================================
+alter table public.trips add column if not exists departure_reminded_at timestamptz;
+
+-- تُرسل تذكيرًا لمعتمري كلّ رحلةٍ تنطلق خلال ٣٦ ساعةً ولم تُذكَّر بعد (مرّةً واحدة).
+create or replace function public.auto_remind_departures()
+returns integer language plpgsql security definer set search_path = public as $$
+declare v_n int := 0; t record;
+begin
+  for t in
+    select id, title from public.trips
+    where status in ('open','closed')
+      and depart_at is not null
+      and depart_at > now() and depart_at < now() + interval '36 hours'
+      and departure_reminded_at is null
+  loop
+    insert into public.notifications(profile_id, audience, kind, title, body, ref_trip)
+    select distinct p.profile_id, 'customer', 'trip_changed', 'تذكيرٌ برحلتك القادمة',
+           'رحلة «' || coalesce(t.title,'') || '» تنطلق قريبًا — جهّز تذكرتك وكن على الموعد.',
+           t.id
+    from public.passengers p
+    where p.trip_id = t.id and p.profile_id is not null;
+    update public.trips set departure_reminded_at = now() where id = t.id;
+    v_n := v_n + 1;
+  end loop;
+  return v_n;
+end $$;
+revoke all on function public.auto_remind_departures() from public;   -- نظاميّةٌ: تُستدعى من cron فقط
+
+-- جدولةٌ يوميّةٌ (الساعة ٦ صباحًا) — محروسةٌ تتخطّى بأمانٍ إن لم يكن pg_cron مفعّلًا.
+do $$
+begin
+  perform cron.schedule('malbeek-departure-reminders', '0 6 * * *', 'select public.auto_remind_departures();');
+exception when others then
+  raise notice 'pg_cron غير مفعّل — تُخطّيت جدولة التذكير التلقائيّ. فعّل الامتداد من لوحة Supabase ثمّ أعد تشغيل هذا الـ DO block.';
+end $$;
