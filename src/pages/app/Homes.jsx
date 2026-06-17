@@ -736,17 +736,6 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
         </div>
       </div>
 
-      <section className="panel">
-        <div className="panel-head">
-          <h3>ملخّص الباقة</h3>
-          <span className="sp-grow" style={{ flex: 1 }} />
-          <span className="tag gold">{planLabel}</span>
-        </div>
-        <div className="stats" style={{ marginTop: 0 }}>
-          <div className="stat"><div className="top">الرحلات</div><div className="v">{trips.length}</div><div className="sub">{upcoming} قادمة</div></div>
-          <div className="stat"><div className="top">إجمالي المقاعد</div><div className="v">{totalSeats}</div></div>
-        </div>
-      </section>
     </>
   )
 }

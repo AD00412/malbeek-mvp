@@ -700,10 +700,22 @@
 .scanner-frame span:nth-child(4){bottom:0;inset-inline-end:0;border-top:none;border-inline-start:none;border-radius:0 0 14px 0}
 .scanner-hint{position:absolute;bottom:26px;background:rgba(0,0,0,.55);color:var(--cr-100);font-size:13px;
   padding:8px 16px;border-radius:var(--r-pill)}
-.scanner-fallback{display:flex;flex-direction:column;align-items:center;gap:18px;color:var(--cr-200);
-  text-align:center;padding:34px 24px;max-width:480px;margin:0 auto;line-height:1.7}
-.scanner-fallback svg{color:var(--gd-300);opacity:.6}
-.scanner-fallback p{font-size:14.5px;color:var(--cr-100);margin:0}
+.scanner-fallback{display:flex;flex-direction:column;align-items:center;gap:14px;color:var(--cr-200);
+  text-align:center;padding:32px 22px;max-width:420px;margin:0 auto;line-height:1.6}
+.scanner-fallback svg{color:var(--gd-300);opacity:.55}
+.scanner-fallback p{font-size:14px;color:var(--cr-100);margin:0}
+.scanner-fallback .sc-fb-title{font-family:var(--font-display);font-weight:900;color:var(--cr-50);
+  font-size:18px;margin:6px 0 0;line-height:1.3}
+.scanner-fallback .sc-fb-msg{font-size:13.5px;color:var(--cr-200);margin:0}
+.scanner-fallback .sc-fb-howto{margin-top:8px;display:flex;flex-direction:column;gap:8px;width:100%}
+.scanner-fallback .sc-fb-row{display:flex;align-items:flex-start;gap:10px;text-align:start;
+  background:rgba(196,154,69,.05);border:1px solid rgba(196,154,69,.18);
+  border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--cr-100);line-height:1.6}
+.scanner-fallback .sc-fb-row code{font-family:var(--font-display);color:var(--gd-300);
+  background:rgba(196,154,69,.08);padding:1px 8px;border-radius:6px}
+.scanner-fallback .sc-fb-num{flex:none;width:24px;height:24px;border-radius:50%;
+  background:var(--grad-gold);color:var(--em-950);display:grid;place-items:center;
+  font-family:var(--font-display);font-weight:900;font-size:12.5px}
 .scanner-manual{display:flex;gap:10px;align-items:flex-end;padding:14px 16px calc(14px + env(safe-area-inset-bottom));
   background:rgba(4,30,22,.85);border-top:1px solid var(--line);backdrop-filter:var(--glass-blur)}
 .scanner-manual .field{margin:0;flex:1}
@@ -895,20 +907,26 @@
 .notif-body{font-size:12.5px;color:var(--cr-200);margin-top:3px}
 .notif-time{font-size:11px;color:var(--cr-300);margin-top:4px}
 
-/* جولة التهيئة */
+/* جولة التهيئة — تصميمٌ مدمجٌ يحترم الجوال (يلفّ الزرّ لسطرٍ جديدٍ على الشاشات الضيّقة) */
 .onb .ic-badge{width:38px;height:38px;border-radius:12px;background:rgba(196,154,69,.14);color:var(--gd-300);
   display:grid;place-items:center;flex:none}
-.onb-pct{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--gd-300)}
-.onb-steps{display:flex;flex-direction:column;gap:8px}
-.onb-step{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-3)}
-.onb-step.done{opacity:.7}
+.onb-pct{font-family:var(--font-display);font-weight:900;font-size:20px;color:var(--gd-300)}
+.onb-steps{display:flex;flex-direction:column;gap:7px}
+.onb-step{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 12px;
+  border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-3);transition:.18s}
+.onb-step:not(.done):hover{border-color:rgba(196,154,69,.32);background:rgba(196,154,69,.04)}
+.onb-step.done{opacity:.6}
 .onb-step.done .onb-label{text-decoration:line-through;text-decoration-color:rgba(226,194,119,.4)}
 .onb-check{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;
   background:rgba(255,255,255,.05);color:var(--cr-300);border:1px solid var(--line)}
 .onb-step.done .onb-check{background:rgba(43,182,140,.16);color:var(--ok-ink);border-color:rgba(43,182,140,.4)}
-.onb-main{flex:1;min-width:0}
-.onb-label{font-weight:600;color:var(--cr-50);font-size:14px}
-.onb-hint{font-size:12px;color:var(--cr-300);margin-top:2px}
+.onb-main{flex:1 1 60%;min-width:0}
+.onb-label{font-weight:600;color:var(--cr-50);font-size:13.5px;line-height:1.35}
+.onb-hint{font-size:11.5px;color:var(--cr-300);margin-top:2px;line-height:1.5}
+.onb-step .btn{flex:none}
+@media (max-width:380px){
+  .onb-step .btn{flex-basis:100%;justify-content:center;margin-top:6px}
+}
 
 /* تحليلات الحملة */
 .an-bars{display:flex;flex-direction:column;gap:14px}

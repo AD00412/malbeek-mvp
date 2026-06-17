@@ -85,9 +85,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     // المستخدم للإدخال اليدويّ (الذي يعمل بكفاءة تامّة).
     if (!('BarcodeDetector' in window)) {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-      setCamError(isIOS
-        ? 'مسح QR المباشر غير مدعومٍ على متصفّحات iPhone حاليًّا — ألصق رمز التذكرة (TKT-XXXX) في الحقل بالأسفل أو افتح بالكاميرا واضغط على «إضافة إلى الجوّال». يعمل المسح المباشر على Chrome (Android/سطح المكتب).'
-        : 'المسح المباشر غير مدعومٍ في هذا المتصفّح — استخدم الإدخال اليدوي بالأسفل (يعمل على Chrome على Android/سطح المكتب).')
+      setCamError(isIOS ? 'ios' : 'other')
       return
     }
 
@@ -150,8 +148,25 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
       <div className="scanner-stage">
         {camError ? (
           <div className="scanner-fallback">
-            <Icon name="qr" size={48} />
-            <p>{camError}</p>
+            <Icon name="qr" size={52} />
+            {camError === 'ios' ? (
+              <>
+                <h3 className="sc-fb-title">مسح QR لا يعمل على iPhone حاليًّا</h3>
+                <p className="sc-fb-msg">قيدٌ من Apple في Safari — ليس عيبًا في ملبّيك.</p>
+                <div className="sc-fb-howto">
+                  <div className="sc-fb-row"><span className="sc-fb-num">١</span><span>ألصق رمز التذكرة <code>TKT-XXXX</code> في الحقل بالأسفل ↓</span></div>
+                  <div className="sc-fb-row"><span className="sc-fb-num">٢</span><span>أو افتح المسح في Chrome على Android / سطح المكتب</span></div>
+                </div>
+              </>
+            ) : camError === 'other' ? (
+              <>
+                <h3 className="sc-fb-title">المسح المباشر غير مدعوم</h3>
+                <p className="sc-fb-msg">استخدم الإدخال اليدويّ بالأسفل — يعمل تمامًا.</p>
+                <div className="muted" style={{ fontSize: 12 }}>أو افتح المسح في Chrome على Android / سطح المكتب.</div>
+              </>
+            ) : (
+              <p className="sc-fb-msg">{camError}</p>
+            )}
           </div>
         ) : (
           <>
