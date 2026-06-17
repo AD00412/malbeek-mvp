@@ -341,6 +341,7 @@ begin
     if new.room_id    is distinct from old.room_id    then v_changes := v_changes || jsonb_build_object('room_id', jsonb_build_object('old', old.room_id, 'new', new.room_id)); end if;
     if new.amount     is distinct from old.amount     then v_changes := v_changes || jsonb_build_object('amount',  jsonb_build_object('old', old.amount,  'new', new.amount));  end if;
     if new.paid_at    is distinct from old.paid_at    then v_changes := v_changes || jsonb_build_object('paid_at', jsonb_build_object('old', old.paid_at, 'new', new.paid_at)); end if;
+    if new.payment_proof_url is distinct from old.payment_proof_url then v_changes := v_changes || jsonb_build_object('payment_proof_url', jsonb_build_object('old', old.payment_proof_url, 'new', new.payment_proof_url)); end if;
     if v_changes = '{}'::jsonb then return new; end if;
     v_action := case
       when new.status  is distinct from old.status  then (case when new.status = 'paid' then 'payment_confirmed' else 'status_change' end)
@@ -348,6 +349,8 @@ begin
       when new.bus_id  is distinct from old.bus_id  then 'bus_assign'
       when new.room_id is distinct from old.room_id then 'room_assign'
       when new.amount  is distinct from old.amount  then 'amount_change'
+      when new.payment_proof_url is distinct from old.payment_proof_url then
+        (case when new.payment_proof_url is not null then 'proof_attached' else 'proof_removed' end)
       else 'update'
     end;
     v_sub := new.subscriber_id; v_trip := new.trip_id; v_eid := new.id;

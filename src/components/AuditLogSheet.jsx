@@ -17,6 +17,8 @@ const ACTION_AR = {
   bus_assign: { t: 'تغيير الحافلة', icon: 'bus', cls: 'info' },
   room_assign: { t: 'إسناد غرفة', icon: 'bed', cls: 'info' },
   amount_change: { t: 'تعديل المبلغ', icon: 'payments', cls: 'warn' },
+  proof_attached: { t: 'إرفاق إيصال دفع', icon: 'download', cls: 'info' },
+  proof_removed: { t: 'إزالة إيصال دفع', icon: 'trash', cls: 'muted' },
   role_change: { t: 'تغيير دور عضو', icon: 'customers', cls: 'info' },
 }
 
@@ -48,6 +50,7 @@ function describeField(field, change) {
     case 'price':   return `سعر المقعد: ${ov ?? '—'} → ${nv ?? '—'}`
     case 'capacity':return `السعة: ${ov ?? '—'} → ${nv ?? '—'}`
     case 'role':    return `الدور: ${MEMBER_ROLE_AR[ov] || ov || '—'} → ${MEMBER_ROLE_AR[nv] || nv || '—'}`
+    case 'payment_proof_url': return nv ? 'أُرفق إيصال الدفع' : 'أُزيل إيصال الدفع'
     default: return field
   }
 }
