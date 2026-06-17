@@ -75,55 +75,88 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
   const handlerRef = useRef(handleCode)
   useEffect(() => { handlerRef.current = handleCode }, [handleCode])
 
-  /* تشغيل الكاميرا + كشف الباركود عبر BarcodeDetector الأصلية (مرّةً واحدة) */
+  /* تشغيل الكاميرا + كشف QR — يحاول BarcodeDetector الأصليّ أوّلًا (الأسرع على Chrome/Android)،
+     ويتحوّل إلى jsQR + Canvas على iPhone Safari (يحلّ غياب BarcodeDetector). */
   useEffect(() => {
     let stopped = false
     let stream = null
+    let rafId = 0
     let timer = null
-
-    // كثيرٌ من متصفّحات iOS Safari تفتقر BarcodeDetector. نعرض رسالةً ودودةً ونوجّه
-    // المستخدم للإدخال اليدويّ (الذي يعمل بكفاءة تامّة).
-    if (!('BarcodeDetector' in window)) {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-      setCamError(isIOS ? 'ios' : 'other')
-      return
-    }
 
     ;(async () => {
       try {
-        // بعض المتصفّحات تعرّف BarcodeDetector دون دعم qr_code — تحقّق قبل البدء
-        try {
-          const fmts = await window.BarcodeDetector.getSupportedFormats?.()
-          if (fmts && !fmts.includes('qr_code')) {
-            setCamError('المسح المباشر لا يدعم رمز QR في هذا المتصفّح — استخدم الإدخال اليدوي بالأسفل.')
-            return
-          }
-        } catch (_) { /* لا getSupportedFormats — نُكمل ونعتمد على catch أدناه */ }
-        const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
+        // اطلب الكاميرا الخلفيّة (environment) — مهمٌّ على الجوال.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        })
         if (stopped || !videoRef.current) { stream.getTracks().forEach((t) => t.stop()); stream = null; return }
         const v = videoRef.current
         v.srcObject = stream
+        // iOS Safari: playsInline (مضبوطٌ في JSX) + tap → play.
         await v.play().catch(() => {})
         if (!stopped) setStarting(false)
 
-        timer = setInterval(async () => {
-          if (stopped || !videoRef.current) return
+        // الطريق ١: BarcodeDetector الأصليّ (Chrome/Edge/Android — سريعٌ ودقيق).
+        let useNative = false
+        if ('BarcodeDetector' in window) {
           try {
-            const codes = await detector.detect(videoRef.current)
-            if (codes && codes.length) handlerRef.current(codes[0].rawValue)
-          } catch (_) { /* تجاهل إطارًا فاشلًا */ }
-        }, 280)
+            const fmts = await window.BarcodeDetector.getSupportedFormats?.()
+            if (!fmts || fmts.includes('qr_code')) useNative = true
+          } catch (_) { useNative = true }
+        }
+
+        if (useNative) {
+          const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
+          timer = setInterval(async () => {
+            if (stopped || !videoRef.current) return
+            try {
+              const codes = await detector.detect(videoRef.current)
+              if (codes && codes.length) handlerRef.current(codes[0].rawValue)
+            } catch (_) { /* تجاهل إطارًا فاشلًا */ }
+          }, 280)
+          return
+        }
+
+        // الطريق ٢ (iPhone Safari + احتياط): jsQR على canvas مخفيّة.
+        // نحمّلها كسولًا فلا نُضخّم الحزمة الأوّليّة.
+        const { default: jsQR } = await import('jsqr')
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        // معدّل المسح: ~4 إطار/ث (يكفي للكشف، ويحفظ البطارية).
+        const SCAN_W = 480     // نخفض الأبعاد للسرعة — لا حاجة لدقّةٍ كاملة.
+        let lastTick = 0
+        const TICK_MS = 250
+
+        function tick(ts) {
+          if (stopped) return
+          rafId = requestAnimationFrame(tick)
+          if (!videoRef.current || videoRef.current.readyState !== 4) return
+          if (ts - lastTick < TICK_MS) return
+          lastTick = ts
+          const vw = videoRef.current.videoWidth
+          const vh = videoRef.current.videoHeight
+          if (!vw || !vh) return
+          // اقتصاص نسبيٍّ مع تصغيرٍ موحَّد لتسريع jsQR.
+          const ratio = SCAN_W / vw
+          canvas.width = SCAN_W
+          canvas.height = Math.max(120, Math.round(vh * ratio))
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
+          const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
+          if (code && code.data) handlerRef.current(code.data)
+        }
+        rafId = requestAnimationFrame(tick)
       } catch (e) {
         const m = String(e?.name || e?.message || e).toLowerCase()
         if (m.includes('notallowed') || m.includes('permission') || m.includes('denied')) {
-          setCamError('تعذّر الوصول للكاميرا — اسمح بالإذن أو استخدم الإدخال اليدوي بالأسفل.')
+          setCamError('تعذّر الوصول للكاميرا — اسمح بالإذن من إعدادات المتصفّح ثمّ أعد المحاولة، أو استخدم الإدخال اليدويّ بالأسفل.')
         } else if (m.includes('notfound') || m.includes('no camera') || m.includes('devicesnotfound')) {
-          setCamError('لا توجد كاميرا متاحة — استخدم الإدخال اليدوي بالأسفل.')
+          setCamError('لا توجد كاميرا متاحة — استخدم الإدخال اليدويّ بالأسفل.')
         } else if (m.includes('secure') || m.includes('https')) {
-          setCamError('الكاميرا تتطلّب اتصالًا آمنًا (HTTPS أو localhost) — استخدم الإدخال اليدوي.')
+          setCamError('الكاميرا تتطلّب اتصالًا آمنًا (HTTPS) — استخدم الإدخال اليدويّ.')
         } else {
-          setCamError('تعذّر تشغيل الكاميرا — استخدم الإدخال اليدوي بالأسفل.')
+          setCamError('تعذّر تشغيل الكاميرا — استخدم الإدخال اليدويّ بالأسفل.')
         }
       }
     })()
@@ -131,6 +164,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     return () => {
       stopped = true
       if (timer) clearInterval(timer)
+      if (rafId) cancelAnimationFrame(rafId)
       try { stream?.getTracks().forEach((t) => t.stop()) } catch (_) {}
     }
   }, [])
@@ -149,24 +183,12 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         {camError ? (
           <div className="scanner-fallback">
             <Icon name="qr" size={52} />
-            {camError === 'ios' ? (
-              <>
-                <h3 className="sc-fb-title">مسح QR لا يعمل على iPhone حاليًّا</h3>
-                <p className="sc-fb-msg">قيدٌ من Apple في Safari — ليس عيبًا في ملبّيك.</p>
-                <div className="sc-fb-howto">
-                  <div className="sc-fb-row"><span className="sc-fb-num">١</span><span>ألصق رمز التذكرة <code>TKT-XXXX</code> في الحقل بالأسفل ↓</span></div>
-                  <div className="sc-fb-row"><span className="sc-fb-num">٢</span><span>أو افتح المسح في Chrome على Android / سطح المكتب</span></div>
-                </div>
-              </>
-            ) : camError === 'other' ? (
-              <>
-                <h3 className="sc-fb-title">المسح المباشر غير مدعوم</h3>
-                <p className="sc-fb-msg">استخدم الإدخال اليدويّ بالأسفل — يعمل تمامًا.</p>
-                <div className="muted" style={{ fontSize: 12 }}>أو افتح المسح في Chrome على Android / سطح المكتب.</div>
-              </>
-            ) : (
-              <p className="sc-fb-msg">{camError}</p>
-            )}
+            <h3 className="sc-fb-title">تعذّر تشغيل الكاميرا</h3>
+            <p className="sc-fb-msg">{camError}</p>
+            <div className="sc-fb-howto" style={{ marginTop: 4 }}>
+              <div className="sc-fb-row"><span className="sc-fb-num">١</span><span>اسمح للموقع بالوصول للكاميرا من إعدادات المتصفّح</span></div>
+              <div className="sc-fb-row"><span className="sc-fb-num">٢</span><span>أو ألصق رمز التذكرة <code>TKT-XXXX</code> في الحقل بالأسفل ↓</span></div>
+            </div>
           </div>
         ) : (
           <>
