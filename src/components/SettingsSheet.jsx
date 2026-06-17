@@ -5,6 +5,7 @@ import { useUI } from '../lib/useUI'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import ImageUpload from './ImageUpload'
+import { slugify, isValidSlug } from '../lib/slug'
 
 /**
  * إعدادات الحساب — ٣ تبويباتٍ: الملف الشخصيّ، حملتك (للمشتركين)، الهويّة البصريّة.
@@ -22,6 +23,8 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
 
   // الحملة
   const [orgName, setOrgName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [slugErr, setSlugErr] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [storeUrl, setStoreUrl] = useState('')
   const [licenseNo, setLicenseNo] = useState('')
@@ -35,6 +38,8 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
     setFullName(profile?.full_name || '')
     setPhone(profile?.phone || '')
     setOrgName(sub?.org_name || '')
+    setSlug(sub?.slug || '')
+    setSlugErr('')
     setContactPhone(sub?.contact_phone || '')
     setStoreUrl(sub?.store_url || '')
     setLicenseNo(sub?.license_no || '')
@@ -56,18 +61,30 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
 
   async function saveOrg() {
     if (busy || !sub?.id) return
+    setSlugErr('')
+    const safeSlug = (slug || '').trim().toLowerCase()
+    if (safeSlug && !isValidSlug(safeSlug)) {
+      setSlugErr('الرابط يجب أن يكون ٤–٤٠ حرفًا — حروف لاتينيّة صغيرة وأرقام وشُرَط، ولا يبدأ/ينتهي بشُرطة.')
+      return
+    }
     setBusy(true)
-    const { error } = await supabase.from('subscribers')
-      .update({
-        org_name: orgName.trim(),
-        contact_phone: contactPhone.trim() || null,
-        store_url: storeUrl.trim() || null,
-        license_no: licenseNo.trim() || null,
-      })
-      .eq('id', sub.id)
+    const payload = {
+      org_name: orgName.trim(),
+      contact_phone: contactPhone.trim() || null,
+      store_url: storeUrl.trim() || null,
+      license_no: licenseNo.trim() || null,
+    }
+    // نُحدِّث الـ slug فقط إن تغيّر — لتجنّب توليد خطأٍ بسبب الفريديّة (unique).
+    if (safeSlug && safeSlug !== sub.slug) payload.slug = safeSlug
+    const { error } = await supabase.from('subscribers').update(payload).eq('id', sub.id)
     setBusy(false)
-    if (error) toast('تعذّر الحفظ: ' + error.message, { type: 'error' })
-    else { toast('حُفظت بيانات الحملة ✓', { type: 'success' }); onSubChanged?.() }
+    if (error) {
+      if (error.code === '23505') setSlugErr('هذا الرابط محجوزٌ لحملةٍ أخرى — جرّب اسمًا مختلفًا.')
+      else toast('تعذّر الحفظ: ' + error.message, { type: 'error' })
+      return
+    }
+    toast('حُفظت بيانات الحملة ✓', { type: 'success' })
+    onSubChanged?.()
   }
 
   async function saveBrand() {
@@ -132,6 +149,27 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <label>اسم الحملة / المؤسسة</label>
             <input type="text" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="اسم حملتك" />
           </div>
+
+          {/* اختصارُ الرابط — مخصَّصٌ لكلّ مشتركٍ، مشتقٌّ تلقائيًّا من اسم حملته */}
+          <div className={`field ltr ${slugErr ? 'invalid' : ''}`}>
+            <label dir="rtl" style={{ direction: 'rtl' }}>رابط الحجز المختصر</label>
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, border: `1px solid var(--line${slugErr ? '-strong' : ''})`, borderRadius: 'var(--r-md)', background: 'var(--surface-3)', overflow: 'hidden' }}>
+              <span style={{ padding: '13px 12px', color: 'var(--cr-300)', fontSize: 13, background: 'transparent', whiteSpace: 'nowrap' }}>
+                {typeof window !== 'undefined' ? window.location.host : 'mulabeek.com'}/j/
+              </span>
+              <input type="text" inputMode="url" autoComplete="off" autoCapitalize="off" spellCheck="false"
+                value={slug}
+                onChange={(e) => { setSlug(slugify(e.target.value)); setSlugErr('') }}
+                placeholder="hamla-mohammed"
+                style={{ flex: 1, border: 'none', background: 'transparent', borderRadius: 0, padding: '13px 0', minWidth: 0 }} />
+            </div>
+            <p className="muted" style={{ fontSize: 11.5, marginTop: 6, direction: 'rtl' }}>
+              {slugErr
+                ? <span style={{ color: 'var(--danger-ink)' }}>{slugErr}</span>
+                : <>اقتراحٌ ذكيٌّ من اسم حملتك. ٤–٤٠ حرفًا لاتينيًّا — مشاركةٌ أسهل وتذكُّرٌ أسرع.</>}
+            </p>
+          </div>
+
           <div className="field">
             <label>رقم تواصل الحملة (للمعتمرين)</label>
             <input type="tel" inputMode="tel" className="ltr" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="05XXXXXXXX" />
@@ -143,9 +181,6 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
           <div className="field">
             <label>رقم التصريح / الترخيص</label>
             <input type="text" value={licenseNo} onChange={(e) => setLicenseNo(e.target.value)} placeholder="رقم التصريح" />
-          </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            رابط الحجز العام لحملتك: <code className="ltr" style={{ color: 'var(--gd-300)' }}>/j/{sub?.slug}</code>
           </div>
           <button className="btn btn-gold btn-block" onClick={saveOrg} disabled={busy || !orgName.trim()}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={15} /> حفظ التغييرات</>}

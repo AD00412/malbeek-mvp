@@ -29,6 +29,8 @@ import AdminAllTrips from '../../components/AdminAllTrips'
 import AdminPilgrimSearch from '../../components/AdminPilgrimSearch'
 import AdminSubDetail from '../../components/AdminSubDetail'
 import SettingsSheet from '../../components/SettingsSheet'
+import { suggestSlug } from '../../lib/slug'
+import useStickyState from '../../lib/useStickyState'
 const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -68,7 +70,7 @@ function Empty({ title, hint, mark = true }) {
    لوحة الإدارة (تبقى بسيطةً للآن)
    ============================================================ */
 export function AdminHome() {
-  const [view, setView] = useState('overview')
+  const [view, setView] = useStickyState('admin:view', 'overview')
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
   const [detailSub, setDetailSub] = useState(null)   // الحملة المفتوحة في ورقة التفاصيل
@@ -298,7 +300,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
    ============================================================ */
 export function SubscriberHome() {
   const { user, profile, refreshProfile } = useAuth()
-  const [view, setView] = useState('overview')
+  const [view, setView] = useStickyState('sub:view', 'overview')
   const [sub, setSub] = useState(null)
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
@@ -341,8 +343,9 @@ export function SubscriberHome() {
     // نشترط !managedId (لا !s) كي لا يُنشئ عضوُ فريقٍ حملةً ثانيةً لو تعثّرت قراءة صفّه لحظيًّا.
     if (!managedId && !creatingRef.current) {
       creatingRef.current = true
-      const slug = 'hamla-' + Math.random().toString(36).slice(2, 8)
+      // اشتقاقُ slug مقروءٍ من اسم المالك بدل سلسلةٍ عشوائيّةٍ بحتة.
       const orgName = profile?.full_name ? `حملة ${profile.full_name}` : 'حملتي'
+      const slug = suggestSlug(orgName)
       const { data: created, error: insErr } = await supabase
         .from('subscribers')
         .insert({ owner_id: user.id, org_name: orgName, slug, plan: 'trial' })
@@ -859,7 +862,7 @@ function TripCard({ trip, booked = 0, stats, onManage, onEdit, onRemove }) {
    ============================================================ */
 export function CustomerHome() {
   const { user, subscriberId } = useAuth()
-  const [view, setView] = useState('trips')
+  const [view, setView] = useStickyState('cust:view', 'trips')
   const [orgName, setOrgName] = useState('')
   const [sub, setSub] = useState(null)
   const [trips, setTrips] = useState([])

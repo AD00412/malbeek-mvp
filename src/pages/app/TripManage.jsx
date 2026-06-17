@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import useStickyState from '../../lib/useStickyState'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
 import PassengerFormModal from '../../components/PassengerFormModal'
@@ -77,9 +78,11 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [passengers, setPassengers] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
-  const [search, setSearch] = useState('')
-  const [paxFilter, setPaxFilter] = useState('all')   // all | unpaid | paid
-  const [paxSort, setPaxSort] = useState('default')    // default | name | boarding | seat
+  // فلاتر/فرز/بحث محفوظةٌ لكلّ رحلةٍ على حدةٍ في sessionStorage — تعود بعد التنقّل سليمة.
+  const tk = (k) => `tm:${initialTrip?.id || 'unknown'}:${k}`
+  const [search, setSearch] = useStickyState(tk('search'), '')
+  const [paxFilter, setPaxFilter] = useStickyState(tk('filter'), 'all') // all | unpaid | paid
+  const [paxSort, setPaxSort] = useStickyState(tk('sort'), 'default')   // default | name | boarding | seat
   const [proofFor, setProofFor] = useState(null)   // المعتمر لعرض إيصال دفعه
   const { confirm, toast } = useUI()
 
