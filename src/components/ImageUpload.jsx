@@ -75,7 +75,7 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
             <>
               <Icon name="download" size={22} style={{ transform: 'rotate(180deg)' }} />
               <strong>اختر صورةً من جهازك</strong>
-              <span className="muted" style={{ fontSize: 12 }}>الجوّال أو الكمبيوتر · PNG/JPG/WebP/SVG · ٢ ميغابايت كحدٍّ أقصى</span>
+              <span className="muted" style={{ fontSize: 12 }}>الجوّال أو الكمبيوتر · PNG / JPG / WebP · ٢ ميغابايت كحدٍّ أقصى</span>
             </>
           )}
         </button>

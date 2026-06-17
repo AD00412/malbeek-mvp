@@ -105,11 +105,21 @@ export function AdminHome() {
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
   const money = (n) => Number(n || 0).toLocaleString('en-US')
-  const paid = subs.filter((s) => s.plan === 'paid').length
-  const trips = subs.reduce((a, s) => a + (s.trips_count || 0), 0)
-  const pax = subs.reduce((a, s) => a + (s.pax_count || 0), 0)
-  const collected = subs.reduce((a, s) => a + (Number(s.collected) || 0), 0)
-  const recent7 = subs.filter((s) => s.created_at && (Date.now() - new Date(s.created_at).getTime()) < 7 * 86400000).length
+  // إحصاءاتٌ مجمَّعةٌ في useMemo — تُحسَب فقط حين تتغيّر subs، لا مع كلّ rerender
+  // (تبديل التبويب، فتح ورقةٍ…). على ١٠٠+ مشتركٍ الفرق ملحوظ.
+  const { paid, trips, pax, collected, recent7 } = useMemo(() => {
+    const now = Date.now()
+    const week = 7 * 86400000
+    let p = 0, t = 0, x = 0, c = 0, r7 = 0
+    for (const s of subs) {
+      if (s.plan === 'paid') p++
+      t += s.trips_count || 0
+      x += s.pax_count || 0
+      c += Number(s.collected) || 0
+      if (s.created_at && (now - new Date(s.created_at).getTime()) < week) r7++
+    }
+    return { paid: p, trips: t, pax: x, collected: c, recent7: r7 }
+  }, [subs])
 
   return (
     <>

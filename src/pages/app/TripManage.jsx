@@ -491,7 +491,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                 <span className={`st ${STATUS_CLS[p.status] || 'muted'}`}>{STATUS_AR[p.status] || p.status}</span>
                 <div className="pax-actions">
                   {(p.payment_ref || p.payment_proof_url) && p.status === 'registered' && (
-                    <button className="icon-btn" title="تأكيد الدفع" onClick={async () => {
+                    <button className="icon-btn" aria-label="تأكيد الدفع" title="تأكيد الدفع" onClick={async () => {
                       const { error } = await supabase.from('passengers').update({ status: 'paid' }).eq('id', p.id)
                       if (error) toast(translateRpcError(error, 'تعذّر تأكيد الدفع.'), { type: 'error' })
                       else { toast('تم تأكيد الدفع', { type: 'success' }); loadPassengers() }
