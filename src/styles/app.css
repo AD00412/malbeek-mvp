@@ -110,7 +110,17 @@
 .field label{display:block;font-size:13px;color:var(--cr-200);margin-bottom:7px;font-weight:500}
 .field input,.field select,.field textarea{width:100%;background:var(--surface-3);border:1px solid var(--line);
   border-radius:var(--r-md);padding:13px 15px;color:var(--cr-50);font-family:var(--font-sans);font-size:15px;
-  transition:border-color .2s,box-shadow .2s;direction:rtl;color-scheme:dark}
+  transition:border-color .2s,box-shadow .2s;direction:rtl}
+/* حقول التاريخ والوقت: LTR صراحةً (تنسيقها لاتينيٌّ) + منعُ التجاوز خارج الحقل على iOS */
+.field input[type="date"],
+.field input[type="datetime-local"],
+.field input[type="time"],
+.field input[type="month"]{
+  direction:ltr;text-align:start;
+  -webkit-appearance:none;appearance:none;
+  /* ضمانُ ألّا يخرج النصّ خارج الإطار على iOS Safari */
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
 .field input::placeholder,.field textarea::placeholder{color:rgba(217,206,180,.45)}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gd-500);
   box-shadow:0 0 0 3px rgba(196,154,69,.16)}

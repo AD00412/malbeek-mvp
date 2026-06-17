@@ -123,13 +123,54 @@
   background:rgba(255,255,255,.7);
   border-color:rgba(11,92,67,.18);
   color:var(--cr-50);
+  /* مهمٌّ لـ iOS Safari: -webkit-text-fill-color يتجاوز color للحقول التاريخيّة وغيرها */
+  -webkit-text-fill-color:var(--cr-50);
 }
 :root[data-theme="light"] .field input::placeholder,
-:root[data-theme="light"] .field textarea::placeholder{color:rgba(11,92,67,.42)}
+:root[data-theme="light"] .field textarea::placeholder{
+  color:rgba(11,92,67,.42);
+  -webkit-text-fill-color:rgba(11,92,67,.42);
+  opacity:1;
+}
 :root[data-theme="light"] .field input:focus,
 :root[data-theme="light"] .field select:focus,
 :root[data-theme="light"] .field textarea:focus{
   background:#fff;border-color:var(--gd-500)
+}
+
+/* ==== حقول التاريخ والوقت — حلّ مشاكل iOS Safari في الوضعين ==== */
+/* color-scheme يجعل المتصفّح يرسم منتقي التاريخ بالألوان المناسبة (Calendar icon, picker controls) */
+:root{color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
+
+/* iOS Safari يضع لونًا داكنًا افتراضيًّا على placeholder التاريخ — نُجبره صراحةً */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="month"]{
+  /* ضبط الأبعاد لمنع التجاوز خارج الحقل على iOS */
+  min-height:46px;
+  font-family:var(--font-sans);
+  font-size:15px;
+  -webkit-appearance:none;appearance:none;
+}
+/* مساحةُ منتقي التاريخ الصغيرة على iOS Safari — تأكّد بقاءها داخل الحقل */
+input[type="date"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value{
+  text-align:start;min-height:1.5em;
+}
+/* أيقونة المنتقي تتلوّن مع الوضع */
+:root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+:root[data-theme="light"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+:root[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:none;cursor:pointer;opacity:.7
+}
+/* وضعٌ غامقٌ: نبيّض الأيقونة لتظهر */
+:root:not([data-theme="light"]) input[type="date"]::-webkit-calendar-picker-indicator,
+:root:not([data-theme="light"]) input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+:root:not([data-theme="light"]) input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:invert(1) brightness(1.1);cursor:pointer;opacity:.6
 }
 
 /* ==== الرأس (Topbar) ==== */
