@@ -28,6 +28,7 @@ import PilgrimSearch from '../../components/PilgrimSearch'
 import AdminAllTrips from '../../components/AdminAllTrips'
 import AdminPilgrimSearch from '../../components/AdminPilgrimSearch'
 import AdminSubDetail from '../../components/AdminSubDetail'
+import SettingsSheet from '../../components/SettingsSheet'
 const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
@@ -71,6 +72,7 @@ export function AdminHome() {
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
   const [detailSub, setDetailSub] = useState(null)   // الحملة المفتوحة في ورقة التفاصيل
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const load = useCallback(async () => {
     // نظرةٌ تشغيليّةٌ وماليّةٌ مجمّعةٌ عبر كلّ الحملات (دالّةٌ آمنةٌ مقصورةٌ على الأدمن)
@@ -97,6 +99,8 @@ export function AdminHome() {
     { key: 'trips', label: 'الرحلات', icon: 'trips' },
     { key: 'search', label: 'البحث', icon: 'search' },
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message' },
+    { section: 'الحساب' },
+    { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
   const money = (n) => Number(n || 0).toLocaleString('en-US')
   const paid = subs.filter((s) => s.plan === 'paid').length
@@ -107,7 +111,8 @@ export function AdminHome() {
 
   return (
     <>
-      <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view} onTab={setView}>
+      <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view}
+        onTab={(k) => { if (k === 'settings') { setSettingsOpen(true); return } setView(k) }}>
         <div key={view} className="view-fade">
         {view === 'overview' && (
           <>
@@ -121,7 +126,8 @@ export function AdminHome() {
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>إجمالي المحصّل عبر المنصّة</div><div className="v" style={{ fontSize: 26 }}>{money(collected)} <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>﷼</span></div></div>
             </div>
 
-            <div className="actions" style={{ marginTop: 16 }}>
+            {/* الاختصارات منقولةٌ للدرج الجانبيّ (☰) — أبسطُ وأقلُّ تكرار */}
+            <div className="actions" style={{ marginTop: 16, display: 'none' }}>
               <div className="sec-label">إجراءاتٌ سريعة</div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <button className="action" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('subs')}><Icon name="building" size={17} /> كلّ الحملات</button>
@@ -141,6 +147,7 @@ export function AdminHome() {
       </AppShell>
 
       <AdminSubDetail open={!!detailSub} sub={detailSub} onClose={() => setDetailSub(null)} onChanged={() => { load(); setDetailSub(null) }} />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={null} />
     </>
   )
 }
@@ -310,6 +317,7 @@ export function SubscriberHome() {
   const [manageInitial, setManageInitial] = useState(null) // نموذجٌ يُفتح مباشرةً عند دخول الإدارة
   const [paxStats, setPaxStats] = useState({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } })
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const creatingRef = useRef(false)
 
   const firstLoadRef = useRef(true)
@@ -436,6 +444,8 @@ export function SubscriberHome() {
   const planLabel = sub?.plan === 'paid' ? 'باقة ملبّيك' : 'الباقة التجريبية'
 
   /* الشريط السفلي للجوال — ٥ عناصر مع زرّ مركزيٍّ بارز */
+  // العناصر الخمسة الأولى تظهر في الشريط السفليّ على الجوال.
+  // البقيّة (بعد section: 'اختصارات') تظهر في الدرج الجانبيّ فقط.
   const tabs = [
     { section: 'حملتي' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
@@ -443,6 +453,13 @@ export function SubscriberHome() {
     { key: 'add', label: 'إضافة', icon: 'plus', fab: true },
     { key: 'analytics', label: 'التحليلات', icon: 'chart' },
     { key: 'feedback', label: 'الدعم', icon: 'message' },
+    { section: 'اختصارات' },
+    { key: 'scan', label: 'مسح تذكرة', icon: 'qr', disabled: !trips.length },
+    { key: 'search', label: 'بحث عن معتمر', icon: 'search', disabled: !trips.length },
+    { key: 'share', label: 'مشاركة رابط الحجز', icon: 'share', disabled: !sub?.slug },
+    ...(sub?.owner_id === user?.id ? [{ key: 'team', label: 'الفريق والصلاحيّات', icon: 'customers' }] : []),
+    { section: 'الحساب' },
+    { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
 
   // فتح إدارة أوّل رحلة (لخطوات التهيئة)؛ أو إنشاء رحلةٍ إن لم توجد
@@ -460,6 +477,11 @@ export function SubscriberHome() {
     setManaging(null)
     if (k === 'add') { openCreate(); return }
     if (k === 'feedback') { setFeedbackOpen(true); return }
+    if (k === 'scan') { setScanMode('pick'); return }
+    if (k === 'search') { setSearchOpen(true); return }
+    if (k === 'share') { setShareOpen(true); return }
+    if (k === 'team') { setTeamOpen(true); return }
+    if (k === 'settings') { setSettingsOpen(true); return }
     setView(k)
   }
 
@@ -519,11 +541,6 @@ export function SubscriberHome() {
                   onManageFirst={manageFirst}
                   onOrgData={manageFirstCrew}
                 />
-                {sub?.owner_id === user?.id && (
-                  <button className="action" style={{ marginTop: 12 }} onClick={() => setTeamOpen(true)}>
-                    <Icon name="customers" size={18} /> الفريق والصلاحيّات
-                  </button>
-                )}
               </>
             )}
 
@@ -594,6 +611,7 @@ export function SubscriberHome() {
         <Icon name="message" size={18} />
       </button>
       <FeedbackSheet open={feedbackOpen} audience="subscriber" onClose={() => setFeedbackOpen(false)} />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={sub} onSubChanged={load} />
 
       {/* اختيارُ نوع المسح */}
       <BottomSheet
@@ -657,12 +675,17 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
   // عددٌ تشغيليٌّ سريع: المعتمرون المسجّلون اليوم (تقريبٌ بسيطٌ من السجلات)
   const liveCount = tt.count - tt.checked_in   // مَن لم يكتمل تسكينهم بعد
 
+  // تفادي تكرار الاسم في الهيرو حين يكون اسم الحملة هو نفسه اسم المستخدم.
+  const firstName = profile?.full_name ? profile.full_name.split(' ')[0] : ''
+  const orgName = sub?.org_name || ''
+  const showOrgInHero = orgName && orgName !== firstName && !orgName.startsWith(firstName) && !firstName.startsWith(orgName)
+
   return (
     <>
       <section className="hero">
-        <span className="tag">منصة عُمرة</span>
-        <h2>أهلًا {profile?.full_name ? `· ${profile.full_name.split(' ')[0]}` : ''}</h2>
-        <p>{sub?.org_name ? `${sub.org_name} — ` : ''}مركز قيادتك المركزي. كل رحلاتك، المعتمرون، والإشعارات في مكانٍ واحد.</p>
+        <span className="tag">منصّة عُمرة</span>
+        <h2>أهلًا{firstName ? ` · ${firstName}` : ''}</h2>
+        <p>{showOrgInHero ? `${orgName} — ` : ''}مركز قيادتك المركزيّ: كلّ رحلاتك والمعتمرون والإشعارات في مكانٍ واحد.</p>
       </section>
 
       <div className="live-row">
@@ -711,24 +734,6 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
           <div className="top"><span className="ic"><Icon name="bed" size={15} /></span>استلام الغرفة</div>
           <div className="v">{tt.checked_in}</div>
         </div>
-      </div>
-
-      <div className="actions">
-        <button className="action primary" onClick={onCreate}>
-          <Icon name="plus" size={18} /> إنشاء رحلة عمرة
-        </button>
-        <button className="action info" onClick={onScan} disabled={!trips.length}>
-          <Icon name="qr" size={18} /> مسح تذكرة
-        </button>
-        <button className="action" onClick={onSearch} disabled={!trips.length}>
-          <Icon name="search" size={18} /> بحثٌ عن معتمر
-        </button>
-        <button className="action ok" onClick={onShare} disabled={!sub?.slug}>
-          <Icon name="share" size={18} /> مشاركة رابط الحجز
-        </button>
-        <button className="action violet" onClick={onAnalytics}>
-          <Icon name="chart" size={18} /> التحليلات
-        </button>
       </div>
 
       <section className="panel">
@@ -874,6 +879,7 @@ export function CustomerHome() {
   const [booking, setBooking] = useState(null)        // الرحلة قيد الحجز (شاشة كاملة)
   const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const { confirm, toast } = useUI()
   const firstLoadRef = useRef(true)
 
@@ -923,9 +929,17 @@ export function CustomerHome() {
     { section: 'رحلاتي' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
     { key: 'tickets', label: 'تذاكري', icon: 'barcode', badge: myBookings.length || undefined },
+    { section: 'الحساب' },
+    { key: 'feedback', label: 'تواصل مع الإدارة', icon: 'message' },
+    { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
 
-  function onTab(k) { setBooking(null); setTicketFor(null); setView(k) }
+  function onTab(k) {
+    setBooking(null); setTicketFor(null)
+    if (k === 'feedback') { setFeedbackOpen(true); return }
+    if (k === 'settings') { setSettingsOpen(true); return }
+    setView(k)
+  }
 
   // شاشة الحجز الكاملة
   if (booking) {
@@ -1061,6 +1075,7 @@ export function CustomerHome() {
         <Icon name="message" size={18} />
       </button>
       <FeedbackSheet open={feedbackOpen} audience="customer" onClose={() => setFeedbackOpen(false)} />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={null} />
     </>
   )
 }
