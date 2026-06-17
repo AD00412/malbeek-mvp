@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { translateRpcError } from '../lib/rpcErrors'
 import { useUI } from '../lib/useUI'
 import Icon from './Icon'
+import { SkeletonList } from './Skeleton'
 import BottomSheet from './BottomSheet'
 
 const ROOM_GENDER = [
@@ -108,7 +109,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
       <div className="manifest-scroll" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 14 }}>
         {err && <div className="alert err">{err}</div>}
         {loading ? (
-          <div className="empty">جارٍ التحميل…</div>
+          <SkeletonList count={3} />
         ) : hotels.length === 0 ? (
           <div className="empty">
             <div className="em-ttl">لا توجد فنادقُ بعد</div>

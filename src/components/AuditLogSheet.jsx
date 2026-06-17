@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useRealtime } from '../lib/useRealtime'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import { SkeletonList } from './Skeleton'
 
 const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
 const TRIP_STATUS_AR = { draft: 'مسودّة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
@@ -126,7 +127,7 @@ export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
       </div>
 
       {loading ? (
-        <div className="empty">جارٍ التحميل…</div>
+        <SkeletonList count={4} />
       ) : filtered.length === 0 ? (
         <div className="empty">
           <div className="em-ttl">لا نشاط بعد</div>

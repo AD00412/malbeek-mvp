@@ -5,6 +5,7 @@ import { useRealtime } from '../lib/useRealtime'
 import { useUI } from '../lib/useUI'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import { SkeletonList } from './Skeleton'
 
 const STATUS_AR = { requested: 'بانتظار الاسترداد', refunded: 'تمّ الاسترداد', rejected: 'مرفوض' }
 const STATUS_CLS = { requested: 'warn', refunded: 'ok', rejected: 'danger' }
@@ -64,7 +65,7 @@ export default function RefundsSheet({ open, tripId, onClose }) {
       </div>
 
       {loading ? (
-        <div className="empty">جارٍ التحميل…</div>
+        <SkeletonList count={3} />
       ) : rows.length === 0 ? (
         <div className="empty"><div className="em-ttl">لا طلبات استردادٍ في هذه التصفية</div>
           <div>تظهر هنا حين يُلغي معتمرٌ حجزًا مدفوعًا.</div></div>

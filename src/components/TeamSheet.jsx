@@ -5,6 +5,7 @@ import { isValidEmail } from '../lib/format'
 import { useUI } from '../lib/useUI'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
+import { SkeletonList } from './Skeleton'
 
 const ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظّف' }
 
@@ -120,7 +121,7 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
 
       <div className="sec-label" style={{ marginTop: 14 }}>الأعضاء {rows.length > 0 && `(${rows.length})`}</div>
       {loading ? (
-        <div className="empty">جارٍ التحميل…</div>
+        <SkeletonList count={3} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {rows.map((m) => (
