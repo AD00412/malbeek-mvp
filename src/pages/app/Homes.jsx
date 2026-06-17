@@ -192,7 +192,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
   const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصّل (﷼)','تاريخ الاشتراك']
   function reportRows() {
     return filtered.map((s) => [
-      s.org_name || '', `/j/${s.slug}`, s.plan === 'paid' ? 'مدفوعة' : 'تجريبية',
+      s.org_name || '', `/${s.slug}`, s.plan === 'paid' ? 'مدفوعة' : 'تجريبية',
       s.trips_count || 0, s.pax_count || 0, s.paid_count || 0,
       Number(s.collected) || 0, fmtDateTime(s.created_at),
     ])
@@ -273,7 +273,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
                 <tr key={s.id} className="sub-row" onClick={() => onOpenDetail?.(s)} style={{ cursor: 'pointer' }}>
                   <td data-label="الحملة">
                     {s.org_name}
-                    <div className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)', fontSize: 11 }}>/j/{s.slug}</code></div>
+                    <div className="ltr" style={{ textAlign: 'right' }}><code style={{ color: 'var(--gd-300)', fontSize: 11 }}>/{s.slug}</code></div>
                   </td>
                   <td data-label="الباقة"><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
                   <td data-label="رحلات">{s.trips_count || 0}</td>
@@ -422,7 +422,7 @@ export function SubscriberHome() {
     load()
   }
 
-  const shareUrl = sub?.slug ? `${window.location.origin}/j/${sub.slug}` : ''
+  const shareUrl = sub?.slug ? `${window.location.origin}/${sub.slug}` : ''
   function copyLink() {
     if (!shareUrl) return
     navigator.clipboard?.writeText(shareUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800) })

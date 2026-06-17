@@ -150,24 +150,24 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <input type="text" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="اسم حملتك" />
           </div>
 
-          {/* اختصارُ الرابط — مخصَّصٌ لكلّ مشتركٍ، مشتقٌّ تلقائيًّا من اسم حملته */}
-          <div className={`field ltr ${slugErr ? 'invalid' : ''}`}>
-            <label dir="rtl" style={{ direction: 'rtl' }}>رابط الحجز المختصر</label>
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, border: `1px solid var(--line${slugErr ? '-strong' : ''})`, borderRadius: 'var(--r-md)', background: 'var(--surface-3)', overflow: 'hidden' }}>
-              <span style={{ padding: '13px 12px', color: 'var(--cr-300)', fontSize: 13, background: 'transparent', whiteSpace: 'nowrap' }}>
-                {typeof window !== 'undefined' ? window.location.host : 'mulabeek.com'}/j/
-              </span>
+          {/* اختصارُ الرابط — مشتقٌّ من اسم الحملة بترجمةٍ ذكيّة. لا /j/ — رابطٌ مباشر. */}
+          <div className="field">
+            <label>رابط الحجز المختصر</label>
+            <div className="slug-input">
+              <span className="slug-prefix">{typeof window !== 'undefined' ? window.location.host : 'mulabeek.com'}/</span>
               <input type="text" inputMode="url" autoComplete="off" autoCapitalize="off" spellCheck="false"
+                className="slug-field"
                 value={slug}
                 onChange={(e) => { setSlug(slugify(e.target.value)); setSlugErr('') }}
-                placeholder="hamla-mohammed"
-                style={{ flex: 1, border: 'none', background: 'transparent', borderRadius: 0, padding: '13px 0', minWidth: 0 }} />
+                placeholder="safwa-rahman" dir="ltr" />
             </div>
-            <p className="muted" style={{ fontSize: 11.5, marginTop: 6, direction: 'rtl' }}>
-              {slugErr
-                ? <span style={{ color: 'var(--danger-ink)' }}>{slugErr}</span>
-                : <>اقتراحٌ ذكيٌّ من اسم حملتك. ٤–٤٠ حرفًا لاتينيًّا — مشاركةٌ أسهل وتذكُّرٌ أسرع.</>}
-            </p>
+            {slugErr ? (
+              <p style={{ fontSize: 11.5, marginTop: 6, color: 'var(--danger-ink)' }}>{slugErr}</p>
+            ) : (
+              <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
+                مشتقٌّ ذكيًّا من اسم حملتك (مثلًا «صفوة الرحمن» ← <code className="ltr" style={{ color: 'var(--gd-300)' }}>safwa-rahman</code>) — مشاركةٌ أسهل وتذكُّرٌ أسرع.
+              </p>
+            )}
           </div>
 
           <div className="field">

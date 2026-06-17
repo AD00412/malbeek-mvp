@@ -55,7 +55,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     catch { toast(v, { type: 'info' }) }
   }
 
-  const joinUrl = `${window.location.origin}/j/${sub.slug}`
+  const joinUrl = `${window.location.origin}/${sub.slug}`
 
   return (
     <BottomSheet open={open} onClose={onClose} title={sub.org_name || 'تفاصيل الحملة'}>
@@ -69,7 +69,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="acct-card-nm">{sub.org_name}</div>
           <button className="acct-card-em ltr" onClick={() => copy(joinUrl, 'نُسخ رابط الحجز')} title="نسخ رابط الحجز">
-            /j/{sub.slug} <Icon name="copy" size={11} />
+            /{sub.slug} <Icon name="copy" size={11} />
           </button>
           <span className="acct-role" style={{ background: sub.plan === 'paid'
             ? 'var(--grad-gold)' : 'rgba(58,160,179,.18)', color: sub.plan === 'paid' ? 'var(--em-950)' : 'var(--info-ink)' }}>

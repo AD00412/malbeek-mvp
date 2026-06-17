@@ -42,8 +42,12 @@ export default function App() {
         <Route path="/dashboard" element={<RequireAuth roles={['subscriber']}><SubscriberHome /></RequireAuth>} />
         <Route path="/customer" element={<RequireAuth roles={['customer']}><CustomerHome /></RequireAuth>} />
 
-        {/* الجذر + غير معروف */}
+        {/* الجذر + المسارات المختصرة (slug مباشرٌ بلا /j/) + غير معروف.
+            الترتيب مهمٌّ: الجذر أوّلًا، ثمّ slug عامّ (يبدأ بحرفٍ صغير)،
+            ثمّ catch-all. الـ regex يضمن ألّا يلتقط أيّ مسارٍ نظاميٍّ أُعلِن
+            أعلاه — هذه مُختارةٌ قبله. */}
         <Route path="/" element={<RootRedirect />} />
+        <Route path="/:slug" element={<CustomerJoin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

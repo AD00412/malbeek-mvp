@@ -116,6 +116,18 @@
 :root[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(11,92,67,.22)}
 :root[data-theme="light"] ::selection{background:rgba(11,92,67,.16);color:var(--cr-50)}
 
+/* ==== حقلُ slug المخصَّص — تخطيطٌ نظيفٌ مع البادئة الثابتة ==== */
+.slug-input{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--surface-3);overflow:hidden;direction:ltr}
+.slug-input:focus-within{border-color:var(--gd-500);box-shadow:0 0 0 3px rgba(196,154,69,.16)}
+.slug-input .slug-prefix{padding:13px 12px;color:var(--cr-300);font-size:13px;
+  background:rgba(0,0,0,.08);white-space:nowrap;font-family:var(--font-sans);
+  border-inline-end:1px solid var(--line)}
+.slug-input .slug-field{flex:1;border:none;background:transparent;border-radius:0;
+  padding:13px 12px;color:var(--cr-50);font-family:var(--font-sans);font-size:15px;
+  -webkit-text-fill-color:var(--cr-50);min-width:0;text-align:left}
+.slug-input .slug-field:focus{outline:none;box-shadow:none}
+
 /* ==== الحقول ==== */
 :root[data-theme="light"] .field input,
 :root[data-theme="light"] .field select,
@@ -137,6 +149,44 @@
 :root[data-theme="light"] .field textarea:focus{
   background:#fff;border-color:var(--gd-500)
 }
+
+/* slug field على الفاتح: خلفيّةٌ بيضاء، بادئةٌ زمرّديّةٌ خفيفة */
+:root[data-theme="light"] .slug-input{background:#fff;border-color:rgba(11,92,67,.18)}
+:root[data-theme="light"] .slug-input .slug-prefix{background:rgba(11,92,67,.04);color:var(--cr-200);border-inline-end-color:rgba(11,92,67,.10)}
+:root[data-theme="light"] .slug-input .slug-field{-webkit-text-fill-color:var(--cr-50);color:var(--cr-50)}
+
+/* ==== الأزرار الذهبيّة والزمرّديّة في الوضع الفاتح — تباينٌ صحّيٌّ + هويّةٌ تظهر ====
+   الذهبيّ على الكريم بدون تأطيرٍ يبدو هزيلًا — نُعمّق التدرّج ونضيف
+   حدودًا ذهبيّةً صريحةً + ظلًّا أوضح. */
+:root[data-theme="light"] .btn-gold{
+  background:linear-gradient(180deg,#D7AC4A,#A78131);
+  color:#FBF7EE;
+  border:1px solid #8A6A1F;
+  box-shadow:0 6px 18px rgba(138,106,31,.32)
+}
+:root[data-theme="light"] .btn-gold:hover:not(:disabled){
+  background:linear-gradient(180deg,#E3BC5B,#B58E3A);
+  box-shadow:0 10px 26px rgba(138,106,31,.42)
+}
+/* الزرّ الزمرّديّ (.btn-em) على الفاتح: تباينٌ أعمق + حدودٌ ناعمة */
+:root[data-theme="light"] .btn-em{
+  background:linear-gradient(150deg,#0F4F3E,#0A3D2E);
+  color:#FBF7EE;
+  border:1px solid rgba(11,92,67,.4);
+  box-shadow:0 6px 18px rgba(11,92,67,.30)
+}
+:root[data-theme="light"] .btn-em:hover:not(:disabled){
+  background:linear-gradient(150deg,#128A66,#0F4F3E);
+  box-shadow:0 10px 26px rgba(11,92,67,.38)
+}
+/* الـ FAB المركزيّ (tab-cta) — نفس المعاملة */
+:root[data-theme="light"] .tab-cta{
+  background:linear-gradient(180deg,#D7AC4A,#A78131);
+  border:1px solid #8A6A1F;
+  box-shadow:0 8px 22px rgba(138,106,31,.40);
+  color:#FBF7EE
+}
+:root[data-theme="light"] .tab-cta-wrap .lb{color:var(--gd-700)}
 
 /* ==== حقول التاريخ والوقت — حلّ مشاكل iOS Safari في الوضعين ==== */
 /* color-scheme يجعل المتصفّح يرسم منتقي التاريخ بالألوان المناسبة (Calendar icon, picker controls) */
