@@ -34,7 +34,7 @@ export default function TrialBanner({ sub }) {
         audience: 'subscriber',
         kind: 'feature',
         subject: 'طلب ترقية إلى باقة ملبّيك',
-        body: `يطلب المشترك «${sub.org_name || ''}» الترقية إلى الباقة المدفوعة (٢٤٩ ﷼).`,
+        body: `يطلب المشترك «${sub.org_name || ''}» الترقية إلى باقة ملبّيك الشهريّة (٩٩ ﷼).`,
       })
       if (error) throw error
       setSent(true)
@@ -50,7 +50,7 @@ export default function TrialBanner({ sub }) {
         <div className="tb-title">
           {expired ? 'انتهت الباقة التجريبية' : `الباقة التجريبية — ${left} ${left === 1 ? 'يوم متبقٍّ' : 'يومًا متبقيًا'}`}
         </div>
-        <div className="tb-sub">باقة ملبّيك: رحلاتٌ غير محدودة، كشوفٌ، وباركود — <strong>٢٤٩ ﷼</strong></div>
+        <div className="tb-sub">باقة ملبّيك: رحلاتٌ غير محدودة، كشوفٌ، وباركود — <strong>٩٩ ﷼/شهر</strong></div>
         {err && <div className="tb-sub" style={{ color: 'var(--danger-ink)' }}>{err}</div>}
       </div>
       {sent ? (

@@ -39,16 +39,24 @@ function buildShapes() {
  * شعار ملبّيك — نجمة البوصلة الثمانية. JSX خالصٌ بلا dangerouslySetInnerHTML
  * (دفاعٌ بالعمق ضدّ أيّ مخاطرَ مستقبليّة عند توسعة المكوّن لاحقًا).
  *
- * @param {number} size   الحجم بالبكسل (افتراضي 40)
+ * v1.1: مؤشّرُ القبلةِ متحرّكٌ — سهمٌ صغيرٌ ذهبيٌّ يدور ببطءٍ مشيرًا
+ *        لاتجاه مكّة (إشارةٌ رمزيّةٌ لا حسابيّة)؛ النجمةُ نفسها لا تدور.
+ *        التنفيذُ CSS-only لاحترام prefers-reduced-motion.
+ *
+ * @param {number}  size       الحجم بالبكسل (افتراضي 40)
  * @param {'full'|'gold'|'dark'} variant
+ * @param {boolean} animate    تشغيل سهم القبلة الدوّار (افتراضي عند الأحجام ≥ 56px)
  */
-export default function CompassMark({ size = 40, variant = 'full', className = '' }) {
+export default function CompassMark({ size = 40, variant = 'full', className = '', animate }) {
   const reactId = useId().replace(/:/g, '')
   const id = `mk-${reactId}`
   const C = VARIANTS[variant] || VARIANTS.full
   const { facets, ticks, outlinePath, sparkPath } = useMemo(buildShapes, [])
+  // المؤشّر الدوّار يظهر للأحجام الكبيرةِ فقط بشكلٍ افتراضيّ (واضحٌ ومناسبٌ).
+  const showQibla = animate ?? size >= 56
   return (
-    <span className={className} style={{ display: 'inline-block', width: size, height: size, lineHeight: 0 }}>
+    <span className={`mk-compass ${showQibla ? 'mk-animate' : ''} ${className}`}
+      style={{ display: 'inline-block', width: size, height: size, lineHeight: 0, position: 'relative' }}>
       <svg viewBox="0 0 200 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs>
           <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
@@ -76,6 +84,13 @@ export default function CompassMark({ size = 40, variant = 'full', className = '
           <path d={sparkPath} fill={C.coreRing} opacity=".95" />
           <circle cx="100" cy="100" r="2.6" fill={C.dot} />
         </g>
+        {/* سهمُ القبلةِ — يدور ببطءٍ على دائرةٍ خارجيّةٍ. */}
+        {showQibla && (
+          <g className="mk-qibla" style={{ transformOrigin: '100px 100px' }}>
+            <circle cx="100" cy="14" r="3.5" fill={C.coreRing} opacity=".95" />
+            <path d="M100,4 L96,12 L104,12 Z" fill={C.coreRing} opacity=".9" />
+          </g>
+        )}
       </svg>
     </span>
   )
