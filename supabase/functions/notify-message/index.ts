@@ -67,12 +67,33 @@ Deno.serve(async (req) => {
   // ٣) بناءُ المحتوى
   const kindAr = KIND_AR[rec.kind] ?? rec.kind ?? '—'
   const modeAr = rec.mode === 'contact' ? 'تواصل' : 'ملاحظة'
-  const subjectLine = `ملبّيك · ${modeAr} جديدة من ${rec.name}`
+  // نتجنّب تكرار «تواصل · تواصل» — في وضع التواصل النوعُ هو الوضعُ نفسُه
+  const typeLabel = rec.mode === 'contact' ? modeAr : `${modeAr} · ${kindAr}`
+  const subjectLine = `ملبّيك · ${rec.mode === 'contact' ? 'رسالةٌ' : 'ملاحظةٌ'} جديدة من ${rec.name}`
   const createdAt = (() => {
     try { return new Date(rec.created_at ?? Date.now()).toLocaleString('ar-SA', {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
     }) } catch { return '' }
   })()
+
+  // علامةُ ملبّيك (M·٢ الطواف) كـ SVG مدمجٍ — تطابق CompassMark.jsx بدقّة:
+  //   صندوقٌ زمرّديٌّ متدرّجٌ + ساقا M بيضاويتان + كعبةٌ ذهبيّةٌ بحزامٍ وباب.
+  //   SVG inline يعمل في معظم عملاء البريد الحديثين (Gmail/Apple Mail/Outlook 365).
+  const compassSvg = `<svg width="56" height="56" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block">
+    <defs>
+      <linearGradient id="mlk-bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#34d399"/>
+        <stop offset="55%" stop-color="#059669"/>
+        <stop offset="100%" stop-color="#065f46"/>
+      </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="18" fill="url(#mlk-bg)"/>
+    <path d="M14 50 V30 A8 8 0 0 1 30 30 V50" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M30 50 V34 A11 11 0 1 1 41 45" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <rect x="35" y="27.5" width="12" height="12" rx="1.3" fill="#fbbf24"/>
+    <line x1="35" y1="31.5" x2="47" y2="31.5" stroke="#1a0f00" stroke-width="1.5"/>
+    <rect x="39.5" y="33" width="3" height="6.5" rx="0.4" fill="#1a0f00"/>
+  </svg>`
 
   const attachHtml = attachLinks.length
     ? `<div style="margin-top:18px;padding:14px 16px;background:#fafdfb;border:1px solid #e6efe9;border-radius:12px">
@@ -82,12 +103,10 @@ Deno.serve(async (req) => {
            <td style="padding:6px 0;font-size:14px"><a href="${esc(u)}" style="color:#047857;font-weight:600;text-decoration:none">📎 مرفق ${i + 1}</a></td>
          </tr>`).join('')}
          </table>
-         <div style="font-size:11px;color:#8aa39b;margin-top:6px">الروابط فعّالةٌ لمدة ٧ أيّامٍ</div>
+         <div style="font-size:11px;color:#8aa39b;margin-top:6px">الروابطُ فعّالةٌ لمدّة ٧ أيّامٍ</div>
        </div>`
     : ''
 
-  // المرسل ledger — هويّةُ ملبّيك بـ M·٢ الطواف (إيموجي عوضًا عن SVG لأنّ بعض
-  // عملاء البريد يحجبون الصور افتراضيًّا، فنريد عرضًا فوريًّا بلا تحميل).
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -102,28 +121,27 @@ Deno.serve(async (req) => {
       <!-- البطاقة الرئيسيّة -->
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(6,95,70,.08)">
 
-        <!-- شريطٌ علويٌّ بهويّة ملبّيك -->
-        <tr><td style="background:linear-gradient(135deg,#059669 0%,#047857 60%,#065f46 100%);padding:24px 28px">
+        <!-- الرأس: شعارُ ملبّيك على اليمين، اللوكَب على اليسار -->
+        <tr><td style="background:linear-gradient(135deg,#065f46 0%,#047857 50%,#059669 100%);padding:26px 28px">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td style="vertical-align:middle">
-                <div style="display:inline-block;background:rgba(255,255,255,.18);border-radius:12px;padding:8px 14px;font-size:11px;font-weight:600;color:#ffffff;letter-spacing:.5px">رسالةٌ جديدة</div>
-                <div style="margin-top:10px;font-family:'Segoe UI',Tahoma,Arial;font-size:22px;font-weight:800;color:#ffffff">ملبّيك</div>
-                <div style="font-size:12px;color:rgba(255,255,255,.78);letter-spacing:2px;text-transform:lowercase">mulabeek.com</div>
+                ${compassSvg}
               </td>
               <td align="left" style="vertical-align:middle">
-                <div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.18);text-align:center;line-height:56px;font-size:28px;font-weight:900;color:#ffffff">م</div>
+                <div style="font-family:'Segoe UI',Tahoma,Arial;font-size:24px;font-weight:800;color:#ffffff;line-height:1.1">ملبّيك</div>
+                <div style="font-size:11.5px;color:rgba(255,255,255,.78);letter-spacing:2.5px;text-transform:lowercase;margin-top:6px">mulabeek.com</div>
               </td>
             </tr>
           </table>
         </td></tr>
 
-        <!-- شريحةُ النوع -->
-        <tr><td style="padding:20px 28px 0">
+        <!-- شريحةُ النوع + التاريخ -->
+        <tr><td style="padding:22px 28px 0">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;color:#047857">
-                ${esc(modeAr)} · ${esc(kindAr)}
+                ${esc(typeLabel)}
               </td>
               ${createdAt ? `<td style="padding-inline-start:10px;font-size:12px;color:#8aa39b">${esc(createdAt)}</td>` : ''}
             </tr>
@@ -161,16 +179,16 @@ Deno.serve(async (req) => {
         <tr><td style="padding:24px 28px 8px" align="center">
           <a href="mailto:${esc(rec.email)}?subject=${encodeURIComponent('Re: ' + subjectLine)}"
              style="display:inline-block;background:linear-gradient(135deg,#059669,#047857);color:#ffffff;text-decoration:none;font-weight:700;font-size:14.5px;padding:13px 28px;border-radius:12px;box-shadow:0 4px 12px rgba(5,150,105,.28)">
-            ↩︎ ردٌّ على ${esc(rec.name)}
+            ↩︎ ردّ على ${esc(rec.name)}
           </a>
           <div style="margin-top:8px;font-size:11.5px;color:#8aa39b">أو اضغط «رد» في بريدك — يصل المُرسِل مباشرةً</div>
         </td></tr>
 
         <!-- التذييل -->
-        <tr><td style="padding:18px 28px 22px;border-top:1px solid #f0f5f2;margin-top:18px">
+        <tr><td style="padding:18px 28px 22px;border-top:1px solid #f0f5f2">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
-              <td style="font-size:11.5px;color:#8aa39b">إشعارٌ تلقائيٌّ من نموذج التواصل في <a href="https://mulabeek.com" style="color:#5f7a6e;text-decoration:none">mulabeek.com</a></td>
+              <td style="font-size:11.5px;color:#8aa39b">من نموذج <a href="https://mulabeek.com" style="color:#5f7a6e;text-decoration:none">mulabeek.com</a></td>
               <td align="left" style="font-size:11.5px;color:#8aa39b">© ملبّيك</td>
             </tr>
           </table>
@@ -184,9 +202,8 @@ Deno.serve(async (req) => {
 
   // نسخةٌ نصّيّةٌ بسيطةٌ (fallback لعملاء النصّ فقط)
   const textBody =
-    `ملبّيك · ${modeAr} جديدة\n` +
+    `ملبّيك — ${rec.mode === 'contact' ? 'رسالةُ تواصل' : 'ملاحظةٌ ' + kindAr}\n` +
     `${'─'.repeat(40)}\n` +
-    `النوع:    ${modeAr} · ${kindAr}\n` +
     `الاسم:    ${rec.name}\n` +
     `البريد:   ${rec.email}\n` +
     (rec.subject ? `الموضوع:  ${rec.subject}\n` : '') +
