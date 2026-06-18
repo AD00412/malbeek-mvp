@@ -8,6 +8,7 @@ import Signup from '../pages/auth/Signup'
 import CustomerJoin from '../pages/auth/CustomerJoin'
 import JoinTeam from '../pages/auth/JoinTeam'
 import Landing from '../pages/Landing'
+import Legal from '../pages/Legal'
 
 // تقسيمٌ على مستوى المسار: لوحات التحكّم (وكلّ تبعيّاتها الثقيلة) تُحمَّل عند
 // الحاجة فقط — فيبقى التحميل الأوّليّ (الدخول/التسجيل/الانضمام) خفيفًا وسريعًا.
@@ -31,6 +32,8 @@ export default function App() {
         {/* عامة */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/terms" element={<Legal kind="terms" />} />
+        <Route path="/privacy" element={<Legal kind="privacy" />} />
         <Route path="/j/:slug" element={<CustomerJoin />} />
         <Route path="/join-team/:id" element={<JoinTeam />} />
 

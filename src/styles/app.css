@@ -1254,14 +1254,68 @@
 /* Footer */
 .lp-footer{background:rgba(0,0,0,.30);border-top:1px solid var(--line);
   padding:clamp(32px,6vw,56px) clamp(20px,6vw,80px) clamp(20px,4vw,32px);margin-top:24px}
-.lp-foot-cols{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:32px;max-width:1160px;margin:0 auto 24px}
-@media(max-width:680px){.lp-foot-cols{grid-template-columns:1fr 1fr}.lp-foot-cols > div:first-child{grid-column:1/-1}}
+.lp-foot-cols{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:32px;max-width:1160px;margin:0 auto 8px}
+@media(max-width:920px){.lp-foot-cols{grid-template-columns:1.5fr 1fr 1fr}.lp-foot-cols > div:last-child{grid-column:1/-1}}
+@media(max-width:680px){.lp-foot-cols{grid-template-columns:1fr 1fr;gap:24px}.lp-foot-cols > div:first-child{grid-column:1/-1}.lp-foot-cols > div:last-child{grid-column:auto}}
 .lp-footer h5{font-family:var(--font-display);font-weight:900;font-size:14px;color:var(--gd-300);margin:0 0 12px}
 .lp-footer a{display:block;color:var(--cr-200);font-size:13.5px;padding:4px 0;transition:.18s}
 .lp-footer a:hover{color:var(--gd-300)}
 .lp-foot-line{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
   max-width:1160px;margin:0 auto;padding-top:18px;border-top:1px solid var(--line);
   color:var(--cr-300);font-size:13px}
+
+/* ==== Social + Verify (الـ Footer الجديد) ==== */
+.lp-social{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.lp-social a{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--cr-200);
+  padding:0;transition:.2s}
+.lp-social a:hover{color:var(--em-500);border-color:var(--em-600);background:rgba(16,185,129,.08);
+  transform:translateY(-1px)}
+
+/* بطاقةُ التوثيق: شريطٌ موثوقٌ بين الـ cols والـ foot-line */
+.lp-verify{max-width:1160px;margin:24px auto 18px;padding-top:18px;border-top:1px solid var(--line)}
+.lp-verify-card{display:inline-flex;align-items:center;gap:12px;padding:11px 16px;
+  background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(16,185,129,.02));
+  border:1px solid rgba(16,185,129,.28);border-radius:var(--r-md);
+  color:var(--cr-100);font-size:13px;transition:.2s;text-align:start;
+  max-width:100%}
+.lp-verify-card:hover{border-color:var(--em-600);background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(16,185,129,.04));
+  color:var(--cr-50);transform:translateY(-1px)}
+.lp-verify-ic{width:30px;height:30px;border-radius:8px;background:rgba(16,185,129,.18);
+  color:var(--em-500);display:grid;place-items:center;flex:none}
+.lp-verify-body{display:flex;flex-direction:column;gap:2px;line-height:1.4;min-width:0;flex:1}
+.lp-verify-lbl{font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--cr-50)}
+.lp-verify-no{font-size:12px;color:var(--cr-300)}
+.lp-verify-no b{color:var(--em-500);letter-spacing:.5px;font-weight:700}
+
+/* ==== Legal pages (/terms /privacy) ==== */
+.legal-page{min-height:100vh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);
+  display:flex;flex-direction:column}
+.legal-content{max-width:780px;margin:0 auto;padding:clamp(28px,5vw,48px) clamp(20px,5vw,32px) 60px;
+  width:100%;line-height:1.85;animation:fade-in .25s ease;flex:1}
+.legal-back{display:inline-flex;align-items:center;gap:6px;color:var(--cr-300);font-size:14px;
+  margin-bottom:18px;transition:color .2s}
+.legal-back:hover{color:var(--em-500)}
+.legal-content h1{font-family:var(--font-display);font-weight:900;font-size:clamp(28px,5vw,40px);
+  color:var(--cr-50);margin:8px 0 6px;line-height:1.2}
+.legal-updated{font-size:12.5px;color:var(--cr-300);margin:0 0 18px;letter-spacing:.02em}
+.legal-intro{font-size:15.5px;color:var(--cr-200);font-weight:300;line-height:1.85;margin:0 0 28px;
+  padding-bottom:24px;border-bottom:1px solid var(--line)}
+.legal-sec{margin-bottom:28px}
+.legal-sec h2{font-family:var(--font-display);font-weight:900;font-size:18.5px;color:var(--cr-50);
+  margin:0 0 10px;line-height:1.35}
+.legal-sec p{font-size:14.5px;color:var(--cr-100);font-weight:300;line-height:1.95;margin:0 0 10px}
+.legal-sec ul{margin:8px 0 0;padding-inline-start:22px;display:flex;flex-direction:column;gap:8px}
+.legal-sec li{font-size:14.5px;color:var(--cr-100);font-weight:300;line-height:1.85}
+.legal-sec li::marker{color:var(--em-500)}
+.legal-contact{margin-top:32px;padding:18px 20px;background:var(--bg-card);
+  border:1px solid var(--line);border-radius:var(--r-md)}
+.legal-contact strong{display:block;font-family:var(--font-display);font-weight:900;font-size:15px;
+  color:var(--cr-50);margin-bottom:6px}
+.legal-contact p{font-size:14px;color:var(--cr-200);margin:0;font-weight:300}
+.legal-contact a{color:var(--em-500);font-weight:600;text-decoration:none}
+.legal-contact a:hover{text-decoration:underline}
+:root[data-theme="light"] .legal-contact{background:rgba(255,255,255,.78);border-color:rgba(11,92,67,.14)}
 
 /* الوضع الفاتح للـ Landing */
 :root[data-theme="light"] .lp-top{
@@ -1276,6 +1330,10 @@
   border-color:rgba(196,154,69,.36)
 }
 :root[data-theme="light"] .lp-footer{background:rgba(11,92,67,.04);border-top-color:rgba(11,92,67,.10)}
+:root[data-theme="light"] .lp-social a{background:rgba(11,92,67,.04);border-color:rgba(11,92,67,.14);color:var(--cr-100)}
+:root[data-theme="light"] .lp-social a:hover{background:rgba(16,185,129,.10);border-color:var(--em-700);color:var(--em-700)}
+:root[data-theme="light"] .lp-verify-card{background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(16,185,129,.02));border-color:rgba(16,185,129,.36)}
+:root[data-theme="light"] .lp-verify-no b{color:var(--em-700)}
 
 /* العلامة الجديدة M·٢ الطواف (ملفّ ‎CompassMark.jsx v2.0‎) لا تحتاج تحريكًا — هويّةٌ هادئةٌ.
    الـ classNames القديمة ‎mk-compass / mk-qibla‎ حُذفت مع تحديث المكوّن. */

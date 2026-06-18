@@ -125,7 +125,7 @@ export default function Signup() {
 
         <label className="checkbox-group">
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-          <span>أوافق على <Link to="/">الشروط والأحكام</Link> و<Link to="/">سياسة الخصوصيّة</Link></span>
+          <span>أوافق على <Link to="/terms" target="_blank">الشروط والأحكام</Link> و<Link to="/privacy" target="_blank">سياسة الخصوصيّة</Link></span>
         </label>
 
         {err && <div className="alert err">{err}</div>}
