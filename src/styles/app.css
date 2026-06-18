@@ -1144,8 +1144,12 @@
   position:sticky;top:0;z-index:10;
   background:linear-gradient(180deg,rgba(4,30,22,.92),rgba(4,30,22,.55));
   backdrop-filter:var(--glass-blur);border-bottom:1px solid var(--line)}
-.lp-brand{display:flex;align-items:center;gap:10px}
-.lp-brand strong{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--cr-50)}
+.lp-brand{display:flex;align-items:center;gap:12px}
+.lp-brand strong{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--cr-50);line-height:1;letter-spacing:-.5px}
+/* اللوكَب — اسمٌ عربيٌّ ٩٠٠ + lowercase مفرَّقٌ بالحرف (مرجع mulabeekbrandguide §٠١) */
+.lp-brand-lockup{display:flex;flex-direction:column;line-height:1}
+.lp-brand-lockup em{font-style:normal;font-size:11px;letter-spacing:2.5px;
+  color:var(--cr-300);text-transform:lowercase;margin-top:5px;font-weight:700}
 .lp-top-nav{margin-inline-start:auto;display:flex;align-items:center;gap:clamp(8px,2vw,18px)}
 .lp-top-nav a{color:var(--cr-200);font-size:14.5px;font-weight:500;transition:.18s}
 .lp-top-nav a:hover{color:var(--gd-300)}
@@ -1245,9 +1249,5 @@
 }
 :root[data-theme="light"] .lp-footer{background:rgba(11,92,67,.04);border-top-color:rgba(11,92,67,.10)}
 
-/* البوصلة المتحرّكة: سهمٌ ذهبيٌّ يدور ببطءٍ مشيرًا لاتّجاه القبلة (إشارةٌ رمزيّةٌ).
-   النجمةُ نفسها لا تدور — تبقى ثابتةً. الحركة لطيفةٌ وتُعطَّل تلقائيًّا
-   لمن يفضّل تخفيف الحركة. */
-.mk-compass.mk-animate .mk-qibla{animation:mk-qibla-rot 22s linear infinite}
-@keyframes mk-qibla-rot{from{transform:rotate(0deg)} to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion: reduce){.mk-compass.mk-animate .mk-qibla{animation:none}}
+/* العلامة الجديدة M·٢ الطواف (ملفّ ‎CompassMark.jsx v2.0‎) لا تحتاج تحريكًا — هويّةٌ هادئةٌ.
+   الـ classNames القديمة ‎mk-compass / mk-qibla‎ حُذفت مع تحديث المكوّن. */

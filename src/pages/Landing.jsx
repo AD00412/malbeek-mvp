@@ -46,7 +46,10 @@ export default function Landing() {
       <header className="lp-top">
         <div className="lp-brand">
           <CompassMark size={36} />
-          <strong>ملبّيك</strong>
+          <span className="lp-brand-lockup">
+            <strong>ملبّيك</strong>
+            <em>mulabeek.com</em>
+          </span>
         </div>
         <nav className="lp-top-nav">
           <a href="#features">المميّزات</a>
@@ -147,7 +150,10 @@ export default function Landing() {
           <div>
             <div className="lp-brand">
               <CompassMark size={32} />
-              <strong>ملبّيك</strong>
+              <span className="lp-brand-lockup">
+                <strong>ملبّيك</strong>
+                <em>mulabeek.com</em>
+              </span>
             </div>
             <p className="muted" style={{ fontSize: 13, marginTop: 8, maxWidth: 320 }}>
               منصّةٌ روحانيّةٌ هادئةٌ لإدارة حملات العمرة — صُمّمت بحبٍّ في السعوديّة.

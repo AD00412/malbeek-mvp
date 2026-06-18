@@ -1,11 +1,23 @@
 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6E3B0"/><stop offset="1" stop-color="#C49A45"/></linearGradient>
-<linearGradient id="e" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D8B25E"/><stop offset="1" stop-color="#8A6A1F"/></linearGradient>
-<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0A4733"/><stop offset="1" stop-color="#04261C"/></linearGradient>
-</defs>
-<rect width="200" height="200" rx="44" fill="url(#bg)"/>
-<circle cx="100" cy="100" r="90" fill="none" stroke="#E2C277" stroke-width="1.6" opacity=".3"/>
-<g><polygon points="100,100 100.00,16.00 109.18,77.83" fill="url(#g)"/><polygon points="100,100 100.00,16.00 90.82,77.83" fill="url(#e)"/><polygon points="100,100 135.36,64.64 122.17,90.82" fill="url(#g)"/><polygon points="100,100 135.36,64.64 109.18,77.83" fill="url(#e)"/><polygon points="100,100 184.00,100.00 122.17,109.18" fill="url(#g)"/><polygon points="100,100 184.00,100.00 122.17,90.82" fill="url(#e)"/><polygon points="100,100 135.36,135.36 109.18,122.17" fill="url(#g)"/><polygon points="100,100 135.36,135.36 122.17,109.18" fill="url(#e)"/><polygon points="100,100 100.00,184.00 90.82,122.17" fill="url(#g)"/><polygon points="100,100 100.00,184.00 109.18,122.17" fill="url(#e)"/><polygon points="100,100 64.64,135.36 77.83,109.18" fill="url(#g)"/><polygon points="100,100 64.64,135.36 90.82,122.17" fill="url(#e)"/><polygon points="100,100 16.00,100.00 77.83,90.82" fill="url(#g)"/><polygon points="100,100 16.00,100.00 77.83,109.18" fill="url(#e)"/><polygon points="100,100 64.64,64.64 90.82,77.83" fill="url(#g)"/><polygon points="100,100 64.64,64.64 77.83,90.82" fill="url(#e)"/><path d="M100.00,16.00 L109.18,77.83 L135.36,64.64 L122.17,90.82 L184.00,100.00 L122.17,109.18 L135.36,135.36 L109.18,122.17 L100.00,184.00 L90.82,122.17 L64.64,135.36 L77.83,109.18 L16.00,100.00 L77.83,90.82 L64.64,64.64 L90.82,77.83 Z" fill="none" stroke="#F6E3B0" stroke-width="1" stroke-linejoin="round" opacity=".9"/>
-<circle cx="100" cy="100" r="14" fill="#063D2C" stroke="#F6E3B0" stroke-width="1.6"/><path d="M100,92 L102.56,97.44 L108,100 L102.56,102.56 L100,108 L97.44,102.56 L92,100 L97.44,97.44 Z" fill="#F6E3B0" opacity=".95"/><circle cx="100" cy="100" r="2.6" fill="#FBF7EE"/></g>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(140 0.5 0.5)">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset=".55" stop-color="#059669"/>
+      <stop offset="1" stop-color="#065f46"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0.65" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,.22)"/>
+      <stop offset=".45" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="56" fill="url(#bg)"/>
+  <rect width="200" height="200" rx="56" fill="url(#gloss)"/>
+  <!-- M·٢ الطواف: 64×64 scaled & centered -->
+  <g transform="translate(38 38) scale(1.94)">
+    <path d="M14 50 V30 A8 8 0 0 1 30 30 V50" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M30 50 V34 A11 11 0 1 1 41 45" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <rect x="35" y="27.5" width="12" height="12" rx="1.3" fill="#fbbf24"/>
+    <line x1="35" y1="31.5" x2="47" y2="31.5" stroke="#1a0f00" stroke-width="1.5"/>
+    <rect x="39.5" y="33" width="3" height="6.5" rx="0.4" fill="#1a0f00"/>
+  </g>
 </svg>
