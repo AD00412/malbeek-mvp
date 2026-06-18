@@ -1418,52 +1418,105 @@
 :root[data-theme="light"] .pmsg-success p b{color:var(--em-700)}
 
 /* ============================================================
-   بوصلةُ القبلة الحيّة (QiblaCompass) — SVG-based
+   بوصلةُ القبلة الحيّة — بمستوى تطبيق iOS Native
    ============================================================ */
-.lp-hero-qibla{margin:48px auto 0;max-width:340px;text-align:center}
-.lp-hero-qibla-lbl{font-family:var(--font-display);font-size:13px;color:var(--cr-200);
-  font-weight:600;letter-spacing:.02em;margin-bottom:14px}
-.qibla{display:flex;flex-direction:column;align-items:center;gap:16px}
+.lp-hero-qibla{display:none}   /* تمّ نقل البوصلة لقسمها المستقلّ */
+
+.lp-section-qibla{padding:clamp(40px,8vw,80px) clamp(20px,5vw,40px);
+  max-width:600px;margin:0 auto;text-align:center}
+.qibla-section-tag{display:inline-block;font-family:var(--font-display);font-size:12.5px;
+  color:var(--em-500);background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.30);
+  padding:5px 14px;border-radius:99px;font-weight:600;margin-bottom:14px;letter-spacing:.02em}
+.qibla-section-title{font-family:var(--font-display);font-weight:900;font-size:clamp(22px,4vw,30px);
+  color:var(--cr-50);margin:0 0 8px;line-height:1.25}
+.qibla-section-desc{color:var(--cr-200);font-size:14.5px;line-height:1.75;max-width:480px;
+  margin:0 auto 32px;font-weight:300}
+
+.qibla{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%}
+
+/* الـ readout الكبير فوق القرص — مثل iOS */
+.qibla-readout{display:flex;align-items:baseline;justify-content:center;gap:10px;
+  margin-bottom:4px;animation:fade-in .3s ease}
+.qibla-deg{font-family:'SF Pro Display','Segoe UI',system-ui,Arial,sans-serif;
+  font-weight:200;font-size:54px;color:var(--cr-50);line-height:1;letter-spacing:-2px;
+  font-variant-numeric:tabular-nums}
+.qibla-dir{font-family:var(--font-display);font-weight:700;font-size:18px;
+  color:var(--cr-200);letter-spacing:.5px}
+
 .qibla-shell{position:relative;border-radius:50%;
   background:radial-gradient(circle at 50% 30%, rgba(16,185,129,.12), transparent 65%),
-    linear-gradient(160deg,#1a2a1e,#162019 70%,#0f1714);
+    linear-gradient(160deg,#1a2a1e,#162019 70%,#0a1410);
   border:1px solid var(--line-strong);
-  box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 12px 36px rgba(0,0,0,.35),0 0 0 6px rgba(16,185,129,.05);
-  transition:box-shadow .35s ease}
-
-/* محاذاةٌ ناجحةٌ — توهّجٌ ذهبيٌّ */
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.4),0 0 0 6px rgba(16,185,129,.04);
+  transition:box-shadow .4s ease}
 .qibla.aligned .qibla-shell{
-  box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 12px 40px rgba(251,191,36,.35),0 0 0 6px rgba(251,191,36,.22)
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.5),0 14px 44px rgba(251,191,36,.4),0 0 0 6px rgba(251,191,36,.24)
 }
 
-/* الحالة + التعليمات */
-.qibla-state{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:36px;width:100%}
-.qibla-cta{padding:9px 22px;font-size:13.5px;display:inline-flex;align-items:center}
-.qibla-hint{font-size:13px;color:var(--cr-200);text-align:center;line-height:1.65;max-width:280px;
-  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;font-weight:500}
-.qibla-hint.ok{color:#fbbf24;font-weight:700;font-size:14px}
+/* صندوقُ المعلومات تحت القرص */
+.qibla-info{display:flex;flex-direction:column;gap:0;margin-top:4px;
+  background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:6px 16px;width:100%;max-width:320px;animation:rise-in .35s ease}
+.qibla-info-row{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--line);gap:12px}
+.qibla-info-row:last-child{border-bottom:none}
+.qibla-info-lbl{font-size:13px;color:var(--cr-300);font-weight:500}
+.qibla-info-val{font-family:'SF Pro Display','Segoe UI',system-ui,Arial,sans-serif;
+  font-weight:600;color:var(--cr-50);font-size:14px;font-variant-numeric:tabular-nums}
+.qibla-coords{display:flex;justify-content:center;gap:14px;padding:12px 0 4px;
+  font-size:11.5px;color:var(--cr-300);font-family:'SF Pro Display',system-ui,monospace;
+  border-top:1px solid var(--line);margin-top:6px}
+
+/* تعليماتُ الإرشاد */
+.qibla-state{display:flex;flex-direction:column;align-items:center;gap:8px;
+  min-height:36px;width:100%}
+.qibla-cta{padding:13px 30px;font-size:15px;display:inline-flex;align-items:center}
+.qibla-hint{font-size:13px;color:var(--cr-200);text-align:center;line-height:1.65;
+  max-width:280px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
+  justify-content:center;font-weight:500}
 .qibla-hint .spinner{width:14px;height:14px;border-width:2px}
 
-.qibla-denied{display:flex;flex-direction:column;align-items:flex-start;gap:8px;
-  padding:14px 16px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.30);
-  border-radius:var(--r-md);text-align:start;max-width:320px;width:100%}
-.qibla-denied strong{color:var(--warn-ink);font-family:var(--font-display);font-weight:700;font-size:14px}
-.qibla-denied span{font-size:12.5px;color:var(--cr-200)}
-.qibla-denied ol{margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:4px}
-.qibla-denied li{font-size:12.5px;color:var(--cr-100);line-height:1.7}
-.qibla-denied .btn{margin-top:6px;align-self:stretch}
+.qibla-guide{display:inline-flex;align-items:center;gap:10px;padding:10px 22px;
+  background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.30);border-radius:99px;
+  color:var(--em-500);font-family:var(--font-display);font-weight:700;font-size:14.5px;
+  transition:all .3s ease}
+.qibla-guide.ok{background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(245,158,11,.10));
+  border-color:rgba(251,191,36,.55);color:#fbbf24;animation:pulse-glow 1.6s ease-in-out infinite}
+.qibla-tick-ic{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
+  background:#fbbf24;color:#0a1f17;font-weight:900;font-size:13px}
+
+@keyframes pulse-glow{
+  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.45)}
+  50%{box-shadow:0 0 0 8px rgba(251,191,36,0)}
+}
+
+.qibla-denied{display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:16px 18px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.30);
+  border-radius:var(--r-md);max-width:340px;width:100%;text-align:center}
+.qibla-denied strong{color:var(--warn-ink);font-family:var(--font-display);font-weight:700;font-size:14.5px}
+.qibla-denied span{font-size:13px;color:var(--cr-100);line-height:1.7}
+.qibla-denied .btn{margin-top:4px;align-self:stretch}
 
 /* الفاتح */
 :root[data-theme="light"] .qibla-shell{
   background:radial-gradient(circle at 50% 30%, rgba(16,185,129,.08), transparent 60%),
-    linear-gradient(160deg,#fafdfb,#e6efe9 70%,#d5e3da);
-  border-color:rgba(11,92,67,.20);
-  box-shadow:inset 0 2px 12px rgba(0,0,0,.06),0 12px 30px rgba(11,92,67,.18),0 0 0 6px rgba(16,185,129,.06)
+    linear-gradient(160deg,#0f1714,#0a1f17 70%,#152c20);
+  border-color:rgba(16,185,129,.32);
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 14px 40px rgba(11,92,67,.30),0 0 0 6px rgba(16,185,129,.10)
 }
 :root[data-theme="light"] .qibla.aligned .qibla-shell{
-  box-shadow:inset 0 2px 12px rgba(0,0,0,.06),0 12px 30px rgba(217,119,6,.22),0 0 0 6px rgba(251,191,36,.18)
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.4),0 14px 44px rgba(217,119,6,.32),0 0 0 6px rgba(251,191,36,.22)
 }
+:root[data-theme="light"] .qibla-deg{color:var(--cr-50)}
+:root[data-theme="light"] .qibla-dir{color:var(--cr-200)}
+:root[data-theme="light"] .qibla-info{background:#ffffff;border-color:rgba(11,92,67,.16)}
+:root[data-theme="light"] .qibla-info-row{border-bottom-color:rgba(11,92,67,.10)}
+:root[data-theme="light"] .qibla-info-val{color:var(--cr-50)}
+:root[data-theme="light"] .qibla-coords{color:var(--cr-200);border-top-color:rgba(11,92,67,.10)}
+:root[data-theme="light"] .qibla-guide{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.32);color:var(--em-700)}
+:root[data-theme="light"] .qibla-guide.ok{background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(245,158,11,.10));border-color:rgba(217,119,6,.50);color:var(--gd-700)}
 :root[data-theme="light"] .qibla-denied{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.28)}
+:root[data-theme="light"] .qibla-section-tag{color:var(--em-700);background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.30)}
 
 /* ============================================================
    بطاقةُ تثبيت التطبيق (InstallCard)

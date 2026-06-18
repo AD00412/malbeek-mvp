@@ -147,6 +147,7 @@ export default function Landing() {
         </Link>
         <nav className="lp-top-nav">
           <a href="#features">المميّزات</a>
+          <a href="#qibla">القبلة</a>
           <a href="#how">كيف تبدأ</a>
           <a href="#install">تثبيت</a>
           <a href="#faq">الأسئلة</a>
@@ -172,12 +173,14 @@ export default function Landing() {
           <span><Icon name="check" size={14} /> رحلةٌ كاملةٌ مجانيّة</span>
           <span><Icon name="check" size={14} /> عربيٌّ من الجذور</span>
         </div>
+      </section>
 
-        {/* بوصلةٌ حيّةٌ تشير إلى القبلة — تستجيب لحركة الجوّال */}
-        <div className="lp-hero-qibla">
-          <div className="lp-hero-qibla-lbl">بوصلةُ القبلة — حيّةٌ على جوّالك</div>
-          <QiblaCompass />
-        </div>
+      {/* ===== بوصلةُ القبلة — قسمٌ مستقلٌّ بحقّه ===== */}
+      <section className="lp-section-qibla lp-section-alt" id="qibla">
+        <span className="qibla-section-tag">هديّةٌ روحانيّةٌ في الموقع</span>
+        <h2 className="qibla-section-title">بوصلةُ القبلة — حيّةٌ على جوّالك</h2>
+        <p className="qibla-section-desc">من حسّاسات جوّالك مباشرةً — اتجاهٌ بدرجاتٍ دقيقةٍ، مسافةٌ فعليّةٌ إلى الكعبة، وإحداثيّاتٌ من موقعك. لا حاجة لتطبيقٍ منفصل</p>
+        <QiblaCompass />
       </section>
 
       {/* ===== Features ===== */}
