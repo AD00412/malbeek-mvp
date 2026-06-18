@@ -17,9 +17,10 @@ const CONTACT = {
   twitter: 'https://x.com/mulabeek',  // X (تويتر سابقًا)
   instagram: 'https://instagram.com/mulabeek',
   linkedin: 'https://www.linkedin.com/company/mulabeek',
-  // وثيقةُ العمل الحرّ — منصّةُ العمل الحرّ السعوديّة. حدّث الرقمَ ورابطَ التحقّق.
-  freelanceDocNumber: 'FL-XXXXXXXXXX',
-  freelanceVerifyUrl: 'https://efreelance.sa',
+  // وثيقةُ العمل الحرّ — منصّةُ العمل الحرّ السعوديّة (وزارة الموارد البشريّة).
+  // رابطُ التحقّق يفتح صفحةَ «معلومات الوثيقة» الرسميّةَ مباشرةً للزائر.
+  freelanceDocNumber: 'FL-879416950',
+  freelanceVerifyUrl: 'https://freelance.sa/certificate-validation/certificate-validation-nefath/FL-879416950',
 }
 
 function Feature({ icon, title, body }) {
