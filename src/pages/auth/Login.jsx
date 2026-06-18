@@ -1,20 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Navigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import { homeForRole } from '../../app/RequireAuth'
 import AuthShell from './AuthShell'
+import Icon from '../../components/Icon'
 
-// ترجمة رسائل الخطأ الشائعة من Supabase إلى العربية
 function arError(msg = '') {
   const m = String(msg).toLowerCase()
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'البريد أو كلمة المرور غير صحيحة.'
-  if (m.includes('email not confirmed')) return 'لم يتم تأكيد البريد بعد. عطّل «Confirm email» في إعدادات Supabase أثناء التطوير، أو فعّل بريدك ثم أعد المحاولة.'
-  if (m.includes('rate limit') || m.includes('too many')) return 'محاولاتٌ كثيرةٌ متتالية. انتظر دقيقةً ثم حاول مجدّدًا.'
-  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) {
-    return 'تعذّر الاتصال بخادم Supabase. تحقّق من اتصالك بالإنترنت ومن صحّة VITE_SUPABASE_URL في .env.'
-  }
-  return 'حدث خطأٌ غير متوقّع: ' + msg
+  if (m.includes('email not confirmed')) return 'لم يتم تأكيد بريدك بعد. افتح رسالة التفعيل ثمّ أعد المحاولة.'
+  if (m.includes('rate limit') || m.includes('too many')) return 'محاولاتٌ كثيرةٌ متتالية. انتظر دقيقةً ثمّ حاول مجدّدًا.'
+  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return 'تعذّر الاتصال بالخادم. تحقّق من اتصالك بالإنترنت.'
+  return 'تعذّر تسجيل الدخول. حاول مجدّدًا.'
 }
 
 export default function Login() {
@@ -23,12 +21,15 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const emailRef = useRef(null)
 
-  // حارسٌ ضدّ التعليق الأبديّ: لو نجح الدخول لكن تعذّر تحميل الملفّ الشخصي
-  // (صفٌّ مفقود/خطأ RLS)، يبقى <Navigate> معطّلًا (يشترط session && profile)
-  // والـ spinner دائرًا للأبد. بعد مهلةٍ نوقفه ونعرض رسالةً واضحة.
+  useEffect(() => { emailRef.current?.focus() }, [])
+
+  // حارسٌ ضدّ التعليق: لو تأخّر تحميل الملفّ الشخصي بعد دخولٍ ناجح،
+  // نوقف الـ spinner ونعرض رسالةً واضحة.
   useEffect(() => {
     if (!busy) return
     const t = setTimeout(() => {
@@ -38,7 +39,7 @@ export default function Login() {
     return () => clearTimeout(t)
   }, [busy])
 
-  // مُسجَّلٌ بالفعل؟ وجّهه إلى لوحته (أو إلى الصفحة التي جاء منها) بلا إظهار النموذج.
+  // مُسجَّلٌ بالفعل؟ وجّهه إلى لوحته (أو إلى الصفحة التي جاء منها).
   if (!loading && session && profile) {
     const from = loc.state?.from
     const dest = from && from !== '/login' ? from : homeForRole(role)
@@ -57,9 +58,7 @@ export default function Login() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: mail, password })
       if (error) { setErr(arError(error.message)); setBusy(false); return }
-      // النجاح: AuthProvider يلتقط الجلسة ويحمّل الملف الشخصي تلقائيًّا،
-      // ثم يتكفّل <Navigate> أعلاه بالتوجيه. نُبقي الـ spinner دائرًا حتى ذلك
-      // فلا يومض النموذج رجوعًا للحظة.
+      // النجاح: AuthProvider يلتقط الجلسة ويتكفّل <Navigate> أعلاه بالتوجيه.
     } catch (e2) {
       setErr(arError(e2?.message))
       setBusy(false)
@@ -72,10 +71,12 @@ export default function Login() {
       sub="أدخل بريدك وكلمة المرور للمتابعة."
       footer={<>مشترك جديد؟ <Link to="/signup">ابدأ تجربتك المجانية</Link></>}
     >
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="field ltr">
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <div className="field with-ic ltr">
           <label>البريد الإلكتروني</label>
+          <span className="f-ic"><Icon name="mail" size={17} /></span>
           <input
+            ref={emailRef}
             type="email"
             inputMode="email"
             autoComplete="email"
@@ -87,10 +88,11 @@ export default function Login() {
           />
         </div>
 
-        <div className="field ltr">
+        <div className="field with-ic has-toggle ltr">
           <label>كلمة المرور</label>
+          <span className="f-ic"><Icon name="lock" size={17} /></span>
           <input
-            type="password"
+            type={showPw ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder="••••••••"
             value={password}
@@ -98,6 +100,15 @@ export default function Login() {
             disabled={busy}
             required
           />
+          <button
+            type="button"
+            className="pw-toggle"
+            aria-label={showPw ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+            onClick={() => setShowPw((s) => !s)}
+            tabIndex={-1}
+          >
+            <Icon name={showPw ? 'eyeOff' : 'eye'} size={17} />
+          </button>
         </div>
 
         {err && <div className="alert err">{err}</div>}

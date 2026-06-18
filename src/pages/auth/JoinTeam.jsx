@@ -24,6 +24,7 @@ export default function JoinTeam() {
   const [notFound, setNotFound] = useState(false)
   const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [info, setInfo] = useState('')
@@ -136,17 +137,23 @@ export default function JoinTeam() {
         <div className="alert ok" style={{ marginTop: 8 }}>{info}</div>
       ) : (
         <form className="auth-form" onSubmit={signUpAndAccept}>
-          <div className="field ltr">
+          <div className="field with-ic ltr">
             <label>البريد الإلكتروني (المدعوّ)</label>
+            <span className="f-ic"><Icon name="mail" size={17} /></span>
             <input type="email" value={invite?.email || ''} readOnly disabled />
           </div>
-          <div className="field">
+          <div className="field with-ic">
             <label>الاسم الكامل <span className="req">*</span></label>
+            <span className="f-ic"><Icon name="user" size={17} /></span>
             <input type="text" placeholder="اسمك" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
-          <div className="field ltr">
+          <div className="field with-ic has-toggle ltr">
             <label>كلمة المرور <span className="req">*</span></label>
-            <input type="password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <span className="f-ic"><Icon name="lock" size={17} /></span>
+            <input type={showPw ? 'text' : 'password'} placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <button type="button" className="pw-toggle" aria-label={showPw ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} onClick={() => setShowPw((s) => !s)} tabIndex={-1}>
+              <Icon name={showPw ? 'eyeOff' : 'eye'} size={17} />
+            </button>
           </div>
           {err && <div className="alert err">{err}</div>}
           <button className="btn btn-em btn-block" type="submit" disabled={busy}>

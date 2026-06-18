@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import { suggestSlug } from '../../lib/slug'
 import AuthShell from './AuthShell'
+import Icon from '../../components/Icon'
 
 function arError(msg = '') {
   const m = msg.toLowerCase()
@@ -19,6 +20,7 @@ export default function Signup() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [err, setErr] = useState('')
   const [info, setInfo] = useState('')
@@ -90,27 +92,35 @@ export default function Signup() {
       footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}
     >
       <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="field">
+        <div className="field with-ic">
           <label>الاسم الكامل <span className="req">*</span></label>
+          <span className="f-ic"><Icon name="user" size={17} /></span>
           <input type="text" placeholder="الاسم الرباعي" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
         </div>
-        <div className="field ltr">
+        <div className="field with-ic ltr">
           <label>البريد الإلكتروني <span className="req">*</span></label>
+          <span className="f-ic"><Icon name="mail" size={17} /></span>
           <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div className="auth-row">
-          <div className="field">
+          <div className="field with-ic">
             <label>اسم الحملة <span className="req">*</span></label>
+            <span className="f-ic"><Icon name="building" size={17} /></span>
             <input type="text" placeholder="مثال: دروب الإيمان" value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
           </div>
-          <div className="field ltr">
+          <div className="field with-ic ltr">
             <label>رقم الجوال</label>
+            <span className="f-ic"><Icon name="phone" size={17} /></span>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
         </div>
-        <div className="field ltr">
+        <div className="field with-ic has-toggle ltr">
           <label>كلمة المرور <span className="req">*</span></label>
-          <input type="password" autoComplete="new-password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+          <span className="f-ic"><Icon name="lock" size={17} /></span>
+          <input type={showPw ? 'text' : 'password'} autoComplete="new-password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+          <button type="button" className="pw-toggle" aria-label={showPw ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} onClick={() => setShowPw((s) => !s)} tabIndex={-1}>
+            <Icon name={showPw ? 'eyeOff' : 'eye'} size={17} />
+          </button>
         </div>
 
         <label className="checkbox-group">
