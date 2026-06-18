@@ -142,10 +142,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   // - اشتراك Realtime يلتقط تغيّر سجلّ العميل نفسه (يعمل ضمن RLS الخاصّة به).
   // - استطلاعٌ احتياطيٌّ كل ١٢ ثانية يلتقط حجوزات الآخرين (RLS الخاصة بـ passengers
   //   تمنع البثّ التلقائي للعميل، لكن الدالة trip_seat_occupancy آمنةٌ ومسموحٌ بها).
+  // - يتوقّف الاستطلاع تلقائيًّا عند إخفاء التبويب (visibilitychange) — توفيرٌ
+  //   للطاقة وحصّة الـ API بلا أيّ خسارةٍ للتجربة (focus يستدعي refresh عند العودة).
   useEffect(() => {
     if (!trip?.id) return
     let cancelled = false
     const refresh = async () => {
+      if (cancelled) return  // لا نُطلق طلبًا إن أُلغي قبل بدء التشغيل
       const args = multiBus && busId ? { p_trip: trip.id, p_bus: busId } : { p_trip: trip.id }
       const { data: occ } = await supabase.rpc('trip_seat_occupancy', args)
       if (!cancelled) setOccupancy(occ ?? [])
@@ -155,12 +158,19 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       .channel(`pax:${trip.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, refresh)
       .subscribe()
-    const poll = setInterval(refresh, 12000)
+    // استطلاعٌ ١٢ ثانيةً، يتوقّف عند إخفاء التبويب (يعود عند الـ focus).
+    let poll = null
+    const startPoll = () => { if (!poll && !cancelled) poll = setInterval(refresh, 12000) }
+    const stopPoll  = () => { if (poll) { clearInterval(poll); poll = null } }
+    startPoll()
+    const onVis = () => { if (document.visibilityState === 'visible') { refresh(); startPoll() } else { stopPoll() } }
     const onFocus = () => refresh()
+    document.addEventListener('visibilitychange', onVis)
     window.addEventListener('focus', onFocus)
     return () => {
       cancelled = true
-      clearInterval(poll)
+      stopPoll()
+      document.removeEventListener('visibilitychange', onVis)
       window.removeEventListener('focus', onFocus)
       supabase.removeChannel(ch)
     }

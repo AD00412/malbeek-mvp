@@ -227,15 +227,22 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   }
 
   const cap = Number(trip?.capacity) || 0
-  const count = passengers.length
-  const paidList = passengers.filter((p) => p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in')
-  const paid = paidList.length
-  const boarded = passengers.filter((p) => p.status === 'boarded' || p.status === 'checked_in').length
-  const pct = cap > 0 ? Math.min(100, Math.round((count / cap) * 100)) : 0
-  // التحصيل الماليّ: المحصّل (مجموع المبالغ المدفوعة) والمتوقّع (السعر × عدد المسجّلين)
+  // ملخّصاتٌ مرّةً واحدةً عند تغيّر passengers/price/cap — لا حلقاتٍ في كلّ rerender.
   const price = trip?.price != null ? Number(trip.price) : null
-  const collected = paidList.reduce((s, p) => s + (Number(p.amount) || (price || 0)), 0)
-  const expected = price != null ? price * count : null
+  const summary = useMemo(() => {
+    let paid = 0, boarded = 0, collected = 0
+    for (const p of passengers) {
+      const isPaid = p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in'
+      const isBoarded = p.status === 'boarded' || p.status === 'checked_in'
+      if (isPaid) { paid++; collected += Number(p.amount) || (price || 0) }
+      if (isBoarded) boarded++
+    }
+    const count = passengers.length
+    const pct = cap > 0 ? Math.min(100, Math.round((count / cap) * 100)) : 0
+    const expected = price != null ? price * count : null
+    return { count, paid, boarded, collected, expected, pct }
+  }, [passengers, price, cap])
+  const { count, paid, boarded, collected, expected, pct } = summary
   const money = (n) => Number(n || 0).toLocaleString('en-US')
 
   // أرقام الهويّة المكرّرة داخل الرحلة (تُرفض في الكشوف الرسميّة) — للتنبيه
