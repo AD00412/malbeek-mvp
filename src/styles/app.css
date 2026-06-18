@@ -14,18 +14,26 @@
 /* ============================================================
    الأزرار
    ============================================================ */
-.btn{position:relative;font-family:var(--font-sans);font-weight:700;font-size:15px;border:none;border-radius:var(--r-md);
-  padding:13px 20px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  transition:transform .18s,box-shadow .25s,opacity .2s,background .2s,border-color .2s;white-space:nowrap}
+/* الأزرار — مرحلة ٣: مطابقُ المرجع — تدرّجٌ نظيف، حدودٌ موحَّدة، ظلالٌ صحّيّة. */
+.btn{position:relative;font-family:var(--font-sans);font-weight:700;font-size:15px;border:1.5px solid transparent;
+  border-radius:var(--r-md);padding:13px 24px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .2s ease,box-shadow .25s ease,opacity .2s,background .2s,border-color .2s,color .2s;white-space:nowrap}
 .btn:disabled{opacity:.55;cursor:not-allowed}
-.btn-gold{background:var(--grad-gold);color:var(--em-950);box-shadow:var(--glow-gold)}
-.btn-gold:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 34px rgba(196,154,69,.42)}
-.btn-em{background:var(--grad-em);color:var(--cr-50)}
-.btn-em:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--shadow-sm)}
-.btn-ghost{background:rgba(255,255,255,.05);color:var(--cr-50);border:1px solid var(--line)}
-.btn-ghost:hover:not(:disabled){border-color:var(--line-strong);background:rgba(255,255,255,.08)}
-.btn-danger{background:rgba(224,88,75,.14);color:var(--danger-ink);border:1px solid rgba(224,88,75,.4)}
-.btn-danger:hover:not(:disabled){background:rgba(224,88,75,.24)}
+/* الذهبيّ — إجراءُ الترقية والاشتراك (المرجع: btn-gold) */
+.btn-gold{background:linear-gradient(135deg,var(--gd-400),var(--gd-500));color:#1a0f00;font-weight:800;
+  box-shadow:var(--glow-gold)}
+.btn-gold:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(251,191,36,.50)}
+/* الزمرّديّ — الإجراء الأساسيّ (المرجع: btn-primary) */
+.btn-em,.btn-primary{background:linear-gradient(135deg,var(--em-600),var(--em-700));color:#fff;
+  box-shadow:0 4px 16px rgba(16,185,129,.35)}
+.btn-em:hover:not(:disabled),.btn-primary:hover:not(:disabled){
+  transform:translateY(-1px);background:linear-gradient(135deg,var(--em-500),var(--em-600));
+  box-shadow:0 6px 24px rgba(16,185,129,.45)}
+/* الـ Ghost — للإجراء الثانويّ (إطارٌ ينير على المرور) */
+.btn-ghost{background:transparent;color:var(--cr-100);border-color:var(--line)}
+.btn-ghost:hover:not(:disabled){border-color:var(--em-600);color:var(--em-500);background:rgba(16,185,129,.06)}
+.btn-danger{background:rgba(239,68,68,.10);color:var(--danger-ink);border:1px solid rgba(239,68,68,.30)}
+.btn-danger:hover:not(:disabled){background:rgba(239,68,68,.18)}
 .btn-block{width:100%}
 .btn-sm{padding:8px 14px;font-size:13.5px;border-radius:var(--r-sm)}
 .btn-lg{padding:16px 26px;font-size:16px}
@@ -108,8 +116,9 @@
    ============================================================ */
 .form{margin-top:24px;display:flex;flex-direction:column;gap:15px}
 .field label{display:block;font-size:13px;color:var(--cr-200);margin-bottom:7px;font-weight:500}
-.field input,.field select,.field textarea{width:100%;background:var(--surface-3);border:1px solid var(--line);
-  border-radius:var(--r-md);padding:13px 15px;color:var(--cr-50);font-family:var(--font-sans);font-size:15px;
+/* الحقول — مرحلة ٣: تطابق المرجع (background:var(--bg-input)، border 1.5px، focus emerald ring) */
+.field input,.field select,.field textarea{width:100%;background:var(--bg-input);border:1.5px solid var(--line);
+  border-radius:var(--r-sm);padding:13px 16px;color:var(--cr-50);font-family:var(--font-sans);font-size:15px;
   transition:border-color .2s,box-shadow .2s;direction:rtl}
 /* حقول التاريخ والوقت: LTR صراحةً (تنسيقها لاتينيٌّ) + منعُ التجاوز خارج الحقل على iOS */
 .field input[type="date"],
@@ -122,8 +131,9 @@
   max-width:100%;overflow:hidden;text-overflow:ellipsis;
 }
 .field input::placeholder,.field textarea::placeholder{color:rgba(217,206,180,.45)}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gd-500);
-  box-shadow:0 0 0 3px rgba(196,154,69,.16)}
+/* Focus: تأطيرٌ زمرّديٌّ يحتذي المرجع — أوضحُ من الذهبيّ على نسق الإدخال الحديث */
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--em-600);
+  box-shadow:0 0 0 3px rgba(16,185,129,.12)}
 .field input:disabled,.field select:disabled,.field textarea:disabled{opacity:.6;cursor:not-allowed}
 .field.ltr input{direction:ltr;text-align:right}
 .field textarea{min-height:84px;resize:vertical;line-height:1.6}
@@ -378,8 +388,9 @@
 /* ============================================================
    البطاقات واللوحات
    ============================================================ */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:clamp(14px,4vw,20px);margin-top:18px;
-  backdrop-filter:var(--glass-blur)}
+/* اللوحة — مرحلة ٣: خلفيّةٌ صلبةٌ من الـ token + ظلٌّ صحّيّ + لا blur ضروريّ */
+.panel{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:clamp(16px,4vw,24px);margin-top:18px;box-shadow:var(--shadow-md)}
 .panel-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .panel-head h3{font-family:var(--font-display);font-weight:900;font-size:17px;color:var(--cr-50);margin:0}
 .panel-head .sub{font-size:13px;color:var(--cr-300);font-weight:300}
@@ -395,10 +406,17 @@
 .hero p{color:var(--cr-200);font-weight:300;font-size:clamp(13px,3.6vw,14px);margin-top:6px;max-width:560px;line-height:1.7}
 
 /* بطاقات الإحصاء (٢×٢ على الجوال، شبكة مرنة) */
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;position:relative;overflow:hidden;min-height:104px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
+/* بطاقة الإحصاء — مرحلة ٣ بنمط المرجع: خلفيّةٌ صلبةٌ + شريطٌ علويٌّ زمرّديٌّ يميّز */
+.stat{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;
+  position:relative;overflow:hidden;min-height:104px;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .25s}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;
+  background:linear-gradient(90deg,var(--em-500),transparent)}
+.stat.gold::before{background:linear-gradient(90deg,var(--gd-400),transparent)}
 .stat .top{display:flex;align-items:center;gap:8px;color:var(--cr-200);font-size:13px;font-weight:500}
-.stat .top .ic{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;color:var(--gd-300);background:rgba(196,154,69,.12)}
+.stat .top .ic{display:grid;place-items:center;width:32px;height:32px;border-radius:var(--r-sm);
+  color:var(--em-500);background:rgba(16,185,129,.10)}
 .stat .v{font-family:var(--font-display);font-weight:900;font-size:34px;color:var(--cr-50);margin-top:10px;line-height:1}
 .stat .v.text{font-size:20px;line-height:1.2}
 .stat .sub{font-size:11px;color:var(--cr-300);font-weight:300;margin-top:4px}
@@ -417,8 +435,8 @@
    الأيقونة تحمل المعنى الدلاليّ (qr/bed/share…) — الزرّ نفسه يبقى متّسقًا بصريًّا. */
 .actions{display:flex;flex-direction:column;gap:12px;margin-top:18px}
 .action{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px;border-radius:var(--r-lg);
-  border:1px solid var(--line);background:var(--surface);color:var(--cr-100);font-family:var(--font-sans);
-  font-weight:700;font-size:15px;cursor:pointer;transition:.18s}
+  border:1px solid var(--line);background:var(--bg-card);color:var(--cr-100);font-family:var(--font-sans);
+  font-weight:700;font-size:15px;cursor:pointer;transition:.18s;box-shadow:var(--shadow-sm)}
 .action:hover{background:rgba(255,255,255,.05);border-color:var(--line-strong)}
 .action svg{color:var(--gd-300);flex:none}
 .action:disabled{opacity:.55;cursor:not-allowed}
@@ -435,7 +453,9 @@
 .action.violet{color:var(--cr-100)}
 
 /* بطاقة الرحلة (موبايل) */
-.trip-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:clamp(14px,4vw,18px);display:flex;flex-direction:column;gap:14px}
+.trip-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(16px,4vw,22px);
+  display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-sm);transition:transform .2s,box-shadow .25s}
+.trip-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 .trip-card + .trip-card{margin-top:12px}
 .trip-card .tags{display:flex;gap:8px;flex-wrap:wrap}
 .tag{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--r-pill);
