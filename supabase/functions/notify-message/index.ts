@@ -85,7 +85,10 @@ Deno.serve(async (req) => {
         continue
       }
       const buf = new Uint8Array(await blob.arrayBuffer())
-      const filename = path.split('/').pop() || `attachment-${mailAttachments.length + 1}`
+      // نُزيل بادئة timestamp والـ random tag من اسم الملف، فيظهر للمستلم
+      // باسمه الأصليّ (مثلًا "screenshot.png" بدل "1781793568119-qc60xq-screenshot.png").
+      const rawName = path.split('/').pop() || `attachment-${mailAttachments.length + 1}`
+      const filename = rawName.replace(/^\d{10,}-[a-z0-9]{4,8}-/i, '') || rawName
       mailAttachments.push({
         filename,
         content: buf,

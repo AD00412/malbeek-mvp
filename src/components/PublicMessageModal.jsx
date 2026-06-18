@@ -126,7 +126,12 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
       for (const f of files) {
         const rand = Math.random().toString(36).slice(2, 8)
         const ext  = (f.file.name.split('.').pop() || 'bin').toLowerCase().slice(0, 5)
-        const path = `public/${Date.now()}-${rand}.${ext}`
+        // نُبقي اسم الملف الأصليّ ضمن المسار — لتظهر في البريد بشكلٍ مفهومٍ.
+        // نحتفظ بالأحرف العربيّة واللاتينيّة والأرقام والشرطات فقط، ونحدّ الطول.
+        const baseName = (f.file.name.replace(/\.[^.]+$/, '') || 'file')
+          .replace(/[^\w؀-ۿݐ-ݿ-]+/g, '_')
+          .slice(0, 50)
+        const path = `public/${Date.now()}-${rand}-${baseName}.${ext}`
         const { error: upErr } = await supabase.storage
           .from('public-attachments')
           .upload(path, f.file, { upsert: false, contentType: f.file.type, cacheControl: '3600' })
