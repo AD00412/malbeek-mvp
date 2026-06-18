@@ -173,7 +173,7 @@ export default function CustomerJoin() {
           ) : (
             <p className="desc">أنت مسجّلٌ بحساب «{ROLE_AR[role] || 'مستخدم'}». هذه الصفحة لتسجيل المعتمرين الجدد — للتسجيل كمعتمرٍ، سجّل خروجًا أوّلًا.</p>
           )}
-          <button className="btn btn-gold btn-block" style={{ marginTop: 18 }} onClick={() => navigate(homeForRole(role), { replace: true })}>
+          <button className="btn btn-em btn-block" style={{ marginTop: 18 }} onClick={() => navigate(homeForRole(role), { replace: true })}>
             <Icon name="dashboard" size={16} /> الذهاب إلى لوحتي
           </button>
           <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => signOut()}>
@@ -186,14 +186,11 @@ export default function CustomerJoin() {
 
   if (notFound) {
     return (
-      <AuthShell>
+      <AuthShell footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}>
         <div className="join-state">
           <span className="join-state-ic warn"><Icon name="location" size={30} /></span>
           <h2 className="ttl">تعذّر العثور على الحملة</h2>
           <p className="desc">تأكّد من الرابط الذي وصلك من جهة الحملة، أو تواصل معهم لإعادة إرساله.</p>
-        </div>
-        <div className="auth-foot" style={{ marginTop: 24 }}>
-          لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link>
         </div>
       </AuthShell>
     )
@@ -207,7 +204,7 @@ export default function CustomerJoin() {
           <span className="join-success-ic"><Icon name="mail" size={34} /></span>
           <h2 className="ttl">تحقّق من بريدك</h2>
           <p className="desc">{info}</p>
-          <Link to="/login" className="btn btn-gold btn-block" style={{ marginTop: 22 }}>
+          <Link to="/login" className="btn btn-em btn-block" style={{ marginTop: 22 }}>
             <Icon name="check" size={16} /> الذهاب لتسجيل الدخول
           </Link>
         </div>
@@ -216,7 +213,11 @@ export default function CustomerJoin() {
   }
 
   return (
-    <AuthShell title="تسجيل معتمرٍ جديد" sub="أدخل بياناتك مرّةً واحدة، وادخل لوحتك في أيّ وقتٍ لاحقًا.">
+    <AuthShell
+      title="تسجيل معتمرٍ جديد"
+      sub="أدخل بياناتك مرّةً واحدة، وادخل لوحتك في أيّ وقتٍ لاحقًا."
+      footer={<>سجّلت سابقًا؟ <Link to="/login">ادخل حسابك</Link></>}
+    >
 
       {/* بطاقة الحملة */}
       <div className="join-org">
@@ -234,7 +235,7 @@ export default function CustomerJoin() {
         <div className="li"><Icon name="building" size={16} /> ترى رحلات حملتك فقط</div>
       </div>
 
-      <form className="form" onSubmit={handleSubmit} noValidate>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate style={{ marginTop: 18 }}>
         <div className={fieldCls('fullName')}>
           <label>الاسم الرباعي</label>
           <span className="f-ic"><Icon name="user" size={17} /></span>
@@ -297,14 +298,10 @@ export default function CustomerJoin() {
 
         {err && <div className="alert err">{err}</div>}
 
-        <button className="btn btn-gold" type="submit" disabled={busy || !allValid}>
+        <button className="btn btn-em btn-block" type="submit" disabled={busy || !allValid}>
           {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> تسجيل ودخول</>}
         </button>
       </form>
-
-      <div className="auth-foot">
-        سجّلت سابقًا؟ <Link to="/login">ادخل حسابك</Link>
-      </div>
     </AuthShell>
   )
 }

@@ -85,14 +85,11 @@ export default function JoinTeam() {
 
   if (notFound) {
     return (
-      <AuthShell>
+      <AuthShell footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}>
         <div className="join-state">
           <span className="join-state-ic warn"><Icon name="customers" size={30} /></span>
           <h2 className="ttl">تعذّر فتح الدعوة</h2>
           <p className="desc">قد تكون الدعوة أُلغيت أو قُبلت سابقًا. اطلب من صاحب الحملة إرسال دعوةٍ جديدة.</p>
-        </div>
-        <div className="auth-foot" style={{ marginTop: 24 }}>
-          لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link>
         </div>
       </AuthShell>
     )
@@ -116,7 +113,7 @@ export default function JoinTeam() {
           )}
           {err && <div className="alert err" style={{ marginTop: 8 }}>{err}</div>}
           {sameEmail && (
-            <button className="btn btn-gold btn-block" style={{ marginTop: 16 }} onClick={accept} disabled={busy}>
+            <button className="btn btn-em btn-block" style={{ marginTop: 16 }} onClick={accept} disabled={busy}>
               {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> قبول الانضمام</>}
             </button>
           )}
@@ -130,11 +127,15 @@ export default function JoinTeam() {
 
   // غير مسجّل: تسجيلٌ سريعٌ بالبريد المدعوّ (مقفل) ثمّ قبولٌ فوريّ
   return (
-    <AuthShell title="قبول الدعوة" sub={`دعوةٌ للانضمام لفريق «${invite?.org_name || ''}» كـ«${roleAr}».`}>
+    <AuthShell
+      title="قبول الدعوة"
+      sub={`دعوةٌ للانضمام لفريق «${invite?.org_name || ''}» كـ«${roleAr}».`}
+      footer={<>لديك حسابٌ بالبريد نفسه؟ <Link to="/login">سجّل الدخول</Link> ثمّ ارجع لهذا الرابط.</>}
+    >
       {info ? (
         <div className="alert ok" style={{ marginTop: 8 }}>{info}</div>
       ) : (
-        <form className="form" onSubmit={signUpAndAccept}>
+        <form className="auth-form" onSubmit={signUpAndAccept}>
           <div className="field ltr">
             <label>البريد الإلكتروني (المدعوّ)</label>
             <input type="email" value={invite?.email || ''} readOnly disabled />
@@ -143,19 +144,16 @@ export default function JoinTeam() {
             <label>الاسم الكامل <span className="req">*</span></label>
             <input type="text" placeholder="اسمك" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="field ltr">
             <label>كلمة المرور <span className="req">*</span></label>
             <input type="password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           {err && <div className="alert err">{err}</div>}
-          <button className="btn btn-gold btn-block" type="submit" disabled={busy}>
+          <button className="btn btn-em btn-block" type="submit" disabled={busy}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> إنشاء الحساب والانضمام</>}
           </button>
         </form>
       )}
-      <div className="auth-foot" style={{ marginTop: 20 }}>
-        لديك حسابٌ بالبريد نفسه؟ <Link to="/login">سجّل الدخول</Link> ثمّ ارجع لهذا الرابط.
-      </div>
     </AuthShell>
   )
 }
