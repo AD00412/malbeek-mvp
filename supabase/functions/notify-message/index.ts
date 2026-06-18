@@ -65,10 +65,11 @@ Deno.serve(async (req) => {
     attachLinks = (signed ?? []).map((s) => s.signedUrl).filter(Boolean)
   }
 
-  // ٣) بناءُ الرسالة
+  // ٣) بناءُ الرسالة — نتجنّب الإيموجي في العنوان لتحسين التوافق مع webmail
+  //    القديم (يعرضه raw)؛ الإيموجي يبقى مرئيًّا داخل محتوى HTML.
   const kindAr = KIND_AR[rec.kind] ?? rec.kind ?? '—'
   const modeAr = rec.mode === 'contact' ? 'تواصل' : 'ملاحظة'
-  const subjectLine = `📬 ملبّيك · ${modeAr} جديدة (${kindAr}) من ${rec.name}`
+  const subjectLine = `Malbeek | ${modeAr} - ${rec.name}`
 
   const attachHtml = attachLinks.length
     ? `<p style="margin:14px 0 4px;font-weight:700">المرفقات (${attachLinks.length}):</p>
