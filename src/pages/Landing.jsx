@@ -15,7 +15,7 @@ import PublicMessageModal from '../components/PublicMessageModal'
 // === أرقامٌ ووصلاتٌ رسميّةٌ — حدّثها بقيمك الحقيقيّة عند الإطلاق ===
 const CONTACT = {
   email: 'hello@mulabeek.com',
-  whatsapp: '966500000000',          // رقم واتسآب للأعمال (بدون + أو ٠٠)
+  whatsapp: '966533579835',           // رقم واتسآب للأعمال (بدون + أو ٠٠)
   twitter: 'https://x.com/mulabeek',  // X (تويتر سابقًا)
   instagram: 'https://instagram.com/mulabeek',
   linkedin: 'https://www.linkedin.com/company/mulabeek',
