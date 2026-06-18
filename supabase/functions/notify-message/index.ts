@@ -54,14 +54,47 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
-  // ٢) روابطٌ موقَّعةٌ للمرفقات (صلاحيّةُ ٧ أيّام)
-  let attachLinks: string[] = []
+  // ٢) تنزيلُ المرفقات كـ MIME attachments — لا روابطَ تنكسر في عملاء البريد.
+  //    Gmail الجوّال يلفّ الروابط الطويلة عبر redirect يكسر signed URLs،
+  //    لذا نضع الملفّات كمرفقاتٍ مدمجةٍ. حدّ ٤ ميغا لكلّ ملفٍّ، ٨ ميغا إجماليّ
+  //    (هامشٌ آمنٌ تحت حدّ Gmail البالغ ٢٥ ميغا).
   const paths: string[] = Array.isArray(rec.attachments) ? rec.attachments : []
-  if (paths.length) {
-    const { data: signed } = await supabase.storage
-      .from('public-attachments')
-      .createSignedUrls(paths, 60 * 60 * 24 * 7)
-    attachLinks = (signed ?? []).map((s: any) => s.signedUrl).filter(Boolean)
+  const mailAttachments: Array<{ filename: string; content: Uint8Array; contentType: string }> = []
+  const fallbackLinks: string[] = []   // ستبقى كاحتياطٍ إن فشل تنزيلُ ملفٍّ ما
+  const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024
+  const MAX_TOTAL_BYTES      = 8 * 1024 * 1024
+  let totalSize = 0
+
+  for (const path of paths) {
+    try {
+      const { data: blob, error: dlErr } = await supabase.storage
+        .from('public-attachments').download(path)
+      if (dlErr || !blob) {
+        // فشل التنزيل → نُولّد signed URL كاحتياط
+        const { data: signed } = await supabase.storage
+          .from('public-attachments').createSignedUrl(path, 60 * 60 * 24 * 7)
+        if (signed?.signedUrl) fallbackLinks.push(signed.signedUrl)
+        continue
+      }
+      const size = blob.size
+      if (size > MAX_ATTACHMENT_BYTES || totalSize + size > MAX_TOTAL_BYTES) {
+        // الملفّ كبيرٌ أو الإجماليّ تجاوز الحدّ → احتياطٌ كرابط
+        const { data: signed } = await supabase.storage
+          .from('public-attachments').createSignedUrl(path, 60 * 60 * 24 * 7)
+        if (signed?.signedUrl) fallbackLinks.push(signed.signedUrl)
+        continue
+      }
+      const buf = new Uint8Array(await blob.arrayBuffer())
+      const filename = path.split('/').pop() || `attachment-${mailAttachments.length + 1}`
+      mailAttachments.push({
+        filename,
+        content: buf,
+        contentType: blob.type || 'application/octet-stream',
+      })
+      totalSize += size
+    } catch (_) {
+      // أيّ خطأٍ في التنزيل: تجاهل الملفّ بصمتٍ (لا نفشل الإرسال كاملًا)
+    }
   }
 
   // ٣) بناءُ المحتوى
@@ -95,15 +128,16 @@ Deno.serve(async (req) => {
     <rect x="39.5" y="33" width="3" height="6.5" rx="0.4" fill="#1a0f00"/>
   </svg>`
 
-  const attachHtml = attachLinks.length
+  // المرفقات تظهر في البريد كملفّاتٍ مدمجةٍ تلقائيًّا؛ نعرض هنا قائمةً وصفيّةً
+  // للمستخدم فقط، بدون روابطَ خارجيّةٍ (لتفادي كسرها من Gmail redirects).
+  const totalAttachCount = mailAttachments.length + fallbackLinks.length
+  const attachHtml = totalAttachCount
     ? `<div style="margin-top:18px;padding:14px 16px;background:#fafdfb;border:1px solid #e6efe9;border-radius:12px">
-         <div style="font-size:13px;color:#5f7a6e;font-weight:600;margin-bottom:8px">المرفقات (${attachLinks.length})</div>
-         <table style="width:100%;border-collapse:collapse">
-         ${attachLinks.map((u, i) => `<tr>
-           <td style="padding:6px 0;font-size:14px"><a href="${esc(u)}" style="color:#047857;font-weight:600;text-decoration:none">📎 مرفق ${i + 1}</a></td>
-         </tr>`).join('')}
-         </table>
-         <div style="font-size:11px;color:#8aa39b;margin-top:6px">الروابطُ فعّالةٌ لمدّة ٧ أيّامٍ</div>
+         <div style="font-size:13px;color:#5f7a6e;font-weight:600;margin-bottom:8px">📎 المرفقات (${totalAttachCount})</div>
+         ${mailAttachments.length ? `<div style="font-size:13px;color:#0a1f17;line-height:1.8">${mailAttachments.map((a) => `<div>• ${esc(a.filename)}</div>`).join('')}</div>
+         <div style="font-size:11.5px;color:#8aa39b;margin-top:6px">تجدها مرفقةً في هذا البريد — افتحها بضغطةٍ</div>` : ''}
+         ${fallbackLinks.length ? `<div style="margin-top:10px;font-size:12px;color:#8aa39b">ملفّاتٌ كبيرةٌ (روابطُ تنزيلٍ، فعّالةٌ ٧ أيّامٍ):</div>
+         ${fallbackLinks.map((u, i) => `<div style="font-size:13px;padding:3px 0"><a href="${esc(u)}" style="color:#047857;font-weight:600;text-decoration:none;word-break:break-all">رابطُ تنزيل ${i + 1}</a></div>`).join('')}` : ''}
        </div>`
     : ''
 
@@ -210,7 +244,8 @@ Deno.serve(async (req) => {
     (createdAt ? `التاريخ:  ${createdAt}\n` : '') +
     `${'─'.repeat(40)}\n\n` +
     `${rec.body}\n` +
-    (attachLinks.length ? `\n${'─'.repeat(40)}\nالمرفقات:\n${attachLinks.map((u, i) => `${i + 1}. ${u}`).join('\n')}\n` : '') +
+    (mailAttachments.length ? `\n${'─'.repeat(40)}\nمرفقاتٌ مدمجة (${mailAttachments.length}):\n${mailAttachments.map((a) => `• ${a.filename}`).join('\n')}\n` : '') +
+    (fallbackLinks.length ? `\nروابطُ تنزيلٍ (٧ أيّامٍ):\n${fallbackLinks.map((u, i) => `${i + 1}. ${u}`).join('\n')}\n` : '') +
     `\n${'─'.repeat(40)}\nللردّ: استخدم زرّ "رد" — يصل ${rec.email} مباشرةً.\nmulabeek.com\n`
 
   // ٤) الإرسال عبر nodemailer — يتولّى ترميز UTF-8 وMIME تلقائيًّا
@@ -229,6 +264,7 @@ Deno.serve(async (req) => {
       subject: subjectLine,
       text: textBody,
       html,
+      attachments: mailAttachments.length ? mailAttachments : undefined,
     })
   } catch (e) {
     return json(502, { error: 'smtp_failed', detail: String((e as Error)?.message ?? e) })
