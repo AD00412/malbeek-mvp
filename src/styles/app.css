@@ -171,9 +171,10 @@
 .topbar .pg-title{font-family:var(--font-display);font-weight:900;font-size:clamp(16px,4.5vw,18px);color:var(--cr-50);line-height:1.15}
 .topbar .pg-sub{font-size:11.5px;color:var(--cr-300);font-weight:300;margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.icon-bubble{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--cr-100);width:38px;height:38px;
-  border-radius:var(--r-md);cursor:pointer;display:grid;place-items:center;transition:.18s;flex:none}
-.icon-bubble:hover{background:rgba(255,255,255,.09);border-color:var(--line-strong)}
+/* الأيقونات في الرأس — نمطُ ‎.theme-toggle‎ + ‎.topbar-notif‎ في المرجع */
+.icon-bubble{background:var(--bg-panel);border:1px solid var(--line);color:var(--cr-200);width:38px;height:38px;
+  border-radius:var(--r-sm);cursor:pointer;display:grid;place-items:center;transition:.2s;flex:none}
+.icon-bubble:hover{color:var(--em-500);border-color:var(--em-600)}
 .icon-bubble .dot{position:absolute;margin-top:-12px;margin-inline-start:11px;width:8px;height:8px;border-radius:50%;
   background:var(--gd-300);box-shadow:0 0 0 2px var(--em-900)}
 
@@ -220,25 +221,29 @@
    استبدلت BottomSheet لأنّ flex+RTL على iOS Safari كان يضع الورقة في الأعلى أحيانًا.
    الـ Popover هنا يتموضع بـ position:absolute داخل الرأس الثابت — مضمونٌ كلّ المتصفّحات. */
 .acct-wrap{position:relative;flex:none}
-.acct-btn{background:linear-gradient(135deg,rgba(196,154,69,.22),rgba(196,154,69,.08));
-  border:1px solid var(--line-strong);width:38px;height:38px;border-radius:50%;
-  display:grid;place-items:center;cursor:pointer;transition:.18s;flex:none;padding:0}
-.acct-btn:hover{background:linear-gradient(135deg,rgba(196,154,69,.30),rgba(196,154,69,.12));transform:translateY(-1px)}
+/* زرّ الحساب في الرأس — تدرّجٌ زمرّديٌّ مدمج (يطابق ‎.user-avatar‎ في المرجع) */
+.acct-btn{background:linear-gradient(135deg,var(--em-600),var(--em-800));
+  border:none;width:38px;height:38px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;transition:.18s;flex:none;padding:0;
+  box-shadow:0 2px 8px rgba(16,185,129,.25)}
+.acct-btn:hover{background:linear-gradient(135deg,var(--em-500),var(--em-700));transform:translateY(-1px);box-shadow:0 4px 14px rgba(16,185,129,.35)}
 .acct-btn:active{transform:scale(.95)}
-.acct-av{font-family:var(--font-display);font-weight:900;font-size:15px;color:var(--gd-300);line-height:1;text-transform:uppercase}
+.acct-av{font-family:var(--font-sans);font-weight:700;font-size:15px;color:#fff;line-height:1;text-transform:uppercase}
 
+/* قائمةُ الحساب — bg-card صلبٌ يطابق المرجع، بلا تدرّجٍ زيتيّ */
 .acct-pop{position:absolute;top:calc(100% + 8px);inset-inline-end:0;
   width:min(300px, calc(100vw - 24px));z-index:90;
-  background:linear-gradient(160deg,#073322,var(--em-900));border:1px solid var(--line-strong);
-  border-radius:var(--r-md);padding:12px;box-shadow:0 18px 50px rgba(0,0,0,.55);
+  background:var(--bg-card);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:12px;box-shadow:var(--shadow-lg);
   animation:pop-in .14s ease-out}
 @keyframes pop-in{from{opacity:0;transform:translateY(-6px) scale(.96)} to{opacity:1;transform:none}}
 .acct-pop-card{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--r-sm);
   background:rgba(196,154,69,.06);border:1px solid rgba(196,154,69,.16)}
+/* أڤتار قائمة الحساب — تدرّجٌ زمرّديٌّ (يطابق ‎.user-avatar‎ في المرجع) */
 .acct-pop-av{flex:none;width:44px;height:44px;border-radius:50%;
-  background:linear-gradient(135deg,var(--gd-300),rgba(196,154,69,.55));
-  color:var(--em-950);display:grid;place-items:center;font-family:var(--font-display);
-  font-weight:900;font-size:19px;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  background:linear-gradient(135deg,var(--em-600),var(--em-800));
+  color:#fff;display:grid;place-items:center;font-family:var(--font-sans);
+  font-weight:700;font-size:16px;text-transform:uppercase;box-shadow:0 4px 12px rgba(16,185,129,.30)}
 .acct-pop-nm{color:var(--cr-50);font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acct-pop-em{background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:5px;
   color:var(--cr-300);font-size:11.5px;margin-top:2px;font-family:inherit;max-width:100%;
@@ -260,11 +265,12 @@
 /* درجٌ جانبيٌّ (Hamburger Menu) — ينزلق من جهة البدء (يمين في RTL).
    لا نعتمد على align-items مع flex+RTL (تفاديًا لحالاتٍ شاذّةٍ على iOS).
    نستخدم position:absolute صراحةً على البطاقة لتموضعٍ مضمون. */
+/* الدرجُ الجانبيّ — نمطُ المرجع: bg-card صلبٌ + ظلٌّ ناعم، بلا تدرّج زيتيّ */
 .drawer-overlay{position:fixed;inset:0;z-index:110;background:rgba(2,16,11,.72);
-  backdrop-filter:blur(5px);animation:fade-in .18s ease}
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fade-in .18s ease}
 .drawer-card{position:absolute;top:0;bottom:0;inset-inline-start:0;width:min(86vw, 340px);
-  background:linear-gradient(180deg,#073322,var(--em-900));border-inline-end:1px solid var(--line-strong);
-  display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.5);
+  background:var(--bg-card);border-inline-end:1px solid var(--bd2, var(--line));
+  display:flex;flex-direction:column;box-shadow:var(--shadow-lg);
   padding:18px 16px calc(18px + env(safe-area-inset-bottom));
   animation:drawer-in .26s cubic-bezier(.16,.84,.44,1);outline:none}
 @keyframes drawer-in{from{transform:translateX(-100%)} to{transform:translateX(0)}}
@@ -274,10 +280,11 @@
 .drawer-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;
   border-bottom:1px solid var(--line);margin-bottom:12px}
 .drawer-user{display:flex;align-items:center;gap:11px;flex:1;min-width:0}
+/* أڤتار المستخدم — نمطُ المرجع ‎.user-avatar‎: تدرّجٌ زمرّديٌّ بدل الذهبيّ */
 .drawer-av{flex:none;width:42px;height:42px;border-radius:50%;
-  background:linear-gradient(135deg,var(--gd-300),rgba(196,154,69,.55));
-  color:var(--em-950);display:grid;place-items:center;font-family:var(--font-display);
-  font-weight:900;font-size:18px;text-transform:uppercase;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  background:linear-gradient(135deg,var(--em-600),var(--em-800));
+  color:#fff;display:grid;place-items:center;font-family:var(--font-sans);
+  font-weight:700;font-size:15px;text-transform:uppercase;box-shadow:0 4px 12px rgba(16,185,129,.30)}
 .drawer-nm{color:var(--cr-50);font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drawer-sub{color:var(--cr-300);font-size:11.5px;margin-top:2px}
 .drawer-close{flex:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.04);
@@ -292,17 +299,17 @@
 .drawer-item{display:flex;align-items:center;gap:12px;padding:12px 12px;background:transparent;
   border:none;border-radius:var(--r-md);cursor:pointer;color:var(--cr-100);font-family:inherit;
   font-size:14px;font-weight:500;text-align:start;transition:.14s;width:100%}
-.drawer-item:hover:not(:disabled){background:rgba(255,255,255,.04);color:var(--cr-50)}
-.drawer-item.active{background:rgba(196,154,69,.10);color:var(--gd-300);
-  box-shadow:inset 3px 0 0 var(--gd-300)}
-[dir=rtl] .drawer-item.active{box-shadow:inset -3px 0 0 var(--gd-300)}
+/* عناصر الدرج — نمطُ ‎.sidebar-link‎ في المرجع: hover/active زمرّديٌّ */
+.drawer-item:hover:not(:disabled){background:rgba(16,185,129,.08);color:var(--cr-50)}
+.drawer-item.active{background:rgba(16,185,129,.12);color:var(--em-500);font-weight:700}
 .drawer-item:disabled{opacity:.45;cursor:not-allowed}
-.drawer-ic{flex:none;width:32px;height:32px;border-radius:var(--r-sm);
-  background:rgba(255,255,255,.04);display:grid;place-items:center;color:inherit}
-.drawer-item.active .drawer-ic{background:rgba(196,154,69,.16)}
+.drawer-ic{flex:none;width:34px;height:34px;border-radius:var(--r-sm);
+  background:rgba(16,185,129,.08);display:grid;place-items:center;color:var(--cr-200)}
+.drawer-item.active .drawer-ic{background:rgba(16,185,129,.18);color:var(--em-500)}
 .drawer-lb{flex:1;min-width:0}
-.drawer-badge{flex:none;background:rgba(58,160,179,.15);color:var(--info-ink);
-  font-family:var(--font-display);font-weight:700;font-size:11px;
+/* الشارة في عنصر الدرج — زمرّديٌّ صلبٌ ‎em-700‎ (يطابق ‎.sl-badge‎) */
+.drawer-badge{flex:none;background:var(--em-700);color:#fff;
+  font-family:var(--font-sans);font-weight:700;font-size:11px;
   padding:2px 9px;border-radius:99px;min-width:22px;text-align:center}
 
 .drawer-plan{margin-top:12px;padding:12px 8px;border-top:1px solid var(--line)}
@@ -371,19 +378,19 @@
 .tb-menu{display:grid}
 @media (min-width:820px){ .tb-menu{display:none} }
 
-/* شريط الباقة التجريبيّة — مدمجٌ أنيقٌ، يحترم المسافات على الجوال */
-.trial-banner{display:flex;align-items:center;gap:12px;padding:12px 14px;
-  background:linear-gradient(95deg,rgba(196,154,69,.08),rgba(196,154,69,.02));
-  border:1px solid rgba(196,154,69,.22);border-radius:var(--r-md);margin-bottom:14px}
-.trial-banner.expired{background:linear-gradient(95deg,rgba(224,88,75,.08),rgba(224,88,75,.02));
-  border-color:rgba(224,88,75,.30)}
-.trial-banner .tb-ic{flex:none;width:36px;height:36px;border-radius:50%;
-  background:rgba(196,154,69,.14);color:var(--gd-300);display:grid;place-items:center}
-.trial-banner.expired .tb-ic{background:rgba(224,88,75,.12);color:var(--danger-ink)}
+/* شريط الباقة التجريبيّة — نمطٌ ذهبيٌّ هادئٌ بحدودٍ نظيفةٍ (أمبر) */
+.trial-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;
+  background:rgba(251,191,36,.08);
+  border:1px solid rgba(251,191,36,.24);border-radius:var(--r-md);margin-bottom:14px;
+  box-shadow:var(--shadow-sm)}
+.trial-banner.expired{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.28)}
+.trial-banner .tb-ic{flex:none;width:38px;height:38px;border-radius:var(--r-sm);
+  background:rgba(251,191,36,.16);color:var(--gd-400);display:grid;place-items:center}
+.trial-banner.expired .tb-ic{background:rgba(239,68,68,.12);color:var(--danger-ink)}
 .trial-banner .tb-main{flex:1;min-width:0}
-.trial-banner .tb-title{color:var(--cr-50);font-weight:700;font-size:13.5px;line-height:1.35}
-.trial-banner .tb-sub{color:var(--cr-300);font-size:11.5px;margin-top:3px;line-height:1.4}
-.trial-banner .tb-sub strong{color:var(--gd-300);font-weight:700}
+.trial-banner .tb-title{color:var(--cr-50);font-weight:700;font-size:14px;line-height:1.35}
+.trial-banner .tb-sub{color:var(--cr-300);font-size:12px;margin-top:3px;line-height:1.5}
+.trial-banner .tb-sub strong{color:var(--gd-400);font-weight:800}
 .trial-banner .btn{flex:none}
 @media (max-width:480px){
   .trial-banner{flex-wrap:wrap}
