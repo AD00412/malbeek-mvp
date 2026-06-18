@@ -163,10 +163,11 @@
   display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:1fr}
 
 /* الرأس */
-.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;
-  padding:max(12px, env(safe-area-inset-top)) 16px 12px;
-  background:linear-gradient(180deg,rgba(4,30,22,.95),rgba(4,30,22,.65));
-  border-bottom:1px solid var(--line);backdrop-filter:var(--glass-blur)}
+/* الرأس — نمطُ المرجع: شفافيّةٌ خفيفةٌ بسبعة أعشار + backdrop-blur ١٦px + حدٌّ سفليّ */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;
+  padding:max(14px, env(safe-area-inset-top)) 24px 14px;
+  background:rgba(10,15,13,.85);
+  border-bottom:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .topbar .pg-title{font-family:var(--font-display);font-weight:900;font-size:clamp(16px,4.5vw,18px);color:var(--cr-50);line-height:1.15}
 .topbar .pg-sub{font-size:11.5px;color:var(--cr-300);font-weight:300;margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -190,20 +191,25 @@
 /* ============================================================
    شريط التنقّل السفلي (الجوال) — كومبس مركزي بارز
    ============================================================ */
+/* الشريط السفليّ — نمطُ المرجع: backdrop-blur + خلفيّةٌ صلبةٌ خفيفةٌ */
 .tabbar{position:fixed;bottom:0;inset-inline:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);
   padding:8px 12px calc(12px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,rgba(3,20,15,.85),rgba(2,16,12,.96));
-  border-top:1px solid var(--line);backdrop-filter:var(--glass-blur)}
+  background:rgba(10,15,13,.92);
+  border-top:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;
   color:var(--cr-300);font-size:11px;font-weight:500;cursor:pointer;background:none;border:none;font-family:inherit;
   transition:color .18s;position:relative}
-.tab:hover{color:var(--cr-100)}
-.tab.active{color:var(--gd-300)}
-.tab.active::before{content:"";position:absolute;top:0;width:20px;height:3px;border-radius:0 0 4px 4px;background:var(--gd-300)}
+.tab:hover{color:var(--cr-50)}
+/* التبويب النشط زمرّديٌّ من نمط المرجع (المرجع: ‎.nav-link.active-nav‎) */
+.tab.active{color:var(--em-500)}
+.tab.active::before{content:"";position:absolute;top:0;width:24px;height:3px;border-radius:0 0 4px 4px;background:var(--em-500)}
 .tab .tb-ic{display:grid;place-items:center}
-.tab-cta{margin-top:-22px;background:var(--grad-gold);color:var(--em-950);border-radius:50%;width:54px;height:54px;
-  display:grid;place-items:center;box-shadow:var(--glow-gold);cursor:pointer;border:none;justify-self:center;transition:transform .18s}
-.tab-cta:hover{transform:translateY(-2px)}
+/* الزرّ المركزيّ المستدير (FAB) — تدرّجٌ زمرّديٌّ كنمط المرجع ‎.btn-primary‎ */
+.tab-cta{margin-top:-22px;background:linear-gradient(135deg,var(--em-500),var(--em-700));color:#fff;
+  border-radius:50%;width:56px;height:56px;
+  display:grid;place-items:center;box-shadow:0 8px 22px rgba(16,185,129,.35);
+  cursor:pointer;border:none;justify-self:center;transition:transform .2s,box-shadow .25s}
+.tab-cta:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(16,185,129,.45)}
 .tab-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
 .tab-cta-wrap .lb{font-size:11px;color:var(--gd-300);font-weight:600}
 
@@ -566,9 +572,9 @@
    ============================================================ */
 @media(min-width:820px){
   .shell{grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:1fr}
-  .sidebar{display:flex;position:sticky;top:0;height:100vh;flex-direction:column;gap:6px;padding:22px 16px;
-    background:linear-gradient(180deg,rgba(4,38,28,.86),rgba(3,28,20,.92));border-inline-start:1px solid var(--line);
-    backdrop-filter:var(--glass-blur);grid-row:1}
+  /* الشريط الجانبيّ — نمطُ المرجع: bg-card صلبٌ + حدٌّ نظيف، بلا blur */
+  .sidebar{display:flex;position:sticky;top:0;height:100vh;flex-direction:column;gap:6px;padding:24px 16px 20px;
+    background:var(--bg-card);border-inline-start:1px solid var(--line);grid-row:1}
   .sidebar .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 18px}
   .sidebar .brand .nm{font-family:var(--font-display);font-weight:900;font-size:23px;color:var(--cr-50)}
   .sidebar .role-chip{font-family:var(--font-display);font-size:11px;color:var(--em-950);background:var(--grad-gold);
@@ -577,12 +583,14 @@
   .nav-sec{font-size:11px;color:var(--cr-300);font-weight:600;padding:14px 12px 6px;letter-spacing:.04em}
   .nav-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--r-md);color:var(--cr-200);
     font-size:14.5px;font-weight:500;cursor:pointer;transition:.16s;border:1px solid transparent;background:none;font-family:inherit;width:100%;text-align:start}
-  .nav-item:hover{background:rgba(255,255,255,.05);color:var(--cr-50)}
-  .nav-item.active{background:rgba(196,154,69,.12);border-color:var(--line);color:var(--cr-50)}
-  .nav-item.active .ic{color:var(--gd-300)}
+  /* عناصر التنقّل في الشريط الجانبيّ — نمطُ المرجع: hover/active زمرّديٌّ */
+  .nav-item:hover{background:rgba(16,185,129,.08);color:var(--cr-50)}
+  .nav-item.active{background:rgba(16,185,129,.12);border-color:transparent;color:var(--em-500);font-weight:700}
+  .nav-item.active .ic{color:var(--em-500)}
   .nav-item .ic{width:20px;height:20px;flex:none;display:grid;place-items:center;color:var(--cr-300)}
-  .nav-item .badge{margin-inline-start:auto;font-size:11px;background:rgba(196,154,69,.16);color:var(--gd-300);
-    padding:2px 8px;border-radius:var(--r-pill);font-weight:600}
+  /* الشارات بزمرّديّ متشبّعٍ بدل الذهبيّ — يطابق sl-badge في المرجع */
+  .nav-item .badge{margin-inline-start:auto;font-size:11px;background:var(--em-700);color:#fff;
+    padding:2px 8px;border-radius:var(--r-pill);font-weight:700}
   .sidebar .foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
   .user-box{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-md)}
   .user-box .av{width:36px;height:36px;border-radius:50%;background:var(--grad-em);display:grid;place-items:center;
