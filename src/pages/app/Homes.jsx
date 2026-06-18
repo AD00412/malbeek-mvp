@@ -601,7 +601,7 @@ export function SubscriberHome() {
           onClose={() => setShareOpen(false)}
           title="مشاركة رابط الحجز"
           actions={
-            <button className="btn btn-gold btn-block" onClick={copyLink} disabled={!shareUrl}>
+            <button className="btn btn-em btn-block" onClick={copyLink} disabled={!shareUrl}>
               <Icon name={copied ? 'check' : 'copy'} size={17} />
               {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}
             </button>
@@ -718,7 +718,7 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
               <span className="sub">{daysLabel(nextTrip.depart_at)} · {fmtShort(nextTrip.depart_at)}</span>
             </div>
             <span style={{ flex: 1 }} />
-            <button className="btn btn-gold btn-sm" onClick={() => onManage?.(nextTrip)}>
+            <button className="btn btn-em btn-sm" onClick={() => onManage?.(nextTrip)}>
               <Icon name="arrowLeft" size={15} /> فتح
             </button>
           </div>
@@ -762,7 +762,7 @@ function TripsView({ trips, allCount, sub, loading, paxByTrip, filter, setFilter
         <h2 style={{ marginTop: 6, fontSize: 22 }}>إدارة ومتابعة جميع رحلاتك</h2>
         <p>في مكانٍ واحد — <strong style={{ color: 'var(--gd-300)' }}>{allCount}</strong> {allCount === 1 ? 'رحلة مسجّلة' : 'رحلة'}.</p>
         <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
-          <button className="btn btn-gold" onClick={onCreate} disabled={!sub}>
+          <button className="btn btn-em" onClick={onCreate} disabled={!sub}>
             <Icon name="plus" size={17} /> رحلة جديدة
           </button>
           <button className="btn btn-ghost" onClick={onShare} disabled={!sub?.slug}>
@@ -855,7 +855,7 @@ function TripCard({ trip, booked = 0, stats, onManage, onEdit, onRemove }) {
       {(onManage || onEdit || onRemove) && (
         <div className="actions-row">
           {onManage && (
-            <button className="btn btn-gold" onClick={onManage}>
+            <button className="btn btn-em" onClick={onManage}>
               <Icon name="chevron" size={16} /> إدارة الرحلة
             </button>
           )}
@@ -1035,7 +1035,7 @@ export function CustomerHome() {
                       </div>
                       <StatusTimeline status={b.status} />
                       <div className="actions-row">
-                        <button className="btn btn-gold" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
+                        <button className="btn btn-em" onClick={() => setTicketFor(b)}><Icon name="qr" size={16} /> تذكرتي</button>
                         {b.status === 'registered' && t && (() => {
                           const payable = !!(sub?.store_url || t?.price != null)
                           return (
@@ -1104,11 +1104,11 @@ function CustomerTripCard({ trip, booking, onBook, onTicket }) {
       <div className="actions-row">
         {booking ? (
           <>
-            <button className="btn btn-gold" onClick={() => onTicket(booking)}><Icon name="qr" size={16} /> تذكرتي</button>
+            <button className="btn btn-em" onClick={() => onTicket(booking)}><Icon name="qr" size={16} /> تذكرتي</button>
             <button className="icon-btn" onClick={onBook}><Icon name="edit" size={15} /> تعديل الحجز</button>
           </>
         ) : lc.bookable ? (
-          <button className="btn btn-gold" onClick={onBook}><Icon name="seat" size={16} /> احجز مقعدي</button>
+          <button className="btn btn-em" onClick={onBook}><Icon name="seat" size={16} /> احجز مقعدي</button>
         ) : (
           <span className="muted" style={{ fontSize: 13 }}><Icon name="lock" size={14} /> {lc.reason}</span>
         )}

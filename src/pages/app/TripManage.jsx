@@ -422,7 +422,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <div className="panel-head">
           <h3>المعتمرون</h3><span className="sub">({count})</span>
           <span style={{ flex: 1 }} />
-          <button className="btn btn-gold btn-sm" onClick={openAdd}><Icon name="plus" size={16} /> إضافة</button>
+          <button className="btn btn-em btn-sm" onClick={openAdd}><Icon name="plus" size={16} /> إضافة</button>
         </div>
 
         {dupIds.size > 0 && (
@@ -614,7 +614,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           <>
             <button className="btn btn-ghost" onClick={() => setProofFor(null)}>إغلاق</button>
             {proofFor?.status === 'registered' && (
-              <button className="btn btn-gold" onClick={async () => {
+              <button className="btn btn-em" onClick={async () => {
                 const { error } = await supabase.from('passengers').update({ status: 'paid' }).eq('id', proofFor.id)
                 if (error) toast(translateRpcError(error, 'تعذّر تأكيد الدفع.'), { type: 'error' })
                 else { toast('تم تأكيد الدفع', { type: 'success' }); setProofFor(null); loadPassengers() }
@@ -653,7 +653,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         open={seatMapOpen}
         onClose={() => setSeatMapOpen(false)}
         title="خريطة المقاعد"
-        actions={<button className="btn btn-gold btn-block" onClick={() => setSeatMapOpen(false)}>تم</button>}
+        actions={<button className="btn btn-em btn-block" onClick={() => setSeatMapOpen(false)}>تم</button>}
       >
         <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 8, textAlign: 'center' }}>
           عرضٌ مباشرٌ للباص — يحدّث فور إضافة معتمرٍ أو نقل مقعده.
@@ -741,7 +741,7 @@ function OffersSheet({ open, onClose, passengers, trip, sub, msg, setMsg }) {
       open={open}
       onClose={onClose}
       title="إرسال عرضٍ للمعتمرين"
-      actions={<button className="btn btn-gold btn-block" onClick={onClose}>تم</button>}
+      actions={<button className="btn btn-em btn-block" onClick={onClose}>تم</button>}
     >
       <div className="form" style={{ marginTop: 0 }}>
         <div className="field">
@@ -815,7 +815,7 @@ function RemindSheet({ open, onClose, passengers, trip, sub, onSendInApp }) {
 
   return (
     <BottomSheet open={open} onClose={onClose} title="تذكير المعتمرين بالرحلة"
-      actions={<button className="btn btn-gold btn-block" onClick={onClose}>تم</button>}>
+      actions={<button className="btn btn-em btn-block" onClick={onClose}>تم</button>}>
       <p className="muted" style={{ fontSize: 13, marginTop: -6 }}>
         ذكّر معتمري الرحلة بموعدها ومقاعدهم — عبر إشعارٍ داخل التطبيق لمن لديه حساب،
         وعبر واتساب (برسالةٍ شخصيّةٍ جاهزة) للجميع.
@@ -856,7 +856,7 @@ function RemindSheet({ open, onClose, passengers, trip, sub, onSendInApp }) {
             <div className="remind-bar" style={{ marginTop: 10 }}>
               <span style={{ width: `${Math.round((sentCount / withPhone.length) * 100)}%` }} />
             </div>
-            <button className="btn btn-gold btn-block" style={{ marginTop: 10 }} onClick={openNext} disabled={!nextPax}>
+            <button className="btn btn-em btn-block" style={{ marginTop: 10 }} onClick={openNext} disabled={!nextPax}>
               {nextPax
                 ? <><Icon name="message" size={16} /> فتح واتساب — {nextPax.full_name}</>
                 : <><Icon name="check" size={16} /> تواصلتَ مع الجميع</>}
@@ -924,7 +924,7 @@ function DuplicateTripSheet({ open, sourceId, sourceTitle, onClose, onDone }) {
       actions={
         <>
           <button className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>
-          <button className="btn btn-gold" onClick={doDuplicate} disabled={busy}>
+          <button className="btn btn-em" onClick={doDuplicate} disabled={busy}>
             {busy ? <span className="spinner" /> : <><Icon name="copy" size={16} /> استنساخ</>}
           </button>
         </>
