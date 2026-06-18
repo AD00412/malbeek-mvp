@@ -4,13 +4,12 @@
 //  جديدةٍ من نموذج الـ Landing (public_messages)، مع روابطٍ موقَّعةٍ
 //  للمرفقات. يُستدعى عبر Database Webhook (INSERT على public_messages).
 //
-//  الأمان:
-//  - يتحقّق من ترويسة x-webhook-secret لمنع الاستدعاء العشوائيّ.
-//  - SMTP credentials تبقى في أسرار الـ Edge — لا تُكشف أبدًا للعميل.
-//  انظر README.md لخطوات النشر وضبط الأسرار.
+//  v2: استُبدل denomailer بـ nodemailer (npm:) لأنّه يُنتج MIME سليمًا
+//  لـ UTF-8 + multipart — denomailer أنتج رسائلَ تُعرَض كنصٍّ raw مشفّرٍ
+//  في Gmail/Apple Mail (encoded-words غير مفكوكةٍ، quoted-printable مكسور).
 // ============================================================
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import nodemailer from 'npm:nodemailer@6.9.16'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -55,69 +54,76 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
-  // ٢) روابطٌ موقَّعةٌ للمرفقات (صلاحيّةُ ٧ أيّام) — حتّى تُفتح من البريد مباشرةً
+  // ٢) روابطٌ موقَّعةٌ للمرفقات (صلاحيّةُ ٧ أيّام)
   let attachLinks: string[] = []
   const paths: string[] = Array.isArray(rec.attachments) ? rec.attachments : []
   if (paths.length) {
     const { data: signed } = await supabase.storage
       .from('public-attachments')
       .createSignedUrls(paths, 60 * 60 * 24 * 7)
-    attachLinks = (signed ?? []).map((s) => s.signedUrl).filter(Boolean)
+    attachLinks = (signed ?? []).map((s: any) => s.signedUrl).filter(Boolean)
   }
 
-  // ٣) بناءُ الرسالة — نتجنّب الإيموجي في العنوان لتحسين التوافق مع webmail
-  //    القديم (يعرضه raw)؛ الإيموجي يبقى مرئيًّا داخل محتوى HTML.
+  // ٣) بناءُ المحتوى
   const kindAr = KIND_AR[rec.kind] ?? rec.kind ?? '—'
   const modeAr = rec.mode === 'contact' ? 'تواصل' : 'ملاحظة'
-  const subjectLine = `Malbeek | ${modeAr} - ${rec.name}`
+  const subjectLine = `ملبّيك · ${modeAr} جديدة من ${rec.name}`
 
   const attachHtml = attachLinks.length
-    ? `<p style="margin:14px 0 4px;font-weight:700">المرفقات (${attachLinks.length}):</p>
+    ? `<p style="margin:14px 0 4px;font-weight:700;color:#0a1f17">المرفقات (${attachLinks.length}):</p>
        <ul style="margin:0;padding-inline-start:18px">
-       ${attachLinks.map((u, i) => `<li><a href="${esc(u)}">مرفق ${i + 1}</a></li>`).join('')}
+       ${attachLinks.map((u, i) => `<li><a href="${esc(u)}" style="color:#059669">مرفق ${i + 1}</a></li>`).join('')}
        </ul>`
     : ''
 
-  const html = `<!doctype html><html dir="rtl" lang="ar"><body style="font-family:system-ui,Arial,sans-serif;background:#f4faf6;padding:24px">
-    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:14px;padding:24px;border:1px solid #e2e8e4">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-        <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(140deg,#34d399,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px">م</div>
-        <strong style="font-size:18px;color:#0a1f17">ملبّيك · رسالةٌ جديدة</strong>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#0a1f17">
-        <tr><td style="padding:8px 0;color:#5f7a6e;width:90px">النوع</td><td style="padding:8px 0;font-weight:600">${esc(modeAr)} · ${esc(kindAr)}</td></tr>
-        <tr><td style="padding:8px 0;color:#5f7a6e">الاسم</td><td style="padding:8px 0;font-weight:600">${esc(rec.name)}</td></tr>
-        <tr><td style="padding:8px 0;color:#5f7a6e">البريد</td><td style="padding:8px 0"><a href="mailto:${esc(rec.email)}" style="color:#059669">${esc(rec.email)}</a></td></tr>
-        ${rec.subject ? `<tr><td style="padding:8px 0;color:#5f7a6e">الموضوع</td><td style="padding:8px 0;font-weight:600">${esc(rec.subject)}</td></tr>` : ''}
-      </table>
-      <div style="margin-top:14px;padding:14px;background:#f4faf6;border-radius:10px;white-space:pre-wrap;line-height:1.8;color:#152c20">${esc(rec.body)}</div>
-      ${attachHtml}
-      <p style="margin-top:18px;font-size:12px;color:#5f7a6e">للردّ، اضغط «رد» — سيصل مباشرةً لبريد المُرسِل (${esc(rec.email)}).</p>
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f4faf6;padding:24px;color:#0a1f17">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;padding:24px;border:1px solid #e2e8e4">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div style="width:40px;height:40px;border-radius:11px;background:#059669;color:#ffffff;text-align:center;line-height:40px;font-weight:900;font-size:18px">م</div>
+      <strong style="font-size:18px;color:#0a1f17">ملبّيك · رسالةٌ جديدة</strong>
     </div>
-  </body></html>`
+    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#0a1f17">
+      <tr><td style="padding:8px 0;color:#5f7a6e;width:90px">النوع</td><td style="padding:8px 0;font-weight:600">${esc(modeAr)} · ${esc(kindAr)}</td></tr>
+      <tr><td style="padding:8px 0;color:#5f7a6e">الاسم</td><td style="padding:8px 0;font-weight:600">${esc(rec.name)}</td></tr>
+      <tr><td style="padding:8px 0;color:#5f7a6e">البريد</td><td style="padding:8px 0"><a href="mailto:${esc(rec.email)}" style="color:#059669">${esc(rec.email)}</a></td></tr>
+      ${rec.subject ? `<tr><td style="padding:8px 0;color:#5f7a6e">الموضوع</td><td style="padding:8px 0;font-weight:600">${esc(rec.subject)}</td></tr>` : ''}
+    </table>
+    <div style="margin-top:14px;padding:14px;background:#f4faf6;border-radius:10px;white-space:pre-wrap;line-height:1.8;color:#152c20;font-size:14px">${esc(rec.body)}</div>
+    ${attachHtml}
+    <p style="margin-top:18px;font-size:12px;color:#5f7a6e">للردّ، اضغط «رد» — سيصل مباشرةً لبريد المُرسِل.</p>
+  </div>
+</body></html>`
 
-  // ٤) الإرسال عبر SMTP (cPanel — SSL/TLS على المنفذ 465)
-  const client = new SMTPClient({
-    connection: {
-      hostname: SMTP_HOST,
-      port: SMTP_PORT,
-      tls: SMTP_PORT === 465,
-      auth: { username: SMTP_USER, password: SMTP_PASS },
-    },
+  // نسخةٌ نصّيّةٌ بسيطةٌ (fallback لعملاء النصّ فقط)
+  const textBody =
+    `${modeAr} · ${kindAr}\n` +
+    `الاسم: ${rec.name}\n` +
+    `البريد: ${rec.email}\n` +
+    (rec.subject ? `الموضوع: ${rec.subject}\n` : '') +
+    `\n${rec.body}\n` +
+    (attachLinks.length ? `\nالمرفقات:\n${attachLinks.map((u, i) => `${i + 1}. ${u}`).join('\n')}\n` : '')
+
+  // ٤) الإرسال عبر nodemailer — يتولّى ترميز UTF-8 وMIME تلقائيًّا
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,                  // true لـ 465 (SSL)، false لـ 587 (STARTTLS)
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
   })
 
   try {
-    await client.send({
-      from: `ملبّيك <${MAIL_FROM}>`,
+    await transporter.sendMail({
+      from: { name: 'ملبّيك', address: MAIL_FROM },
       to: MAIL_TO,
-      replyTo: `${rec.name} <${rec.email}>`,   // الردّ يذهب للمُرسِل مباشرةً
+      replyTo: { name: rec.name, address: rec.email },
       subject: subjectLine,
+      text: textBody,
       html,
-      content: `${modeAr} · ${kindAr}\nالاسم: ${rec.name}\nالبريد: ${rec.email}\n\n${rec.body}`,
     })
-    await client.close()
   } catch (e) {
-    try { await client.close() } catch (_) { /* ignore */ }
     return json(502, { error: 'smtp_failed', detail: String((e as Error)?.message ?? e) })
   }
 
