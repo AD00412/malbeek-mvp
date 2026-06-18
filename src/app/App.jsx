@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
-import RequireAuth, { homeForRole, ScreenLoader } from './RequireAuth'
+import RequireAuth, { ScreenLoader } from './RequireAuth'
 
 import Login from '../pages/auth/Login'
 import Signup from '../pages/auth/Signup'
 import CustomerJoin from '../pages/auth/CustomerJoin'
 import JoinTeam from '../pages/auth/JoinTeam'
+import Landing from '../pages/Landing'
 
 // تقسيمٌ على مستوى المسار: لوحات التحكّم (وكلّ تبعيّاتها الثقيلة) تُحمَّل عند
 // الحاجة فقط — فيبقى التحميل الأوّليّ (الدخول/التسجيل/الانضمام) خفيفًا وسريعًا.
@@ -14,13 +15,9 @@ const AdminHome      = lazy(() => import('../pages/app/Homes').then((m) => ({ de
 const SubscriberHome = lazy(() => import('../pages/app/Homes').then((m) => ({ default: m.SubscriberHome })))
 const CustomerHome   = lazy(() => import('../pages/app/Homes').then((m) => ({ default: m.CustomerHome })))
 
-// الجذر: يوجّه كل مستخدمٍ إلى لوحته، وغير المسجّل إلى الدخول
-function RootRedirect() {
-  const { session, role, loading } = useAuth()
-  if (loading) return <ScreenLoader />
-  if (session) return <Navigate to={homeForRole(role)} replace />
-  return <Navigate to="/login" replace />
-}
+// الجذر: يوجّه المسجَّل إلى لوحته. غير المسجَّل يرى صفحة الترحيب
+// (تعرض الميزات والتسجيل المجانيّ). Landing نفسها تتولّى عرض حالة التحميل
+// والـ Navigate إن صار للزائر جلسةٌ لاحقًا.
 
 export default function App() {
   const { session } = useAuth()
@@ -46,7 +43,7 @@ export default function App() {
             الترتيب مهمٌّ: الجذر أوّلًا، ثمّ slug عامّ (يبدأ بحرفٍ صغير)،
             ثمّ catch-all. الـ regex يضمن ألّا يلتقط أيّ مسارٍ نظاميٍّ أُعلِن
             أعلاه — هذه مُختارةٌ قبله. */}
-        <Route path="/" element={<RootRedirect />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/:slug" element={<CustomerJoin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
