@@ -47,34 +47,37 @@
 .icon-btn.danger:hover{color:var(--danger-ink);border-color:rgba(224,88,75,.5);background:rgba(224,88,75,.1)}
 
 /* ============================================================
-   شاشات المصادقة (Auth)
+   شاشات المصادقة (Auth) — نمطُ المرجع malbeek_2.html: بطاقةٌ مركزيّةٌ نظيفةٌ
    ============================================================ */
-.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;background:var(--bg);
-  color:var(--cr-100);font-family:var(--font-sans);direction:rtl}
-.auth-art{position:relative;overflow:hidden;padding:56px;display:flex;flex-direction:column;justify-content:space-between;
-  background:radial-gradient(760px 540px at 70% 0%,rgba(196,154,69,.18),transparent 60%)}
-.auth-art::before{content:"";position:absolute;inset:0;opacity:.04;mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
-.auth-art .ghost{position:absolute;bottom:-130px;left:-130px;width:480px;height:480px;opacity:.08}
-.auth-brand{display:flex;align-items:center;gap:12px;position:relative;z-index:2}
-.auth-brand .nm{font-family:var(--font-display);font-weight:900;font-size:28px;color:var(--cr-50)}
-.auth-art .head{position:relative;z-index:2}
-.auth-art .head h1{font-family:var(--font-display);font-weight:900;font-size:clamp(34px,4vw,54px);line-height:1.14;
-  background:var(--grad-head);-webkit-background-clip:text;background-clip:text;color:transparent}
-.auth-art .head p{color:var(--cr-200);font-weight:300;font-size:17px;margin-top:14px;max-width:430px;line-height:1.7}
-.auth-art .pts{position:relative;z-index:2;display:flex;flex-direction:column;gap:13px}
-.auth-art .pts .li{display:flex;gap:11px;align-items:center;color:var(--cr-100);font-size:14.5px}
-.auth-art .pts .li .c{width:24px;height:24px;border-radius:50%;background:rgba(196,154,69,.18);color:var(--gd-300);
-  display:grid;place-items:center;font-size:12px;flex:none}
-
-.auth-panel{display:flex;align-items:center;justify-content:center;padding:40px 28px}
-.auth-card{width:100%;max-width:430px;animation:rise-in .35s ease}
-.auth-card .ttl{font-family:var(--font-display);font-weight:900;font-size:29px;color:var(--cr-50)}
-.auth-card .desc{color:var(--cr-200);font-weight:300;font-size:14.5px;margin-top:6px}
-.auth-org{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:7px 14px;border-radius:var(--r-pill);
-  border:1px solid var(--line);background:rgba(196,154,69,.08);font-size:13px;color:var(--gd-300);font-family:var(--font-display)}
-.auth-foot{margin-top:22px;text-align:center;font-size:14px;color:var(--cr-200);font-weight:300}
-.auth-foot a{color:var(--gd-300);font-weight:600}
+.auth-page{min-height:100vh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);
+  direction:rtl;display:flex;flex-direction:column}
+.auth-topbar{display:flex;align-items:center;justify-content:space-between;
+  padding:18px clamp(16px,5vw,28px)}
+.auth-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--cr-300);transition:color .2s}
+.auth-back:hover{color:var(--cr-50)}
+.auth-container{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+.auth-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-xl);
+  padding:clamp(28px,6vw,40px) clamp(22px,5vw,32px);width:100%;max-width:440px;
+  box-shadow:var(--shadow-md);animation:rise-in .35s ease}
+.auth-logo{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:28px}
+.auth-logo-name{font-family:var(--font-display);font-weight:900;font-size:24px;color:var(--cr-50);letter-spacing:-.5px}
+.auth-title{font-family:var(--font-display);font-size:26px;font-weight:900;text-align:center;margin-bottom:6px;color:var(--cr-50)}
+.auth-sub{font-size:14px;color:var(--cr-300);text-align:center;margin-bottom:26px;font-weight:300;line-height:1.6}
+.auth-form{display:flex;flex-direction:column;gap:16px}
+.auth-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:420px){.auth-row{grid-template-columns:1fr}}
+.auth-footer-text,.auth-foot{text-align:center;font-size:13.5px;color:var(--cr-300);margin-top:20px}
+.auth-footer-text a,.auth-foot a{color:var(--em-500);font-weight:700}
+.auth-powered{text-align:center;font-size:11px;color:var(--cr-300);letter-spacing:2px;
+  text-transform:lowercase;margin-top:22px;opacity:.7}
+.checkbox-group{display:flex;align-items:center;gap:10px;flex-direction:row-reverse;justify-content:flex-end}
+.checkbox-group input{width:18px;height:18px;accent-color:var(--em-600);cursor:pointer;flex:none}
+.checkbox-group span{font-size:13px;color:var(--cr-200);cursor:pointer;line-height:1.5}
+.checkbox-group a{color:var(--em-500);font-weight:600}
+.req{color:var(--em-500)}
+/* عناوينُ المحتوى داخل بطاقة المصادقة (تُستخدم في شاشات الانضمام/الحالات) */
+.auth-card .ttl{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--cr-50);text-align:center}
+.auth-card .desc{color:var(--cr-300);font-weight:300;font-size:14px;margin-top:6px;text-align:center;line-height:1.65}
 
 /* ---- انضمام العميل: بطاقة الحملة + المزايا + الحقول الغنيّة ---- */
 .join-org{display:flex;align-items:center;gap:12px;margin-top:16px;padding:13px 15px;border-radius:var(--r-md);
@@ -140,8 +143,7 @@
 .field select{appearance:none;cursor:pointer;padding-left:38px;
   background-image:linear-gradient(45deg,transparent 50%,var(--gd-300) 50%),linear-gradient(135deg,var(--gd-300) 50%,transparent 50%);
   background-position:left 18px center,left 13px center;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
-.field select option{background:#063D2C;color:var(--cr-50)}
-.req{color:var(--gd-300)}
+.field select option{background:var(--bg-input);color:var(--cr-50)}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
 /* البحث */
@@ -615,13 +617,6 @@
   .hero h2{font-size:28px}
 }
 
-@media(min-width:820px){
-  .auth-wrap{grid-template-columns:1.05fr .95fr}
-}
-@media(max-width:820px){
-  .auth-wrap{grid-template-columns:1fr}
-  .auth-art{display:none}
-}
 @media(max-width:480px){
   .grid-2{grid-template-columns:1fr}
   .trip-card .ministats{grid-template-columns:repeat(3,1fr)}

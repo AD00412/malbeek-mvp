@@ -162,11 +162,7 @@ export default function CustomerJoin() {
   if (!authLoading && session && profile && !busy && org) {
     const sameCampaign = role === 'customer' && subscriberId === org.id
     return (
-      <AuthShell
-        heading={`حملة ${org.org_name}`}
-        blurb="أنت مسجّلٌ الدخول حاليًّا."
-        points={['كلّ دورٍ له لوحته الخاصّة', 'لا وصول لحساباتٍ أو لوحاتٍ أخرى', 'تسجيلٌ آمنٌ ومحمي']}
-      >
+      <AuthShell>
         <div className="join-state">
           <span className="join-state-ic ok"><Icon name="user" size={30} /></span>
           <h2 className="ttl">أنت مسجّلٌ الدخول بالفعل</h2>
@@ -190,7 +186,7 @@ export default function CustomerJoin() {
 
   if (notFound) {
     return (
-      <AuthShell heading="رابطٌ غير صالح" blurb="هذا الرابط غير موجودٍ أو انتهت صلاحيته." points={[]}>
+      <AuthShell>
         <div className="join-state">
           <span className="join-state-ic warn"><Icon name="location" size={30} /></span>
           <h2 className="ttl">تعذّر العثور على الحملة</h2>
@@ -206,11 +202,7 @@ export default function CustomerJoin() {
   // حالة "تأكيد البريد" — عرضٌ مخصّص بدل التنبيه النحيف
   if (info) {
     return (
-      <AuthShell
-        heading={`التسجيل مع ${org.org_name}`}
-        blurb="خطوةٌ أخيرةٌ تفصلك عن لوحتك."
-        points={['تذكرة صعودٍ بالباركود', 'حجزٌ سريعٌ دون إعادة تعبئة', 'ترى رحلات حملتك فقط']}
-      >
+      <AuthShell>
         <div className="join-success">
           <span className="join-success-ic"><Icon name="mail" size={34} /></span>
           <h2 className="ttl">تحقّق من بريدك</h2>
@@ -224,12 +216,7 @@ export default function CustomerJoin() {
   }
 
   return (
-    <AuthShell
-      heading={`التسجيل مع ${org.org_name}`}
-      blurb="أدخل بياناتك مرةً واحدة، وادخل لوحتك في أي وقتٍ لاحقًا."
-      points={['تذكرة صعودٍ بالباركود', 'حجزٌ سريعٌ دون إعادة تعبئة', 'ترى رحلات حملتك فقط']}
-    >
-      <h2 className="ttl">تسجيل معتمرٍ جديد</h2>
+    <AuthShell title="تسجيل معتمرٍ جديد" sub="أدخل بياناتك مرّةً واحدة، وادخل لوحتك في أيّ وقتٍ لاحقًا.">
 
       {/* بطاقة الحملة */}
       <div className="join-org">

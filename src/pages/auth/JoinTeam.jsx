@@ -85,7 +85,7 @@ export default function JoinTeam() {
 
   if (notFound) {
     return (
-      <AuthShell heading="دعوةٌ غير صالحة" blurb="هذا الرابط غير موجودٍ أو استُخدمت الدعوة." points={[]}>
+      <AuthShell>
         <div className="join-state">
           <span className="join-state-ic warn"><Icon name="customers" size={30} /></span>
           <h2 className="ttl">تعذّر فتح الدعوة</h2>
@@ -104,7 +104,7 @@ export default function JoinTeam() {
   if (session && user) {
     const sameEmail = (user.email || '').toLowerCase() === (invite?.email || '').toLowerCase()
     return (
-      <AuthShell heading={`فريق «${invite?.org_name || ''}»`} blurb="دعوةٌ للانضمام لإدارة الحملة." points={['وصولٌ كاملٌ للعمليّات', 'بصلاحيّاتٍ يحدّدها صاحب الحملة', 'حسابٌ آمنٌ ومحمي']}>
+      <AuthShell>
         <div className="join-state">
           <span className="join-state-ic ok"><Icon name="customers" size={30} /></span>
           <h2 className="ttl">انضمامٌ كـ«{roleAr}»</h2>
@@ -130,13 +130,7 @@ export default function JoinTeam() {
 
   // غير مسجّل: تسجيلٌ سريعٌ بالبريد المدعوّ (مقفل) ثمّ قبولٌ فوريّ
   return (
-    <AuthShell
-      heading={`انضمّ لفريق «${invite?.org_name || ''}»`}
-      blurb="أنشئ حسابك لقبول الدعوة والبدء بإدارة الحملة."
-      points={['وصولٌ كاملٌ للعمليّات', `بدور: ${roleAr}`, 'حسابٌ آمنٌ ومحمي']}
-    >
-      <h2 className="ttl">قبول الدعوة</h2>
-      <p className="desc">دعوةٌ للانضمام لفريق «{invite?.org_name}» كـ«{roleAr}».</p>
+    <AuthShell title="قبول الدعوة" sub={`دعوةٌ للانضمام لفريق «${invite?.org_name || ''}» كـ«${roleAr}».`}>
       {info ? (
         <div className="alert ok" style={{ marginTop: 8 }}>{info}</div>
       ) : (

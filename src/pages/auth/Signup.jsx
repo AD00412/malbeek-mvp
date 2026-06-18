@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
+import { suggestSlug } from '../../lib/slug'
 import AuthShell from './AuthShell'
 
 function arError(msg = '') {
@@ -12,16 +13,13 @@ function arError(msg = '') {
   return 'تعذّر إنشاء الحساب. حاول مرة أخرى.'
 }
 
-function makeSlug() {
-  return 'hamla-' + Math.random().toString(36).slice(2, 8)
-}
-
 export default function Signup() {
   const [orgName, setOrgName] = useState('')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [agreed, setAgreed] = useState(false)
   const [err, setErr] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
@@ -29,13 +27,14 @@ export default function Signup() {
   const navigate = useNavigate()
   const { refreshProfile } = useAuth()
 
-  // إنشاء سجلّ الحملة مع توليد slug فريد (إعادة المحاولة عند التعارض)
+  // إنشاء سجلّ الحملة بـ slug مشتقٍّ ذكيًّا من اسم الحملة (lib/slug)، مع
+  // إعادة المحاولة عند تعارض الفريديّة. مصدرٌ واحدٌ للحقيقة — لا تكرارَ.
   async function createSubscriber(userId) {
-    for (let i = 0; i < 4; i++) {
-      const slug = makeSlug()
+    for (let i = 0; i < 5; i++) {
+      const slug = suggestSlug(orgName) + (i === 0 ? '' : '-' + Math.random().toString(36).slice(2, 5))
       const { data, error } = await supabase
         .from('subscribers')
-        .insert({ owner_id: userId, org_name: orgName.trim(), slug, plan: 'trial' })
+        .insert({ owner_id: userId, org_name: orgName.trim(), slug: slug.slice(0, 40), plan: 'trial' })
         .select('id, slug')
         .single()
       if (!error) return data
@@ -47,6 +46,7 @@ export default function Signup() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (busy) return
+    if (!agreed) { setErr('يُرجى الموافقة على الشروط وسياسة الخصوصيّة للمتابعة.'); return }
     setErr(''); setInfo(''); setBusy(true)
 
     // 1) إنشاء حساب المصادقة (الدور = مشترك يُحفظ في بيانات المستخدم)
@@ -85,46 +85,46 @@ export default function Signup() {
 
   return (
     <AuthShell
-      heading="ابدأ تجربتك المجانية"
-      blurb="١٤ يومًا مجانًا برحلةٍ واحدة — جرّب ملبّيك كاملًا بلا بطاقة."
-      points={['تسجيل المعتمرين والكشوف', 'الباركود وتذكرة الصعود', 'رابط تسجيلٍ خاصٌّ بحملتك']}
+      title="إنشاء حساب"
+      sub="أنشئ حسابك للبدء في إدارة حملتك."
+      footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}
     >
-      <h2 className="ttl">إنشاء حساب مشترك</h2>
-      <p className="desc">سجّل حملتك وابدأ خلال دقيقة.</p>
-
-      <form className="form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit}>
         <div className="field">
-          <label>اسم الحملة / المؤسسة</label>
-          <input type="text" placeholder="مثال: دروب الإيمان للنقل" value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
-        </div>
-        <div className="field">
-          <label>اسمك الكامل</label>
+          <label>الاسم الكامل <span className="req">*</span></label>
           <input type="text" placeholder="الاسم الرباعي" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
         </div>
         <div className="field ltr">
-          <label>رقم الجوال</label>
-          <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </div>
-        <div className="field ltr">
-          <label>البريد الإلكتروني</label>
+          <label>البريد الإلكتروني <span className="req">*</span></label>
           <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
+        <div className="auth-row">
+          <div className="field">
+            <label>اسم الحملة <span className="req">*</span></label>
+            <input type="text" placeholder="مثال: دروب الإيمان" value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
+          </div>
+          <div className="field ltr">
+            <label>رقم الجوال</label>
+            <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+        </div>
         <div className="field ltr">
-          <label>كلمة المرور</label>
+          <label>كلمة المرور <span className="req">*</span></label>
           <input type="password" autoComplete="new-password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
         </div>
+
+        <label className="checkbox-group">
+          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          <span>أوافق على <Link to="/">الشروط والأحكام</Link> و<Link to="/">سياسة الخصوصيّة</Link></span>
+        </label>
 
         {err && <div className="alert err">{err}</div>}
         {info && <div className="alert ok">{info}</div>}
 
-        <button className="btn btn-gold" type="submit" disabled={busy}>
-          {busy ? <span className="spinner" /> : 'ابدأ التجربة المجانية'}
+        <button className="btn btn-em btn-block" type="submit" disabled={busy}>
+          {busy ? <span className="spinner" /> : 'إنشاء حساب'}
         </button>
       </form>
-
-      <div className="auth-foot">
-        لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link>
-      </div>
     </AuthShell>
   )
 }

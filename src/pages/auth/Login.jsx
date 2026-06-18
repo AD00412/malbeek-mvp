@@ -68,14 +68,11 @@ export default function Login() {
 
   return (
     <AuthShell
-      heading="أهلًا بعودتك"
-      blurb="سجّل دخولك للوصول إلى لوحتك — للإدارة والمشتركين والعملاء."
-      points={['لوحةٌ مخصّصةٌ لكل دور', 'وصولٌ آمنٌ ومحمي', 'بياناتك دائمًا بين يديك']}
+      title="تسجيل الدخول"
+      sub="أدخل بريدك وكلمة المرور للمتابعة."
+      footer={<>مشترك جديد؟ <Link to="/signup">ابدأ تجربتك المجانية</Link></>}
     >
-      <h2 className="ttl">تسجيل الدخول</h2>
-      <p className="desc">أدخل بريدك وكلمة المرور للمتابعة.</p>
-
-      <form className="form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit}>
         <div className="field ltr">
           <label>البريد الإلكتروني</label>
           <input
@@ -105,14 +102,10 @@ export default function Login() {
 
         {err && <div className="alert err">{err}</div>}
 
-        <button className="btn btn-gold" type="submit" disabled={busy}>
+        <button className="btn btn-em btn-block" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : 'دخول'}
         </button>
       </form>
-
-      <div className="auth-foot">
-        مشترك جديد؟ <Link to="/signup">ابدأ تجربتك المجانية</Link>
-      </div>
     </AuthShell>
   )
 }
