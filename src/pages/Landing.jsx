@@ -5,6 +5,7 @@ import { homeForRole, ScreenLoader } from '../app/RequireAuth'
 import CompassMark from '../components/CompassMark'
 import ThemeToggle from '../components/ThemeToggle'
 import Icon from '../components/Icon'
+import PublicMessageModal from '../components/PublicMessageModal'
 
 /* ============================================================
    ملبّيك — صفحةُ الترحيب
@@ -97,6 +98,7 @@ export default function Landing() {
   const { session, role, loading } = useAuth()
   const [showDoc, setShowDoc] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [msgMode, setMsgMode] = useState(null)   // 'contact' | 'feedback' | null
 
   async function copyDocNumber() {
     try {
@@ -157,7 +159,7 @@ export default function Landing() {
         <h1>كلُّ رحلتك<br/>في تطبيقٍ واحد</h1>
         <p>أدِر حملتك من التسجيل إلى التذكرة — سجِّل المعتمرين، وزّع المقاعد، أصدِر الكشوف، وامسح الباركود بسلاسةٍ تليق برحلةٍ روحانيّة</p>
         <div className="lp-cta-row">
-          <Link to="/signup" className="btn btn-gold lp-cta">
+          <Link to="/signup" className="btn btn-em lp-cta">
             <Icon name="sparkle" size={17} /> ابدأ تجربتك المجانيّة
           </Link>
           <Link to="/login" className="btn btn-ghost lp-cta-alt">تسجيل دخول</Link>
@@ -225,7 +227,7 @@ export default function Landing() {
             <div>
               <strong>الباقةُ التجريبيّة</strong>
               <p>رحلةٌ كاملةٌ بكلّ المميّزات — اختبر منصّتك مع معتمرين حقيقيّين قبل أن تقرّر</p>
-              <Link to="/signup" className="btn btn-gold btn-block">
+              <Link to="/signup" className="btn btn-em btn-block">
                 ابدأ التجربة الآن
               </Link>
             </div>
@@ -249,13 +251,13 @@ export default function Landing() {
             a="تشارك رابطًا قصيرًا مخصَّصًا لحملتك — يفتحه المعتمر، يُسجِّل بياناته مرّةً واحدةً، يختار مقعده من خريطة الباص، ويصله الباركود فورًا" />
           <FaqItem
             q="هل يمكنني إضافة موظّفين ومشرفين؟"
-            a="نعم — تستطيع دعوةَ مشرفين يديرون الرحلات، وموظّفين يمسحون التذاكر ويُسكّنون. كلُّ دورٍ بصلاحيّاتٍ منضبطةٍ ولا يرى ما لا يخصّه" />
+            a="نعم — تستطيع دعوةَ مشرفين يديرون الرحلات، وموظّفين يمسحون التذاكر ويُسكّنون، وكلُّ دورٍ بصلاحيّاتٍ منضبطةٍ ولا يرى ما لا يخصّه" />
           <FaqItem
             q="هل الكشف يحمل علامة ملبّيك؟"
             a="لا — الكشفُ الرسميُّ يصدر بشعار حملتك واسمها فقط، جاهزٌ للطباعة والتسليم للجهات الرسميّة" />
           <FaqItem
             q="ما الذي يحدث بعد انتهاء تجربتي؟"
-            a="نتواصل معك لاختيار باقةٍ تناسب حجم حملتك. لا يُحذف شيءٌ من بياناتك — تكمل من حيث توقّفت" />
+            a="نتواصل معك لاختيار باقةٍ تناسب حجم حملتك — لا يُحذف شيءٌ من بياناتك، تكمل من حيث توقّفت" />
         </div>
       </section>
 
@@ -300,8 +302,8 @@ export default function Landing() {
           </div>
           <div>
             <h5>الدعم</h5>
-            <a href={`mailto:${CONTACT.email}`}>تواصل معنا</a>
-            <a href={`mailto:${CONTACT.email}?subject=${encodeURIComponent('ملاحظاتٌ على ملبّيك')}`}>أرسل ملاحظةً</a>
+            <button type="button" className="lp-footer-link" onClick={() => setMsgMode('contact')}>تواصل معنا</button>
+            <button type="button" className="lp-footer-link" onClick={() => setMsgMode('feedback')}>أرسل ملاحظة</button>
             <a href="#faq">الأسئلة الشائعة</a>
           </div>
           <div>
@@ -334,6 +336,13 @@ export default function Landing() {
           <span className="muted" style={{ fontSize: 12 }}>v1.0 · جاهزةٌ للتجربة الأولى</span>
         </div>
       </footer>
+
+      {/* ===== مودال نموذج التواصل / الملاحظات ===== */}
+      <PublicMessageModal
+        open={!!msgMode}
+        mode={msgMode || 'contact'}
+        onClose={() => setMsgMode(null)}
+      />
 
       {/* ===== مودال بيانات وثيقة العمل الحرّ ===== */}
       {showDoc && (
