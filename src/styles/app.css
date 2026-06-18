@@ -1327,6 +1327,18 @@
 .doc-row dt{font-size:13px;color:var(--cr-300);font-weight:500;margin:0;line-height:1.5}
 .doc-row dd{font-size:13.5px;color:var(--cr-50);font-weight:500;margin:0;line-height:1.55;word-break:break-word}
 .doc-row dd b{color:var(--em-500);letter-spacing:.5px;font-weight:700}
+
+/* صفُّ رقم الوثيقة: الرقمُ + زرّ نسخٍ صغير */
+.doc-copy{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.doc-copy-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+  background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.32);
+  color:var(--em-500);border-radius:8px;cursor:pointer;font-family:var(--font-sans);
+  font-weight:600;font-size:12px;transition:.15s;flex:none}
+.doc-copy-btn:hover{background:rgba(16,185,129,.18);border-color:var(--em-600)}
+.doc-copy-btn:active{transform:scale(.96)}
+:root[data-theme="light"] .doc-copy-btn{color:var(--em-700);background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.32)}
+:root[data-theme="light"] .doc-copy-btn:hover{background:rgba(16,185,129,.14);border-color:var(--em-700)}
+
 @media(max-width:480px){
   .doc-row{grid-template-columns:1fr;gap:3px;padding:10px 12px}
   .doc-row dt{font-size:11.5px}

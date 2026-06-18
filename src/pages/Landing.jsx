@@ -22,7 +22,7 @@ const CONTACT = {
   // الرابطُ الرسميُّ يشترط دخولَ «نفاذ» — لذا نعرض البياناتِ مسبقًا في مودال
   // الـ Landing، ونُتيح زرَّ التحقّق الرسميّ كخيارٍ ثانويٍّ للزائر المتشكِّك.
   freelanceDocNumber: 'FL-879416950',
-  freelanceVerifyUrl: 'https://freelance.sa/certificate-validation/certificate-validation-nefath/FL-879416950',
+  freelanceVerifyUrl: 'https://freelance.sa/certificate-validation',
 }
 
 // بياناتُ الوثيقة الرسميّة كما تظهر في freelance.sa — تُعرض في الـ Modal للزائر
@@ -96,6 +96,23 @@ function SocialIcon({ name }) {
 export default function Landing() {
   const { session, role, loading } = useAuth()
   const [showDoc, setShowDoc] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  async function copyDocNumber() {
+    try {
+      await navigator.clipboard.writeText(FREELANCE_DOC.number)
+    } catch (_) {
+      // فشلَ الـ Clipboard API على بعض المتصفّحات/البيئات — fallback يدويّ
+      const ta = document.createElement('textarea')
+      ta.value = FREELANCE_DOC.number
+      ta.style.position = 'fixed'; ta.style.opacity = '0'
+      document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy') } catch (_) {}
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1600)
+  }
 
   // إغلاقُ المودال بمفتاح Escape + قفلُ تمرير الصفحة خلفه.
   useEffect(() => {
@@ -360,7 +377,20 @@ export default function Landing() {
               </div>
               <div className="doc-row">
                 <dt>رقم الوثيقة</dt>
-                <dd className="ltr"><b>{FREELANCE_DOC.number}</b></dd>
+                <dd className="doc-copy">
+                  <b className="ltr">{FREELANCE_DOC.number}</b>
+                  <button
+                    type="button"
+                    className="doc-copy-btn"
+                    onClick={copyDocNumber}
+                    aria-label={copied ? 'تمّ النسخ' : 'انسخ رقم الوثيقة'}
+                    title={copied ? 'تمّ النسخ' : 'انسخ رقم الوثيقة'}
+                  >
+                    {copied
+                      ? <><Icon name="check" size={14} /> تمّ النسخ</>
+                      : <><Icon name="copy" size={14} /> نسخ</>}
+                  </button>
+                </dd>
               </div>
               <div className="doc-row">
                 <dt>الاسم</dt>
@@ -377,7 +407,7 @@ export default function Landing() {
             </dl>
 
             <p className="doc-note">
-              للتحقّق الرسميّ من حالة الوثيقة، تفتح منصّةُ العمل الحرّ صفحةَ التحقّق وتطلب دخولًا بـ«نفاذ» (الهويّة الرقميّة السعوديّة) — هذا إجراءٌ من المنصّة الحكوميّة وليس منّا.
+              للتحقّق الرسميّ: انسخ رقم الوثيقة بزرّ «نسخ»، ثمّ اضغط «تحقّق رسميًّا» — تفتح صفحةُ التحقّق في منصّة العمل الحرّ، الصق الرقم في خانة الاستعلام واضغط بحث.
             </p>
 
             <div className="doc-actions">
