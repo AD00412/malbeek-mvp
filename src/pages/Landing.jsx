@@ -6,6 +6,8 @@ import CompassMark from '../components/CompassMark'
 import ThemeToggle from '../components/ThemeToggle'
 import Icon from '../components/Icon'
 import PublicMessageModal from '../components/PublicMessageModal'
+import QiblaCompass from '../components/QiblaCompass'
+import InstallCard from '../components/InstallCard'
 
 /* ============================================================
    ملبّيك — صفحةُ الترحيب
@@ -146,6 +148,7 @@ export default function Landing() {
         <nav className="lp-top-nav">
           <a href="#features">المميّزات</a>
           <a href="#how">كيف تبدأ</a>
+          <a href="#install">تثبيت</a>
           <a href="#faq">الأسئلة</a>
           <ThemeToggle />
           <Link to="/login" className="btn btn-ghost btn-sm">تسجيل دخول</Link>
@@ -157,7 +160,7 @@ export default function Landing() {
         <div className="lp-hero-mark"><CompassMark size={92} /></div>
         <span className="lp-tag">منصّةُ إدارة حملات العُمرة</span>
         <h1>كلُّ رحلتك<br/>في تطبيقٍ واحد</h1>
-        <p>أدِر حملتك من التسجيل إلى التذكرة — سجِّل المعتمرين، وزّع المقاعد، أصدِر الكشوف، وامسح الباركود بسلاسةٍ تليق برحلةٍ روحانيّة</p>
+        <p>أدِر حملتك من التسجيل إلى التذكرة بسلاسةٍ تليق برحلةٍ روحانيّة — تسجيلُ المعتمرين، توزيعُ المقاعد، إصدارُ الكشوف، ومسحُ الباركود</p>
         <div className="lp-cta-row">
           <Link to="/signup" className="btn btn-em lp-cta">
             <Icon name="sparkle" size={17} /> ابدأ تجربتك المجانيّة
@@ -168,6 +171,12 @@ export default function Landing() {
           <span><Icon name="check" size={14} /> بدون بطاقةٍ ائتمانيّة</span>
           <span><Icon name="check" size={14} /> رحلةٌ كاملةٌ مجانيّة</span>
           <span><Icon name="check" size={14} /> عربيٌّ من الجذور</span>
+        </div>
+
+        {/* بوصلةٌ حيّةٌ تشير إلى القبلة — تستجيب لحركة الجوّال */}
+        <div className="lp-hero-qibla">
+          <div className="lp-hero-qibla-lbl">بوصلةُ القبلة — حيّةٌ على جوّالك</div>
+          <QiblaCompass />
         </div>
       </section>
 
@@ -261,6 +270,11 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ===== تثبيت كتطبيقٍ على الجوّال ===== */}
+      <section className="lp-section">
+        <InstallCard />
+      </section>
+
       {/* ===== Footer ===== */}
       <footer className="lp-footer">
         <div className="lp-foot-cols">
@@ -272,8 +286,8 @@ export default function Landing() {
                 <em>mulabeek.com</em>
               </span>
             </div>
-            <p className="muted" style={{ fontSize: 13, marginTop: 10, maxWidth: 320, lineHeight: 1.75 }}>
-              منصّةٌ روحانيّةٌ هادئةٌ لإدارة حملات العُمرة — صُمِّمت بحبٍّ في المملكة العربيّة السعوديّة
+            <p className="muted" style={{ fontSize: 13, marginTop: 10, maxWidth: 320, lineHeight: 1.85, direction: 'rtl', unicodeBidi: 'embed' }}>
+              منصّةٌ روحانيّةٌ هادئةٌ لإدارة حملات العُمرة، صُمِّمت بحبٍّ في المملكة العربيّة السعوديّة.
             </p>
             <div className="lp-social">
               <a href={CONTACT.twitter} target="_blank" rel="noopener noreferrer" aria-label="X (تويتر)">
