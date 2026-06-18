@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../app/useAuth'
 import { homeForRole, ScreenLoader } from '../app/RequireAuth'
@@ -18,9 +19,22 @@ const CONTACT = {
   instagram: 'https://instagram.com/mulabeek',
   linkedin: 'https://www.linkedin.com/company/mulabeek',
   // وثيقةُ العمل الحرّ — منصّةُ العمل الحرّ السعوديّة (وزارة الموارد البشريّة).
-  // رابطُ التحقّق يفتح صفحةَ «معلومات الوثيقة» الرسميّةَ مباشرةً للزائر.
+  // الرابطُ الرسميُّ يشترط دخولَ «نفاذ» — لذا نعرض البياناتِ مسبقًا في مودال
+  // الـ Landing، ونُتيح زرَّ التحقّق الرسميّ كخيارٍ ثانويٍّ للزائر المتشكِّك.
   freelanceDocNumber: 'FL-879416950',
   freelanceVerifyUrl: 'https://freelance.sa/certificate-validation/certificate-validation-nefath/FL-879416950',
+}
+
+// بياناتُ الوثيقة الرسميّة كما تظهر في freelance.sa — تُعرض في الـ Modal للزائر
+// مباشرةً لتفادي حاجز «نفاذ» دون التضحية بالشفافيّة.
+const FREELANCE_DOC = {
+  status: 'سارية',
+  authority: 'وزارة الموارد البشريّة والتنمية الاجتماعيّة',
+  category: 'الخدمات التخصصيّة',
+  number: 'FL-879416950',
+  holder: 'أحمد خالد علي طويس مغفوري',
+  profession: 'برمجة وتطوير المواقع الإلكترونيّة',
+  issuedAt: '٢ يونيو ٢٠٢٦',
 }
 
 function Feature({ icon, title, body }) {
@@ -81,6 +95,20 @@ function SocialIcon({ name }) {
 
 export default function Landing() {
   const { session, role, loading } = useAuth()
+  const [showDoc, setShowDoc] = useState(false)
+
+  // إغلاقُ المودال بمفتاح Escape + قفلُ تمرير الصفحة خلفه.
+  useEffect(() => {
+    if (!showDoc) return
+    const onKey = (e) => { if (e.key === 'Escape') setShowDoc(false) }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [showDoc])
 
   if (loading) return <ScreenLoader />
   if (session) return <Navigate to={homeForRole(role)} replace />
@@ -269,12 +297,11 @@ export default function Landing() {
 
         {/* ===== شريطُ التوثيق — موثوقيّةٌ رسميّةٌ ===== */}
         <div className="lp-verify">
-          <a
-            href={CONTACT.freelanceVerifyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
             className="lp-verify-card"
-            title="تحقّق من وثيقة العمل الحرّ"
+            onClick={() => setShowDoc(true)}
+            title="عرضُ بيانات وثيقة العمل الحرّ"
           >
             <span className="lp-verify-ic"><Icon name="check" size={18} /></span>
             <span className="lp-verify-body">
@@ -282,7 +309,7 @@ export default function Landing() {
               <span className="lp-verify-no">رقم الوثيقة: <b className="ltr">{CONTACT.freelanceDocNumber}</b></span>
             </span>
             <Icon name="external" size={14} />
-          </a>
+          </button>
         </div>
 
         <div className="lp-foot-line">
@@ -290,6 +317,87 @@ export default function Landing() {
           <span className="muted" style={{ fontSize: 12 }}>v1.0 · جاهزةٌ للتجربة الأولى</span>
         </div>
       </footer>
+
+      {/* ===== مودال بيانات وثيقة العمل الحرّ ===== */}
+      {showDoc && (
+        <div
+          className="doc-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="doc-modal-title"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDoc(false) }}
+        >
+          <div className="doc-modal">
+            <div className="doc-modal-head">
+              <div className="doc-modal-badge">
+                <Icon name="check" size={20} />
+              </div>
+              <div>
+                <h3 id="doc-modal-title">وثيقةُ العمل الحرّ</h3>
+                <span className="doc-modal-sub">منصّة العمل الحرّ السعوديّة</span>
+              </div>
+              <button
+                type="button"
+                className="doc-modal-close"
+                onClick={() => setShowDoc(false)}
+                aria-label="إغلاق"
+              >×</button>
+            </div>
+
+            <div className="doc-status">
+              <span className="doc-status-dot" aria-hidden="true" />
+              {FREELANCE_DOC.status}
+            </div>
+
+            <dl className="doc-fields">
+              <div className="doc-row">
+                <dt>الجهة الإشرافيّة</dt>
+                <dd>{FREELANCE_DOC.authority}</dd>
+              </div>
+              <div className="doc-row">
+                <dt>الفئة</dt>
+                <dd>{FREELANCE_DOC.category}</dd>
+              </div>
+              <div className="doc-row">
+                <dt>رقم الوثيقة</dt>
+                <dd className="ltr"><b>{FREELANCE_DOC.number}</b></dd>
+              </div>
+              <div className="doc-row">
+                <dt>الاسم</dt>
+                <dd>{FREELANCE_DOC.holder}</dd>
+              </div>
+              <div className="doc-row">
+                <dt>المهنة</dt>
+                <dd>{FREELANCE_DOC.profession}</dd>
+              </div>
+              <div className="doc-row">
+                <dt>تاريخ الإصدار</dt>
+                <dd>{FREELANCE_DOC.issuedAt}</dd>
+              </div>
+            </dl>
+
+            <p className="doc-note">
+              للتحقّق الرسميّ من حالة الوثيقة، تفتح منصّةُ العمل الحرّ صفحةَ التحقّق وتطلب دخولًا بـ«نفاذ» (الهويّة الرقميّة السعوديّة) — هذا إجراءٌ من المنصّة الحكوميّة وليس منّا.
+            </p>
+
+            <div className="doc-actions">
+              <a
+                href={CONTACT.freelanceVerifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-em btn-block"
+              >
+                <Icon name="external" size={15} /> تحقّق رسميًّا في freelance.sa
+              </a>
+              <button
+                type="button"
+                className="btn btn-ghost btn-block"
+                onClick={() => setShowDoc(false)}
+              >إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
