@@ -41,6 +41,44 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t))
 }
 
+/* ★ تنظيفُ promises المصادقة الزومبيّة:
+   اكتشفنا من سجلّ المستخدم أنّ supabase.auth._refreshTokenPromise قد يَبقى
+   معلَّقًا أبديًّا بعد تعليق iOS. كلُّ استعلامٍ لاحقٍ يَنتظر getSession()
+   الذي يَنتظر هذا الـpromise — فلا تَصل الاستعلامات لمرحلة fetch أبدًا.
+   نُجبر إزالةَ هذه الـpromises عند العودة من الخلفيّة. */
+function clearStaleAuthPromises() {
+  try {
+    const auth = supabase?.auth
+    if (!auth) return
+    // أسماءُ الـinternals تختلف بين نسخ supabase-js — نُجرّب الكلّ
+    const promiseKeys = [
+      '_refreshTokenPromise',
+      '_refreshSessionPromise',
+      '_initializePromise',
+      '_pendingInFlightRefresh',
+    ]
+    let cleared = 0
+    for (const key of promiseKeys) {
+      if (auth[key] !== undefined && auth[key] !== null) {
+        auth[key] = null
+        cleared++
+      }
+    }
+    // ألغِ مؤقّتاتٍ مجدوَلةٍ لتحديث التوكِن
+    const timerKeys = ['_refreshTokenTimer', '_visibilityChangedCallback']
+    for (const key of timerKeys) {
+      if (auth[key]) {
+        try { clearTimeout(auth[key]) } catch { /* ignore */ }
+      }
+    }
+    if (cleared > 0) {
+      logEvent('AUTH', `cleared ${cleared} stale auth promises`)
+    }
+  } catch (e) {
+    logEvent('AUTH', 'clearStaleAuthPromises failed', { message: e?.message })
+  }
+}
+
 /* ★ تَدفئةُ الاتّصال (warmup): فورَ عودةِ التطبيق من الخلفيّة، نُطلق
    طلبًا قصيرًا (HEAD) عبر window.fetch الخامّ — لا عبر supabase-js.
    لو الـTCP socket كان زومبيًّا (iOS أوقفه أثناء الإخفاء)، AbortController
@@ -138,8 +176,13 @@ export function installWakeListeners() {
   const onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') hiddenAt = Date.now()
     else if (document.visibilityState === 'visible') {
-      // ★ تَدفئةٌ فوريّةٌ: تُجهض الـsocket الزومبي قبل أن يُمسَّ.
-      if (hiddenAt > 0) warmupConnection()
+      // ★ تنظيفُ promises المصادقة الزومبيّة فورًا — قبل أيِّ شيءٍ آخر.
+      //   هذا يُعيد قابليّةَ supabase-js للاستجابة قبل أن يُحاول
+      //   المكوّن إطلاقَ أوّل استعلامٍ بعد العودة.
+      if (hiddenAt > 0) {
+        clearStaleAuthPromises()
+        warmupConnection()
+      }
       onReturn('visible')
     }
   }
