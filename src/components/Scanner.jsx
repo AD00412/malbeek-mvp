@@ -76,14 +76,28 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
   useEffect(() => { handlerRef.current = handleCode }, [handleCode])
 
   /* تشغيل الكاميرا + كشف QR — يحاول BarcodeDetector الأصليّ أوّلًا (الأسرع على Chrome/Android)،
-     ويتحوّل إلى jsQR + Canvas على iPhone Safari (يحلّ غياب BarcodeDetector). */
+     ويتحوّل إلى jsQR + Canvas على iPhone Safari (يحلّ غياب BarcodeDetector).
+
+     ★ إيقافٌ كاملٌ عند background ثمّ استئنافٌ تلقائيٌّ عند العودة:
+       يحمي iOS من تجمّدٍ سببُه استمرارُ تيار الكاميرا بعد التعليق،
+       ويُخفّض استهلاكَ البطاريّة عندَ التبديلِ السريعِ بين التطبيقات. */
   useEffect(() => {
     let stopped = false
     let stream = null
     let rafId = 0
     let timer = null
+    let visListener = null
 
-    ;(async () => {
+    function stopAll() {
+      if (timer) { clearInterval(timer); timer = null }
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0 }
+      try { stream?.getTracks().forEach((t) => t.stop()) } catch (_) {}
+      stream = null
+      try { if (videoRef.current) videoRef.current.srcObject = null } catch (_) {}
+    }
+
+    async function startCamera() {
+      if (stopped || stream) return
       try {
         // اطلب الكاميرا الخلفيّة (environment) — مهمٌّ على الجوال.
         stream = await navigator.mediaDevices.getUserMedia({
@@ -109,7 +123,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         if (useNative) {
           const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
           timer = setInterval(async () => {
-            if (stopped || !videoRef.current) return
+            if (stopped || document.visibilityState !== 'visible' || !videoRef.current) return
             try {
               const codes = await detector.detect(videoRef.current)
               if (codes && codes.length) handlerRef.current(codes[0].rawValue)
@@ -119,25 +133,24 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         }
 
         // الطريق ٢ (iPhone Safari + احتياط): jsQR على canvas مخفيّة.
-        // نحمّلها كسولًا فلا نُضخّم الحزمة الأوّليّة.
         const { default: jsQR } = await import('jsqr')
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d', { willReadFrequently: true })
-        // معدّل المسح: ~4 إطار/ث (يكفي للكشف، ويحفظ البطارية).
-        const SCAN_W = 480     // نخفض الأبعاد للسرعة — لا حاجة لدقّةٍ كاملة.
+        const SCAN_W = 480
         let lastTick = 0
         const TICK_MS = 250
 
         function tick(ts) {
           if (stopped) return
           rafId = requestAnimationFrame(tick)
+          // وفّر الموارد عند backgrounding — لا حاجة لمسحٍ لإطارٍ غير مرئيّ
+          if (document.visibilityState !== 'visible') return
           if (!videoRef.current || videoRef.current.readyState !== 4) return
           if (ts - lastTick < TICK_MS) return
           lastTick = ts
           const vw = videoRef.current.videoWidth
           const vh = videoRef.current.videoHeight
           if (!vw || !vh) return
-          // اقتصاص نسبيٍّ مع تصغيرٍ موحَّد لتسريع jsQR.
           const ratio = SCAN_W / vw
           canvas.width = SCAN_W
           canvas.height = Math.max(120, Math.round(vh * ratio))
@@ -159,13 +172,25 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
           setCamError('تعذّر تشغيل الكاميرا — استخدم الإدخال اليدويّ بالأسفل.')
         }
       }
-    })()
+    }
+
+    // إيقاف/استئنافٌ تلقائيٌّ مع تبديل الرؤية (يمنع التجمّد على iOS)
+    visListener = () => {
+      if (stopped) return
+      if (document.visibilityState === 'visible') {
+        if (!stream) { setStarting(true); startCamera() }
+      } else {
+        stopAll()
+      }
+    }
+    document.addEventListener('visibilitychange', visListener)
+
+    startCamera()
 
     return () => {
       stopped = true
-      if (timer) clearInterval(timer)
-      if (rafId) cancelAnimationFrame(rafId)
-      try { stream?.getTracks().forEach((t) => t.stop()) } catch (_) {}
+      if (visListener) document.removeEventListener('visibilitychange', visListener)
+      stopAll()
     }
   }, [])
 

@@ -436,6 +436,11 @@ export function SubscriberHome() {
 
   useEffect(() => { load() }, [load])
 
+  // Prefetch لحزمة TripManage فور تحميل الرحلات — أوّلُ نقرةٍ تكون فوريّةً.
+  useEffect(() => {
+    if (trips.length > 0) { import('./TripManage').catch(() => {}) }
+  }, [trips.length])
+
   // Realtime للمشترك: رحلات/ركّاب/حملةٌ معدَّلة (ترقية الباقة، ردّ الإدارة على ملاحظاتي)
   useRealtime('subscriber-home', sub?.id ? [
     { table: 'passengers', filter: `subscriber_id=eq.${sub.id}` },
