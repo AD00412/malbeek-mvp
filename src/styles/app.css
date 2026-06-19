@@ -835,6 +835,26 @@
 .ticket .tk-foot{text-align:center;font-size:12px;color:#5a6b62;padding:6px 18px 18px}
 
 /* ============================================================
+   بطاقةُ إعادة التحميل (ReloadOverlay)
+   ============================================================ */
+.reload-overlay{position:fixed;inset:0;z-index:9999;background:rgba(4,18,13,.72);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  animation:reload-fade 180ms ease-out}
+.reload-card{background:var(--bg-1);border:1px solid var(--cr-700);border-radius:var(--r-lg);
+  padding:24px 22px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.reload-card .reload-ic{width:60px;height:60px;border-radius:50%;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(43,182,140,.12);color:var(--em-300);
+  animation:reload-spin 1.6s linear infinite}
+.reload-card .reload-title{font-family:var(--font-display);font-size:19px;font-weight:800;color:var(--cr-50);margin:0 0 8px}
+.reload-card .reload-msg{font-size:14px;color:var(--cr-200);line-height:1.6;margin:0 0 18px}
+.reload-card .reload-actions{display:flex;flex-direction:column;gap:8px}
+.reload-card .reload-actions .btn{justify-content:center}
+@keyframes reload-fade{from{opacity:0}to{opacity:1}}
+@keyframes reload-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* ============================================================
    الماسح الحي (Scanner)
    ============================================================ */
 .scanner-overlay{position:fixed;inset:0;z-index:200;background:#04120d;display:flex;flex-direction:column;color:var(--cr-100)}
