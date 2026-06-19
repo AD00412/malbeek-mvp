@@ -58,10 +58,10 @@ function patchAuthGetSession() {
       try {
         return await Promise.race([
           origGetSession(...args),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('getSession-timeout')), 3000)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('getSession-timeout')), 1500)),
         ])
       } catch (e) {
-        logEvent('AUTH', 'getSession hung 3s — using cached', { message: e?.message })
+        logEvent('AUTH', 'getSession hung 1.5s — using cached', { message: e?.message })
         // fallback من localStorage (نَستعمل storageKey نفسه في supabaseClient)
         try {
           const stored = localStorage.getItem('malbeek.auth')
@@ -76,7 +76,7 @@ function patchAuthGetSession() {
         return { data: { session: null }, error: { message: 'getSession timeout' } }
       }
     }
-    logEvent('AUTH', 'getSession patched with 3s timeout + cached fallback')
+    logEvent('AUTH', 'getSession patched with 1.5s timeout + cached fallback')
   } catch (e) {
     logEvent('AUTH', 'patch failed', { message: e?.message })
   }
