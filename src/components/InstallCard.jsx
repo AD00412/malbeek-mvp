@@ -66,7 +66,7 @@ export default function InstallCard() {
       <section className="install-card install-installed" id="install">
         <div className="install-installed-ic"><Icon name="check" size={32} /></div>
         <h2>ملبّيك مثبّتٌ ✓</h2>
-        <p>تطبيقُ ملبّيك على شاشتك الرئيسيّة — افتحه مباشرةً من هناك بشاشةٍ كاملةٍ</p>
+        <p>تطبيقُ ملبّيك على شاشتك الرئيسيّة، افتحه مباشرةً من هناك بشاشةٍ كاملةٍ.</p>
       </section>
     )
   }
@@ -132,7 +132,7 @@ export default function InstallCard() {
                 <span className="install-num">١</span>
                 <div className="install-step-body">
                   <div className="install-step-title">افتح في Safari</div>
-                  <div className="install-step-desc">من iPhone أو iPad — التثبيت مدعومٌ في Safari فقط على iOS</div>
+                  <div className="install-step-desc">من iPhone أو iPad، فالتثبيت مدعومٌ في Safari فقط على iOS</div>
                 </div>
                 <span className="install-step-ic"><Icon name="external" size={18} /></span>
               </li>
@@ -152,7 +152,7 @@ export default function InstallCard() {
                 <span className="install-num">٣</span>
                 <div className="install-step-body">
                   <div className="install-step-title">اختر «إضافة إلى الشاشة الرئيسيّة»</div>
-                  <div className="install-step-desc">Add to Home Screen — أيقونةُ + المربّعة</div>
+                  <div className="install-step-desc">«Add to Home Screen» بأيقونة + المربّعة</div>
                 </div>
                 <span className="install-step-ic"><Icon name="plus" size={18} /></span>
               </li>
@@ -160,7 +160,7 @@ export default function InstallCard() {
                 <span className="install-num">٤</span>
                 <div className="install-step-body">
                   <div className="install-step-title">اضغط «إضافة»</div>
-                  <div className="install-step-desc">يظهر رمزُ ملبّيك على شاشتك الرئيسيّة — افتحه كأيّ تطبيقٍ</div>
+                  <div className="install-step-desc">يظهر رمزُ ملبّيك على شاشتك الرئيسيّة، افتحه كأيّ تطبيقٍ</div>
                 </div>
                 <span className="install-step-ic ok"><Icon name="check" size={18} /></span>
               </li>
@@ -191,7 +191,7 @@ export default function InstallCard() {
                 <span className="install-num">٣</span>
                 <div className="install-step-body">
                   <div className="install-step-title">اختر «تثبيت التطبيق»</div>
-                  <div className="install-step-desc">Install app — أو «إضافة إلى الشاشة الرئيسيّة»</div>
+                  <div className="install-step-desc">«Install app» أو «إضافة إلى الشاشة الرئيسيّة»</div>
                 </div>
                 <span className="install-step-ic"><Icon name="download" size={18} /></span>
               </li>
