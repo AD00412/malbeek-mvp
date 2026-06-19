@@ -758,6 +758,10 @@
 .mf-table tbody td{padding:2mm 1.5mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
   background:#fff;line-height:1.3;vertical-align:middle}
 .mf-table tbody tr:nth-child(even) td{background:#f6faf8}
+/* صفوفٌ فارغةٌ — جاهزةٌ للإضافةِ اليدويّةِ على Word أو بالقلم */
+.mf-table tbody tr.mf-row-empty td{background:#fff;color:#cdd8d2}
+.mf-table tbody tr.mf-row-empty:nth-child(even) td{background:#fbfdfc}
+.mf-table tbody tr.mf-row-empty .mf-num{color:#9aa89f;font-weight:500}
 .mf-name{text-align:right !important;font-weight:600;padding-inline:2.5mm !important}
 .mf-num{font-weight:700;font-variant-numeric:tabular-nums}
 .ltr{direction:ltr}
@@ -1197,15 +1201,15 @@ body.fab-interacting *{
     inset:auto !important;z-index:auto !important}
   .manifest-toolbar,.no-print{display:none !important}
 
-  /* الورقةُ تأخذُ عرضَ صفحةِ المحتوى من @page تلقائيًّا — لا قياسَ يدويّ.
-     min-height:0 يسمحُ بمحتوًى قصيرٍ دون فرضِ صفحةٍ فارغةٍ كاملةٍ. */
+  /* كلُّ <article class="mf-sheet"> = صفحةٌ A4 واحدةٌ كاملةٌ بترويسةٍ
+     وتذييلٍ مستقلّين. ‎page-break-inside:avoid‎ يمنعُ تقسيمَها بين صفحتَين. */
   .mf-sheet{position:static !important;
     width:auto !important;max-width:none !important;min-height:0 !important;
     margin:0 !important;padding:0 !important;
     box-shadow:none !important;border-radius:0 !important;
     page-break-after:always !important;break-after:page !important;
-    page-break-inside:auto !important;break-inside:auto !important;
-    display:block !important;background:#fff !important}
+    page-break-inside:avoid !important;break-inside:avoid !important;
+    display:flex !important;flex-direction:column !important;background:#fff !important}
   .mf-sheet:last-child{page-break-after:auto !important;break-after:auto !important}
   .mf-sheet:not(:first-child){page-break-before:always !important;break-before:page !important}
 
