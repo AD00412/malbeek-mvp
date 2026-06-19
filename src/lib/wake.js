@@ -41,41 +41,44 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t))
 }
 
-/* ★ تنظيفُ promises المصادقة الزومبيّة:
-   اكتشفنا من سجلّ المستخدم أنّ supabase.auth._refreshTokenPromise قد يَبقى
-   معلَّقًا أبديًّا بعد تعليق iOS. كلُّ استعلامٍ لاحقٍ يَنتظر getSession()
-   الذي يَنتظر هذا الـpromise — فلا تَصل الاستعلامات لمرحلة fetch أبدًا.
-   نُجبر إزالةَ هذه الـpromises عند العودة من الخلفيّة. */
-function clearStaleAuthPromises() {
+/* ★ Monkey-patch لـsupabase.auth.getSession مع مهلة ٣ث + fallback من localStorage.
+   اكتشفنا من سجلّ المستخدم أنّ getSession() يَعلِق إلى الأبد بعد عودة iOS
+   (لأنّ supabase-js v2 يَنتظر promise refresh معلَّقًا داخليًّا).
+   الحلُّ: race مع ٣ث؛ لو هَنغت نَرجع الجلسة المُخزَّنة محلّيًّا — التوكِنُ
+   صالحٌ عادةً لـ٦٠ دقيقة فلا حاجة لـ refresh. */
+function patchAuthGetSession() {
+  if (typeof window === 'undefined' || window.__malbeekAuthPatched) return
+  window.__malbeekAuthPatched = true
   try {
     const auth = supabase?.auth
-    if (!auth) return
-    // أسماءُ الـinternals تختلف بين نسخ supabase-js — نُجرّب الكلّ
-    const promiseKeys = [
-      '_refreshTokenPromise',
-      '_refreshSessionPromise',
-      '_initializePromise',
-      '_pendingInFlightRefresh',
-    ]
-    let cleared = 0
-    for (const key of promiseKeys) {
-      if (auth[key] !== undefined && auth[key] !== null) {
-        auth[key] = null
-        cleared++
+    if (!auth?.getSession) return
+    const origGetSession = auth.getSession.bind(auth)
+
+    auth.getSession = async function timedGetSession(...args) {
+      try {
+        return await Promise.race([
+          origGetSession(...args),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('getSession-timeout')), 3000)),
+        ])
+      } catch (e) {
+        logEvent('AUTH', 'getSession hung 3s — using cached', { message: e?.message })
+        // fallback من localStorage (نَستعمل storageKey نفسه في supabaseClient)
+        try {
+          const stored = localStorage.getItem('malbeek.auth')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            const session = parsed?.currentSession || parsed?.session || parsed
+            if (session?.access_token) {
+              return { data: { session }, error: null }
+            }
+          }
+        } catch { /* ignore */ }
+        return { data: { session: null }, error: { message: 'getSession timeout' } }
       }
     }
-    // ألغِ مؤقّتاتٍ مجدوَلةٍ لتحديث التوكِن
-    const timerKeys = ['_refreshTokenTimer', '_visibilityChangedCallback']
-    for (const key of timerKeys) {
-      if (auth[key]) {
-        try { clearTimeout(auth[key]) } catch { /* ignore */ }
-      }
-    }
-    if (cleared > 0) {
-      logEvent('AUTH', `cleared ${cleared} stale auth promises`)
-    }
+    logEvent('AUTH', 'getSession patched with 3s timeout + cached fallback')
   } catch (e) {
-    logEvent('AUTH', 'clearStaleAuthPromises failed', { message: e?.message })
+    logEvent('AUTH', 'patch failed', { message: e?.message })
   }
 }
 
@@ -161,6 +164,9 @@ export function installWakeListeners() {
   if (typeof window === 'undefined' || installed) return () => {}
   installed = true
 
+  // ثبّت patch المصادقة فورًا — يَحمي كلَّ استعلامٍ مستقبليّ
+  patchAuthGetSession()
+
   const onReturn = (reason) => {
     const gap = hiddenAt ? Date.now() - hiddenAt : 0
     hiddenAt = 0
@@ -176,13 +182,9 @@ export function installWakeListeners() {
   const onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') hiddenAt = Date.now()
     else if (document.visibilityState === 'visible') {
-      // ★ تنظيفُ promises المصادقة الزومبيّة فورًا — قبل أيِّ شيءٍ آخر.
-      //   هذا يُعيد قابليّةَ supabase-js للاستجابة قبل أن يُحاول
-      //   المكوّن إطلاقَ أوّل استعلامٍ بعد العودة.
-      if (hiddenAt > 0) {
-        clearStaleAuthPromises()
-        warmupConnection()
-      }
+      // ★ تَدفئةُ TCP socket — تُجهض الزومبي قبل أن يُمسَّ.
+      //   patchAuthGetSession سبقَ تثبيتُه ويَحمي getSession من الهَنغ تلقائيًّا.
+      if (hiddenAt > 0) warmupConnection()
       onReturn('visible')
     }
   }
