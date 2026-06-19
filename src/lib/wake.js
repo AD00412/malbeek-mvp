@@ -30,9 +30,13 @@ import { supabase } from './supabaseClient'
 
 const WAKE_EVENT = 'malbeek:wake'
 const THROTTLE_MS = 2000
-const LONG_SUSPEND_MS = 90_000   // فجوةٌ تُوجِبُ إعادةَ تحميلٍ كاملةً
+// ★ أقلَّ خفّض من ٩٠ث إلى ٣٠ث — iOS يُعلِّق الـWebView بسرعة، وأيُّ HTTP request
+//   يُنشأ بعد تعليقٍ أطول من ذلك يَكاد دائمًا يَعْلَق بلا اكتمال.
+const LONG_SUSPEND_MS = 30_000
 const HEARTBEAT_MS = 1000        // دقّةُ كاشف التعليق
 const REFRESH_TIMEOUT_MS = 5000  // أقصى مهلةٍ لـ refreshSession فلا يَعلق
+// ★ تجَسُّسٌ على fetch — إن عَلِق طلبٌ لـSupabase > ١٥ث، نُعيد التحميل
+const FETCH_HANG_MS = 15_000
 let lastWakeAt = 0
 let lastTickAt = Date.now()
 let installed = false
@@ -112,6 +116,34 @@ function maybeReloadAfterLongSuspend() {
   return false
 }
 
+/* ★ تجَسُّسُ fetch: يَعمل فقط في نافذة ٦٠ث بعد آخرِ wake — لو فيها طلبٌ لـREST
+   عَلِق > ١٥ث، فالـHTTP client زومبي بسبب تعليق iOS → إعادةُ تحميل.
+   يَستثني storage (رفعُ صورٍ مشروعٌ أن يطول). يَستثني realtime/auth (لها مسارها). */
+const WAKE_FETCH_WINDOW_MS = 60_000
+function installFetchHangWatcher() {
+  if (typeof window === 'undefined' || window.__malbeekFetchWatched) return
+  window.__malbeekFetchWatched = true
+  const origFetch = window.fetch
+  if (!origFetch) return
+  window.fetch = function malbeekTracedFetch(input, init) {
+    const url = typeof input === 'string' ? input : (input?.url || '')
+    const isSb = url.includes('supabase.co') || url.includes('supabase.io')
+    const isRestOrRpc = isSb && (url.includes('/rest/v1/') || url.includes('/auth/v1/token'))
+    const withinWakeWindow = (Date.now() - lastWakeAt) < WAKE_FETCH_WINDOW_MS
+    if (!isRestOrRpc || !withinWakeWindow) return origFetch.call(this, input, init)
+    let done = false
+    const timer = setTimeout(() => {
+      if (done) return
+      // الطلبُ عَلِق > ١٥ث بعد إيقاظٍ مباشر — تعليقٌ زومبي
+      // eslint-disable-next-line no-console
+      if (typeof console !== 'undefined') console.warn('[wake] fetch hang detected, forcing reload:', url)
+      try { sessionStorage.setItem('malbeek:reloaded-at', String(Date.now())) } catch { /* ignore */ }
+      try { window.location.reload() } catch { /* ignore */ }
+    }, FETCH_HANG_MS)
+    return origFetch.call(this, input, init).finally(() => { done = true; clearTimeout(timer) })
+  }
+}
+
 /**
  * تثبيتُ مستمعي النظام على نافذة التطبيق (يُستدعى مرّةً من AuthProvider).
  * يرجع دالّةَ تنظيفٍ لإزالة المستمعين عند تفكيك التطبيق.
@@ -120,6 +152,7 @@ export function installWakeListeners() {
   if (typeof window === 'undefined' || installed) return () => {}
   installed = true
   lastTickAt = Date.now()
+  installFetchHangWatcher()
 
   // نبضةٌ خفيفةٌ تحدّث ساعةَ "آخر تنفيذ JS". إن توقّفت أكثر من LONG_SUSPEND_MS
   // فقد كان الـ WebView معلَّقًا — نُعِيدُ التحميلَ عند العودة.
