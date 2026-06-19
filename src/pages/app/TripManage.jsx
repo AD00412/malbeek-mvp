@@ -359,11 +359,16 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
         <div className="stat warn"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>الإشغال</div><div className="v">{pct}%</div></div>
       </div>
 
-      {price != null && (
+      {(price != null || paid > 0) && (
         <div className="stats" style={{ marginTop: 12 }}>
           <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>المحصّل</div><div className="v" style={{ fontSize: 22 }}>{money(collected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
-          <div className="stat warn"><div className="top"><span className="ic"><Icon name="chart" size={15} /></span>المتوقّع</div><div className="v" style={{ fontSize: 22 }}>{money(expected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
-          <div className="stat"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>سعر المقعد</div><div className="v" style={{ fontSize: 22 }}>{money(price)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
+          <div className="stat warn"><div className="top"><span className="ic"><Icon name="chart" size={15} /></span>المتوقّع</div><div className="v" style={{ fontSize: 22 }}>{expected != null ? <>{money(expected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></> : <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>—</span>}</div></div>
+          <div className="stat"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>سعر المقعد</div><div className="v" style={{ fontSize: 22 }}>{price != null ? <>{money(price)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></> : <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>غير محدّد</span>}</div></div>
+        </div>
+      )}
+      {price == null && paid > 0 && (
+        <div className="alert warn" style={{ marginTop: 10, fontSize: 13 }}>
+          <Icon name="bell" size={14} /> سعرُ المقعد غير محدّدٍ — حرّر الرحلةَ من الصفحة الرئيسيّة لإظهار «المحصّل» و«المتوقّع» بدقّة.
         </div>
       )}
 
@@ -509,7 +514,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
                     )}
                     {p.paid_at && (p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in') && (
                       <><span>·</span><span style={{ color: 'var(--ok-ink)' }}>
-                        {p.amount != null ? `${Number(p.amount).toLocaleString('en-US')}﷼ ` : ''}
+                        {p.amount != null
+                          ? `${Number(p.amount).toLocaleString('en-US')}﷼ `
+                          : price != null ? `${money(price)}﷼ ` : ''}
                         {p.payment_provider ? 'مؤكّد آليًّا' : 'مؤكّد'}
                       </span></>
                     )}
