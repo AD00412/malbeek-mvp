@@ -765,7 +765,7 @@
 .mf-name{text-align:right !important;font-weight:600;padding-inline:3mm !important}
 .mf-num{font-weight:700;font-variant-numeric:tabular-nums}
 .ltr{direction:ltr}
-.mf-notes{min-width:34mm}    /* عمودُ الملاحظاتِ بمساحةٍ للكتابة اليدويّة */
+/* عمودُ الملاحظات يحترمُ النسبةَ المئويّة في colgroup — لا min-width قسريّ */
 .mf-empty{padding:8mm;color:#7a8a82;font-style:italic;text-align:center !important}
 
 /* التذييل — ملاحظةٌ + ختمٌ */
@@ -1187,40 +1187,67 @@ body.fab-interacting *{
 
 /* ---------- الطباعة: يُظهر الكشف/التذكرة فقط ---------- */
 @media print{
-  /* A4 محسوبٌ بدقّةٍ مع هوامشَ متّسقةٍ */
-  @page{size:A4 portrait;margin:0}
+  /* الهوامشُ تأتي من @page (سلوكُ Word الصحيح). لا padding على الورقة. */
+  @page{size:A4 portrait;margin:14mm 12mm}
 
-  body{background:#fff;color:#0b1a14}
+  /* تهيئةُ الجذر — مهمٌّ لإلغاءِ ارتفاعِ 100dvh ودخولِ التطبيق */
+  html,body{background:#fff !important;color:#0b1a14 !important;
+    margin:0 !important;padding:0 !important;height:auto !important;
+    min-height:0 !important;overflow:visible !important;
+    -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
   body *{visibility:hidden !important}
   .mf-sheet,.mf-sheet *,.ticket,.ticket *{visibility:visible !important}
-  /* الواجهةُ التفاعليّةُ تختفي تمامًا أثناء الطباعة */
-  .manifest-overlay{position:static;background:#fff;display:block !important}
+
+  /* تفكيكُ الـ overlay/scroll — لا نريد layout مكدّسًا فوقَ بعضِه */
+  .manifest-overlay,.manifest-scroll{
+    position:static !important;background:#fff !important;
+    overflow:visible !important;display:block !important;
+    padding:0 !important;margin:0 !important;gap:0 !important;
+    width:auto !important;height:auto !important;
+    inset:auto !important;z-index:auto !important}
   .manifest-toolbar,.no-print{display:none !important}
-  .manifest-scroll{overflow:visible !important;padding:0 !important;display:block !important;gap:0 !important;background:#fff}
 
-  /* كلُّ ورقةٍ تشغلُ مساحةَ A4 كاملةً بدون ظلٍّ ولا تأطير */
+  /* الورقةُ تأخذُ عرضَ صفحةِ المحتوى من @page تلقائيًّا — لا قياسَ يدويّ.
+     min-height:0 يسمحُ بمحتوًى قصيرٍ دون فرضِ صفحةٍ فارغةٍ كاملةٍ. */
   .mf-sheet{position:static !important;
-    width:210mm !important;min-height:297mm !important;max-width:none !important;
-    margin:0 !important;padding:14mm 12mm !important;
+    width:auto !important;max-width:none !important;min-height:0 !important;
+    margin:0 !important;padding:0 !important;
     box-shadow:none !important;border-radius:0 !important;
-    page-break-after:always;break-after:page;
-    page-break-inside:avoid;break-inside:avoid}
-  .mf-sheet:last-child{page-break-after:auto;break-after:auto}
+    page-break-after:always !important;break-after:page !important;
+    page-break-inside:auto !important;break-inside:auto !important;
+    display:block !important;background:#fff !important}
+  .mf-sheet:last-child{page-break-after:auto !important;break-after:auto !important}
+  .mf-sheet:not(:first-child){page-break-before:always !important;break-before:page !important}
 
-  /* تفاصيلٌ طباعيّةٌ: ألوانٌ صلبةٌ تُحترم في كلِّ المتصفّحات */
-  .mf-pickup,.mf-table thead th{
+  /* داخلُ الورقةِ — تباعدٌ رأسيٌّ بسيطٌ بدل gap:8mm (يضمنُ توافقَ الكلِّ) */
+  .mf-head{margin-bottom:6mm !important;padding-bottom:4mm !important}
+  .mf-pickup{margin-bottom:5mm !important}
+  .mf-grid{margin-bottom:5mm !important}
+  .mf-table{margin-bottom:5mm !important;page-break-inside:auto !important}
+  .mf-foot{margin-top:4mm !important;padding-top:3mm !important}
+
+  /* ألوانٌ صلبةٌ تُطبَع في كلِّ المتصفّحات (Chrome/Edge/Safari/Firefox) */
+  .mf-pickup,.mf-table thead th,.mf-table thead tr,
+  .mf-table tbody tr:nth-child(even) td{
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
     color-adjust:exact !important}
 
-  /* لا انكسارَ صفوفٍ ولا فصلَ ترويسةٍ */
-  .mf-table thead{display:table-header-group}
-  .mf-table tr{page-break-inside:avoid;break-inside:avoid}
-  .mf-table tfoot{display:table-footer-group}
+  /* جدولٌ نظيفٌ مع تكرارِ الترويسة عبر الصفحات تلقائيًّا */
+  .mf-table{border-collapse:collapse !important;width:100% !important}
+  .mf-table thead{display:table-header-group !important}
+  .mf-table tbody{display:table-row-group !important}
+  .mf-table tr{page-break-inside:avoid !important;break-inside:avoid !important}
+  .mf-table thead tr{page-break-inside:avoid !important;page-break-after:avoid !important}
 
-  /* التذكرة (boarding pass) إن طُبعت فهي على صفحةٍ واحدةٍ مركزيّةٍ */
-  .ticket{position:fixed;top:0;left:0;right:0;width:auto;max-width:360px;margin-inline:auto;
-    box-shadow:none;border:1px solid #e6dcc4;page-break-inside:avoid}
+  /* استخدمُ A4 على الجوال أيضًا — لا نسمحُ بـ media query للجوال أن يصغّر */
+  .mf-grid{grid-template-columns:repeat(4,1fr) !important}
+  .mf-head{flex-direction:row !important;align-items:center !important}
+  .mf-foot{flex-direction:row !important;align-items:flex-end !important}
+  .mf-title{text-align:left !important}
+
+  /* التذكرة (boarding pass) — لا تُلامس الكشف */
+  .ticket{position:static;margin:0 auto;page-break-inside:avoid}
 }
 
 /* ============================================================

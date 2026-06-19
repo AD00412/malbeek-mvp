@@ -89,13 +89,14 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pag
       <table className="mf-table">
         <colgroup>
           <col style={{ width: '4%' }} />
-          <col style={{ width: '24%' }} />
-          <col style={{ width: '14%' }} />
-          <col style={{ width: '9%' }} />
-          <col style={{ width: '13%' }} />
-          <col style={{ width: '6%' }} />
-          <col style={{ width: '10%' }} />
           <col style={{ width: '20%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '6%' }} />
+          <col style={{ width: '14%' }} />
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '12%' }} />
         </colgroup>
         <thead>
           <tr>
@@ -105,13 +106,14 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pag
             <th>الجنسية</th>
             <th>رقم الجوال</th>
             <th>المقعد</th>
+            <th>مكان الركوب</th>
             <th>الحالة</th>
             <th>ملاحظات</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
-            <tr><td colSpan={8} className="mf-empty">لا ركّابَ مسجّلين لهذا المكانِ بعد.</td></tr>
+            <tr><td colSpan={9} className="mf-empty">لا ركّابَ مسجّلين لهذا المكانِ بعد.</td></tr>
           ) : rows.map((p, i) => (
             <tr key={p.id}>
               <td className="mf-num">{i + 1}</td>
@@ -120,6 +122,7 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pag
               <td>{p.nationality || '—'}</td>
               <td className="ltr">{p.phone || '—'}</td>
               <td className="mf-num">{p.seat_no || '—'}</td>
+              <td>{p.boarding_point || '—'}</td>
               <td>{STATUS_AR[p.status] || '—'}</td>
               <td className="mf-notes"></td>
             </tr>
