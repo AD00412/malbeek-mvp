@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { onWake } from '../lib/wake'
+import { getCached, setCached } from '../lib/dataCache'
 import { useAuth } from '../app/useAuth'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
@@ -91,10 +92,27 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const layout = multiBus && activeBus ? busLayout(activeBus)
     : { rows: trip?.bus_rows, back: trip?.bus_back_row, policy: trip?.seating_policy }
 
-  async function load() {
+  const retryLoadRef = useRef(0)
+  async function load(retry = 0) {
     if (!trip?.id || !user?.id) return
-    setLoading(true); setErr('')
-    // قراءاتٌ متوازيةٌ: حجز العميل الحالي + باصات الرحلة + سجلّ العميل لهذه الحملة (إن لزم).
+    const cacheKey = `cust-booking:${trip.id}:${user.id}`
+    const cached = getCached(cacheKey)
+    const hadBuses = (cached?.buses?.length ?? 0) > 0
+    const hadOcc   = (cached?.occupancy?.length ?? 0) > 0
+
+    // SWR: نَعرض المخزَّن فورًا (لا skeleton)
+    if (retry === 0 && cached) {
+      if (cached.buses) setBuses(cached.buses)
+      if (cached.busId) setBusId(cached.busId)
+      if (cached.occupancy) setOccupancy(cached.occupancy)
+      if (cached.booking) {
+        setBooking(cached.booking)
+      }
+      setLoading(false)
+    } else if (retry === 0) {
+      setLoading(true)
+    }
+    setErr('')
     const subId = sub?.id ?? trip?.subscriber_id
     const [{ data: mine }, bs, { data: myCustomer }] = await Promise.all([
       supabase.from('passengers')
@@ -106,12 +124,24 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
             .eq('profile_id', user.id).eq('subscriber_id', subId).maybeSingle()
         : Promise.resolve({ data: null }),
     ])
-    setBuses(bs)
-    const activeId = mine?.bus_id ?? bs[0]?.id ?? null
+
+    // ★ حارسُ empty الزائف: لو الباصات فارغةٌ ومخزَّنُنا فيه باصات → إعادة محاولة
+    const busArr = bs || []
+    if (busArr.length === 0 && hadBuses && retryLoadRef.current < 2) {
+      retryLoadRef.current += 1
+      setTimeout(() => load(retryLoadRef.current), 800)
+      return
+    }
+    retryLoadRef.current = 0
+
+    if (busArr.length > 0 || !hadBuses) setBuses(busArr)
+    const activeId = mine?.bus_id ?? busArr[0]?.id ?? null
     setBusId(activeId)
-    const occArgs = bs.length > 1 && activeId ? { p_trip: trip.id, p_bus: activeId } : { p_trip: trip.id }
+    const occArgs = busArr.length > 1 && activeId ? { p_trip: trip.id, p_bus: activeId } : { p_trip: trip.id }
     const { data: occ } = await supabase.rpc('trip_seat_occupancy', occArgs)
-    setOccupancy(occ ?? [])
+    const occArr = occ || []
+    if (occArr.length > 0 || !hadOcc) setOccupancy(occArr)
+
     if (mine) {
       setBooking(mine)
       setFullName(mine.full_name ?? ''); setNationalId(mine.national_id ?? '')
@@ -119,11 +149,17 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       setIsFamily(!!mine.is_family); setSeatNo(mine.seat_no ?? '')
       setPaymentRef(mine.payment_ref ?? '')
       setBoardingPoint(mine.boarding_point ?? '')
-    } else {
+    } else if (!cached?.booking) {
+      // لا تَكتب فوق نموذجٍ مَملوءٍ من المخزَّن لو الشبكة رجعت null زائفًا
       setFullName(profile?.full_name ?? ''); setPhone(profile?.phone ?? '')
-      // مكان الركوب: من سجلّ العميل لهذه الحملة (جُلب أعلاه بالتوازي) ثمّ من الرحلة احتياطًا
       setBoardingPoint(myCustomer?.pickup_location || trip?.boarding_point || '')
     }
+
+    // احفظ snapshot — لا نَكتب فارغًا فوق مَملوء
+    const safeBuses = (busArr.length > 0 || !hadBuses) ? busArr : (cached?.buses ?? [])
+    const safeOcc   = (occArr.length > 0 || !hadOcc)   ? occArr : (cached?.occupancy ?? [])
+    setCached(cacheKey, { buses: safeBuses, busId: activeId, occupancy: safeOcc, booking: mine ?? cached?.booking ?? null })
+
     setLoading(false)
   }
   useEffect(() => { load() }, [trip?.id, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps

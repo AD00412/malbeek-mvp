@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
 import { useRealtime } from '../lib/useRealtime'
 import { useUnreadCount } from '../lib/useUnreadCount'
+import { getCached, setCached } from '../lib/dataCache'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
@@ -33,24 +34,46 @@ function fmt(v) {
 export default function NotificationsBell({ onNavigate }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  const [items, setItems] = useState([])
+  const cacheKey = user?.id ? `notif-list:${user.id}` : null
+  const [items, setItems] = useState(() => {
+    if (!cacheKey) return []
+    return getCached(cacheKey) ?? []
+  })
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
   const [unread] = useUnreadCount()
   const wrapRef = useRef(null)
+  const retryRef = useRef(0)
 
   const load = useCallback(async () => {
     if (!user?.id || !open) return
-    setLoading(true); setErr('')
+    const cached = cacheKey ? (getCached(cacheKey) ?? []) : []
+    // skeleton فقط لو لا cache — لا نُومض القائمة بعد التنقّل
+    if (cached.length === 0) setLoading(true)
+    setErr('')
     const { data, error } = await supabase
       .from('notifications')
       .select('id, kind, title, body, ref_trip, ref_passenger, ref_feedback, read_at, created_at')
       .order('created_at', { ascending: false })
       .limit(100)
-    if (error) setErr('تعذّر التحميل — تحقّق من اتصالك ثمّ حدّث.')
-    else setItems(data ?? [])
+    if (error) {
+      setErr('تعذّر التحميل — تحقّق من اتصالك ثمّ حدّث.')
+      setLoading(false)
+      return
+    }
+    const rows = data ?? []
+    // حارسُ empty الزائف بعد الإيقاظ
+    if (rows.length === 0 && cached.length > 0 && retryRef.current < 2) {
+      retryRef.current += 1
+      setTimeout(() => load(), 800)
+      setLoading(false)
+      return
+    }
+    retryRef.current = 0
+    setItems(rows)
+    if (cacheKey) setCached(cacheKey, rows)
     setLoading(false)
-  }, [user, open])
+  }, [user, open, cacheKey])
 
   useEffect(() => { load() }, [load])
   useRealtime('notif-list', open && user?.id ? [{ table: 'notifications' }] : [], load, 200, [open, user?.id, load])
