@@ -31,13 +31,15 @@ import { supabase } from './supabaseClient'
 const WAKE_EVENT = 'malbeek:wake'
 const SHOW_RELOAD_EVENT = 'malbeek:show-reload'
 const THROTTLE_MS = 2000
-// ★ أيُّ غيابٍ > ٥ث = إعادةُ تحميلٍ تلقائيّة. iOS يَترك Promises معلَّقةً
-//    حتّى بعد توقّفٍ قصير → الواجهة تَتجمّد بلا حلٍّ موضعيّ.
-const LONG_SUSPEND_MS = 5_000
-const HEARTBEAT_MS = 1000        // دقّةُ كاشف التعليق
-const REFRESH_TIMEOUT_MS = 5000  // أقصى مهلةٍ لـ refreshSession فلا يَعلق
-// ★ تجَسُّسٌ على fetch — إن عَلِق طلبٌ لـSupabase > ١٠ث، نُعيد التحميل
-const FETCH_HANG_MS = 10_000
+// مستويات الفجوة:
+//   < BRIEF: لا تدخّل — التطبيقُ يَستمرّ كما كان
+//   BRIEF–MEDIUM: تحديثٌ ناعم (token + realtime.connect لو لزم) بلا reload
+//   > LONG: reload — كانت الفجوة طويلةً جدًّا فالـPromises قطعًا زومبي
+const BRIEF_GAP_MS  = 5_000        // ٥ث: «دقيقتُ خروج» — لا شيءَ يَحدث
+const LONG_SUSPEND_MS = 300_000    // ٥ دقائق: عتبةُ الـ reload التلقائيّ
+const HEARTBEAT_MS = 1000          // دقّةُ كاشف التعليق
+const REFRESH_TIMEOUT_MS = 5000    // أقصى مهلةٍ لـ refreshSession
+const FETCH_HANG_MS = 10_000       // عتبةُ overlay لو request علِق فعلًا
 let lastWakeAt = 0
 let lastTickAt = Date.now()
 let hiddenAt = 0
@@ -50,48 +52,53 @@ function withTimeout(promise, ms) {
   ])
 }
 
-async function performWake(reason) {
+async function performWake(reason, gap = 0) {
   const now = Date.now()
   if (now - lastWakeAt < THROTTLE_MS) return
   lastWakeAt = now
 
-  // ١) رفعُ الجلسة بمهلة — لا تَعلق على وعدٍ زومبيٍّ من قبل التعليق.
-  //    نُجدِّدها استباقيًّا إن بقي > ٥ث؛ لا انتظار ٥ دقائق — سبب الـ "empty الزائف".
+  // ★ خروجٌ قصيرٌ (< ٥ث): التطبيقُ ما زال حيًّا — لا تَلمس شيئًا.
+  //    iOS لم يَحصل وقتًا كافيًا لتعليق Promises، وأيُّ disconnect قد يَكسر
+  //    حالةً سليمة. فقط بثُّ الإيقاظ ليُحدّث الـloaders إن أرادوا.
+  if (gap < BRIEF_GAP_MS) {
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: { reason, brief: true, at: now } }))
+      }
+    } catch { /* ignore */ }
+    return
+  }
+
+  // فجوةٌ متوسّطة (٥ث–٥د): تحديثٌ ناعمٌ بلا reload.
   let refreshed = false
   try {
     const { data } = await withTimeout(supabase.auth.getSession(), REFRESH_TIMEOUT_MS)
     const exp = data?.session?.expires_at
-    // كان: ‎< 5 * 60 * 1000‎ — نَتجنّب توكِنًا قاربَ الانتهاء أثناء العودة من الخلفية.
     if (exp) {
       const remainingMs = exp * 1000 - Date.now()
-      if (remainingMs < 15 * 60 * 1000) {  // ١٥ دقيقة بدل ٥ — أأمنُ بعد تعليقٍ طويل
+      // جدّد التوكِنَ فقط لو قارَب الانتهاء (٥د) — لا نُجدّد بإفراط
+      if (remainingMs < 5 * 60 * 1000) {
         await withTimeout(supabase.auth.refreshSession(), REFRESH_TIMEOUT_MS)
         refreshed = true
       }
-    } else {
-      // لا جلسة — حاول refreshSession مباشرةً (قد يَنجح إن وُجد refresh_token محلّيّ)
-      await withTimeout(supabase.auth.refreshSession(), REFRESH_TIMEOUT_MS)
-      refreshed = true
     }
   } catch (e) {
     // eslint-disable-next-line no-console
     if (typeof console !== 'undefined') console.warn('[wake] refreshSession failed:', e?.message || e)
   }
 
-  // ٢) إعادةُ اتّصالٍ صارمةٌ لـ Realtime — كسرُ زومبي الـ WS بعد التعليق.
+  // Realtime: للفجواتِ المتوسّطة، اكتفِ بـ connect (idempotent). لا نَكسر WS سليمًا.
+  //    disconnect+connect نَحتفظُ به فقط للفجوات الكبيرة (>٣٠ث).
   try {
     const rt = supabase?.realtime
-    if (rt?.disconnect) { try { rt.disconnect() } catch { /* ignore */ } }
+    if (gap > 30_000 && rt?.disconnect) {
+      try { rt.disconnect() } catch { /* ignore */ }
+    }
     if (rt?.connect) rt.connect()
   } catch { /* ignore */ }
 
-  // ★ مهلةٌ صغيرةٌ لإتاحة الفرصة لـ supabase-js أن يَنشر التوكِنَ المُجدَّد
-  //    إلى headers قبل أن يُطلق المشتركون استعلاماتهم — يَمنع «empty الزائف».
-  if (refreshed) {
-    await new Promise((r) => setTimeout(r, 250))
-  }
+  if (refreshed) await new Promise((r) => setTimeout(r, 200))
 
-  // ٣) بثُّ الحدث لكلِّ المشتركين (useRealtime + page-level loaders)
   if (typeof window !== 'undefined') {
     try {
       window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: { reason, at: now } }))
@@ -99,21 +106,23 @@ async function performWake(reason) {
   }
 
   // eslint-disable-next-line no-console
-  if (typeof console !== 'undefined' && console.debug) console.debug(`[wake] ${reason} · refreshed=${refreshed}`)
+  if (typeof console !== 'undefined' && console.debug) console.debug(`[wake] ${reason} · gap=${gap}ms · refreshed=${refreshed}`)
 }
 
-/* كاشفُ التعليق الطويل: إن قفز الفارقُ (نبضات JS أو مدّةُ الإخفاء) >
-   LONG_SUSPEND_MS، يَكون iOS قد علّق الـWebView وتركَ Promises معلَّقة.
-   الحلُّ الوحيد الفعّال: إعادةُ تحميلٍ نظيفة. */
-function maybeReloadAfterLongSuspend() {
+/* يَحسب الفجوةَ ويُقرّر: reload (طويلة جدًّا) أم wake ناعم. */
+function computeGapAndReset() {
   const now = Date.now()
   const tickGap = now - lastTickAt
   const hideGap = hiddenAt ? now - hiddenAt : 0
   const gap = Math.max(tickGap, hideGap)
   lastTickAt = now
   hiddenAt = 0
+  return gap
+}
+
+function maybeReloadAfterLongSuspend(gap) {
   if (gap > LONG_SUSPEND_MS) {
-    try { sessionStorage.setItem('malbeek:reloaded-at', String(now)) } catch { /* ignore */ }
+    try { sessionStorage.setItem('malbeek:reloaded-at', String(Date.now())) } catch { /* ignore */ }
     try { window.location.reload() } catch { /* ignore */ }
     return true
   }
@@ -177,8 +186,9 @@ export function installWakeListeners() {
   const heartbeat = setInterval(() => { lastTickAt = Date.now() }, HEARTBEAT_MS)
 
   const wakeIfFresh = (reason) => {
-    if (maybeReloadAfterLongSuspend()) return
-    performWake(reason)
+    const gap = computeGapAndReset()
+    if (maybeReloadAfterLongSuspend(gap)) return
+    performWake(reason, gap)
   }
 
   // ★ تتبّعُ لحظةِ الإخفاء بدقّة — لا نَعتمد على heartbeat فقط (قد لا يَركض على iOS)
