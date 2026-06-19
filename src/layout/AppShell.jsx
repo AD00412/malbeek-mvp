@@ -61,6 +61,25 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
     }
   }
 
+  // طرقُ فتحٍ إضافيّةٌ مضمونة:
+  //   ١) #debug في الرابط (مثال: mulabeek.com/#debug)
+  //   ٢) اختصار لوحة المفاتيح: Ctrl/Cmd + Shift + D
+  useEffect(() => {
+    const checkHash = () => { if (location.hash === '#debug') setDebugOpen(true) }
+    checkHash()
+    window.addEventListener('hashchange', checkHash)
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault(); setDebugOpen(true)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('hashchange', checkHash)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
+
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
 
@@ -136,7 +155,8 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
       {/* ---------- الدرج الجانبي (☰ على الجوال) ---------- */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
         tabs={tabs} active={active} onTab={onTab}
-        planLabel={planLabel} planUsage={planUsage} />
+        planLabel={planLabel} planUsage={planUsage}
+        onOpenDebug={() => setDebugOpen(true)} />
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
       <nav className="tabbar" aria-label="تنقّل سفلي">

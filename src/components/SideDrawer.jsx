@@ -25,7 +25,7 @@ function initials(name, email) {
  * @param {string}   planLabel     سطرٌ تحت الاسم (مثلًا: "باقة ملبّيك" أو "تجريبيّة")
  * @param {object}   planUsage     { used, limit } لإظهار شريط الباقة (للمشترك)
  */
-export default function SideDrawer({ open, onClose, tabs = [], active, onTab, planLabel, planUsage }) {
+export default function SideDrawer({ open, onClose, tabs = [], active, onTab, planLabel, planUsage, onOpenDebug }) {
   const { profile, user, role, signOut } = useAuth()
   const { confirm } = useUI()
   const cardRef = useRef(null)
@@ -122,6 +122,12 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
               </div>
             )}
           </div>
+        )}
+
+        {onOpenDebug && (
+          <button className="drawer-debug" onClick={() => { onOpenDebug(); onClose?.() }}>
+            🐛 <span>تشخيصُ التطبيق</span>
+          </button>
         )}
 
         <button className="drawer-logout" onClick={doSignOut}>

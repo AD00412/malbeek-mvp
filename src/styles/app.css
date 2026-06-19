@@ -330,6 +330,11 @@
   font-weight:700;font-size:14px;background:rgba(224,88,75,.10);border:1px solid rgba(224,88,75,.30);
   color:var(--danger-ink);transition:.16s;width:100%}
 .drawer-logout:hover{background:rgba(224,88,75,.18)}
+.drawer-debug{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px;border-radius:var(--r-md);cursor:pointer;font-family:var(--font-display);
+  font-weight:600;font-size:13px;background:rgba(148,163,184,.10);
+  border:1px solid rgba(148,163,184,.30);color:var(--cr-200);transition:.16s;width:100%}
+.drawer-debug:hover{background:rgba(148,163,184,.18)}
 
 .drawer-foot{margin-top:10px;display:flex;align-items:center;justify-content:center;color:var(--cr-300)}
 
