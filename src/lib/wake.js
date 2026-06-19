@@ -5,65 +5,97 @@ import { supabase } from './supabaseClient'
  * ============================================================
  *
  *  المشكلةُ التي يحلّها:
- *    - iOS Safari (وكلّ المتصفّحات) يجمّد جافاسكربت بعد ثوانٍ من
- *      إخفاء التطبيق. النتائج:
- *        × WebSocket حقّ Supabase Realtime يموت
- *        × ping/pong يتوقّف، التوكِنُ لا يُجدَّد
- *        × على iOS Safari قد يحصل context loss كاملٌ للصفحة
- *    - عند العودة: جافاسكربت يستيقظ لكن لا أحد يتأكّد أنّ الحالةَ سليمة،
- *      فالبيانات تبقى متجمّدةً أو تظهر فارغةً.
+ *    - iOS Safari / PWA standalone يجمّد جافاسكربت بعد ثوانٍ من الإخفاء.
+ *      عند تعليقٍ طويل (>٣٠ث) تصبح الحالةُ زومبيًّا:
+ *        × WebSocket حقّ Supabase Realtime ميّتٌ لكن المكتبة تظنّه حيًّا،
+ *          فـ realtime.connect() لا يفعلُ شيئًا (idempotent على state مغشوش).
+ *        × Promises التي بُدئت قبل التعليق قد تَعْلَق إلى الأبد (refreshSession مثلًا).
+ *        × أحداث visibilitychange قد تأتي قبل أن يكون الـ event loop سليمًا تمامًا.
+ *      النتيجة: تجمّدٌ كاملٌ للواجهة وعدم تحديثٍ للبيانات/الإشعارات.
  *
- *  الحلّ — مُنسِّقٌ واحدٌ يفعل كلَّ شيءٍ بترتيبٍ صحيح عند الإيقاظ:
- *    ١) رفعُ الجلسة (refreshSession إن قاربت الانتهاء) فلا تفشل الاستعلامات.
- *    ٢) إعادةُ تشغيل Realtime (connect مجدّدًا للـ WebSocket).
- *    ٣) بثُّ حدث ‎malbeek:wake‎ ليلتقطه كلُّ المشتركين فيُعيدوا الجلب
- *       وإعادة ضمِّ القنوات بأنفسهم.
+ *  الحلُّ الجذريّ:
+ *    أ) كاشفُ تعليقٍ طويل (long-suspend detector):
+ *       نبضةٌ كلَّ ثانية تحدّث lastTickAt. عند العودة، إن كانت الفجوة
+ *       > LONG_SUSPEND_MS (٩٠ث) فالحالةُ غير قابلةٍ للإصلاح موضعيًّا —
+ *       نعملُ window.location.reload(): انطلاقةٌ نظيفةٌ بدون زومبي.
+ *    ب) إعادةُ اتّصالٍ صارمةٌ لـ Realtime: disconnect() ثمّ connect().
+ *    ج) refreshSession ضمن Promise.race بمهلة ٥ث فلا يَعلق الإيقاظ.
+ *    د) pageshow بلا شرط persisted — iOS PWA لا تستخدم bfcache دائمًا.
  *
- *  ميزاتٌ دفاعيّةٌ:
- *    - throttle ٢ثانية: لا يتكرّر الإيقاظ بإفراطٍ.
- *    - تسجيلُ المستمعين مرّةً واحدةً على مستوى التطبيق (في AuthProvider).
- *    - api ‎onWake‎ بسيطٌ لأيِّ مكوّنٍ يحتاج التحديثَ على الإيقاظ.
+ *  واجهةٌ بسيطة:
+ *    - installWakeListeners() — تُستدعى مرّةً من AuthProvider.
+ *    - onWake(cb) — يُسجّل callback لكلِّ إيقاظٍ ناجح.
+ *    - triggerWake(reason) — إيقاظٌ يدويّ.
  * ============================================================ */
 
 const WAKE_EVENT = 'malbeek:wake'
 const THROTTLE_MS = 2000
+const LONG_SUSPEND_MS = 90_000   // فجوةٌ تُوجِبُ إعادةَ تحميلٍ كاملةً
+const HEARTBEAT_MS = 1000        // دقّةُ كاشف التعليق
+const REFRESH_TIMEOUT_MS = 5000  // أقصى مهلةٍ لـ refreshSession فلا يَعلق
 let lastWakeAt = 0
+let lastTickAt = Date.now()
 let installed = false
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ])
+}
 
 async function performWake(reason) {
   const now = Date.now()
   if (now - lastWakeAt < THROTTLE_MS) return
   lastWakeAt = now
 
-  // ١) رفعُ الجلسة — احترازيٌّ ضدّ توكِنٍ منتهٍ في الخلفيّة.
-  //    إن بقي للتوكِن أقلّ من ٥ دقائق، نطلبُ refreshSession صراحةً.
+  // ١) رفعُ الجلسة بمهلة — لا تَعلق على وعدٍ زومبيٍّ من قبل التعليق.
   try {
-    const { data } = await supabase.auth.getSession()
+    const { data } = await withTimeout(supabase.auth.getSession(), REFRESH_TIMEOUT_MS)
     const exp = data?.session?.expires_at
     if (exp) {
       const remainingMs = exp * 1000 - Date.now()
       if (remainingMs < 5 * 60 * 1000) {
-        await supabase.auth.refreshSession()
+        await withTimeout(supabase.auth.refreshSession(), REFRESH_TIMEOUT_MS)
       }
     }
-  } catch { /* لا توكِن أو خطأٌ مؤقّتٌ — يُعالجُ في الاستعلام التالي */ }
+  } catch { /* انتهت المهلة أو خطأٌ مؤقّت — يُعالجُ في الاستعلام التالي */ }
 
-  // ٢) إعادةُ تشغيل Realtime — idempotent: إن كان حيًّا لا أثرَ، وإن مات يُعاد.
+  // ٢) إعادةُ اتّصالٍ صارمةٌ لـ Realtime — كسرُ زومبي الـ WS بعد التعليق.
+  //    connect() وحده لا يكفي: المكتبة تتجاهل الطلبَ إن ظنّت الحالةَ متصلة.
   try {
     const rt = supabase?.realtime
+    if (rt?.disconnect) {
+      try { rt.disconnect() } catch { /* ignore */ }
+    }
     if (rt?.connect) rt.connect()
   } catch { /* ignore */ }
 
-  // ٣) بثُّ الحدث لكلِّ المشتركين (useRealtime + page-level loaders + channels يدويّة)
+  // ٣) بثُّ الحدث لكلِّ المشتركين (useRealtime + page-level loaders)
   if (typeof window !== 'undefined') {
     try {
       window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: { reason, at: now } }))
-    } catch { /* CustomEvent غير مدعومٍ في بيئاتٍ نادرةٍ — تجاهل */ }
+    } catch { /* ignore */ }
   }
 
-  // تشخيصٌ خفيفٌ — مفيدٌ أثناء التطوير، غير مزعجٍ في الإنتاج.
   // eslint-disable-next-line no-console
   if (typeof console !== 'undefined' && console.debug) console.debug(`[wake] ${reason}`)
+}
+
+/* كاشفُ التعليق الطويل: إن قفز الفارقُ كثيرًا = WebView كان معلَّقًا.
+   إعادةُ التحميل أكثر أمانًا من محاولة إصلاح حالةٍ منهارة. */
+function maybeReloadAfterLongSuspend() {
+  const now = Date.now()
+  const gap = now - lastTickAt
+  lastTickAt = now
+  if (gap > LONG_SUSPEND_MS) {
+    // أرفع علامةً مؤقّتةً فلا نَدخل في حلقةِ تحميلٍ لو حدث خطأٌ آخرُ بعد التحميل
+    try { sessionStorage.setItem('malbeek:reloaded-at', String(now)) } catch { /* ignore */ }
+    // إعادةُ تحميلٍ نظيفةٌ — تنهي كلَّ زومبي JS/WS/Promises
+    try { window.location.reload() } catch { /* ignore */ }
+    return true
+  }
+  return false
 }
 
 /**
@@ -73,12 +105,22 @@ async function performWake(reason) {
 export function installWakeListeners() {
   if (typeof window === 'undefined' || installed) return () => {}
   installed = true
+  lastTickAt = Date.now()
 
-  const onVisible = () => { if (document.visibilityState === 'visible') performWake('visible') }
-  const onOnline  = () => performWake('online')
-  const onFocus   = () => performWake('focus')
-  // pageshow يفيد على iOS Safari عند العودة من cache (back-forward)
-  const onPageShow = (e) => { if (e.persisted) performWake('pageshow') }
+  // نبضةٌ خفيفةٌ تحدّث ساعةَ "آخر تنفيذ JS". إن توقّفت أكثر من LONG_SUSPEND_MS
+  // فقد كان الـ WebView معلَّقًا — نُعِيدُ التحميلَ عند العودة.
+  const heartbeat = setInterval(() => { lastTickAt = Date.now() }, HEARTBEAT_MS)
+
+  const wakeIfFresh = (reason) => {
+    if (maybeReloadAfterLongSuspend()) return
+    performWake(reason)
+  }
+
+  const onVisible = () => { if (document.visibilityState === 'visible') wakeIfFresh('visible') }
+  const onOnline  = () => wakeIfFresh('online')
+  const onFocus   = () => wakeIfFresh('focus')
+  // pageshow على iOS PWA standalone يأتي بلا persisted أحيانًا — نلتقطُه دائمًا
+  const onPageShow = () => wakeIfFresh('pageshow')
 
   document.addEventListener('visibilitychange', onVisible)
   window.addEventListener('online', onOnline)
@@ -87,6 +129,7 @@ export function installWakeListeners() {
 
   return () => {
     installed = false
+    clearInterval(heartbeat)
     document.removeEventListener('visibilitychange', onVisible)
     window.removeEventListener('online', onOnline)
     window.removeEventListener('focus', onFocus)
@@ -96,9 +139,6 @@ export function installWakeListeners() {
 
 /**
  * يُسجّل callback يُستدعى عند كلِّ إيقاظٍ. يرجع دالّةَ unsubscribe.
- *
- * مثال:
- *   useEffect(() => onWake(() => loadData()), [loadData])
  */
 export function onWake(callback) {
   if (typeof window === 'undefined' || typeof callback !== 'function') return () => {}
