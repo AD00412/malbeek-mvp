@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient'
 
+// قراءةٌ مباشرةٌ لـURL وkey للـ ping (لا نَمرّ عبر supabase-js — fetch مباشر)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
 /* ============================================================
  *  مُنسِّقُ الإيقاظ — نظامٌ مركزيٌّ لإحياء التطبيق بعد تعليق المتصفّح
  * ============================================================
@@ -52,25 +56,39 @@ function withTimeout(promise, ms) {
   ])
 }
 
-/* ping سريعٌ بمهلة ٢.٥ث على RPC خفيف: my_role أو getSession.
-   لا يَتطلّب جلسةً صالحة — فقط يَتأكّد أنّ stack شبكة WebView سليم.
-   لو فشل أو علِق → الـHTTP client زومبي → reload فوريّ (بلا overlay،
-   لأنّ المستخدم لا يَرى التطبيقَ حيًّا أصلًا). */
+/* ★ ping شبكةٍ فعليٌّ بمهلة ١.٥ث — يَتجاوز supabase-js ويَتجَنّب الـwrapper.
+   - HEAD مباشرٌ على /rest/v1/ — أخفُّ ما يُمكن.
+   - لو نجح في < ١.٥ث: stack الشبكة سليم — لا شيءَ يَحدث (شفّاف للمستخدم).
+   - لو فشل/علِق: WebView في حالةٍ زومبي → reload فوريٌّ بدل تجمّدٍ. */
 let pingInFlight = false
 async function pingHealthCheck(reason) {
   if (pingInFlight) return
+  if (!SUPABASE_URL || !SUPABASE_ANON) return  // لا تكوينٌ — تَجاوز
   pingInFlight = true
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => { try { ctrl.abort() } catch { /* ignore */ } }, 1500)
+  // ★ مهمٌّ: نَستعمل fetch خامًّا (origFetch) لا الـwrapper — فلا تَتلطّخ
+  //   إحصاءاتُ AbortController consecutiveAborts من فحصٍ صحّيّ.
+  const rawFetch = typeof window !== 'undefined' && window.__malbeekOrigFetch
+    ? window.__malbeekOrigFetch
+    : (typeof window !== 'undefined' ? window.fetch : null)
+  if (!rawFetch) { pingInFlight = false; clearTimeout(timer); return }
   try {
-    // getSession أخفُّ من RPC ويَكفي لاختبار stack الشبكة الداخليّ.
-    await withTimeout(supabase.auth.getSession(), 2500)
+    const res = await rawFetch.call(window, `${SUPABASE_URL}/rest/v1/`, {
+      method: 'HEAD',
+      signal: ctrl.signal,
+      headers: { apikey: SUPABASE_ANON },
+    })
     // نَجح — التطبيقُ حيٌّ، لا شيءَ يَلزم.
+    void res
   } catch (e) {
-    // فشل/علِق → reload فوريّ
+    // فشل/علِق → WebView منهار → reload فوريّ
     // eslint-disable-next-line no-console
-    if (typeof console !== 'undefined') console.warn(`[wake] ping failed after ${reason}, reloading:`, e?.message || e)
+    if (typeof console !== 'undefined') console.warn(`[wake] ping failed (${reason}), reloading:`, e?.message || e)
     try { sessionStorage.setItem('malbeek:reloaded-at', String(Date.now())) } catch { /* ignore */ }
     try { window.location.reload() } catch { /* ignore */ }
   } finally {
+    clearTimeout(timer)
     pingInFlight = false
   }
 }
@@ -180,6 +198,8 @@ function installFetchHangWatcher() {
   window.__malbeekFetchWatched = true
   const origFetch = window.fetch
   if (!origFetch) return
+  // احفظ المرجعَ الأصليَّ في window — ليَستعمله pingHealthCheck متجاوزًا الـwrapper
+  window.__malbeekOrigFetch = origFetch
   window.fetch = function malbeekTracedFetch(input, init = {}) {
     const url = typeof input === 'string' ? input : (input?.url || '')
     const isSb = url.includes('supabase.co') || url.includes('supabase.io')
@@ -236,6 +256,9 @@ export function installWakeListeners() {
 
   const wakeIfFresh = (reason) => {
     const gap = computeGapAndReset()
+    // ★ ping صحّةٍ على كلِّ عودةٍ من الإخفاء (visibilitychange:visible فقط)
+    //   — لو الـsocket زومبي، نُلتقطها في ١.٥ث ونُعيد التحميل قبل أيِّ تجمّد.
+    if (reason === 'visible' && gap > 0) pingHealthCheck(reason)
     if (maybeReloadAfterLongSuspend(gap)) return
     performWake(reason, gap)
   }
