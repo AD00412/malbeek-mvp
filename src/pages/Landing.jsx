@@ -74,7 +74,9 @@ function FaqItem({ q, a }) {
   )
 }
 
-// أيقوناتٌ بسيطةٌ لوسائل التواصل — مدمجةٌ هنا لأنّها خاصّةٌ بالـ Landing.
+// أيقوناتُ وسائل التواصل (X/Instagram/LinkedIn). مؤقّتًا غير مستخدَمةٍ في
+// الفوتر حتّى تتوفّر الحسابات الرسميّةُ، تُعاد حينها مع روابط CONTACT.
+// eslint-disable-next-line no-unused-vars
 function SocialIcon({ name }) {
   if (name === 'x') return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
@@ -292,16 +294,10 @@ export default function Landing() {
             <p className="muted" style={{ fontSize: 13, marginTop: 10, maxWidth: 320, lineHeight: 1.85, direction: 'rtl', unicodeBidi: 'embed' }}>
               منصّةٌ روحانيّةٌ هادئةٌ لإدارة حملات العُمرة، صُمِّمت بحبٍّ في المملكة العربيّة السعوديّة.
             </p>
+            {/* قنواتُ التواصل الفعّالةُ فقط (واتسآب + بريد). حسابات السوشيال
+                (X/Instagram/LinkedIn) مؤقّتًا مخفيّةٌ حتّى تتوفّر — أعِدها من
+                مكوّن SocialIcon + CONTACT حين تجهز. */}
             <div className="lp-social">
-              <a href={CONTACT.twitter} target="_blank" rel="noopener noreferrer" aria-label="X (تويتر)">
-                <SocialIcon name="x" />
-              </a>
-              <a href={CONTACT.instagram} target="_blank" rel="noopener noreferrer" aria-label="إنستغرام">
-                <SocialIcon name="instagram" />
-              </a>
-              <a href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer" aria-label="لينكدإن">
-                <SocialIcon name="linkedin" />
-              </a>
               <a href={`https://wa.me/${CONTACT.whatsapp}`} target="_blank" rel="noopener noreferrer" aria-label="واتسآب">
                 <Icon name="whatsapp" size={18} />
               </a>
