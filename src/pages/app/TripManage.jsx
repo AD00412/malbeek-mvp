@@ -354,9 +354,13 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       {/* أزرار الإجراءات */}
       <div className="actions" style={{ marginTop: 16 }}>
         <div className="sec-label">المعتمرون</div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="action primary" style={{ flex: 1 }} onClick={openAdd}><Icon name="plus" size={18} /> إضافة معتمر</button>
-          <button className="action" style={{ flex: 1 }} onClick={() => setImportOpen(true)}><Icon name="download" size={18} /> استيراد قائمة</button>
+        <div className="action-row">
+          <button className="action primary" onClick={openAdd}>
+            <Icon name="plus" size={18} /> إضافة معتمر
+          </button>
+          <button className="action" onClick={() => setImportOpen(true)}>
+            <Icon name="download" size={18} /> استيراد قائمة
+          </button>
         </div>
         <button className="action" onClick={() => setRemindOpen(true)} disabled={count === 0}>
           <Icon name="bell" size={18} /> تذكير المعتمرين بالرحلة

@@ -451,23 +451,37 @@
 /* إجراءاتٌ كبيرةٌ مكدّسة (CTA) — هويّةٌ موحّدةٌ: زمرّديٌّ هادئٌ + لمسةٌ ذهبيّة على الأيقونة.
    الأيقونة تحمل المعنى الدلاليّ (qr/bed/share…) — الزرّ نفسه يبقى متّسقًا بصريًّا. */
 .actions{display:flex;flex-direction:column;gap:12px;margin-top:18px}
-.action{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px;border-radius:var(--r-lg);
-  border:1px solid var(--line);background:var(--bg-card);color:var(--cr-100);font-family:var(--font-sans);
-  font-weight:700;font-size:15px;cursor:pointer;transition:.18s;box-shadow:var(--shadow-sm)}
-.action:hover{background:rgba(255,255,255,.05);border-color:var(--line-strong)}
-.action svg{color:var(--gd-300);flex:none}
-.action:disabled{opacity:.55;cursor:not-allowed}
+.action{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:16px 18px;
+  border-radius:var(--r-lg);border:1px solid var(--line);background:var(--bg-card);color:var(--cr-100);
+  font-family:var(--font-sans);font-weight:700;font-size:15px;cursor:pointer;
+  transition:transform .15s ease,box-shadow .2s ease,background .2s,border-color .2s;
+  box-shadow:var(--shadow-sm);-webkit-tap-highlight-color:transparent;line-height:1.2;min-height:54px}
+.action:hover{background:rgba(16,185,129,.06);border-color:var(--em-600);color:var(--cr-50)}
+.action:active{transform:translateY(1px)}
+.action svg{color:var(--em-500);flex:none}
+.action:hover svg{color:var(--em-500)}
+.action:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.action:disabled:hover{background:var(--bg-card);border-color:var(--line);color:var(--cr-100)}
 .action:disabled svg{color:var(--cr-300)}
-/* الزرّ الرئيسيّ الذهبيّ — هو وحده الذي يختلف بصريًّا (تأكيدٌ على الإجراء الأهمّ) */
-.action.primary{background:var(--grad-gold);color:var(--em-950);border-color:transparent;box-shadow:var(--glow-gold)}
-.action.primary svg{color:var(--em-950)}
-.action.primary:hover{transform:translateY(-2px)}
+/* الزرّ الرئيسيّ — تدرّجٌ زمرّديٌّ بنصٍّ أبيضَ وظلٍّ غنيٍّ */
+.action.primary{background:linear-gradient(135deg,var(--em-600),var(--em-700));color:#ffffff;
+  border-color:transparent;box-shadow:0 8px 22px rgba(16,185,129,.32),0 2px 4px rgba(0,0,0,.18)}
+.action.primary svg{color:#ffffff}
+.action.primary:hover{background:linear-gradient(135deg,var(--em-500),var(--em-600));color:#ffffff;
+  box-shadow:0 12px 28px rgba(16,185,129,.42),0 3px 6px rgba(0,0,0,.22);border-color:transparent}
+.action.primary:hover svg{color:#ffffff}
+.action.primary:active{transform:translateY(1px) scale(.99)}
 /* المتغيّرات (info/ok/warn/violet) تبقى الـ classNames موجودةً للتوافق
    لكن دلالةَ اللون نُزيلها — الكلّ يبدو متّسقًا. */
 .action.info,
 .action.ok,
 .action.warn,
 .action.violet{color:var(--cr-100)}
+
+/* صفُّ زرّين متجاورَين بعرضٍ متساوٍ (مثل: «إضافة معتمر» + «استيراد قائمة») */
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.action-row .action{width:100%}
+@media(max-width:340px){.action-row{grid-template-columns:1fr}}
 
 /* بطاقة الرحلة (موبايل) */
 .trip-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(16px,4vw,22px);
