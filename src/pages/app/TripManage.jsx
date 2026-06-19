@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { onWake } from '../../lib/wake'
+import { getCached, setCached } from '../../lib/dataCache'
 import useStickyState from '../../lib/useStickyState'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
@@ -115,34 +116,55 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // SWR cache key لهذه الرحلة (يَنجو من re-mount عند التنقّل بين الصفحات)
+  const cacheKey = trip?.id ? `trip-mgr:${trip.id}` : null
+
+  // ★ تحميلٌ فوريٌّ من sessionCache عند mount — يُلغي «الأصفار» بعد التنقّل
+  useEffect(() => {
+    if (!cacheKey) return
+    const snap = getCached(cacheKey)
+    if (snap) {
+      if (snap.passengers) setPassengers(snap.passengers)
+      if (snap.waitlist)   setWaitlist(snap.waitlist)
+      if (snap.buses)      setBuses(snap.buses)
+      if (snap.payments)   setPayments(snap.payments)
+      if (snap.mapBusId)   setMapBusId(snap.mapBusId)
+      setLoading(false) // نَعرضُ المخزَّنَ فورًا — لا skeleton
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheKey])
+
   const firstLoad = useRef(true)
-  const lastPaxCount = useRef(0)
-  const lastWaitCount = useRef(0)
-  const lastBusCount = useRef(0)
-  const lastPayCount = useRef(0)
-  const loadPassengers = useCallback(async () => {
+  const loadPassengers = useCallback(async (retry = 0) => {
     if (!trip?.id) return
-    // نُظهر الهيكل العظميّ في التحميل الأوّل فقط — لا نُومض القائمة مع كلّ تحديثٍ حيّ
-    if (firstLoad.current) setLoading(true)
+    const cached = cacheKey ? getCached(cacheKey) : null
+    const hadData = (cached?.passengers?.length ?? 0) > 0
+    // skeleton فقط في التحميل الأوّل بلا cache — لا نُومض القائمة مع كلّ تحديثٍ حيّ
+    if (firstLoad.current && !cached) setLoading(true)
     setErr('')
+
     const { data, error } = await supabase
       .from('passengers')
       .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, payment_proof_url, profile_id, bus_id, room_id, amount, paid_at, payment_provider, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
+
     if (error) {
       setErr('تعذّر تحميل المعتمرين: ' + error.message)
-    } else {
-      // حارسٌ ضدّ «empty الزائف» بعد الإيقاظ: لو كان لدينا بياناتٌ ثمّ رجعت []،
-      // نعتبره مؤقّتًا (الجلسة تنتعش) ولا نَمسحُ الواجهة — نَجدول إعادةَ محاولةٍ.
-      const rows = data ?? []
-      if (firstLoad.current || rows.length > 0 || lastPaxCount.current === 0) {
-        setPassengers(rows)
-        lastPaxCount.current = rows.length
-      } else {
-        setTimeout(() => loadPassengers(), 800)
-      }
+      setLoading(false); firstLoad.current = false
+      return
     }
+
+    const rows = data ?? []
+    // ★ حارسُ «empty الزائف»: لو لدينا (في الحالة أو الـ cache) بياناتٌ ثمّ رجعت []،
+    //    نُعيد المحاولة مرّتَين قبل تَصديق الفراغ. السبب: التوكِنُ المُجدَّد لم يَنشر بعد.
+    if (rows.length === 0 && (hadData || passengers.length > 0) && retry < 2) {
+      setTimeout(() => loadPassengers(retry + 1), 800)
+      setLoading(false); firstLoad.current = false
+      return
+    }
+
+    setPassengers(rows)
     setLoading(false); firstLoad.current = false
 
     // قائمة الانتظار للرحلة
@@ -150,15 +172,20 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       .from('waitlist').select('id, profile_id, full_name, phone, notified_at, created_at')
       .eq('trip_id', trip.id).order('created_at', { ascending: true })
     const wRows = w ?? []
-    if (wRows.length > 0 || lastWaitCount.current === 0) {
-      setWaitlist(wRows); lastWaitCount.current = wRows.length
-    }
+    const cachedWait = cached?.waitlist?.length ?? 0
+    if (wRows.length > 0 || cachedWait === 0) setWaitlist(wRows)
 
     // باصات الرحلة (لتعدّد الباصات)
     const bs = await loadTripBuses(trip.id)
-    if ((bs?.length ?? 0) > 0 || lastBusCount.current === 0) {
-      setBuses(bs); lastBusCount.current = bs?.length ?? 0
-      setMapBusId((cur) => (cur && bs.some((b) => b.id === cur) ? cur : bs[0]?.id ?? null))
+    const cachedBuses = cached?.buses?.length ?? 0
+    let nextMapBusId = mapBusId
+    if ((bs?.length ?? 0) > 0 || cachedBuses === 0) {
+      setBuses(bs)
+      setMapBusId((cur) => {
+        const next = (cur && bs.some((b) => b.id === cur)) ? cur : bs[0]?.id ?? null
+        nextMapBusId = next
+        return next
+      })
     }
 
     // سجلّ مدفوعات البوّابة لهذه الرحلة (يقرؤه المالك عبر RLS؛ يمتلئ عند تفعيل الـ Webhook)
@@ -166,10 +193,21 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       .from('payments').select('id, passenger_id, provider, provider_ref, amount, currency, created_at')
       .eq('trip_id', trip.id).order('created_at', { ascending: false }).limit(200)
     const pmRows = pm ?? []
-    if (pmRows.length > 0 || lastPayCount.current === 0) {
-      setPayments(pmRows); lastPayCount.current = pmRows.length
+    const cachedPay = cached?.payments?.length ?? 0
+    if (pmRows.length > 0 || cachedPay === 0) setPayments(pmRows)
+
+    // ★ احفظ snapshot للـ cache — يَنجو من re-mount بعد التنقّل
+    if (cacheKey) {
+      setCached(cacheKey, {
+        passengers: rows,
+        waitlist: wRows,
+        buses: bs || [],
+        payments: pmRows,
+        mapBusId: nextMapBusId,
+      })
     }
-  }, [trip])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip, cacheKey])
 
   const reloadTrip = useCallback(async () => {
     if (!trip?.id) return
