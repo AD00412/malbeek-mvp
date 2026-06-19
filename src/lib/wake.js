@@ -52,20 +52,42 @@ function withTimeout(promise, ms) {
   ])
 }
 
+/* ping سريعٌ بمهلة ٢.٥ث على RPC خفيف: my_role أو getSession.
+   لا يَتطلّب جلسةً صالحة — فقط يَتأكّد أنّ stack شبكة WebView سليم.
+   لو فشل أو علِق → الـHTTP client زومبي → reload فوريّ (بلا overlay،
+   لأنّ المستخدم لا يَرى التطبيقَ حيًّا أصلًا). */
+let pingInFlight = false
+async function pingHealthCheck(reason) {
+  if (pingInFlight) return
+  pingInFlight = true
+  try {
+    // getSession أخفُّ من RPC ويَكفي لاختبار stack الشبكة الداخليّ.
+    await withTimeout(supabase.auth.getSession(), 2500)
+    // نَجح — التطبيقُ حيٌّ، لا شيءَ يَلزم.
+  } catch (e) {
+    // فشل/علِق → reload فوريّ
+    // eslint-disable-next-line no-console
+    if (typeof console !== 'undefined') console.warn(`[wake] ping failed after ${reason}, reloading:`, e?.message || e)
+    try { sessionStorage.setItem('malbeek:reloaded-at', String(Date.now())) } catch { /* ignore */ }
+    try { window.location.reload() } catch { /* ignore */ }
+  } finally {
+    pingInFlight = false
+  }
+}
+
 async function performWake(reason, gap = 0) {
   const now = Date.now()
   if (now - lastWakeAt < THROTTLE_MS) return
   lastWakeAt = now
 
-  // ★ خروجٌ قصيرٌ (< ٥ث): التطبيقُ ما زال حيًّا — لا تَلمس شيئًا.
-  //    iOS لم يَحصل وقتًا كافيًا لتعليق Promises، وأيُّ disconnect قد يَكسر
-  //    حالةً سليمة. فقط بثُّ الإيقاظ ليُحدّث الـloaders إن أرادوا.
+  // ★ خروجٌ قصيرٌ (< ٥ث): لا شيءَ مطلقًا — لا حتّى dispatch.
+  //    أيُّ بثٍّ يُحرّك useRealtime ليُعيد ضمَّ القنوات على WebSocket قد يكون
+  //    معطّلًا بعد iOS، فيَنتج تجمّد. التطبيقُ يَستمرّ كما كان تمامًا.
   if (gap < BRIEF_GAP_MS) {
-    try {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(WAKE_EVENT, { detail: { reason, brief: true, at: now } }))
-      }
-    } catch { /* ignore */ }
+    // كاشفُ صحّةٍ خفيٌّ: ping سريعٌ ٢.٥ث للتأكّد أنّ HTTP client سليم.
+    //   - إن نجح: لا شيءَ يَحدث، التطبيقُ حيٌّ.
+    //   - إن فشل/علِق: WebView في حالةٍ زومبي → reload فوريّ بلا تجمّدٍ مطوّل.
+    pingHealthCheck(reason)
     return
   }
 
