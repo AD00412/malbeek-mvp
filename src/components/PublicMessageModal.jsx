@@ -122,10 +122,19 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
     setBusy(true)
     try {
       // ١) رفع المرفقات (إن وُجدت) إلى المجلّد العامّ
+      // الامتدادات المسموحة فقط — تطابق MIME types المقبولة وتمنع رفع
+      // ملفّاتٍ بامتداداتٍ خطرةٍ (html/exe/php...) حتّى لو spoofed.
+      const SAFE_EXT_FOR_MIME = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/webp': 'webp',
+        'application/pdf': 'pdf',
+      }
       const uploaded = []
       for (const f of files) {
         const rand = Math.random().toString(36).slice(2, 8)
-        const ext  = (f.file.name.split('.').pop() || 'bin').toLowerCase().slice(0, 5)
+        // نشتقّ الامتدادَ من MIME (لا من اسم الملف) — لا spoofing ممكن
+        const ext = SAFE_EXT_FOR_MIME[f.file.type] || 'bin'
         // نُبقي اسم الملف الأصليّ ضمن المسار — لتظهر في البريد بشكلٍ مفهومٍ.
         // نحتفظ بالأحرف العربيّة واللاتينيّة والأرقام والشرطات فقط، ونحدّ الطول.
         const baseName = (f.file.name.replace(/\.[^.]+$/, '') || 'file')
