@@ -74,12 +74,15 @@ async function pingHealthCheck(reason) {
     : (typeof window !== 'undefined' ? window.fetch : null)
   if (!rawFetch) { pingInFlight = false; clearTimeout(timer); return }
   try {
-    const res = await rawFetch.call(window, `${SUPABASE_URL}/rest/v1/`, {
-      method: 'HEAD',
+    // ‎/auth/v1/health‎ يَرجع 200 بلا مصادقةٍ — لا ضوضاءَ 401 في الـconsole،
+    // ويَختبر stack الشبكة الفعليّ تمامًا كأيِّ مسار.
+    const res = await rawFetch.call(window, `${SUPABASE_URL}/auth/v1/health`, {
+      method: 'GET',
       signal: ctrl.signal,
       headers: { apikey: SUPABASE_ANON },
+      cache: 'no-store',
     })
-    // نَجح — التطبيقُ حيٌّ، لا شيءَ يَلزم.
+    // أيُّ ردٍّ (حتّى خطأ HTTP) = الشبكةُ حيّةٌ. لا شيءَ يَلزم.
     void res
   } catch (e) {
     // فشل/علِق → WebView منهار → reload فوريّ
