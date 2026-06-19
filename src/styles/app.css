@@ -717,19 +717,34 @@
   position:relative;
   display:flex;flex-direction:column;gap:4mm}
 
-/* ====== الترويسةُ — صفٌّ واحدٌ مدمجٌ ====== */
-.mf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+/* ====== الترويسةُ — اللوكَب يمين، بياناتُ الناقل يسار ====== */
+.mf-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
   padding-bottom:2.5mm;border-bottom:1.2pt solid #0b5c43}
-.mf-brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
-.mf-logo{height:11mm;max-width:26mm;object-fit:contain;flex:none}
-.mf-brand-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.mf-brand{display:flex;align-items:center;gap:9px;min-width:0;flex:none;max-width:50%}
+.mf-logo{height:14mm;max-width:30mm;object-fit:contain;flex:none}
+.mf-brand-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .mf-org{font-family:var(--font-display);font-weight:900;font-size:13pt;color:#063d2c;line-height:1.15;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mf-org-sub{font-size:8pt;color:#5a6b62;display:flex;flex-wrap:wrap;gap:5px;line-height:1.3}
-.mf-title{text-align:left;flex:none}
-.mf-t1{font-family:var(--font-display);font-weight:900;font-size:11pt;color:#0b5c43;line-height:1.2}
-.mf-t2{font-size:9pt;color:#3a4a43;margin-top:1px;font-weight:600}
-.mf-t3{font-size:7.5pt;color:#7a8a82;margin-top:1px}
+
+/* كتلةُ بيانات الناقل — هويّةُ الكشف الرسميُّ المميَّز */
+.mf-carrier{display:flex;flex-direction:column;gap:1.2mm;flex:1;min-width:0;
+  background:#fafdfb;border:0.6pt solid #cdd8d2;border-radius:4px;
+  padding:2.5mm 3mm}
+.mf-c-row{display:flex;align-items:baseline;gap:6px;line-height:1.35;min-width:0;font-size:8.5pt}
+.mf-c-k{color:#5a6b62;font-weight:600;flex:none;min-width:22mm;font-size:8pt}
+.mf-c-v{color:#0b1a14;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;text-align:start}
+.mf-c-sep{color:#9aa89f;font-weight:400;margin-inline:2px}
+.mf-c-v .ltr{display:inline-block;direction:ltr}
+
+/* ====== شريطُ العنوان الفرعيّ — اسمُ الكشف + رقمُ الصفحة ====== */
+.mf-subtitle{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:1.5mm 3mm;background:#f3f7f5;border-radius:3px;
+  font-family:var(--font-display)}
+.mf-st-main{font-weight:700;font-size:10pt;color:#0b5c43;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mf-st-page{font-size:8.5pt;color:#3a4a43;font-weight:600;flex:none;white-space:nowrap}
 
 /* ====== سطرُ مكان الركوب — رفيعٌ ومدمجٌ ====== */
 .mf-pickup{display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -743,16 +758,10 @@
 .mf-pickup-count{font-size:9pt;font-weight:500;color:rgba(255,255,255,.92);flex:none;white-space:nowrap}
 .mf-pickup-count b{color:#fff;font-weight:800;font-size:10pt;margin-inline-start:3px}
 
-/* ====== معلوماتُ الرحلة — صفّان أفقيّان مكثّفان (٣ أعمدة × ٢) ====== */
-.mf-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5mm 6mm;
-  padding:2mm 0;border-bottom:0.5pt dashed #cdd8d2}
-.mf-info-item{display:flex;align-items:baseline;gap:5px;min-width:0;line-height:1.3}
-.mf-info-k{font-size:8pt;color:#6a7a72;font-weight:600;flex:none;white-space:nowrap}
-.mf-info-v{font-size:9pt;color:#0b1a14;font-weight:600;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* .mf-info كان قسمَ معلومات الرحلة في السابق — استُغني عنه لصالح .mf-carrier في الترويسة */
 
-/* ====== جدولُ الركّاب — مكثّفٌ ليتسعَ ~٢٢ صفّ/صفحة A4 مع الترويسة والذيل ====== */
-.mf-table{width:100%;border-collapse:collapse;font-size:8.5pt;flex:1}
+/* ====== جدولُ الركّاب — أعمدةٌ ثابتةُ القياسِ موحَّدةٌ بين كلِّ الكشوفات ====== */
+.mf-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5pt;flex:1}
 .mf-table thead th{background:#0b5c43;color:#fff;font-family:var(--font-display);font-weight:700;
   padding:2mm 1.5mm;border:0.6pt solid #074734;text-align:center;font-size:8pt;letter-spacing:.01em}
 .mf-table tbody td{padding:1.6mm 1.5mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
@@ -782,9 +791,12 @@
 /* ====== الجوال: نُصغّر المعاينة (الطباعةُ تستردُّ A4) ====== */
 @media(max-width:760px){
   .mf-sheet{width:100%;min-height:auto;padding:8mm 7mm;gap:4mm}
-  .mf-info{grid-template-columns:repeat(2,1fr);gap:2mm 4mm}
-  .mf-head{flex-direction:column;align-items:flex-start;gap:8px}
-  .mf-title{text-align:right}
+  .mf-head{flex-direction:column;align-items:stretch;gap:8px}
+  .mf-brand{max-width:none}
+  .mf-carrier{padding:3mm}
+  .mf-c-row{font-size:9pt}
+  .mf-c-k{min-width:24mm;font-size:8.5pt}
+  .mf-subtitle{flex-direction:column;align-items:flex-start;gap:3px;padding:2mm 3mm}
   .mf-table{font-size:8pt}
   .mf-table thead th{padding:2mm 1mm;font-size:7.5pt}
   .mf-table tbody td{padding:1.8mm 1mm}
@@ -1221,9 +1233,11 @@ body.fab-interacting *{
 
   /* داخلُ الورقةِ — تباعدٌ مكثّفٌ في الطباعةِ */
   .mf-sheet{gap:0 !important}
-  .mf-head{margin-bottom:2.5mm !important;padding-bottom:2mm !important}
+  .mf-head{margin-bottom:2.5mm !important;padding-bottom:2mm !important;flex-direction:row !important;align-items:flex-start !important}
+  .mf-brand{max-width:50% !important}
+  .mf-carrier{padding:2.5mm 3mm !important;gap:1.2mm !important}
+  .mf-subtitle{margin-bottom:2mm !important;padding:1.5mm 3mm !important;flex-direction:row !important;align-items:center !important}
   .mf-pickup{margin-bottom:2.5mm !important;padding:2mm 5mm !important}
-  .mf-info{margin-bottom:2.5mm !important;padding:1.5mm 0 !important}
   .mf-table{margin-bottom:2mm !important}
   .mf-foot{margin-top:auto !important;padding-top:2mm !important}
 
@@ -1242,12 +1256,11 @@ body.fab-interacting *{
   .mf-table thead tr{page-break-inside:avoid !important;page-break-after:avoid !important}
 
   /* إجبارُ التخطيطِ A4 الكامل في الطباعةِ مهما كانت معاينةُ الشاشة */
-  .mf-info{grid-template-columns:repeat(3,1fr) !important;gap:1.5mm 6mm !important}
-  .mf-head{flex-direction:row !important;align-items:center !important}
   .mf-foot{flex-direction:row !important;align-items:center !important}
-  .mf-title{text-align:left !important}
-  .mf-logo{height:11mm !important;max-width:26mm !important}
+  .mf-logo{height:14mm !important;max-width:30mm !important}
   .mf-pickup-v{font-size:12pt !important}
+  /* الأعمدةُ ثابتةُ القياسِ — لا تتوسّعُ المحتويات */
+  .mf-table{table-layout:fixed !important}
 
   /* التذكرة (boarding pass) — لا تُلامس الكشف */
   .ticket{position:static;margin:0 auto;page-break-inside:avoid}

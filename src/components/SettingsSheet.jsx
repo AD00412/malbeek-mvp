@@ -28,6 +28,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
   const [contactPhone, setContactPhone] = useState('')
   const [storeUrl, setStoreUrl] = useState('')
   const [licenseNo, setLicenseNo] = useState('')
+  const [carrierCompany, setCarrierCompany] = useState('')
 
   // الهويّة
   const [logoUrl, setLogoUrl] = useState('')
@@ -43,6 +44,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
     setContactPhone(sub?.contact_phone || '')
     setStoreUrl(sub?.store_url || '')
     setLicenseNo(sub?.license_no || '')
+    setCarrierCompany(sub?.carrier_company || '')
     setLogoUrl(sub?.logo_url || '')
     setStampUrl(sub?.stamp_url || '')
     setTab('profile')
@@ -73,6 +75,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
       contact_phone: contactPhone.trim() || null,
       store_url: storeUrl.trim() || null,
       license_no: licenseNo.trim() || null,
+      carrier_company: carrierCompany.trim() || null,
     }
     // نُحدِّث الـ slug فقط إن تغيّر — لتجنّب توليد خطأٍ بسبب الفريديّة (unique).
     if (safeSlug && safeSlug !== sub.slug) payload.slug = safeSlug
@@ -182,7 +185,14 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <label>رقم التصريح / الترخيص</label>
             <input type="text" value={licenseNo} onChange={(e) => setLicenseNo(e.target.value)} placeholder="رقم التصريح" />
           </div>
-          <button className="btn btn-gold btn-block" onClick={saveOrg} disabled={busy || !orgName.trim()}>
+          <div className="field">
+            <label>الشركة الناقلة</label>
+            <input type="text" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} placeholder="مثال: أبو سرحد للنقل" />
+            <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
+              يظهرُ في رأس الكشف الرسميّ. إن تُرك فارغًا يُستخدم اسمُ الحملة.
+            </p>
+          </div>
+          <button className="btn btn-em btn-block" onClick={saveOrg} disabled={busy || !orgName.trim()}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={15} /> حفظ التغييرات</>}
           </button>
         </div>
