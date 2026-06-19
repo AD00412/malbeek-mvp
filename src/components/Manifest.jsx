@@ -97,22 +97,14 @@ function ManifestSheet({
         </div>
 
         <div className="mf-carrier">
-          <CarrierRow k="الشركة الناقلة:" v={carrierCompany} />
-          <CarrierRow k="الوجهة:" v={route} />
-          <CarrierRow k="الذهاب:" v={<><span dir="ltr">{fmtGreg(trip?.depart_at)}</span><span className="mf-c-sep"> · </span><span dir="ltr">{fmtHijri(trip?.depart_at)}</span></>} />
-          {hasReturn && (
-            <CarrierRow k="العودة:" v={<><span dir="ltr">{fmtGreg(trip?.return_at)}</span><span className="mf-c-sep"> · </span><span dir="ltr">{fmtHijri(trip?.return_at)}</span></>} />
-          )}
-          <CarrierRow k="السائق ١:" v={joinNamePhone(driver1Name, driver1Phone)} />
-          {(driver2Name || driver2Phone) && (
-            <CarrierRow k="السائق ٢:" v={joinNamePhone(driver2Name, driver2Phone)} />
-          )}
-          <CarrierRow k="رقم الباص:" v={
-            <>
-              <span>{busLabel || '—'}</span>
-              {busPlate && busPlate !== '—' && <><span className="mf-c-sep"> · </span><span className="ltr">{busPlate}</span></>}
-            </>
-          } />
+          <CarrierRow k="الشركة الناقلة" v={carrierCompany} />
+          <CarrierRow k="الوجهة" v={route} />
+          <CarrierRow k="الذهاب" v={<><span dir="ltr">{fmtGreg(trip?.depart_at)}</span><span className="mf-c-sep"> · </span><span dir="ltr">{fmtHijri(trip?.depart_at)}</span></>} />
+          <CarrierRow k="العودة" v={hasReturn ? <><span dir="ltr">{fmtGreg(trip?.return_at)}</span><span className="mf-c-sep"> · </span><span dir="ltr">{fmtHijri(trip?.return_at)}</span></> : '—'} />
+          <CarrierRow k="السائق ١" v={joinNamePhone(driver1Name, driver1Phone)} />
+          <CarrierRow k="السائق ٢" v={(driver2Name || driver2Phone) ? joinNamePhone(driver2Name, driver2Phone) : '—'} />
+          <CarrierRow k="رقم الباص" v={busLabel || '—'} />
+          <CarrierRow k="لوحة الباص" v={<span className="ltr">{busPlate || '—'}</span>} />
         </div>
       </header>
 

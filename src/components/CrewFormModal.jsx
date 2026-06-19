@@ -22,6 +22,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
   const [supPhone, setSupPhone] = useState(trip?.supervisor_phone ?? '')
   // بيانات المؤسسة
   const [orgName, setOrgName] = useState(sub?.org_name ?? '')
+  const [carrierCompany, setCarrierCompany] = useState(sub?.carrier_company ?? '')
   const [licenseNo, setLicenseNo] = useState(sub?.license_no ?? '')
   const [contactPhone, setContactPhone] = useState(sub?.contact_phone ?? '')
   const [stampUrl, setStampUrl] = useState(sub?.stamp_url ?? '')
@@ -60,6 +61,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
 
       const orgPayload = {
         org_name: orgName.trim() || sub.org_name || 'حملتي',
+        carrier_company: carrierCompany.trim() || null,
         license_no: licenseNo.trim() || null,
         contact_phone: normalizePhone(contactPhone) || null,
         stamp_url: stampUrl || null,
@@ -87,7 +89,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
       actions={
         <>
           <button className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>
-          <button className="btn btn-gold" onClick={save} disabled={busy || anyPhoneErr}>
+          <button className="btn btn-em" onClick={save} disabled={busy || anyPhoneErr}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> حفظ</>}
           </button>
         </>
@@ -99,6 +101,11 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         <div className="field">
           <label>اسم المؤسسة / الحملة</label>
           <input type="text" value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>الشركة الناقلة</label>
+          <input type="text" placeholder="مثال: أبو سرحد للنقل" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} />
+          <span className="hint">تظهرُ في رأس الكشف الرسميّ. إن تُركت فارغةً يُستخدم اسمُ الحملة.</span>
         </div>
         <div className="grid-2">
           <div className="field ltr">
@@ -143,23 +150,23 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
           </div>
         </div>
 
-        <div className="sec-label">السائق ومساعده</div>
+        <div className="sec-label">السائق الأوّل والثاني</div>
         <div className="grid-2">
           <div className="field">
-            <label>اسم السائق</label>
+            <label>اسم السائق الأوّل</label>
             <input type="text" value={driverName} onChange={(e) => setDriverName(e.target.value)} />
           </div>
           <div className={`field ltr ${driverErr ? 'invalid' : ''}`}>
-            <label>جوال السائق</label>
+            <label>جوال السائق الأوّل</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} />
             {driverErr && <span className="hint">{driverErr}</span>}
           </div>
           <div className="field">
-            <label>اسم مساعد السائق</label>
+            <label>اسم السائق الثاني</label>
             <input type="text" value={assistantName} onChange={(e) => setAssistantName(e.target.value)} />
           </div>
           <div className={`field ltr ${assistErr ? 'invalid' : ''}`}>
-            <label>جوال المساعد</label>
+            <label>جوال السائق الثاني</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={assistantPhone} onChange={(e) => setAssistantPhone(e.target.value)} />
             {assistErr && <span className="hint">{assistErr}</span>}
           </div>
