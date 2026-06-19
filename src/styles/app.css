@@ -1150,20 +1150,32 @@
 .lp{min-height:100vh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);direction:rtl}
 
 /* الرأس */
-.lp-top{display:flex;align-items:center;gap:14px;padding:clamp(14px,3vw,22px) clamp(16px,5vw,48px);
-  position:sticky;top:0;z-index:10;
-  background:linear-gradient(180deg,rgba(4,30,22,.92),rgba(4,30,22,.55));
-  backdrop-filter:var(--glass-blur);border-bottom:1px solid var(--line)}
-.lp-brand{display:flex;align-items:center;gap:12px}
-.lp-brand strong{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--cr-50);line-height:1;letter-spacing:-.5px}
-/* اللوكَب — اسمٌ عربيٌّ ٩٠٠ + lowercase مفرَّقٌ بالحرف (مرجع mulabeekbrandguide §٠١) */
+.lp-top{display:flex;align-items:center;gap:14px;padding:clamp(12px,3vw,18px) clamp(16px,5vw,48px);
+  position:sticky;top:0;z-index:30;
+  background:linear-gradient(180deg,rgba(10,15,13,.92),rgba(10,15,13,.72));
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--line)}
+.lp-brand{display:flex;align-items:center;gap:11px;flex:none}
+.lp-brand strong{font-family:var(--font-display);font-weight:900;font-size:21px;color:var(--cr-50);line-height:1;letter-spacing:-.5px}
+/* اللوكَب — اسمٌ عربيٌّ ٩٠٠ + lowercase مفرَّقٌ بالحرف */
 .lp-brand-lockup{display:flex;flex-direction:column;line-height:1}
-.lp-brand-lockup em{font-style:normal;font-size:11px;letter-spacing:2.5px;
+.lp-brand-lockup em{font-style:normal;font-size:10.5px;letter-spacing:2px;
   color:var(--cr-300);text-transform:lowercase;margin-top:5px;font-weight:700}
-.lp-top-nav{margin-inline-start:auto;display:flex;align-items:center;gap:clamp(8px,2vw,18px)}
-.lp-top-nav a{color:var(--cr-200);font-size:14.5px;font-weight:500;transition:.18s}
-.lp-top-nav a:hover{color:var(--cr-50)}
-@media(max-width:640px){.lp-top-nav a:not(.btn){display:none}}
+.lp-top-nav{margin-inline-start:auto;display:flex;align-items:center;gap:clamp(6px,1.6vw,16px)}
+.lp-top-nav a:not(.btn){color:var(--cr-200);font-size:14.5px;font-weight:500;transition:.18s;
+  position:relative;padding:4px 2px}
+.lp-top-nav a:not(.btn)::after{content:"";position:absolute;inset-inline:2px;bottom:-2px;height:2px;
+  background:var(--em-500);border-radius:2px;transform:scaleX(0);transform-origin:center;transition:transform .22s ease}
+.lp-top-nav a:not(.btn):hover{color:var(--cr-50)}
+.lp-top-nav a:not(.btn):hover::after{transform:scaleX(1)}
+.lp-top-nav .theme-toggle{width:36px;height:36px;flex:none}
+.lp-top-nav .btn-sm{flex:none;white-space:nowrap}
+/* الجوال: نُخفي روابط الـ anchor ونُبقي الوضع + الدخول بمساحةٍ مريحةٍ */
+@media(max-width:680px){
+  .lp-top-nav a:not(.btn){display:none}
+  .lp-top-nav{gap:8px}
+  .lp-brand strong{font-size:19px}
+}
 
 /* Hero */
 .lp-hero{padding:clamp(40px,8vw,90px) clamp(20px,6vw,80px) clamp(30px,6vw,80px);
