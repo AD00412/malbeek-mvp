@@ -709,54 +709,54 @@
   display:flex;flex-direction:column;align-items:center;gap:22px;
   -webkit-overflow-scrolling:touch}
 
-/* ======= ورقةُ A4 — مدمجةٌ ومتوازنةٌ (gap:5mm بدل 8mm) ======= */
+/* ======= ورقةُ A4 — مدمجةٌ ومتوازنةٌ (gap:4mm، chrome مكثّف) ======= */
 .mf-sheet{background:#fff;color:#0b1a14;font-family:var(--font-sans);
   width:210mm;max-width:100%;min-height:297mm;
-  padding:12mm 11mm;box-shadow:0 14px 40px rgba(0,0,0,.18);
+  padding:11mm 10mm;box-shadow:0 14px 40px rgba(0,0,0,.18);
   border-radius:4px;align-self:flex-start;
   position:relative;
-  display:flex;flex-direction:column;gap:5mm}
+  display:flex;flex-direction:column;gap:4mm}
 
 /* ====== الترويسةُ — صفٌّ واحدٌ مدمجٌ ====== */
-.mf-head{display:flex;align-items:center;justify-content:space-between;gap:14px;
-  padding-bottom:4mm;border-bottom:1.5pt solid #0b5c43}
-.mf-brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
-.mf-logo{height:14mm;max-width:30mm;object-fit:contain;flex:none}
+.mf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-bottom:2.5mm;border-bottom:1.2pt solid #0b5c43}
+.mf-brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.mf-logo{height:11mm;max-width:26mm;object-fit:contain;flex:none}
 .mf-brand-text{display:flex;flex-direction:column;gap:1px;min-width:0}
-.mf-org{font-family:var(--font-display);font-weight:900;font-size:15pt;color:#063d2c;line-height:1.15;
+.mf-org{font-family:var(--font-display);font-weight:900;font-size:13pt;color:#063d2c;line-height:1.15;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mf-org-sub{font-size:8.5pt;color:#5a6b62;display:flex;flex-wrap:wrap;gap:6px;line-height:1.3}
+.mf-org-sub{font-size:8pt;color:#5a6b62;display:flex;flex-wrap:wrap;gap:5px;line-height:1.3}
 .mf-title{text-align:left;flex:none}
-.mf-t1{font-family:var(--font-display);font-weight:900;font-size:12pt;color:#0b5c43;line-height:1.2}
-.mf-t2{font-size:9.5pt;color:#3a4a43;margin-top:1px;font-weight:600}
-.mf-t3{font-size:8pt;color:#7a8a82;margin-top:2px}
+.mf-t1{font-family:var(--font-display);font-weight:900;font-size:11pt;color:#0b5c43;line-height:1.2}
+.mf-t2{font-size:9pt;color:#3a4a43;margin-top:1px;font-weight:600}
+.mf-t3{font-size:7.5pt;color:#7a8a82;margin-top:1px}
 
-/* ====== سطرُ مكان الركوب — لمسةٌ زمرّديّةٌ رفيعةٌ (ليس banner ثقيلًا) ====== */
-.mf-pickup{display:flex;align-items:center;justify-content:space-between;gap:14px;
+/* ====== سطرُ مكان الركوب — رفيعٌ ومدمجٌ ====== */
+.mf-pickup{display:flex;align-items:center;justify-content:space-between;gap:12px;
   background:linear-gradient(90deg,#063d2c,#0b5c43);color:#fff;
-  padding:3.5mm 6mm;border-radius:4px;
+  padding:2.5mm 5mm;border-radius:3px;
   font-family:var(--font-display)}
-.mf-pickup-main{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1}
-.mf-pickup-k{font-size:9pt;font-weight:500;color:rgba(255,255,255,.78);flex:none}
-.mf-pickup-v{font-size:13pt;font-weight:900;
+.mf-pickup-main{display:flex;align-items:baseline;gap:7px;min-width:0;flex:1}
+.mf-pickup-k{font-size:8.5pt;font-weight:500;color:rgba(255,255,255,.78);flex:none}
+.mf-pickup-v{font-size:12pt;font-weight:900;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mf-pickup-count{font-size:10pt;font-weight:500;color:rgba(255,255,255,.92);flex:none;white-space:nowrap}
-.mf-pickup-count b{color:#fff;font-weight:800;font-size:11pt;margin-inline-start:3px}
+.mf-pickup-count{font-size:9pt;font-weight:500;color:rgba(255,255,255,.92);flex:none;white-space:nowrap}
+.mf-pickup-count b{color:#fff;font-weight:800;font-size:10pt;margin-inline-start:3px}
 
-/* ====== معلوماتُ الرحلة — صفّان أفقيّان نظيفان (٣ أعمدة × ٢) ====== */
-.mf-info{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm 6mm;
-  padding:3mm 0;border-bottom:0.5pt dashed #cdd8d2}
+/* ====== معلوماتُ الرحلة — صفّان أفقيّان مكثّفان (٣ أعمدة × ٢) ====== */
+.mf-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5mm 6mm;
+  padding:2mm 0;border-bottom:0.5pt dashed #cdd8d2}
 .mf-info-item{display:flex;align-items:baseline;gap:5px;min-width:0;line-height:1.3}
-.mf-info-k{font-size:8.5pt;color:#6a7a72;font-weight:600;flex:none;white-space:nowrap}
-.mf-info-v{font-size:9.5pt;color:#0b1a14;font-weight:600;
+.mf-info-k{font-size:8pt;color:#6a7a72;font-weight:600;flex:none;white-space:nowrap}
+.mf-info-v{font-size:9pt;color:#0b1a14;font-weight:600;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 
-/* ====== جدولُ الركّاب — مدمجٌ ليتسعَ ~٣٠ صفّ/صفحة ====== */
-.mf-table{width:100%;border-collapse:collapse;font-size:9pt;flex:1}
+/* ====== جدولُ الركّاب — مكثّفٌ ليتسعَ ~٢٢ صفّ/صفحة A4 مع الترويسة والذيل ====== */
+.mf-table{width:100%;border-collapse:collapse;font-size:8.5pt;flex:1}
 .mf-table thead th{background:#0b5c43;color:#fff;font-family:var(--font-display);font-weight:700;
-  padding:2.5mm 1.5mm;border:0.7pt solid #074734;text-align:center;font-size:8.5pt;letter-spacing:.01em}
-.mf-table tbody td{padding:2mm 1.5mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
-  background:#fff;line-height:1.3;vertical-align:middle}
+  padding:2mm 1.5mm;border:0.6pt solid #074734;text-align:center;font-size:8pt;letter-spacing:.01em}
+.mf-table tbody td{padding:1.6mm 1.5mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
+  background:#fff;line-height:1.25;vertical-align:middle}
 .mf-table tbody tr:nth-child(even) td{background:#f6faf8}
 /* صفوفٌ فارغةٌ — جاهزةٌ للإضافةِ اليدويّةِ على Word أو بالقلم */
 .mf-table tbody tr.mf-row-empty td{background:#fff;color:#cdd8d2}
@@ -768,16 +768,16 @@
 .mf-empty{padding:7mm;color:#7a8a82;font-style:italic;text-align:center !important}
 
 /* ====== التذييل — سطرٌ نحيلٌ ====== */
-.mf-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;
-  margin-top:auto;padding-top:3mm;border-top:0.7pt dashed #b9c6bf}
-.mf-note{font-size:8.5pt;color:#3a4a43;line-height:1.5;flex:1}
+.mf-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:auto;padding-top:2mm;border-top:0.5pt dashed #b9c6bf}
+.mf-note{font-size:8pt;color:#3a4a43;line-height:1.4;flex:1}
 .mf-stamp{flex:none}
-.mf-stamp-e{display:inline-flex;align-items:center;gap:6px;border:1.5pt solid #0b5c43;color:#0b5c43;
-  border-radius:6px;padding:2.5mm 5mm;font-family:var(--font-display);font-weight:700;
-  font-size:10pt;transform:rotate(-3deg)}
-.mf-stamp-m{border:1pt dashed #9aa89f;color:#7a8a82;border-radius:5px;
-  padding:3mm 8mm;font-size:8.5pt;text-align:center}
-.mf-stamp-img{max-width:30mm;max-height:18mm;object-fit:contain;transform:rotate(-3deg)}
+.mf-stamp-e{display:inline-flex;align-items:center;gap:6px;border:1.2pt solid #0b5c43;color:#0b5c43;
+  border-radius:5px;padding:2mm 4mm;font-family:var(--font-display);font-weight:700;
+  font-size:9pt;transform:rotate(-3deg)}
+.mf-stamp-m{border:1pt dashed #9aa89f;color:#7a8a82;border-radius:4px;
+  padding:2mm 6mm;font-size:8pt;text-align:center}
+.mf-stamp-img{max-width:26mm;max-height:14mm;object-fit:contain;transform:rotate(-3deg)}
 
 /* ====== الجوال: نُصغّر المعاينة (الطباعةُ تستردُّ A4) ====== */
 @media(max-width:760px){
@@ -1181,8 +1181,10 @@ body.fab-interacting *{
 
 /* ---------- الطباعة: يُظهر الكشف/التذكرة فقط ---------- */
 @media print{
-  /* الهوامشُ تأتي من @page (سلوكُ Word الصحيح). لا padding على الورقة. */
-  @page{size:A4 portrait;margin:14mm 12mm}
+  /* ‎@page { margin: 0 }‎ يكبحُ رؤوسَ/ذيولَ المتصفّحاتِ الافتراضيّةَ
+     (رابطُ الصفحةِ، اسمُ المنصّة، التاريخ) في معظم المتصفّحاتِ الحديثة.
+     الهوامشُ الفعليّةُ على المحتوى تأتي من padding داخلَ ‎.mf-sheet‎. */
+  @page{size:A4 portrait;margin:0}
 
   /* تهيئةُ الجذر — مهمٌّ لإلغاءِ ارتفاعِ 100dvh ودخولِ التطبيق */
   html,body{background:#fff !important;color:#0b1a14 !important;
@@ -1201,24 +1203,29 @@ body.fab-interacting *{
     inset:auto !important;z-index:auto !important}
   .manifest-toolbar,.no-print{display:none !important}
 
-  /* كلُّ <article class="mf-sheet"> = صفحةٌ A4 واحدةٌ كاملةٌ بترويسةٍ
-     وتذييلٍ مستقلّين. ‎page-break-inside:avoid‎ يمنعُ تقسيمَها بين صفحتَين. */
-  .mf-sheet{position:static !important;
-    width:auto !important;max-width:none !important;min-height:0 !important;
-    margin:0 !important;padding:0 !important;
+  /* كلُّ <article class="mf-sheet"> = صفحةٌ A4 محدّدةُ الأبعادِ.
+     ‎width/height‎ ثابتتان (210×297mm)، ‎padding‎ يوفّرُ الهوامشَ الداخليّةَ
+     بديلًا عن ‎@page margin‎ (الذي ضبطناه ٠ لكبحِ رؤوسِ المتصفّح).
+     ‎overflow:hidden‎ يمنعُ التسرّبَ لصفحةٍ ثانيةٍ لو زاد المحتوى قليلًا. */
+  .mf-sheet{position:static !important;box-sizing:border-box !important;
+    width:210mm !important;height:297mm !important;max-width:none !important;
+    min-height:0 !important;margin:0 !important;
+    padding:11mm 10mm !important;
     box-shadow:none !important;border-radius:0 !important;
+    overflow:hidden !important;
     page-break-after:always !important;break-after:page !important;
     page-break-inside:avoid !important;break-inside:avoid !important;
     display:flex !important;flex-direction:column !important;background:#fff !important}
   .mf-sheet:last-child{page-break-after:auto !important;break-after:auto !important}
   .mf-sheet:not(:first-child){page-break-before:always !important;break-before:page !important}
 
-  /* داخلُ الورقةِ — تباعدٌ مدمجٌ يطابقُ المعاينةَ */
-  .mf-head{margin-bottom:4mm !important;padding-bottom:3mm !important}
-  .mf-pickup{margin-bottom:3mm !important;padding:3.5mm 6mm !important}
-  .mf-info{margin-bottom:3mm !important;padding:2mm 0 !important}
-  .mf-table{margin-bottom:3mm !important}
-  .mf-foot{margin-top:3mm !important;padding-top:2mm !important}
+  /* داخلُ الورقةِ — تباعدٌ مكثّفٌ في الطباعةِ */
+  .mf-sheet{gap:0 !important}
+  .mf-head{margin-bottom:2.5mm !important;padding-bottom:2mm !important}
+  .mf-pickup{margin-bottom:2.5mm !important;padding:2mm 5mm !important}
+  .mf-info{margin-bottom:2.5mm !important;padding:1.5mm 0 !important}
+  .mf-table{margin-bottom:2mm !important}
+  .mf-foot{margin-top:auto !important;padding-top:2mm !important}
 
   /* ألوانٌ صلبةٌ تُطبَع في كلِّ المتصفّحات */
   .mf-pickup,.mf-table thead th,.mf-table thead tr,
@@ -1235,12 +1242,12 @@ body.fab-interacting *{
   .mf-table thead tr{page-break-inside:avoid !important;page-break-after:avoid !important}
 
   /* إجبارُ التخطيطِ A4 الكامل في الطباعةِ مهما كانت معاينةُ الشاشة */
-  .mf-info{grid-template-columns:repeat(3,1fr) !important;gap:2mm 6mm !important}
+  .mf-info{grid-template-columns:repeat(3,1fr) !important;gap:1.5mm 6mm !important}
   .mf-head{flex-direction:row !important;align-items:center !important}
   .mf-foot{flex-direction:row !important;align-items:center !important}
   .mf-title{text-align:left !important}
-  .mf-logo{height:14mm !important;max-width:30mm !important}
-  .mf-pickup-v{font-size:13pt !important}
+  .mf-logo{height:11mm !important;max-width:26mm !important}
+  .mf-pickup-v{font-size:12pt !important}
 
   /* التذكرة (boarding pass) — لا تُلامس الكشف */
   .ticket{position:static;margin:0 auto;page-break-inside:avoid}

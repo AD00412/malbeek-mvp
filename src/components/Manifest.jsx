@@ -9,8 +9,9 @@ const NO_BP = 'بلا مكان محدَّد'
 
 /** عددُ الصفوف الافتراضيُّ للحافلةِ السعوديّةِ النموذجيّةِ (١٢×٤ + خلفيّ٥ = ٤٩) */
 const DEFAULT_CAPACITY = 49
-/** عددُ الصفوف المرئيِّ في كلِّ صفحةٍ A4 — مختبَرٌ ليناسبَ مع الترويسةِ والتذييل */
-const ROWS_PER_PAGE = 25
+/** عددُ الصفوف المرئيِّ في كلِّ صفحةٍ A4 — مضبوطٌ تجريبيًّا ليناسبَ مع
+ *  الترويسةِ والتذييلِ ضمن ٢٩٧mm حتّى مع رؤوسِ/ذيولِ المتصفّحاتِ الافتراضيّةِ. */
+const ROWS_PER_PAGE = 22
 
 /* تنسيقُ تاريخٍ ميلاديٍّ مختصرٍ. */
 function fmt(v, opts = {}) {
@@ -198,17 +199,15 @@ function sortBoardingPoints(arr) {
 
 /**
  * يُعيدُ عددَ الصفوفِ المعروضةِ في كشفٍ واحدٍ:
- *   - يبدأُ من عدد الركّاب المسجَّلين
- *   - يُضافُ بافرٌ صغيرٌ (٥) لمستحدثاتٍ يدويّةٍ
- *   - يَقفِزُ لأقربِ حدِّ صفحةٍ (٢٥) فلا تظهر أوراقٌ نصفُ فارغةٍ
+ *   - يبدأُ من عدد الركّاب المسجَّلين + بافرُ ٥ للمستحدثاتِ اليدويّةِ
+ *   - حدُّ أدنى صفحةٌ كاملةٌ (ROWS_PER_PAGE) لمساحةِ كتابةٍ يدويّةٍ
  *   - مقيّدٌ بسعةِ الباصِ كحدٍّ أقصى (٤٩ افتراضيًّا)
+ *   - بلا snap قسريٍّ — الصفحةُ الأخيرةُ القصيرةُ مقبولةٌ ولا نُهدر ورقًا
  */
 function targetRowCount(filledCount, capacity) {
   const buffer = 5
-  const withBuffer = filledCount + buffer
-  const snapped = Math.ceil(withBuffer / ROWS_PER_PAGE) * ROWS_PER_PAGE
-  const minimum = ROWS_PER_PAGE  // كشفٌ بصفحةٍ كاملةٍ على الأقلّ (مساحةُ كتابةٍ يدويّةٍ)
-  return Math.min(Math.max(snapped, minimum), capacity)
+  const target = Math.max(filledCount + buffer, ROWS_PER_PAGE)
+  return Math.min(target, capacity)
 }
 
 /**
