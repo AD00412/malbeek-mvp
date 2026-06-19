@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { withTimeout } from '../lib/format'
 import Icon from './Icon'
 
 /* ============================================================
@@ -141,23 +142,31 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
           .replace(/[^\w؀-ۿݐ-ݿ-]+/g, '_')
           .slice(0, 50)
         const path = `public/${Date.now()}-${rand}-${baseName}.${ext}`
-        const { error: upErr } = await supabase.storage
-          .from('public-attachments')
-          .upload(path, f.file, { upsert: false, contentType: f.file.type, cacheControl: '3600' })
+        const { error: upErr } = await withTimeout(
+          supabase.storage
+            .from('public-attachments')
+            .upload(path, f.file, { upsert: false, contentType: f.file.type, cacheControl: '3600' }),
+          30000,
+          'تعذّر رفع المرفق — استغرق وقتًا طويلًا. أعد المحاولة أو أرسل دون مرفقات.'
+        )
         if (upErr) throw upErr
         uploaded.push(path)
       }
 
       // ٢) استدعاء RPC submit_public_message (يلتفّ على RLS بصلاحيّةٍ controlled)
-      const { error } = await supabase.rpc('submit_public_message', {
-        p_mode:    mode,
-        p_name:    name.trim(),
-        p_email:   email.trim().toLowerCase(),
-        p_subject: isContact ? subject.trim() || null : null,
-        p_kind:    !isContact ? kind : null,
-        p_body:    body.trim(),
-        p_attachments: uploaded,
-      })
+      const { error } = await withTimeout(
+        supabase.rpc('submit_public_message', {
+          p_mode:    mode,
+          p_name:    name.trim(),
+          p_email:   email.trim().toLowerCase(),
+          p_subject: isContact ? subject.trim() || null : null,
+          p_kind:    !isContact ? kind : null,
+          p_body:    body.trim(),
+          p_attachments: uploaded,
+        }),
+        15000,
+        'تعذّر الإرسال — تحقّق من اتصالك وأعد المحاولة.'
+      )
       if (error) throw error
 
       setStage('success')

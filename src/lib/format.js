@@ -38,6 +38,23 @@ export function toWaPhone(raw = '') {
 }
 
 /** يستخرج امتداد ملفٍّ آمنًا (٤ أحرف لاتينيّةٍ أو رقميّةٍ حصرًا)، مع fallback. */
+/**
+ * يَلفُّ وعدًا بمهلةٍ قصوى — لو لم يَكتمل خلالها يُرمى خطأٌ واضحٌ بدل
+ * التجمّد الأبديّ. يُستعمل في عمليّات الإرسال/الرفع كي لا يَدور الزرُّ بلا نهاية
+ * عندما يَكون الاتّصالُ زومبي (بعد تعليق iOS أو شبكةٍ متقطّعة).
+ *
+ * @param {Promise} promise
+ * @param {number} ms
+ * @param {string} label رسالةُ الخطأ عند انتهاء المهلة
+ */
+export function withTimeout(promise, ms, label = 'انتهت المهلة — تحقّق من اتصالك وأعد المحاولة.') {
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(label)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 export function safeExt(file, fallback = 'png') {
   const name = file?.name ?? ''
   const dot = name.lastIndexOf('.')

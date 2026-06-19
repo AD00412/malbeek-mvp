@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { safeExt } from '../lib/format'
+import { safeExt, withTimeout } from '../lib/format'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import SignedImage from './SignedImage'
@@ -109,24 +109,32 @@ export default function FeedbackSheet({ open, audience, onClose }) {
         const ext = safeExt(file)
         const rand = Math.random().toString(36).slice(2, 6)
         const path = `${user.id}/${Date.now()}-${rand}.${ext}`
-        const { error: upErr } = await supabase.storage
-          .from('feedback-attachments')
-          .upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type })
+        const { error: upErr } = await withTimeout(
+          supabase.storage
+            .from('feedback-attachments')
+            .upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type }),
+          30000,
+          'تعذّر رفع الصورة — استغرق وقتًا طويلًا. تحقّق من اتصالك وأعد المحاولة.'
+        )
         setUploading(false)
         if (upErr) throw upErr
         attachment_url = path   // نخزّن المسار، الإدارة تجلب signed URL وقت العرض
       }
 
-      // ٢) أدرج الملاحظة
-      const { error } = await supabase.from('feedback').insert({
-        profile_id: user.id,
-        subscriber_id: subscriberId || null,
-        audience,
-        kind,
-        subject: subject.trim() || null,
-        body: body.trim(),
-        attachment_url,
-      })
+      // ٢) أدرج الملاحظة (بمهلةٍ صريحةٍ كي لا يَدور الزرُّ بلا نهايةٍ عند تجمّد الاتّصال)
+      const { error } = await withTimeout(
+        supabase.from('feedback').insert({
+          profile_id: user.id,
+          subscriber_id: subscriberId || null,
+          audience,
+          kind,
+          subject: subject.trim() || null,
+          body: body.trim(),
+          attachment_url,
+        }),
+        15000,
+        'تعذّر إرسال الملاحظة — تحقّق من اتصالك وأعد المحاولة.'
+      )
       if (error) throw error
       setOk('وصلت ملاحظتك ✓ سنرجع لك بأقرب وقت.')
       setBody(''); setSubject(''); clearFile()
