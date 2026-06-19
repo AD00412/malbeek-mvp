@@ -158,6 +158,39 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }, [])
 
+  /* ============================================================
+     إيقاظُ المصادقةِ بعد عودة التطبيق إلى المقدّمة (PWA على iOS Safari
+     يُجمّد JS بعد عدّة ثوانٍ من backgrounding، فيموتُ ping/pong
+     ويُهمَل تجديدُ التوكِن. الحلّ: عند visible/online نُحدّث الجلسةَ
+     يدويًّا فيُضخَّ توكِنٌ طازجٌ يُبقي كلَّ الاستعلامات سليمةً).
+     ============================================================ */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    let lastWake = 0
+    async function wake() {
+      if (Date.now() - lastWake < 5000) return   // throttle 5s
+      lastWake = Date.now()
+      try {
+        // يَبعثُ INITIAL_SESSION/TOKEN_REFRESHED تلقائيًّا إن لزم
+        const { data } = await supabase.auth.getSession()
+        if (data?.session && data.session.expires_at) {
+          const remaining = data.session.expires_at * 1000 - Date.now()
+          // إن بقي أقلُّ من ٥ دقائق للانتهاء، أو لا توكِن: جدّده
+          if (remaining < 5 * 60 * 1000) await supabase.auth.refreshSession()
+        }
+      } catch { /* تجاهل بصمتٍ — أيُّ خطأٍ يُحلُّ عند الاستعلام التالي */ }
+    }
+    function onVisible() { if (document.visibilityState === 'visible') wake() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', wake)
+    window.addEventListener('focus', wake)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', wake)
+      window.removeEventListener('focus', wake)
+    }
+  }, [])
+
   const refreshProfile = useCallback(
     () => loadProfile(session?.user?.id),
     [loadProfile, session]
