@@ -9,6 +9,7 @@ import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
+import FeedbackFab from '../../components/FeedbackFab'
 import FeedbackInbox from '../../components/FeedbackInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
@@ -620,9 +621,7 @@ export function SubscriberHome() {
         </BottomSheet>
       </AppShell>
 
-      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} aria-label="تواصل مع إدارة ملبّيك" title="تواصل مع إدارة ملبّيك">
-        <Icon name="message" size={18} />
-      </button>
+      <FeedbackFab onOpen={() => setFeedbackOpen(true)} />
       <FeedbackSheet open={feedbackOpen} audience="subscriber" onClose={() => setFeedbackOpen(false)} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={sub} onSubChanged={load} />
 
@@ -1073,9 +1072,7 @@ export function CustomerHome() {
         </div>
       </AppShell>
 
-      <button type="button" className="fab-feedback" onClick={() => setFeedbackOpen(true)} aria-label="تواصل مع إدارة ملبّيك" title="تواصل مع إدارة ملبّيك">
-        <Icon name="message" size={18} />
-      </button>
+      <FeedbackFab onOpen={() => setFeedbackOpen(true)} />
       <FeedbackSheet open={feedbackOpen} audience="customer" onClose={() => setFeedbackOpen(false)} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={null} />
     </>

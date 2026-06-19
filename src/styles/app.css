@@ -1001,12 +1001,35 @@
 .bar .fill-info{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,#2e7d8a,var(--info))}
 .bar .fill-warn{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--gd-500),var(--warn))}
 
-/* زرّ التغذية الراجعة العائم */
-.fab-feedback{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));inset-inline-end:18px;z-index:50;
-  width:46px;height:46px;border-radius:50%;border:1px solid var(--gd-500);background:linear-gradient(180deg,var(--em-600),var(--em-800));
-  color:var(--gd-300);cursor:pointer;display:grid;place-items:center;box-shadow:var(--shadow-md);transition:.2s}
-.fab-feedback:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(0,0,0,.45);color:var(--gd-100)}
-@media(min-width:820px){.fab-feedback{bottom:24px;inset-inline-end:24px}}
+/* زرّ التغذية الراجعة العائم — قابلٌ للسحب + قابلٌ للإخفاء (FeedbackFab.jsx) */
+.fab-fb{position:fixed;z-index:60;width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(150deg,var(--em-500),var(--em-700));color:#fff;
+  display:grid;place-items:center;cursor:grab;touch-action:none;
+  box-shadow:0 8px 24px rgba(16,185,129,.30),0 2px 6px rgba(0,0,0,.25);
+  border:1px solid rgba(255,255,255,.16);
+  transition:transform .18s ease,box-shadow .2s ease;-webkit-tap-highlight-color:transparent;
+  animation:fab-in .3s cubic-bezier(.16,.84,.44,1)}
+@keyframes fab-in{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+.fab-fb:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(16,185,129,.42),0 4px 10px rgba(0,0,0,.3)}
+.fab-fb:active{cursor:grabbing}
+.fab-fb.dragging{cursor:grabbing;transform:scale(1.08);box-shadow:0 18px 40px rgba(16,185,129,.5);transition:box-shadow .2s ease}
+.fab-fb svg{pointer-events:none}
+/* شارةُ الردود غير المقروءة */
+.fab-fb-badge{position:absolute;top:-4px;inset-inline-start:-4px;min-width:20px;height:20px;padding:0 5px;
+  border-radius:99px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;
+  display:grid;place-items:center;border:2px solid var(--bg-base);box-shadow:0 2px 6px rgba(0,0,0,.3);
+  font-family:var(--font-sans);pointer-events:none}
+/* زرّ الإخفاء × */
+.fab-fb-close{position:absolute;top:-6px;inset-inline-end:-6px;width:20px;height:20px;border-radius:50%;
+  background:var(--bg-panel);color:var(--cr-200);border:1px solid var(--line-strong);
+  font-size:15px;line-height:1;cursor:pointer;display:grid;place-items:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);transition:.15s;opacity:0;transform:scale(.6)}
+.fab-fb:hover .fab-fb-close,.fab-fb.dragging .fab-fb-close{opacity:1;transform:scale(1)}
+.fab-fb-close:hover{background:var(--danger);color:#fff;border-color:transparent}
+/* على اللمس (لا hover): نُظهر زرّ الإخفاء دائمًا بهدوءٍ */
+@media(hover:none){.fab-fb-close{opacity:.9;transform:scale(1)}}
+:root[data-theme="light"] .fab-fb-badge{border-color:#fff}
+:root[data-theme="light"] .fab-fb-close{background:#fff;color:var(--cr-200);border-color:rgba(11,92,67,.2)}
 
 /* محرّر الباص */
 .bus-editor{width:100%;max-width:460px;display:flex;flex-direction:column;gap:6px}
