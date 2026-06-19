@@ -3,7 +3,6 @@ import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
 import NotificationsBell from '../components/NotificationsBell'
-import ReloadOverlay from '../components/ReloadOverlay'
 import SideDrawer from '../components/SideDrawer'
 import ThemeToggle from '../components/ThemeToggle'
 
@@ -126,9 +125,6 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
         tabs={tabs} active={active} onTab={onTab}
         planLabel={planLabel} planUsage={planUsage} />
-
-      {/* ---------- بطاقةُ إعادة التحميل (تَظهر عند تعليق التطبيق) ---------- */}
-      <ReloadOverlay />
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
       <nav className="tabbar" aria-label="تنقّل سفلي">
