@@ -7,7 +7,7 @@ const STATUS_AR = {
 }
 const NO_BP = 'بلا مكان محدَّد'
 
-/* تنسيقُ تاريخٍ ميلاديٍّ مختصرٍ بالعربيّ. يُحاول الهجريَّ أوّلًا إن كان متاحًا. */
+/* تنسيقُ تاريخٍ ميلاديٍّ مختصرٍ بالعربيّ. */
 function fmt(v, opts = {}) {
   if (!v) return '—'
   try {
@@ -17,19 +17,28 @@ function fmt(v, opts = {}) {
   } catch { return '—' }
 }
 
-/* خليّةُ ترويسةٍ (تسميةٌ صغيرةٌ + قيمةٌ بارزةٌ) */
-function HCell({ label, value, wide = false }) {
+/* صفُّ معلوماتٍ — تسمية + قيمة، مختصرٌ ومنظّمٌ بحقّه */
+function Info({ k, v, ltr = false }) {
   return (
-    <div className={`mf-cell ${wide ? 'wide' : ''}`}>
-      <span className="mf-k">{label}</span>
-      <span className="mf-v">{value || '—'}</span>
+    <div className="mf-info-item">
+      <span className="mf-info-k">{k}</span>
+      <span className={`mf-info-v${ltr ? ' ltr' : ''}`}>{v || '—'}</span>
     </div>
   )
 }
 
+/* جمعُ الاسم + الجوال في صفٍّ واحدٍ لأماكنَ كالسائق/المشرف */
+function joinNamePhone(name, phone) {
+  if (!name && !phone) return '—'
+  if (!phone) return name
+  if (!name) return phone
+  return `${name} · ${phone}`
+}
+
 /**
- * ورقةُ كشفٍ واحدةٍ — لباصٍ واحدٍ ومكانِ ركوبٍ واحدٍ.
- * كلُّ ورقةٍ مستقلّةٌ بحقّها للطباعة (مقاسُ A4).
+ * ورقةُ كشفٍ واحدةٍ — A4 مدمجةٌ ومتوازنةٌ، تتسعُ لـ ~٣٠ راكبًا في صفحةٍ
+ * (وتتدفّقُ تلقائيًّا لصفحاتٍ متعدّدةٍ عند الأعدادِ الكبيرةِ مع تكرارِ
+ *  ترويسةِ الجدول).
  */
 function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pageBreak, sheetIndex, totalSheets }) {
   const count = rows.length
@@ -40,7 +49,7 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pag
   return (
     <article className="mf-sheet" dir="rtl" style={pageBreak ? { pageBreakBefore: 'always' } : undefined}>
 
-      {/* ======= ترويسةٌ رسميّةٌ ======= */}
+      {/* ====== ترويسةٌ رسميّةٌ مدمجةٌ — اللوكَب يمين، البطاقة يسار ====== */}
       <header className="mf-head">
         <div className="mf-brand">
           {sub?.logo_url && (
@@ -48,44 +57,41 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pag
           )}
           <div className="mf-brand-text">
             <div className="mf-org">{sub?.org_name || 'الحملة'}</div>
-            <div className="mf-sub">
-              {sub?.license_no && <span>تصريحٌ رقم {sub.license_no}</span>}
-              {sub?.contact_phone && <span dir="ltr">{sub.contact_phone}</span>}
+            <div className="mf-org-sub">
+              {sub?.license_no && <span>تصريح: {sub.license_no}</span>}
+              {sub?.contact_phone && <span dir="ltr">· {sub.contact_phone}</span>}
             </div>
           </div>
         </div>
         <div className="mf-title">
           <div className="mf-t1">كشفُ ركّاب الحافلة</div>
           <div className="mf-t2">{trip?.title || 'رحلة عُمرة'}</div>
-          {totalSheets > 1 && (
-            <div className="mf-t3">الورقة {sheetIndex} من {totalSheets}</div>
-          )}
+          {totalSheets > 1 && <div className="mf-t3">ورقة {sheetIndex} من {totalSheets}</div>}
         </div>
       </header>
 
-      {/* ======= شريطُ تحديدٍ بارزٌ لمكان الركوب ======= */}
+      {/* ====== سطرُ مكان الركوب — لمسةٌ زمرّديّةٌ رفيعةٌ ====== */}
       <div className="mf-pickup">
-        <div className="mf-pickup-label">مكانُ الركوب</div>
-        <div className="mf-pickup-value">{boardingPoint || NO_BP}</div>
-        <div className="mf-pickup-meta">
-          <span>عدد الركّاب: <b>{count}</b></span>
+        <div className="mf-pickup-main">
+          <span className="mf-pickup-k">مكانُ الركوب</span>
+          <span className="mf-pickup-v">{boardingPoint || NO_BP}</span>
+        </div>
+        <div className="mf-pickup-count">
+          عددُ الركّاب: <b>{count}</b>
         </div>
       </div>
 
-      {/* ======= بياناتُ الرحلة (شبكةٌ مكثَّفة) ======= */}
-      <section className="mf-grid">
-        <HCell label="المسار" value={`${trip?.route_from || '—'} ← ${trip?.route_to || '—'}`} wide />
-        <HCell label="تاريخ الذهاب" value={fmt(trip?.depart_at)} />
-        <HCell label="تاريخ العودة" value={fmt(trip?.return_at)} />
-        <HCell label="رقم/اسم الباص" value={busLabel} />
-        <HCell label="لوحة الباص" value={busPlate} />
-        <HCell label="السائق" value={trip?.driver_name} />
-        <HCell label="جوال السائق" value={trip?.driver_phone} />
-        <HCell label="المشرف" value={trip?.supervisor_name} />
-        <HCell label="جوال المشرف" value={trip?.supervisor_phone} />
+      {/* ====== معلوماتُ الرحلة — صفٌّ مدمجٌ بسطرَين ====== */}
+      <section className="mf-info">
+        <Info k="المسار" v={`${trip?.route_from || '—'} ← ${trip?.route_to || '—'}`} />
+        <Info k="تاريخ الذهاب" v={fmt(trip?.depart_at)} />
+        <Info k="تاريخ العودة" v={fmt(trip?.return_at)} />
+        <Info k="الباص" v={busPlate && busPlate !== '—' ? `${busLabel} · ${busPlate}` : busLabel} />
+        <Info k="السائق" v={joinNamePhone(trip?.driver_name, trip?.driver_phone)} />
+        <Info k="المشرف" v={joinNamePhone(trip?.supervisor_name, trip?.supervisor_phone)} />
       </section>
 
-      {/* ======= جدولُ الركّاب ======= */}
+      {/* ====== جدولُ الركّاب — يتدفّقُ عبر الصفحاتِ مع تكرارِ الترويسة ====== */}
       <table className="mf-table">
         <colgroup>
           <col style={{ width: '4%' }} />
@@ -130,12 +136,10 @@ function ManifestSheet({ trip, sub, rows, busLabel, busPlate, boardingPoint, pag
         </tbody>
       </table>
 
-      {/* ======= تذييلٌ رسميٌّ ======= */}
+      {/* ====== تذييلٌ نحيلٌ — تاريخٌ يمين، ختمٌ يسار ====== */}
       <footer className="mf-foot">
         <div className="mf-note">
-          كشفٌ رسميٌّ صادرٌ عن {sub?.org_name || 'الحملة'} بتاريخ {today}.
-          <br/>
-          <span className="mf-note-fine">يُلتزم بمكان الركوب المحدَّد والمواعيد المعلنة، ويُمنع تبادل المقاعد دون إذنٍ من المشرف.</span>
+          كشفٌ رسميٌّ صادرٌ عن {sub?.org_name || 'الحملة'} · {today}
         </div>
         <div className="mf-stamp">
           {stampUrl ? (
@@ -163,7 +167,6 @@ function sortBoardingPoints(arr) {
 
 /**
  * الكشف الرسميّ — يُصدر كشفًا لكلِّ (باص × مكانِ ركوب).
- * كلُّ ورقةٍ على حدةٍ A4 مع page-break للطباعة الرسميّة الواضحة.
  *
  * مثال: حملةٌ بباصَين، الأوّلُ يأخذ من جازان والمسارحة، الثاني من الرياض،
  * فتُنشأ ٣ أوراق:
@@ -179,7 +182,6 @@ function sortBoardingPoints(arr) {
  */
 export default function Manifest({ trip, sub, passengers = [], buses = [], onClose }) {
   const groups = useMemo(() => {
-    // قائمةُ الباصاتِ الفعليّة: إن لم تكن متعدّدةً ننشئ باصًا منطقيًّا واحدًا
     const busList = buses.length > 0
       ? buses
       : [{ id: 'single', plate: trip?.bus_plate, label: trip?.bus_label, name: trip?.bus_label }]
@@ -191,7 +193,6 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
         ? passengers
         : passengers.filter((p) => p.bus_id === busId)
 
-      // التجميعُ حسب مكان الركوب
       const byBP = new Map()
       for (const p of busPax) {
         const bp = (p.boarding_point || '').trim() || NO_BP
@@ -199,7 +200,6 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
         byBP.get(bp).push(p)
       }
 
-      // الأماكنُ مرتّبةٌ + ترتيبُ الأسماء داخل كلِّ مكان
       const bpKeys = sortBoardingPoints([...byBP.keys()])
       for (const bp of bpKeys) {
         const rows = byBP.get(bp).sort((a, b) =>
@@ -213,7 +213,6 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
         })
       }
     }
-    // حالةٌ خاصّةٌ: لا ركّابَ أصلًا — نُظهر ورقةً فارغةً واحدةً
     if (out.length === 0) {
       out.push({
         key: 'empty', rows: [],
@@ -228,8 +227,6 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
   const sheetsRef = useRef(null)
 
   function handlePrint() {
-    // window.print() ينتجُ PDF حقيقيًّا (نصّيًّا قابلًا للبحث) من المتصفّح،
-    // مع دعمٍ كاملٍ للعربيّ والـ A4 — بلا screenshot ولا فقدان جودة.
     window.print()
   }
 
