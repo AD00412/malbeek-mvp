@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { onWake } from '../../lib/wake'
 import useStickyState from '../../lib/useStickyState'
 import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
@@ -158,16 +159,31 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
   // تحديثٌ حيٌّ: عند أي تغيّرٍ على passengers لهذه الرحلة، أعِد التحميل (مع كبحٍ
   // يجمع دفعات التغييرات المتتالية كالاستيراد فلا تتكرّر الجلبات ولا تومض القائمة).
+  // + إعادةُ ضمِّ القناة وتحديثٌ فوريٌّ عند إيقاظ التطبيق (lib/wake.js) فلا تتجمّد
+  //   الصفحةُ بعد الرجوع من الخلفيّة.
   useEffect(() => {
     if (!trip?.id) return
+    let cancelled = false
     let t = null
-    const ch = supabase
-      .channel(`pax-mgr:${trip.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, () => {
-        clearTimeout(t); t = setTimeout(() => loadPassengers(), 350)
-      })
-      .subscribe()
-    return () => { clearTimeout(t); supabase.removeChannel(ch) }
+    const debouncedReload = () => {
+      clearTimeout(t); t = setTimeout(() => { if (!cancelled) loadPassengers() }, 350)
+    }
+    let ch = null
+    function subscribe() {
+      if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
+      ch = supabase
+        .channel(`pax-mgr:${trip.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, debouncedReload)
+        .subscribe()
+    }
+    subscribe()
+    const unsubscribeWake = onWake(() => { if (!cancelled) { subscribe(); debouncedReload() } })
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+      unsubscribeWake()
+      if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
+    }
   }, [trip?.id, loadPassengers])
 
   function openAdd() { setEditingPax(null); setPaxOpen(true) }

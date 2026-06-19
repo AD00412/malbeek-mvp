@@ -1,27 +1,17 @@
 import { useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
+import { onWake } from './wake'
 
 /**
- * خطّافٌ موحّدٌ لاشتراكات Supabase Realtime — مع نظامِ إيقاظٍ يحلُّ مشكلةَ
- * «التجمّد بعد ترك التطبيق ثوانٍ» على iOS Safari وكلِّ المتصفّحات الحديثة.
+ * خطّافٌ موحّدٌ لاشتراكات Supabase Realtime — مدمجٌ مع منسِّق الإيقاظ
+ * المركزيِّ (lib/wake.js). عند رجوع التطبيق من الخلفيّة، يَعِدُ ضمَّ القناة
+ * ويستدعي onChange فتُحدَّث البياناتُ تلقائيًّا.
  *
- * الإيقاظ يطلق refresh تلقائيًّا عند:
- *  - رجوع التبويب للمقدّمة (visibilitychange)
- *  - رجوع الاتّصال بالإنترنت (online)
- *  - عودةُ التركيز للنافذة (focus)
- *
- * وعندها أيضًا:
- *  - يُعاد ضمُّ الـ Realtime channel (الـ WebSocket كان قد يموت بعد دقائق
- *    من تعليق JS في الخلفيّة)
- *  - يُستدعى onChange مرّةً (debounced) فتُحدَّث البياناتُ فورًا للمستخدم
- *
- * Throttle ٢ ثانيةً للإيقاظ المتكرّر يمنع تحديثًا زائدًا.
- *
- * @param {string}    key         اسمُ القناة
- * @param {Array}     filters     [{ table, filter? }]
- * @param {Function}  onChange    تُستدعى عند أيِّ تغييرٍ — أو إيقاظ
- * @param {number}    debounceMs  افتراضيًّا 200ms
- * @param {Array}     deps        تبعيّاتُ إعادة الاشتراك
+ *  @param {string}    key         اسمُ القناة
+ *  @param {Array}     filters     [{ table, filter? }]
+ *  @param {Function}  onChange    تُستدعى عند تغييرٍ أو إيقاظ
+ *  @param {number}    debounceMs  افتراضيًّا 200ms
+ *  @param {Array}     deps        تبعيّاتُ إعادة الاشتراك
  */
 export function useRealtime(key, filters, onChange, debounceMs = 200, deps = []) {
   const cbRef = useRef(onChange)
@@ -31,7 +21,6 @@ export function useRealtime(key, filters, onChange, debounceMs = 200, deps = [])
     if (!key || !filters?.length) return
     let cancelled = false
     let timer = null
-    let lastWakeAt = 0   // throttle للإيقاظ
 
     const fire = () => {
       if (cancelled) return
@@ -52,35 +41,17 @@ export function useRealtime(key, filters, onChange, debounceMs = 200, deps = [])
     }
     subscribe()
 
-    // ====== الإيقاظُ: تحديثٌ + إعادةُ ضمِّ القناة عند العودة ======
-    function wake(reason) {
+    // عند الإيقاظ المركزيّ: إعادةُ ضمِّ القناة (الـ WS قد يكون مات) + تحديثُ البيانات
+    const unsubscribeWake = onWake(() => {
       if (cancelled) return
-      const now = Date.now()
-      if (now - lastWakeAt < 2000) return   // throttle: مرّةً كلَّ ثانيتين كحدٍّ أقصى
-      lastWakeAt = now
-      // إعادةُ ضمِّ القناة — WS قد يكون ماتَ أثناء التعليق
       subscribe()
-      // تحديثُ البياناتِ فورًا للمستخدم
       fire()
-      // ملاحظةُ تشخيصٍ خفيفةٌ — تُحذف في الإنتاج إن أزعجت
-      // eslint-disable-next-line no-console
-      if (typeof console !== 'undefined' && console.debug) console.debug(`[realtime] wake (${reason}) → ${key}`)
-    }
-
-    const onVisible = () => { if (document.visibilityState === 'visible') wake('visible') }
-    const onOnline  = () => wake('online')
-    const onFocus   = () => wake('focus')
-
-    document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener('online', onOnline)
-    window.addEventListener('focus', onFocus)
+    })
 
     return () => {
       cancelled = true
       if (timer) clearTimeout(timer)
-      document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener('online', onOnline)
-      window.removeEventListener('focus', onFocus)
+      unsubscribeWake()
       if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { onWake } from '../lib/wake'
 import { useAuth } from '../app/useAuth'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
@@ -154,25 +155,35 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       if (!cancelled) setOccupancy(occ ?? [])
     }
     refresh()  // التقاط فوريٌّ عند تبديل الباص
-    const ch = supabase
-      .channel(`pax:${trip.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, refresh)
-      .subscribe()
+    let ch = null
+    function subscribe() {
+      if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
+      ch = supabase
+        .channel(`pax:${trip.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'passengers', filter: `trip_id=eq.${trip.id}` }, refresh)
+        .subscribe()
+    }
+    subscribe()
     // استطلاعٌ ١٢ ثانيةً، يتوقّف عند إخفاء التبويب (يعود عند الـ focus).
     let poll = null
     const startPoll = () => { if (!poll && !cancelled) poll = setInterval(refresh, 12000) }
     const stopPoll  = () => { if (poll) { clearInterval(poll); poll = null } }
     startPoll()
-    const onVis = () => { if (document.visibilityState === 'visible') { refresh(); startPoll() } else { stopPoll() } }
-    const onFocus = () => refresh()
-    document.addEventListener('visibilitychange', onVis)
-    window.addEventListener('focus', onFocus)
+    // الإيقاظُ المركزيُّ (lib/wake.js): إعادةُ ضمِّ القناة + تحديثٌ فوريٌّ + إعادةُ تشغيل الاستطلاع.
+    const unsubscribeWake = onWake(() => {
+      if (cancelled) return
+      subscribe()
+      refresh()
+      startPoll()
+    })
+    const onVisHide = () => { if (document.visibilityState !== 'visible') stopPoll() }
+    document.addEventListener('visibilitychange', onVisHide)
     return () => {
       cancelled = true
       stopPoll()
-      document.removeEventListener('visibilitychange', onVis)
-      window.removeEventListener('focus', onFocus)
-      supabase.removeChannel(ch)
+      unsubscribeWake()
+      document.removeEventListener('visibilitychange', onVisHide)
+      if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
     }
   }, [trip?.id, busId, multiBus])
 
