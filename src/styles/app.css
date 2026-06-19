@@ -1001,6 +1001,15 @@
 .bar .fill-info{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,#2e7d8a,var(--info))}
 .bar .fill-warn{display:block;height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--gd-500),var(--warn))}
 
+/* قفلٌ شاملٌ أثناء التفاعل مع الـ FAB: يمنع iOS Safari من تشغيل تحديد النصّ
+   التلقائيّ على البطاقات/الأزرار خلف الزرّ (المستطيلات الزرقاء). */
+body.fab-interacting,
+body.fab-interacting *{
+  -webkit-user-select:none !important;user-select:none !important;
+  -webkit-touch-callout:none !important;
+  -webkit-tap-highlight-color:transparent !important;
+}
+
 /* زرّ التغذية الراجعة العائم — قابلٌ للسحب + ضغطةٌ مطوّلةٌ + سلّةُ حذفٍ (FeedbackFab.jsx) */
 .fab-fb{position:fixed;z-index:60;width:52px;height:52px;border-radius:50%;
   background:linear-gradient(150deg,var(--em-500),var(--em-700));color:#fff;
@@ -1008,7 +1017,12 @@
   box-shadow:0 8px 24px rgba(16,185,129,.30),0 2px 6px rgba(0,0,0,.25);
   border:1px solid rgba(255,255,255,.16);
   transition:transform .18s ease,box-shadow .2s ease,opacity .25s ease;
+  /* عزلٌ كاملٌ عن سلوك iOS الافتراضيِّ للضغطة المطوّلة */
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  -webkit-user-drag:none;
   -webkit-tap-highlight-color:transparent;
+  isolation:isolate;
   animation:fab-in .3s cubic-bezier(.16,.84,.44,1);will-change:transform}
 @keyframes fab-in{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 .fab-fb:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(16,185,129,.42),0 4px 10px rgba(0,0,0,.3)}
@@ -1035,11 +1049,12 @@
   font-family:var(--font-sans);pointer-events:none}
 :root[data-theme="light"] .fab-fb-badge{border-color:#fff}
 
-/* سلّةُ الحذف — تظهر في «وضع الحذف» في وسط الأسفل */
+/* سلّةُ الحذف — تظهر في «وضع الحذف» في وسط الأسفل، فوق كلّ شيءٍ */
 .fab-trash{position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(96px + env(safe-area-inset-bottom) + 16px);
-  z-index:59;display:flex;flex-direction:column;align-items:center;gap:10px;
-  pointer-events:none;animation:trash-in .22s cubic-bezier(.16,.84,.44,1)}
+  z-index:61;display:flex;flex-direction:column;align-items:center;gap:10px;
+  pointer-events:none;animation:trash-in .22s cubic-bezier(.16,.84,.44,1);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @media(min-width:820px){.fab-trash{bottom:calc(24px + 16px + env(safe-area-inset-bottom))}}
 @keyframes trash-in{from{opacity:0;transform:translateX(-50%) translateY(16px) scale(.9)}
   to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}

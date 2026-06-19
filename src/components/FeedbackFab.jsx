@@ -92,6 +92,9 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     return () => window.removeEventListener('resize', onResize)
   }, [clamp])
 
+  // نظافةٌ: إن فُكِّك المكوّنُ أثناء التفاعل، نرفع القفل عن الـ body
+  useEffect(() => () => { document.body.classList.remove('fab-interacting') }, [])
+
   function getTrashRect() {
     if (typeof window === 'undefined') return { cx: 0, cy: 0 }
     const isDesktop = window.innerWidth >= 820
@@ -109,6 +112,12 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
 
   function onPointerDown(e) {
     if (e.button === 2) return
+    // نمنع iOS Safari من تشغيلِ تحديدِ النصِّ/قائمةِ السياق التلقائيّةِ
+    // عند الضغطة المطوّلة على الصفحة، فيبقى الزرّ معزولًا تمامًا.
+    e.preventDefault()
+    // قفلٌ شاملٌ: نمنع التحديدَ والتمييزَ في الصفحة كلّها أثناء التفاعل،
+    // فلا تظهر مستطيلاتٌ زرقاءُ على البطاقات/الأزرار خلف الزرّ.
+    document.body.classList.add('fab-interacting')
     const rect = ref.current.getBoundingClientRect()
     drag.current = {
       active: true, moved: false,
@@ -163,6 +172,8 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     if (drag.current.longTimer) { clearTimeout(drag.current.longTimer); drag.current.longTimer = null }
     drag.current.active = false
     ref.current?.releasePointerCapture?.(e.pointerId)
+    // ارفع قفلَ التحديد عن الصفحة بمجرّد انتهاء التفاعل
+    document.body.classList.remove('fab-interacting')
 
     // الحالةُ ١: في وضع الحذف وفوق السلّة → احذف
     if (wasMode === 'delete' && wasOver) {
@@ -228,6 +239,8 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onContextMenu={(e) => e.preventDefault()}    // يلغي قائمة iOS/الويب التلقائيّةَ
+        onDragStart={(e) => e.preventDefault()}      // يلغي drag-image التلقائيَّ للصورة
         role="button"
         tabIndex={0}
         aria-label="تواصل مع إدارة ملبّيك"
