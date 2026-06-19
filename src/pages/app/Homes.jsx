@@ -9,7 +9,7 @@ import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
-import FeedbackFab from '../../components/FeedbackFab'
+import FeedbackFab, { showFeedbackFab } from '../../components/FeedbackFab'
 import FeedbackInbox from '../../components/FeedbackInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
@@ -490,7 +490,7 @@ export function SubscriberHome() {
   function onTab(k) {
     setManaging(null)
     if (k === 'add') { openCreate(); return }
-    if (k === 'feedback') { setFeedbackOpen(true); return }
+    if (k === 'feedback') { setFeedbackOpen(true); showFeedbackFab(); return }
     if (k === 'scan') { setScanMode('pick'); return }
     if (k === 'search') { setSearchOpen(true); return }
     if (k === 'share') { setShareOpen(true); return }
@@ -937,7 +937,7 @@ export function CustomerHome() {
 
   function onTab(k) {
     setBooking(null); setTicketFor(null)
-    if (k === 'feedback') { setFeedbackOpen(true); return }
+    if (k === 'feedback') { setFeedbackOpen(true); showFeedbackFab(); return }
     if (k === 'settings') { setSettingsOpen(true); return }
     setView(k)
   }
