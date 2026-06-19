@@ -49,10 +49,12 @@
 /* ============================================================
    شاشات المصادقة (Auth) — نمطُ المرجع malbeek_2.html: بطاقةٌ مركزيّةٌ نظيفةٌ
    ============================================================ */
-.auth-page{min-height:100vh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);
-  direction:rtl;display:flex;flex-direction:column}
+.auth-page{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--cr-50);
+  font-family:var(--font-sans);direction:rtl;display:flex;flex-direction:column}
 .auth-topbar{display:flex;align-items:center;justify-content:space-between;
-  padding:18px clamp(16px,5vw,28px)}
+  padding-top:max(18px, env(safe-area-inset-top));
+  padding-bottom:18px;
+  padding-inline:max(clamp(16px,5vw,28px), env(safe-area-inset-right), env(safe-area-inset-left))}
 .auth-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--cr-300);transition:color .2s}
 .auth-back:hover{color:var(--cr-50)}
 .auth-container{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -1147,10 +1149,15 @@
    صفحةُ الترحيب (Landing) — مرئيّةٌ للزوّار غير المسجّلين فقط.
    هويّةُ ملبّيك: زمرّديٌّ + ذهبيٌّ. تتجاوب من الموبايل إلى سطح المكتب.
    ============================================================ */
-.lp{min-height:100vh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);direction:rtl}
+.lp{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);direction:rtl}
 
 /* الرأس */
-.lp-top{display:flex;align-items:center;gap:14px;padding:clamp(12px,3vw,18px) clamp(16px,5vw,48px);
+.lp-top{display:flex;align-items:center;gap:14px;
+  /* safe-area: عند تثبيت PWA (standalone) لا يوجد شريطُ متصفّحٍ، فنُبعد
+     المحتوى عن شقّ الحالة/النوتش أعلى iPhone، وعن حواف الشاشة في landscape */
+  padding-top:max(clamp(12px,3vw,18px), env(safe-area-inset-top));
+  padding-bottom:clamp(12px,3vw,18px);
+  padding-inline:max(clamp(16px,5vw,48px), env(safe-area-inset-right), env(safe-area-inset-left));
   position:sticky;top:0;z-index:30;
   background:linear-gradient(180deg,rgba(10,15,13,.92),rgba(10,15,13,.72));
   backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -1268,8 +1275,10 @@
 :root[data-theme="light"] .lp-faq-item[open]{border-color:var(--em-700)}
 
 /* Footer */
-.lp-footer{background:rgba(0,0,0,.30);border-top:1px solid var(--line);
-  padding:clamp(32px,6vw,56px) clamp(20px,6vw,80px) clamp(20px,4vw,32px);margin-top:24px}
+.lp-footer{background:rgba(0,0,0,.30);border-top:1px solid var(--line);margin-top:24px;
+  padding-top:clamp(32px,6vw,56px);
+  padding-bottom:calc(clamp(20px,4vw,32px) + env(safe-area-inset-bottom));
+  padding-inline:max(clamp(20px,6vw,80px), env(safe-area-inset-right), env(safe-area-inset-left))}
 .lp-foot-cols{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:32px;max-width:1160px;margin:0 auto 8px}
 @media(max-width:920px){.lp-foot-cols{grid-template-columns:1.5fr 1fr 1fr}.lp-foot-cols > div:last-child{grid-column:1/-1}}
 @media(max-width:680px){.lp-foot-cols{grid-template-columns:1fr 1fr;gap:24px}.lp-foot-cols > div:first-child{grid-column:1/-1}.lp-foot-cols > div:last-child{grid-column:auto}}
@@ -1607,10 +1616,12 @@
 :root[data-theme="light"] .install-quick{background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(16,185,129,.02));border-color:rgba(16,185,129,.36)}
 
 /* ==== Legal pages (/terms /privacy) ==== */
-.legal-page{min-height:100vh;background:var(--bg);color:var(--cr-50);font-family:var(--font-sans);
-  display:flex;flex-direction:column}
-.legal-content{max-width:780px;margin:0 auto;padding:clamp(28px,5vw,48px) clamp(20px,5vw,32px) 60px;
-  width:100%;line-height:1.85;animation:fade-in .25s ease;flex:1}
+.legal-page{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--cr-50);
+  font-family:var(--font-sans);display:flex;flex-direction:column}
+.legal-content{max-width:780px;margin:0 auto;width:100%;line-height:1.85;animation:fade-in .25s ease;flex:1;
+  padding-top:clamp(28px,5vw,48px);
+  padding-bottom:calc(60px + env(safe-area-inset-bottom));
+  padding-inline:max(clamp(20px,5vw,32px), env(safe-area-inset-right), env(safe-area-inset-left))}
 .legal-back{display:inline-flex;align-items:center;gap:6px;color:var(--cr-300);font-size:14px;
   margin-bottom:18px;transition:color .2s}
 .legal-back:hover{color:var(--em-500)}
