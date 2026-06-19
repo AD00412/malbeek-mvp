@@ -42,7 +42,7 @@ export default function Roadmap() {
       open={open}
       onClose={close}
       title="ما الجديد في ملبّيك؟"
-      actions={<button className="btn btn-gold btn-block" onClick={close}>فهمت، لنبدأ</button>}
+      actions={<button className="btn btn-em btn-block" onClick={close}>فهمت، لنبدأ</button>}
     >
       <p className="muted" style={{ fontSize: 14, marginTop: -8, marginBottom: 14 }}>
         دفعةُ تحديثاتٍ جديدةٌ لتحسين السرعة والتجربة على الجوال. وهذه خارطة القادم بعدها.
@@ -69,13 +69,13 @@ export default function Roadmap() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {NEXT.map((it, i) => (
           <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 12, border: '1px solid var(--line)', borderRadius: 14, background: 'var(--surface-3)' }}>
-            <span style={{ flex: 'none', width: 34, height: 34, borderRadius: 10, background: 'rgba(196,154,69,.12)', color: 'var(--gd-300)', display: 'grid', placeItems: 'center' }}>
+            <span style={{ flex: 'none', width: 34, height: 34, borderRadius: 10, background: 'rgba(16,185,129,.10)', color: 'var(--em-500)', display: 'grid', placeItems: 'center' }}>
               <Icon name={it.ic} size={18} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontWeight: 700, color: 'var(--cr-50)', fontSize: 14 }}>{it.t}</span>
-                <span className="tag gold" style={{ fontSize: 10, padding: '2px 8px' }}>{it.tag}</span>
+                <span className="tag soon" style={{ fontSize: 10, padding: '2px 8px' }}>{it.tag}</span>
               </div>
               <div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{it.d}</div>
             </div>
