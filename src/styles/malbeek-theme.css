@@ -425,9 +425,6 @@ input[type="time"]::-webkit-date-and-time-value{
 :root[data-theme="light"] .trial-banner .tb-sub{color:var(--cr-200)}
 :root[data-theme="light"] .trial-banner .tb-sub strong{color:var(--gd-700)}
 
-/* ==== الصفوف الحيّة وشريحات التذكير ==== */
-:root[data-theme="light"] .live-row{background:rgba(43,182,140,.05);border-color:rgba(43,182,140,.20)}
-
 /* ==== الشاشة الفارغة ==== */
 :root[data-theme="light"] .empty{color:var(--cr-200)}
 

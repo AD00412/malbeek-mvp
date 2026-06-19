@@ -363,15 +363,6 @@
 .sub-row:hover{background:rgba(16,185,129,.05)}
 .sub-row:active{transform:scale(.998)}
 
-/* «نشطٌ الآن» — بطاقة حالة سريعة تحت الهيرو */
-.live-row{display:flex;align-items:center;gap:10px;padding:10px 14px;
-  background:rgba(43,182,140,.06);border:1px solid rgba(43,182,140,.18);
-  border-radius:var(--r-md);margin:10px 0 14px}
-.live-row .live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);
-  box-shadow:0 0 0 3px rgba(43,182,140,.18);animation:pulse 1.8s ease-in-out infinite;flex:none}
-.live-row .live-lb{font-size:13px;color:var(--cr-200);font-weight:500}
-.live-row .live-v{font-family:var(--font-display);font-weight:900;font-size:20px;color:var(--ok-ink);line-height:1}
-
 /* تنظيف الرأس على الجوال — العنوان لا يدفع الأزرار خارج الشاشة */
 .tb-titles{min-width:0;overflow:hidden}
 .tb-titles .pg-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

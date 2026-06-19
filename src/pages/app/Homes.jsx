@@ -713,8 +713,6 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
   const ne = nextTrip ? (paxByTrip?.get(nextTrip.id) || { count: 0, paid: 0 }) : null
   const neCap = Number(nextTrip?.capacity) || 0
   const nePct = neCap > 0 ? Math.min(100, Math.round((ne.count / neCap) * 100)) : 0
-  // عددٌ تشغيليٌّ سريع: المعتمرون المسجّلون اليوم (تقريبٌ بسيطٌ من السجلات)
-  const liveCount = tt.count - tt.checked_in   // مَن لم يكتمل تسكينهم بعد
 
   // تفادي تكرار الاسم في الهيرو حين يكون اسم الحملة هو نفسه اسم المستخدم.
   const firstName = profile?.full_name ? profile.full_name.split(' ')[0] : ''
@@ -728,14 +726,6 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
         <h2>أهلًا{firstName ? ` · ${firstName}` : ''}</h2>
         <p>{showOrgInHero ? `${orgName} — ` : ''}مركز قيادتك المركزيّ: كلّ رحلاتك والمعتمرون والإشعارات في مكانٍ واحد.</p>
       </section>
-
-      <div className="live-row">
-        <span className="live-dot" />
-        <span className="live-lb">نشطٌ الآن</span>
-        <span className="live-v">{liveCount}</span>
-        <span style={{ flex: 1 }} />
-        <span className="muted" style={{ fontSize: 12 }}>تحديثٌ حيٌّ</span>
-      </div>
 
       {nextTrip && (
         <section className="panel" style={{ borderColor: 'rgba(196,154,69,.35)' }}>
