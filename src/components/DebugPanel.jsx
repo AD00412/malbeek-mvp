@@ -7,16 +7,17 @@ import { getEvents, clearEvents, exportText, subscribe } from '../lib/debugLog'
  */
 
 const CATEGORY_COLOR = {
-  ERROR:  '#ef4444',
-  REJECT: '#ef4444',
-  FREEZE: '#f59e0b',
+  ERROR:   '#ef4444',
+  REJECT:  '#ef4444',
+  FREEZE:  '#f59e0b',
+  TIMEOUT: '#dc2626',   // أحمرٌ غامقٌ — الأخطر
   'SB-ERR': '#fb923c',
-  THROW:  '#ef4444',
-  START:  '#94a3b8',
-  END:    '#10b981',
-  VIS:    '#60a5fa',
-  NAV:    '#a78bfa',
-  INIT:   '#10b981',
+  THROW:   '#ef4444',
+  START:   '#94a3b8',
+  END:     '#10b981',
+  VIS:     '#60a5fa',
+  NAV:     '#a78bfa',
+  INIT:    '#10b981',
 }
 
 export default function DebugPanel({ open, onClose }) {
@@ -45,12 +46,12 @@ export default function DebugPanel({ open, onClose }) {
 
   const filtered = events.filter((e) => {
     if (filter === 'all') return true
-    if (filter === 'errors')  return ['ERROR', 'REJECT', 'THROW', 'SB-ERR'].includes(e.category)
+    if (filter === 'errors')  return ['ERROR', 'REJECT', 'THROW', 'SB-ERR', 'TIMEOUT'].includes(e.category)
     if (filter === 'freezes') return e.category === 'FREEZE'
     if (filter === 'sb')      return ['START', 'END', 'SB-ERR'].includes(e.category)
     return true
   })
-  const errorCount  = events.filter((e) => ['ERROR','REJECT','THROW','SB-ERR'].includes(e.category)).length
+  const errorCount  = events.filter((e) => ['ERROR','REJECT','THROW','SB-ERR','TIMEOUT'].includes(e.category)).length
   const freezeCount = events.filter((e) => e.category === 'FREEZE').length
 
   return (

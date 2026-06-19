@@ -40,6 +40,43 @@ const url = (rawUrl || '').replace(/\/(rest|auth)\/v1\/?$/, '').replace(/\/+$/, 
  */
 const noopLock = async (_name, _acquireTimeout, fn) => fn()
 
+/**
+ * fetch مخصَّصٌ لـSupabase حصرًا — يَضمن مهلةً قصوى لكلّ طلب.
+ *
+ * المشكلةُ التي يَحلّها (مكشوفةٌ بـ debugLog):
+ *   iOS WebView يُجمِّد fetch promises قيدَ الانتظار حتّى لخروجٍ < ١ث،
+ *   فتَبقى معلَّقةً إلى الأبد — لا تَنجح ولا تَفشل. النتيجة: زرٌّ يَدور
+ *   بلا نهاية، شاشةٌ متجمّدةٌ، console نظيف.
+ *
+ * يُغطّي فقط طلبات Supabase (مرَّ عبر العميل) — لا يَلمس window.fetch
+ * العامّ ولا يَعترض رفعَ الصور أو أيَّ شبكةٍ خارجيّةٍ.
+ *
+ * عند انتهاء المهلة: AbortError يُرمى → catch المكوّن يَفتح →
+ * يُعرَض خطأٌ قابلٌ لإعادة المحاولة. لا reload، لا حالةٌ عالميّة.
+ */
+const REQUEST_TIMEOUT_MS = 10_000   // ١٠ث — تَجمّدٌ مَحدودٌ خيرٌ من أبديّ
+function makeFetchWithTimeout() {
+  return function supabaseFetch(input, init = {}) {
+    const ctrl = new AbortController()
+    const userSignal = init.signal
+    const onUserAbort = () => ctrl.abort()
+    if (userSignal) {
+      if (userSignal.aborted) ctrl.abort()
+      else userSignal.addEventListener('abort', onUserAbort, { once: true })
+    }
+    const timer = setTimeout(() => {
+      try { ctrl.abort(new DOMException('Request timeout', 'AbortError')) }
+      catch { try { ctrl.abort() } catch { /* ignore */ } }
+    }, REQUEST_TIMEOUT_MS)
+
+    return fetch(input, { ...init, signal: ctrl.signal })
+      .finally(() => {
+        clearTimeout(timer)
+        if (userSignal) try { userSignal.removeEventListener('abort', onUserAbort) } catch { /* ignore */ }
+      })
+  }
+}
+
 export const supabase = createClient(url, anon, {
   auth: {
     persistSession: true,
@@ -51,5 +88,6 @@ export const supabase = createClient(url, anon, {
   },
   global: {
     headers: { 'x-client-info': 'malbeek-mvp' },
+    fetch: makeFetchWithTimeout(),
   },
 })

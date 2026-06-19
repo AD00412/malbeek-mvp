@@ -139,12 +139,18 @@ export async function trace(label, asyncFn) {
     const result = await asyncFn()
     const ms = Math.round(performance.now() - start)
     const err = result?.error
-    if (err) logEvent('SB-ERR', `${label} (${ms}ms)`, { code: err.code, message: err.message })
-    else logEvent('END', `${label} (${ms}ms)`)
+    if (err) {
+      // مهلةُ supabaseClient انتهت → AbortError. عَلِّمه TIMEOUT في السجلّ.
+      const isTimeout = err.message?.includes?.('aborted') || err.message?.includes?.('timeout') || err.name === 'AbortError'
+      logEvent(isTimeout ? 'TIMEOUT' : 'SB-ERR', `${label} (${ms}ms)`, { code: err.code, message: err.message })
+    } else {
+      logEvent('END', `${label} (${ms}ms)`)
+    }
     return result
   } catch (e) {
     const ms = Math.round(performance.now() - start)
-    logEvent('THROW', `${label} (${ms}ms)`, { message: e?.message })
+    const isTimeout = e?.name === 'AbortError' || /aborted|timeout/i.test(String(e?.message))
+    logEvent(isTimeout ? 'TIMEOUT' : 'THROW', `${label} (${ms}ms)`, { message: e?.message })
     throw e
   }
 }
