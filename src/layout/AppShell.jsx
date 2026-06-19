@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../app/useAuth'
 import CompassMark from '../components/CompassMark'
 import Icon from '../components/Icon'
+import DebugPanel from '../components/DebugPanel'
 import NotificationsBell from '../components/NotificationsBell'
 import SideDrawer from '../components/SideDrawer'
 import ThemeToggle from '../components/ThemeToggle'
@@ -48,6 +49,17 @@ function ConnectionPill() {
 export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate, planLabel, planUsage }) {
   const { profile, role } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [debugOpen, setDebugOpen]   = useState(false)
+  // ٣ نقراتٍ على شعار «ملبّيك» خلال ثانيتَين → لوحةُ التشخيص
+  const tapsRef = useRef([])
+  const triggerDebug = () => {
+    const now = Date.now()
+    tapsRef.current = [...tapsRef.current.filter((t) => now - t < 1500), now]
+    if (tapsRef.current.length >= 3) {
+      tapsRef.current = []
+      setDebugOpen(true)
+    }
+  }
 
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
@@ -56,7 +68,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
     <div className="shell">
       {/* ---------- الشريط الجانبي (سطح المكتب) ---------- */}
       <aside className="sidebar">
-        <div className="brand">
+        <div className="brand" onClick={triggerDebug} style={{ cursor: 'default', userSelect: 'none' }}>
           <CompassMark size={36} />
           <div>
             <div className="nm">ملبّيك</div>
@@ -107,7 +119,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
             onClick={() => setDrawerOpen(true)}>
             <Icon name="menu" size={18} />
           </button>
-          <div className="tb-titles">
+          <div className="tb-titles" onClick={triggerDebug} style={{ cursor: 'default', userSelect: 'none' }}>
             <div className="pg-title">{title}</div>
             {subtitle && <div className="pg-sub">{subtitle}</div>}
           </div>
@@ -157,6 +169,9 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
           )
         ))}
       </nav>
+
+      {/* لوحةُ التشخيص — تَفتح بـ٣ نقراتٍ على شعار «ملبّيك» */}
+      <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />
     </div>
   )
 }

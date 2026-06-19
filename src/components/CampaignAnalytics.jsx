@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { tableToDocx } from '../lib/docx'
 import { useUI } from '../lib/useUI'
+import { trace } from '../lib/debugLog'
 import Icon from './Icon'
 
 function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
@@ -40,9 +41,9 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
     ;(async () => {
       setLoadErr(false)
       const since = new Date(Date.now() - 30 * 86400000).toISOString()
-      const { data, error } = await supabase
+      const { data, error } = await trace('analytics:passengers', () => supabase
         .from('passengers').select('created_at, boarding_point, status')
-        .eq('subscriber_id', subscriberId).gte('created_at', since).limit(2000)
+        .eq('subscriber_id', subscriberId).gte('created_at', since).limit(2000))
       if (cancel) return
       // لا تُظهر أصفارًا مضلّلةً عند فشل الجلب — ميّز الخطأ بوضوح.
       if (error) { setLoadErr(true); return }
@@ -69,17 +70,17 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
       const topBoarding = [...bp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
 
       // التحصيل الكلّي (كلّ الأوقات): مجموع مبالغ المدفوعين
-      const { data: payRows } = await supabase
+      const { data: payRows } = await trace('analytics:payments', () => supabase
         .from('passengers').select('amount')
         .eq('subscriber_id', subscriberId)
-        .in('status', ['paid', 'boarded', 'checked_in'])
+        .in('status', ['paid', 'boarded', 'checked_in']))
       if (cancel) return
       const collected = (payRows ?? []).reduce((s, r) => s + (Number(r.amount) || 0), 0)
 
       // الاستردادات (المرحلة ٧): المُعاد فعلًا + المعلّق بانتظار المعالجة
-      const { data: refRows } = await supabase
+      const { data: refRows } = await trace('analytics:refunds', () => supabase
         .from('refunds').select('amount, status')
-        .eq('subscriber_id', subscriberId).in('status', ['requested', 'refunded'])
+        .eq('subscriber_id', subscriberId).in('status', ['requested', 'refunded']))
       if (cancel) return
       const refunded = (refRows ?? []).filter((r) => r.status === 'refunded').reduce((s, r) => s + (Number(r.amount) || 0), 0)
       const pend = (refRows ?? []).filter((r) => r.status === 'requested')

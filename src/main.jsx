@@ -5,6 +5,9 @@ import { BrowserRouter } from 'react-router-dom'
 import './styles/malbeek-theme.css'   // خط ثمانية + متغيّرات ألوان ملبّيك
 import './styles/app.css'             // أنماط الشاشات واللوحات
 
+import { installDebug } from './lib/debugLog'
+installDebug()
+
 import { AuthProvider } from './app/AuthProvider'
 import UIProvider from './components/UIProvider'
 import ErrorBoundary from './app/ErrorBoundary'
