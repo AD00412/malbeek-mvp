@@ -155,8 +155,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
       {/* ---------- الدرج الجانبي (☰ على الجوال) ---------- */}
       <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
         tabs={tabs} active={active} onTab={onTab}
-        planLabel={planLabel} planUsage={planUsage}
-        onOpenDebug={() => setDebugOpen(true)} />
+        planLabel={planLabel} planUsage={planUsage} />
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
       <nav className="tabbar" aria-label="تنقّل سفلي">

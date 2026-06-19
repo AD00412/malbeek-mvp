@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { logEvent, instrumentSupabaseAuth, instrumentRealtime } from './debugLog'
 
 /* ============================================================
    عميل Supabase — مهيّأٌ لمصادقةٍ فوريةٍ لا تعلق
@@ -55,8 +56,30 @@ const noopLock = async (_name, _acquireTimeout, fn) => fn()
  * يُعرَض خطأٌ قابلٌ لإعادة المحاولة. لا reload، لا حالةٌ عالميّة.
  */
 const REQUEST_TIMEOUT_MS = 10_000   // ١٠ث — تَجمّدٌ مَحدودٌ خيرٌ من أبديّ
+
+/** يَستخرج وصفًا مختصرًا لـURL يُمكن قراءته في السجلّ. */
+function shortenUrl(input) {
+  const raw = typeof input === 'string' ? input : (input?.url || '')
+  try {
+    const u = new URL(raw)
+    // /rest/v1/passengers?select=... → rest:passengers
+    const m = u.pathname.match(/^\/(rest|auth|storage|realtime|functions)\/v\d+\/(.+)$/)
+    if (m) {
+      const kind = m[1].slice(0, 3)
+      const path = m[2].split('?')[0].split('/')[0]
+      return `${kind}:${path}`
+    }
+    return u.pathname.slice(0, 40)
+  } catch { return String(raw).slice(0, 40) }
+}
+
 function makeFetchWithTimeout() {
   return function supabaseFetch(input, init = {}) {
+    const method = (init.method || 'GET').toUpperCase()
+    const label  = `${method} ${shortenUrl(input)}`
+    const start  = performance.now()
+    logEvent('SB', `→ ${label}`)
+
     const ctrl = new AbortController()
     const userSignal = init.signal
     const onUserAbort = () => ctrl.abort()
@@ -64,12 +87,33 @@ function makeFetchWithTimeout() {
       if (userSignal.aborted) ctrl.abort()
       else userSignal.addEventListener('abort', onUserAbort, { once: true })
     }
+    let timedOut = false
     const timer = setTimeout(() => {
+      timedOut = true
       try { ctrl.abort(new DOMException('Request timeout', 'AbortError')) }
       catch { try { ctrl.abort() } catch { /* ignore */ } }
     }, REQUEST_TIMEOUT_MS)
 
     return fetch(input, { ...init, signal: ctrl.signal })
+      .then((res) => {
+        const ms = Math.round(performance.now() - start)
+        const status = res?.status ?? '?'
+        if (!res?.ok && status !== 204 && status !== 304) {
+          logEvent('SB-ERR', `${label} → ${status} (${ms}ms)`)
+        } else {
+          logEvent('SB', `← ${label} ${status} (${ms}ms)`)
+        }
+        return res
+      })
+      .catch((err) => {
+        const ms = Math.round(performance.now() - start)
+        if (timedOut || err?.name === 'AbortError') {
+          logEvent('TIMEOUT', `${label} (${ms}ms)`, { reason: timedOut ? 'client-timeout' : 'abort' })
+        } else {
+          logEvent('NETERR', `${label} (${ms}ms)`, { message: err?.message })
+        }
+        throw err
+      })
       .finally(() => {
         clearTimeout(timer)
         if (userSignal) try { userSignal.removeEventListener('abort', onUserAbort) } catch { /* ignore */ }
@@ -91,3 +135,7 @@ export const supabase = createClient(url, anon, {
     fetch: makeFetchWithTimeout(),
   },
 })
+
+// تتبّعٌ تلقائيٌّ لأحداث المصادقة والـrealtime (يَظهر في DebugPanel)
+instrumentSupabaseAuth(supabase)
+instrumentRealtime(supabase)

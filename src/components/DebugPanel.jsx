@@ -10,11 +10,17 @@ const CATEGORY_COLOR = {
   ERROR:   '#ef4444',
   REJECT:  '#ef4444',
   FREEZE:  '#f59e0b',
-  TIMEOUT: '#dc2626',   // أحمرٌ غامقٌ — الأخطر
+  TIMEOUT: '#dc2626',
   'SB-ERR': '#fb923c',
+  NETERR:  '#f97316',
   THROW:   '#ef4444',
   START:   '#94a3b8',
   END:     '#10b981',
+  SB:      '#22d3ee',  // فيروزيٌّ — مكالمات Supabase التلقائيّة
+  AUTH:    '#a78bfa',
+  RT:      '#fb7185',  // وردي — Realtime
+  WARMUP:  '#fbbf24',
+  NET:     '#60a5fa',
   VIS:     '#60a5fa',
   NAV:     '#a78bfa',
   INIT:    '#10b981',
@@ -46,12 +52,12 @@ export default function DebugPanel({ open, onClose }) {
 
   const filtered = events.filter((e) => {
     if (filter === 'all') return true
-    if (filter === 'errors')  return ['ERROR', 'REJECT', 'THROW', 'SB-ERR', 'TIMEOUT'].includes(e.category)
+    if (filter === 'errors')  return ['ERROR', 'REJECT', 'THROW', 'SB-ERR', 'TIMEOUT', 'NETERR'].includes(e.category)
     if (filter === 'freezes') return e.category === 'FREEZE'
-    if (filter === 'sb')      return ['START', 'END', 'SB-ERR'].includes(e.category)
+    if (filter === 'sb')      return ['START', 'END', 'SB-ERR', 'SB', 'AUTH', 'RT', 'TIMEOUT', 'NETERR'].includes(e.category)
     return true
   })
-  const errorCount  = events.filter((e) => ['ERROR','REJECT','THROW','SB-ERR','TIMEOUT'].includes(e.category)).length
+  const errorCount  = events.filter((e) => ['ERROR','REJECT','THROW','SB-ERR','TIMEOUT','NETERR'].includes(e.category)).length
   const freezeCount = events.filter((e) => e.category === 'FREEZE').length
 
   return (

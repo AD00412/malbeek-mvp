@@ -125,10 +125,77 @@ export function installDebug() {
   window.addEventListener('hashchange', () => logEvent('NAV', `hash: ${location.hash}`))
   window.addEventListener('popstate', () => logEvent('NAV', `pop: ${location.pathname}`))
 
-  logEvent('INIT', 'debug installed')
+  // ٦) ذاكرةُ JS (Chrome/Edge فقط، iOS Safari لا يَدعمها — نَتحقّق ديناميكيًّا)
+  function snapshotMemory() {
+    try {
+      const m = performance?.memory
+      if (m && m.usedJSHeapSize) {
+        return {
+          usedMB: Math.round(m.usedJSHeapSize / 1048576),
+          totalMB: Math.round(m.totalJSHeapSize / 1048576),
+          limitMB: Math.round(m.jsHeapSizeLimit / 1048576),
+        }
+      }
+    } catch { /* ignore */ }
+    return null
+  }
+
+  // ٧) معلوماتُ الشبكة (Network Information API)
+  try {
+    const conn = navigator?.connection
+    if (conn) {
+      logEvent('NET', `${conn.effectiveType || '?'} · rtt:${conn.rtt || '?'}ms · dl:${conn.downlink || '?'}Mb`)
+      conn.addEventListener?.('change', () => {
+        logEvent('NET', `change: ${conn.effectiveType || '?'} · rtt:${conn.rtt || '?'}ms`)
+      })
+    }
+  } catch { /* ignore */ }
+
+  // ٨) لقطةُ بدءٍ مع الذاكرة
+  const mem = snapshotMemory()
+  logEvent('INIT', `debug installed${mem ? ` · heap:${mem.usedMB}/${mem.limitMB}MB` : ''}`, {
+    ua: navigator.userAgent.slice(0, 100),
+    online: navigator.onLine,
+    standalone: !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone),
+  })
 
   // اجعله متاحًا في console للمستخدمين المتقدّمين
-  window.__malbeekDebug = { getEvents, clearEvents, exportText, logEvent }
+  window.__malbeekDebug = { getEvents, clearEvents, exportText, logEvent, snapshotMemory }
+}
+
+/** تَتبّعُ أحداث Supabase auth (signed_in, signed_out, token_refreshed). */
+export function instrumentSupabaseAuth(supabase) {
+  if (!supabase?.auth?.onAuthStateChange) return
+  supabase.auth.onAuthStateChange((event, session) => {
+    logEvent('AUTH', event, {
+      hasSession: !!session,
+      expiresAt: session?.expires_at,
+      userId: session?.user?.id?.slice(0, 8),
+    })
+  })
+}
+
+/** تَتبّعُ حالة WebSocket لـRealtime. */
+export function instrumentRealtime(supabase) {
+  const rt = supabase?.realtime
+  if (!rt) return
+  // معظمُ نسخ supabase-js تَعرض هذه الأحداث عبر مُستمعي مُنخفض المستوى
+  try {
+    const origConnect = rt.connect?.bind(rt)
+    if (origConnect) {
+      rt.connect = function (...a) {
+        logEvent('RT', 'connect()')
+        return origConnect(...a)
+      }
+    }
+    const origDisconnect = rt.disconnect?.bind(rt)
+    if (origDisconnect) {
+      rt.disconnect = function (...a) {
+        logEvent('RT', 'disconnect()')
+        return origDisconnect(...a)
+      }
+    }
+  } catch { /* ignore */ }
 }
 
 /** يَلفّ وعدًا (مثلًا supabase.from(...)) لتسجيل البدء/النهاية/المدّة. */
