@@ -1,4 +1,8 @@
 import { supabase } from './supabaseClient'
+import { logEvent } from './debugLog'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 /* ============================================================
  *  مُنسِّقُ الإيقاظ — إحياءُ التطبيق بعد عودته من الخلفيّة
@@ -35,6 +39,40 @@ function withTimeout(promise, ms) {
   let t
   const timeout = new Promise((_, reject) => { t = setTimeout(() => reject(new Error('timeout')), ms) })
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t))
+}
+
+/* ★ تَدفئةُ الاتّصال (warmup): فورَ عودةِ التطبيق من الخلفيّة، نُطلق
+   طلبًا قصيرًا (HEAD) عبر window.fetch الخامّ — لا عبر supabase-js.
+   لو الـTCP socket كان زومبيًّا (iOS أوقفه أثناء الإخفاء)، AbortController
+   بعد ١.٥ث يُجبر المتصفّحَ على إغلاقه. الطلبُ التالي يَفتح socket جديدًا.
+   لو كان سليمًا: ينجح في < ٣٠٠ms، لا أثرَ للمستخدم. */
+let warmupInFlight = false
+async function warmupConnection() {
+  if (!SUPABASE_URL || warmupInFlight) return
+  if (typeof window === 'undefined') return
+  warmupInFlight = true
+  const start = performance.now()
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => { try { ctrl.abort() } catch { /* ignore */ } }, 1500)
+  try {
+    // window.fetch مباشرٌ — لا يَمرّ عبر supabaseClient (ولا مهلته ١٠ث).
+    await window.fetch(`${SUPABASE_URL}/auth/v1/health`, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: { apikey: SUPABASE_ANON },
+      cache: 'no-store',
+      keepalive: false,
+    })
+    const ms = Math.round(performance.now() - start)
+    logEvent('WARMUP', `ok (${ms}ms)`)
+  } catch (e) {
+    const ms = Math.round(performance.now() - start)
+    // الإلغاءُ مقصودٌ — socket المعطوبُ أُغلق الآن قسرًا.
+    logEvent('WARMUP', `aborted/failed (${ms}ms)`, { message: e?.message })
+  } finally {
+    clearTimeout(timer)
+    warmupInFlight = false
+  }
 }
 
 async function performWake(reason, gap = 0) {
@@ -99,7 +137,11 @@ export function installWakeListeners() {
 
   const onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') hiddenAt = Date.now()
-    else if (document.visibilityState === 'visible') onReturn('visible')
+    else if (document.visibilityState === 'visible') {
+      // ★ تَدفئةٌ فوريّةٌ: تُجهض الـsocket الزومبي قبل أن يُمسَّ.
+      if (hiddenAt > 0) warmupConnection()
+      onReturn('visible')
+    }
   }
   const onOnline   = () => onReturn('online')
   const onPageShow = (e) => { if (e?.persisted) onReturn('pageshow') }
