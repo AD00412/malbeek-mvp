@@ -76,7 +76,7 @@ export default function InstallCard() {
   return (
     <section className="install-card" id="install">
       <div className="install-head">
-        <span className="install-tag">تثبيتٌ بدون متجر</span>
+        <span className="install-tag">تثبيتٌ عبر المتصفّح</span>
         <h2>ثبّت ملبّيك على شاشتك الرئيسيّة</h2>
         <p>استخدمه كأيّ تطبيقٍ، رمزٌ على شاشتك، فتحٌ بضغطةٍ، شاشةٌ كاملةٌ بلا شريط متصفّحٍ</p>
       </div>
