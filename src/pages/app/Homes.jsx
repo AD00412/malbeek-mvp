@@ -10,6 +10,7 @@ import Roadmap from '../../components/Roadmap'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
 import FeedbackFab, { showFeedbackFab } from '../../components/FeedbackFab'
+import { getCached, setCached, buildPaxStats, rehydratePaxStats } from '../../lib/dataCache'
 import FeedbackInbox from '../../components/FeedbackInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
@@ -77,11 +78,22 @@ export function AdminHome() {
   const [detailSub, setDetailSub] = useState(null)   // الحملة المفتوحة في ورقة التفاصيل
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  const firstAdminLoad = useRef(true)
   const load = useCallback(async () => {
+    const cacheKey = 'admin-dash'
+    // SWR: snapshot الجلسة السابقة يُعرض فورًا
+    if (firstAdminLoad.current) {
+      const cached = getCached(cacheKey)
+      if (cached?.subs) { setSubs(cached.subs); setLoading(false) }
+      else setLoading(true)
+    }
     // نظرةٌ تشغيليّةٌ وماليّةٌ مجمّعةٌ عبر كلّ الحملات (دالّةٌ آمنةٌ مقصورةٌ على الأدمن)
     const { data } = await supabase.rpc('admin_campaign_stats')
-    setSubs((data ?? []).map((r) => ({ ...r, id: r.subscriber_id })))
+    const subs = (data ?? []).map((r) => ({ ...r, id: r.subscriber_id }))
+    setSubs(subs)
+    setCached(cacheKey, { subs })
     setLoading(false)
+    firstAdminLoad.current = false
   }, [])
 
   useEffect(() => {
@@ -336,8 +348,21 @@ export function SubscriberHome() {
   const firstLoadRef = useRef(true)
   const load = useCallback(async () => {
     if (!user?.id) return
-    // لا نُومض الـ Skeleton مع كلّ تحديثٍ حيٍّ — فقط في التحميل الأوّل.
-    if (firstLoadRef.current) setLoading(true)
+    const cacheKey = `sub-dash:${user.id}`
+
+    // SWR: لو لدينا snapshot من جلسةٍ سابقةٍ نعرضُه فورًا (لا skeleton)،
+    // ثمّ نواصلُ بقيّةَ الـ load في الخلفيّة لتحديث البيانات.
+    if (firstLoadRef.current) {
+      const cached = getCached(cacheKey)
+      if (cached) {
+        if (cached.sub) setSub(cached.sub)
+        if (cached.trips) setTrips(cached.trips)
+        if (cached.paxStats) setPaxStats(rehydratePaxStats(cached.paxStats))
+        setLoading(false)        // نعرضُ البياناتِ المخزّنةَ فورًا
+      } else {
+        setLoading(true)
+      }
+    }
     setErr('')
 
     // الحملة التي يديرها المستخدم: يملكها أو عضوُ فريقٍ فيها (RPC موثوق).
@@ -383,29 +408,28 @@ export function SubscriberHome() {
     setSub(s ?? null)
 
     if (s?.id) {
-      const { data: t, error: tErr } = await supabase
-        .from('trips')
-        .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes, seating_policy, bus_rows, bus_back_row, price')
-        .eq('subscriber_id', s.id)
-        .order('depart_at', { ascending: true })
-      if (tErr) { setErr('تعذّر تحميل الرحلات: ' + tErr.message); setTrips([]) }
-      else setTrips(t ?? [])
-
-      // إحصاءات المعتمرين الحقيقية لكل رحلة + الإجماليات
-      const { data: pax } = await supabase
-        .from('passengers').select('trip_id, status').eq('subscriber_id', s.id)
-      const byTrip = new Map()
-      const totals = { count: 0, paid: 0, boarded: 0, checked_in: 0 }
-      for (const p of (pax ?? [])) {
-        const e = byTrip.get(p.trip_id) || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
-        e.count++; totals.count++
-        if (p.status === 'paid' || p.status === 'boarded' || p.status === 'checked_in') { e.paid++; totals.paid++ }
-        if (p.status === 'boarded' || p.status === 'checked_in') { e.boarded++; totals.boarded++ }
-        if (p.status === 'checked_in') { e.checked_in++; totals.checked_in++ }
-        byTrip.set(p.trip_id, e)
-      }
-      setPaxStats({ byTrip, totals })
-    } else { setTrips([]); setPaxStats({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } }) }
+      // الرحلات والركّاب مستقلّتان (لا تعتمد إحداهما على الأخرى) → تشغيلٌ متوازٍ
+      // يُختصر round-trip كاملًا. كان قبل: ٤ تتابعيّةً. صار: ٣ تتابعيّةً + ١ متوازية.
+      const [tripsRes, paxRes] = await Promise.all([
+        supabase
+          .from('trips')
+          .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes, seating_policy, bus_rows, bus_back_row, price')
+          .eq('subscriber_id', s.id)
+          .order('depart_at', { ascending: true }),
+        supabase
+          .from('passengers').select('trip_id, status').eq('subscriber_id', s.id),
+      ])
+      if (tripsRes.error) { setErr('تعذّر تحميل الرحلات: ' + tripsRes.error.message); setTrips([]) }
+      else setTrips(tripsRes.data ?? [])
+      const paxStats = buildPaxStats(paxRes.data ?? [])
+      setPaxStats(paxStats)
+      // خزّن snapshot جديد للجلسة التالية / إعادة التنقّل بين التبويبات
+      setCached(cacheKey, { sub: s, trips: tripsRes.data ?? [], paxStats })
+    } else {
+      setTrips([])
+      setPaxStats({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } })
+      setCached(cacheKey, { sub: null, trips: [], paxStats: buildPaxStats([]) })
+    }
     setLoading(false)
     firstLoadRef.current = false
   }, [user, profile, refreshProfile])
@@ -885,28 +909,47 @@ export function CustomerHome() {
   const firstLoadRef = useRef(true)
 
   const load = useCallback(async () => {
-    // لا نُومض الـ Skeleton مع كلّ تحديثٍ حيّ (Realtime يستدعي load بكثرة).
-    if (firstLoadRef.current) setLoading(true)
+    const cacheKey = user?.id ? `cust-dash:${user.id}` : null
+
+    // SWR: نعرضُ snapshot المخزّنَ فورًا في أوّل تحميلٍ ثمّ نُحدّثه في الخلفيّة.
+    if (firstLoadRef.current && cacheKey) {
+      const cached = getCached(cacheKey)
+      if (cached) {
+        if (cached.sub) { setSub(cached.sub); setOrgName(cached.sub.org_name) }
+        if (cached.trips) setTrips(cached.trips)
+        if (cached.bookings) setMyBookings(cached.bookings)
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
+    } else if (firstLoadRef.current) {
+      setLoading(true)
+    }
+
+    // كلّ الاستعلامات الثلاثة مستقلّةٌ → تشغيلٌ متوازٍ يقتطعُ ٢ round-trips.
     let sq = supabase.from('subscribers').select('id, org_name, store_url, logo_url')
     sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
-    const { data: s } = await sq.maybeSingle()
-    if (s) { setSub(s); setOrgName(s.org_name) }
 
     let tq = supabase
       .from('trips')
       .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, seating_policy, bus_rows, bus_back_row, price, notes')
       .order('depart_at', { ascending: true })
     if (subscriberId) tq = tq.eq('subscriber_id', subscriberId)
-    const { data: t } = await tq
-    setTrips(t ?? [])
 
-    if (user?.id) {
-      const { data: b } = await supabase
-        .from('passengers')
-        .select('id, trip_id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref')
-        .eq('profile_id', user.id)
-      setMyBookings(b ?? [])
-    }
+    const bq = user?.id
+      ? supabase.from('passengers')
+          .select('id, trip_id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref')
+          .eq('profile_id', user.id)
+      : Promise.resolve({ data: [] })
+
+    const [subRes, tripsRes, bRes] = await Promise.all([sq.maybeSingle(), tq, bq])
+
+    const s = subRes.data
+    if (s) { setSub(s); setOrgName(s.org_name) }
+    setTrips(tripsRes.data ?? [])
+    setMyBookings(bRes.data ?? [])
+    if (cacheKey) setCached(cacheKey, { sub: s, trips: tripsRes.data ?? [], bookings: bRes.data ?? [] })
+
     setLoading(false)
     firstLoadRef.current = false
   }, [subscriberId, user])
