@@ -116,6 +116,10 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   }, [])
 
   const firstLoad = useRef(true)
+  const lastPaxCount = useRef(0)
+  const lastWaitCount = useRef(0)
+  const lastBusCount = useRef(0)
+  const lastPayCount = useRef(0)
   const loadPassengers = useCallback(async () => {
     if (!trip?.id) return
     // نُظهر الهيكل العظميّ في التحميل الأوّل فقط — لا نُومض القائمة مع كلّ تحديثٍ حيّ
@@ -126,26 +130,45 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       .select('id, full_name, national_id, phone, nationality, seat_no, boarding_point, status, notes, gender, is_family, ticket_code, boarded_at, checked_in_at, payment_ref, payment_proof_url, profile_id, bus_id, room_id, amount, paid_at, payment_provider, created_at')
       .eq('trip_id', trip.id)
       .order('seat_no', { ascending: true, nullsFirst: false })
-    if (error) setErr('تعذّر تحميل المعتمرين: ' + error.message)
-    else setPassengers(data ?? [])
+    if (error) {
+      setErr('تعذّر تحميل المعتمرين: ' + error.message)
+    } else {
+      // حارسٌ ضدّ «empty الزائف» بعد الإيقاظ: لو كان لدينا بياناتٌ ثمّ رجعت []،
+      // نعتبره مؤقّتًا (الجلسة تنتعش) ولا نَمسحُ الواجهة — نَجدول إعادةَ محاولةٍ.
+      const rows = data ?? []
+      if (firstLoad.current || rows.length > 0 || lastPaxCount.current === 0) {
+        setPassengers(rows)
+        lastPaxCount.current = rows.length
+      } else {
+        setTimeout(() => loadPassengers(), 800)
+      }
+    }
     setLoading(false); firstLoad.current = false
 
     // قائمة الانتظار للرحلة
     const { data: w } = await supabase
       .from('waitlist').select('id, profile_id, full_name, phone, notified_at, created_at')
       .eq('trip_id', trip.id).order('created_at', { ascending: true })
-    setWaitlist(w ?? [])
+    const wRows = w ?? []
+    if (wRows.length > 0 || lastWaitCount.current === 0) {
+      setWaitlist(wRows); lastWaitCount.current = wRows.length
+    }
 
     // باصات الرحلة (لتعدّد الباصات)
     const bs = await loadTripBuses(trip.id)
-    setBuses(bs)
-    setMapBusId((cur) => (cur && bs.some((b) => b.id === cur) ? cur : bs[0]?.id ?? null))
+    if ((bs?.length ?? 0) > 0 || lastBusCount.current === 0) {
+      setBuses(bs); lastBusCount.current = bs?.length ?? 0
+      setMapBusId((cur) => (cur && bs.some((b) => b.id === cur) ? cur : bs[0]?.id ?? null))
+    }
 
     // سجلّ مدفوعات البوّابة لهذه الرحلة (يقرؤه المالك عبر RLS؛ يمتلئ عند تفعيل الـ Webhook)
     const { data: pm } = await supabase
       .from('payments').select('id, passenger_id, provider, provider_ref, amount, currency, created_at')
       .eq('trip_id', trip.id).order('created_at', { ascending: false }).limit(200)
-    setPayments(pm ?? [])
+    const pmRows = pm ?? []
+    if (pmRows.length > 0 || lastPayCount.current === 0) {
+      setPayments(pmRows); lastPayCount.current = pmRows.length
+    }
   }, [trip])
 
   const reloadTrip = useCallback(async () => {

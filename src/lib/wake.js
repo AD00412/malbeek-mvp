@@ -50,26 +50,40 @@ async function performWake(reason) {
   lastWakeAt = now
 
   // ١) رفعُ الجلسة بمهلة — لا تَعلق على وعدٍ زومبيٍّ من قبل التعليق.
+  //    نُجدِّدها استباقيًّا إن بقي > ٥ث؛ لا انتظار ٥ دقائق — سبب الـ "empty الزائف".
+  let refreshed = false
   try {
     const { data } = await withTimeout(supabase.auth.getSession(), REFRESH_TIMEOUT_MS)
     const exp = data?.session?.expires_at
+    // كان: ‎< 5 * 60 * 1000‎ — نَتجنّب توكِنًا قاربَ الانتهاء أثناء العودة من الخلفية.
     if (exp) {
       const remainingMs = exp * 1000 - Date.now()
-      if (remainingMs < 5 * 60 * 1000) {
+      if (remainingMs < 15 * 60 * 1000) {  // ١٥ دقيقة بدل ٥ — أأمنُ بعد تعليقٍ طويل
         await withTimeout(supabase.auth.refreshSession(), REFRESH_TIMEOUT_MS)
+        refreshed = true
       }
+    } else {
+      // لا جلسة — حاول refreshSession مباشرةً (قد يَنجح إن وُجد refresh_token محلّيّ)
+      await withTimeout(supabase.auth.refreshSession(), REFRESH_TIMEOUT_MS)
+      refreshed = true
     }
-  } catch { /* انتهت المهلة أو خطأٌ مؤقّت — يُعالجُ في الاستعلام التالي */ }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    if (typeof console !== 'undefined') console.warn('[wake] refreshSession failed:', e?.message || e)
+  }
 
   // ٢) إعادةُ اتّصالٍ صارمةٌ لـ Realtime — كسرُ زومبي الـ WS بعد التعليق.
-  //    connect() وحده لا يكفي: المكتبة تتجاهل الطلبَ إن ظنّت الحالةَ متصلة.
   try {
     const rt = supabase?.realtime
-    if (rt?.disconnect) {
-      try { rt.disconnect() } catch { /* ignore */ }
-    }
+    if (rt?.disconnect) { try { rt.disconnect() } catch { /* ignore */ } }
     if (rt?.connect) rt.connect()
   } catch { /* ignore */ }
+
+  // ★ مهلةٌ صغيرةٌ لإتاحة الفرصة لـ supabase-js أن يَنشر التوكِنَ المُجدَّد
+  //    إلى headers قبل أن يُطلق المشتركون استعلاماتهم — يَمنع «empty الزائف».
+  if (refreshed) {
+    await new Promise((r) => setTimeout(r, 250))
+  }
 
   // ٣) بثُّ الحدث لكلِّ المشتركين (useRealtime + page-level loaders)
   if (typeof window !== 'undefined') {
@@ -79,7 +93,7 @@ async function performWake(reason) {
   }
 
   // eslint-disable-next-line no-console
-  if (typeof console !== 'undefined' && console.debug) console.debug(`[wake] ${reason}`)
+  if (typeof console !== 'undefined' && console.debug) console.debug(`[wake] ${reason} · refreshed=${refreshed}`)
 }
 
 /* كاشفُ التعليق الطويل: إن قفز الفارقُ كثيرًا = WebView كان معلَّقًا.
