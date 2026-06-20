@@ -7,6 +7,7 @@ import Login from '../pages/auth/Login'
 import Signup from '../pages/auth/Signup'
 import CustomerJoin from '../pages/auth/CustomerJoin'
 import JoinTeam from '../pages/auth/JoinTeam'
+import AcceptInvite from '../pages/auth/AcceptInvite'
 import Landing from '../pages/Landing'
 import Legal from '../pages/Legal'
 
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/privacy" element={<Legal kind="privacy" />} />
         <Route path="/j/:slug" element={<CustomerJoin />} />
         <Route path="/join-team/:id" element={<JoinTeam />} />
+        <Route path="/invite/:token" element={<AcceptInvite />} />
 
         {/* محميّة حسب الدور */}
         <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminHome /></RequireAuth>} />
