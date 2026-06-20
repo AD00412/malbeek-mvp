@@ -200,13 +200,14 @@ export function AdminHome() {
       <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view}
         onTab={(k) => { if (k === 'settings') { setSettingsOpen(true); return } setView(k) }}
         onNotifNavigate={(n) => {
-          // مُوجّهٌ ذكيٌّ حَسب عنوان الإشعار
+          // مُوجّهٌ ذكيٌّ: أوّلًا الـrefs (الأدقّ)، ثمّ الكلماتُ المفتاحيّة
+          if (n.ref_feedback)             { setView('feedback'); return }
+          if (n.kind === 'new_feedback')  { setView('feedback'); return }
           const t = (n.title || '') + ' ' + (n.body || '')
-          if (/ترقية|إثبات/.test(t)) { setView('upgrades'); return }
-          if (/توظيف|دعوة|موظّف/.test(t))   { setView('team'); return }
-          if (/رسالة|تواصل/.test(t))         { setView('messages'); return }
-          if (/تَغذية|راجعة/.test(t))         { setView('feedback'); return }
-          if (n.ref_feedback)                 { setView('feedback'); return }
+          if (/ترقية|إثبات الدفع|باقة المدفوعة/.test(t)) { setView('upgrades'); return }
+          if (/توظيف|الموظَّف|دعوة/.test(t))               { setView('team'); return }
+          if (/الرسائل العامّة|تواصل|الرسالة العامّة/.test(t)) { setView('messages'); return }
+          if (/تغذية|تَغذية/.test(t))                       { setView('feedback'); return }
           // افتراضيًّا: الرئيسيّة
           setView('overview')
         }}>

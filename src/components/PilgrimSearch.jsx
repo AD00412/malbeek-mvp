@@ -48,7 +48,8 @@ export default function PilgrimSearch({ open, subscriberId, onClose, onOpenPasse
     <BottomSheet open={open} onClose={onClose} title="بحثٌ عن معتمر">
       <div className="field search" style={{ marginBottom: 10 }}>
         <span className="ic"><Icon name="search" size={17} /></span>
-        <input type="text" placeholder="الاسم / رقم الهوية / الجوال — عبر كلّ الرحلات"
+        <input type="search" autoComplete="off" autoCorrect="off" spellCheck="false"
+          placeholder="الاسم / رقم الهوية / الجوال — عبر كلّ الرحلات"
           value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 

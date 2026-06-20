@@ -44,13 +44,13 @@ export default function NotificationsBell({ onNavigate }) {
   const load = useCallback(async () => {
     if (!user?.id || !open) return
     setLoading(true); setErr('')
-    // ★ فلترةٌ ذكيّة: لا نَجلب الإشعارات المقروءةَ القديمة (يَتراكم في الذاكرة).
-    //   نَعرض: غير المقروءة + المقروءة آخر ٧ أيّامٍ كذاكرةٍ قصيرة.
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString()
+    // ★ فلترةٌ ذكيّة: نَجلب فقط الإشعاراتِ غير المقروءة (read_at IS NULL).
+    //   بمجرّد ضَغطها، تُعلَّم مقروءةً فتَختفي من القائمة لاحقًا.
+    //   لا cache لا تَراكُم لا إعادة ظهور.
     const { data, error } = await supabase
       .from('notifications')
       .select('id, kind, title, body, ref_trip, ref_passenger, ref_feedback, read_at, created_at')
-      .or(`read_at.is.null,created_at.gte.${sevenDaysAgo}`)
+      .is('read_at', null)
       .order('created_at', { ascending: false })
       .limit(50)
     if (error) {
@@ -78,23 +78,21 @@ export default function NotificationsBell({ onNavigate }) {
     }
   }, [open])
 
-  // ★ بَدلَ مَجرّد read_at، نَحذف الإشعار بعد المعالجة لتَفادي
-  //   تَراكُمها في الذاكرة والـDB. تفاؤليٌّ فوريّ.
+  // ★ تَعليم مقروء + إزالةٌ تَفاؤليّةٌ من القائمة (لا تَعود لأنّ الـGET
+  //   يَستثني read_at IS NOT NULL). تَجنّب DELETE لأنّ RLS لا يَدعمه.
   async function dismiss(id) {
+    const now = new Date().toISOString()
     setItems((prev) => prev.filter((n) => n.id !== id))
-    const { error } = await supabase.from('notifications').delete().eq('id', id)
+    const { error } = await supabase.from('notifications').update({ read_at: now }).eq('id', id)
     if (error) load()
     else reloadUnread()
   }
-  async function markRead(id) {
-    // أُبقي على هذه للحالات التي نَستعملها في onClick قبل المُلاحقة
-    return dismiss(id)
-  }
   async function dismissAll() {
     if (!items.length) return
+    const now = new Date().toISOString()
     const ids = items.map((n) => n.id)
     setItems([])
-    const { error } = await supabase.from('notifications').delete().in('id', ids)
+    const { error } = await supabase.from('notifications').update({ read_at: now }).in('id', ids)
     if (error) load()
     else reloadUnread()
   }

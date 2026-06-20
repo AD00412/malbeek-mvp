@@ -28,7 +28,7 @@ export default function AdminPilgrimSearch() {
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from('passengers')
-        .select('id, full_name, national_id, phone, seat_no, status, trip_id, subscriber_id, gender, dob, paid_at, created_at, trips:trip_id(title, route_from, route_to, depart_at), subscribers:subscriber_id(org_name, slug)')
+        .select('id, full_name, national_id, phone, seat_no, status, trip_id, subscriber_id, gender, paid_at, created_at, trips:trip_id(title, route_from, route_to, depart_at), subscribers:subscriber_id(org_name, slug)')
         .or(`full_name.ilike.%${safe}%,national_id.ilike.%${safe}%,phone.ilike.%${safe}%`)
         .order('created_at', { ascending: false })
         .limit(60)
@@ -57,7 +57,7 @@ export default function AdminPilgrimSearch() {
 
       <div className="field search" style={{ margin: 0 }}>
         <span className="ic"><Icon name="search" size={17} /></span>
-        <input type="text"
+        <input type="search" autoComplete="off" autoCorrect="off" spellCheck="false"
                placeholder="الاسم / رقم الهوية / الجوال — في كلّ الحملات"
                value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
