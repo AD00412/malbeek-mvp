@@ -1981,186 +1981,64 @@ body.fab-interacting *{
    الـ classNames القديمة ‎mk-compass / mk-qibla‎ حُذفت مع تحديث المكوّن. */
 
 /* ============================================================
-   هويّةُ لوحة الإدارة v3 — mlk-*
-   مَطابِقةٌ لدليل ملبّيك (em-* + Thmanyah + كعبةٌ ذهبيّة)
+   هويّةُ لوحة الإدارة v4 — نَظيفةٌ، بلا زَخرفة، Thmanyah فقط
    ============================================================ */
 
-.mlk-dash{display:flex;flex-direction:column;gap:18px;animation:mlk-fadeup .4s ease-out both}
+.mlk-dash{display:flex;flex-direction:column;gap:28px;padding:4px 0 20px;font-family:var(--font-sans)}
 
-@keyframes mlk-fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes mlk-pulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.5);opacity:0}}
+/* ─── شريطُ التَّرحيب ─── */
+.mlk-hello{padding:8px 0 4px}
+.mlk-hello-date{font-size:13px;color:var(--cr-300);font-weight:500;margin-bottom:8px;letter-spacing:.2px}
+.mlk-hello-title{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--cr-50);
+  margin:0;line-height:1.25;letter-spacing:-.4px}
+.mlk-hello-name{color:var(--em-500)}
 
-/* ─────────────────────────────────────────
-   ١) الهيرو — بصمةُ ملبّيك المائيّة + نقش
-   ───────────────────────────────────────── */
-.mlk-hero{position:relative;overflow:hidden;border-radius:24px;padding:24px 22px;color:#fff;
-  background:linear-gradient(135deg,var(--em-900) 0%,var(--em-800) 45%,var(--em-700) 100%);
-  border:1px solid rgba(52,211,153,.25);
-  box-shadow:0 14px 40px -14px rgba(6,78,59,.6), inset 0 1px 0 rgba(255,255,255,.06)}
+/* ─── KPIs ـ شَريطٌ مَقروءٌ فقط، بلا تَفاعل ـ ─── */
+.mlk-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+@media (min-width:600px){.mlk-kpis{grid-template-columns:repeat(4,1fr)}}
+.mlk-kpi{background:var(--surface);padding:18px 18px;display:flex;flex-direction:column;gap:4px}
+.mlk-kpi-num{font-family:var(--font-display);font-size:30px;font-weight:800;color:var(--cr-50);
+  line-height:1;letter-spacing:-.6px}
+.mlk-kpi-lb{font-size:13px;color:var(--cr-300);font-weight:500}
+.mlk-kpi-delta{font-size:11.5px;color:var(--em-500);font-weight:600;margin-top:4px}
 
-/* CompassMark كَبصمةٍ مائيّة */
-.mlk-hero-mark{position:absolute;top:50%;left:-30px;transform:translateY(-50%);opacity:.13;
-  pointer-events:none;filter:saturate(0.6)}
+/* ─── شريطُ الإيرادات ـ مَيَّزٌ بدون صَخب ـ ─── */
+.mlk-revenue{padding:22px 24px;border-radius:14px;background:var(--surface);
+  border:1px solid var(--line);border-inline-start:3px solid var(--em-500)}
+.mlk-revenue-lb{font-size:13px;color:var(--cr-300);font-weight:500;margin-bottom:6px}
+.mlk-revenue-num{font-family:var(--font-display);font-size:36px;font-weight:800;color:var(--cr-50);
+  line-height:1;letter-spacing:-.8px}
+.mlk-revenue-cur{font-size:18px;color:var(--em-500);font-weight:600}
+.mlk-revenue-avg{font-size:12.5px;color:var(--cr-300);margin-top:10px}
+.mlk-revenue-avg strong{color:var(--cr-100);font-weight:700}
 
-/* نقشٌ هندسيٌّ خفيف */
-.mlk-hero-pattern{position:absolute;inset:0;pointer-events:none;opacity:.18;
-  background-image:
-    radial-gradient(circle at 92% 12%,rgba(251,191,36,.5),transparent 28%),
-    radial-gradient(circle at 8% 92%,rgba(110,231,183,.35),transparent 35%),
-    repeating-linear-gradient(45deg,transparent 0 18px,rgba(255,255,255,.04) 18px 19px),
-    repeating-linear-gradient(-45deg,transparent 0 18px,rgba(255,255,255,.03) 18px 19px)}
+/* ─── رؤوسُ الأقسام ─── */
+.mlk-h{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--cr-50);
+  margin:0 0 12px;letter-spacing:-.2px}
 
-.mlk-hero-content{position:relative;z-index:1}
-.mlk-hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:rgba(254,243,199,.95);
-  letter-spacing:.5px;padding:6px 12px;background:rgba(0,0,0,.18);border:1px solid rgba(254,243,199,.18);
-  border-radius:999px;margin-bottom:14px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.mlk-hero-dot{width:6px;height:6px;border-radius:50%;background:#fde68a;box-shadow:0 0 8px #fde68a}
-.mlk-hero-title{font-family:var(--font-display);font-size:26px;font-weight:900;line-height:1.2;margin:0;
-  letter-spacing:-.3px;color:#fff}
-.mlk-hero-name{background:linear-gradient(135deg,#fde68a,#fbbf24);-webkit-background-clip:text;
-  background-clip:text;color:transparent}
-.mlk-hero-sub{font-size:14px;color:rgba(255,255,255,.88);margin:10px 0 0;line-height:1.7;
-  max-width:32ch;font-weight:400}
-.mlk-hero-pulse{display:inline-flex;align-items:center;gap:10px;margin-top:16px;padding:8px 14px;
-  background:rgba(254,243,199,.13);border:1px solid rgba(254,243,199,.3);border-radius:999px;
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.mlk-hero-pulse-ring{position:relative;width:8px;height:8px}
-.mlk-hero-pulse-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:#fde68a}
-.mlk-hero-pulse-ring::after{content:"";position:absolute;inset:0;border-radius:50%;background:#fde68a;
-  animation:mlk-pulse 2s ease-out infinite}
-.mlk-hero-pulse-text{font-size:12.5px;color:#fef3c7;font-weight:600}
-.mlk-hero-pulse-text strong{color:#fff;font-weight:800;margin-inline-end:4px}
+/* ─── تَحتاج انتباهك ـ قائمةٌ تَنفيذيّة ـ ─── */
+.mlk-attn-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.mlk-attn-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--line);width:100%;text-align:start;cursor:pointer;
+  color:inherit;font:inherit;transition:border-color .15s,background .15s}
+.mlk-attn-row:hover{border-color:var(--em-500);background:var(--surface-2)}
+.mlk-attn-count{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--em-500);
+  min-width:36px;line-height:1;letter-spacing:-.4px}
+.mlk-attn-label{flex:1;font-size:14px;color:var(--cr-50);font-weight:600}
+.mlk-attn-go{font-size:18px;color:var(--cr-300);font-weight:400}
+.mlk-attn-row:hover .mlk-attn-go{color:var(--em-500)}
 
-/* ─────────────────────────────────────────
-   ٢) شريطُ الإيرادات
-   ───────────────────────────────────────── */
-.mlk-revenue{position:relative;display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:20px;
-  background:linear-gradient(135deg,rgba(43,182,140,.14) 0%,rgba(16,185,129,.06) 65%,rgba(251,191,36,.07) 100%);
-  border:1px solid rgba(43,182,140,.32);overflow:hidden}
-.mlk-revenue-grain{position:absolute;inset:0;pointer-events:none;opacity:.4;
-  background:radial-gradient(circle at 95% 5%,rgba(251,191,36,.18),transparent 35%)}
-.mlk-revenue-icn{position:relative;width:48px;height:48px;border-radius:12px;background:var(--grad-em);
-  display:grid;place-items:center;color:#fff;flex:none;box-shadow:0 6px 18px -6px rgba(16,185,129,.5)}
-.mlk-revenue-body{flex:1;min-width:0;position:relative}
-.mlk-revenue-lb{font-size:12px;color:var(--cr-300);font-weight:600;margin-bottom:4px}
-.mlk-revenue-num{font-family:var(--font-display);font-size:30px;font-weight:900;color:var(--cr-50);
-  line-height:1;letter-spacing:-.5px}
-.mlk-revenue-cur{font-size:16px;color:var(--em-500);font-weight:700}
-.mlk-revenue-hint{font-size:12px;color:var(--cr-300);margin-top:6px}
-
-/* ─────────────────────────────────────────
-   ٣) KPIs الزجاجيّة
-   ───────────────────────────────────────── */
-.mlk-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media (min-width:760px){.mlk-kpi-grid{grid-template-columns:repeat(4,1fr);gap:12px}}
-
-.mlk-kpi{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
-  padding:14px 14px 12px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line);
-  text-align:start;cursor:pointer;color:inherit;font:inherit;overflow:hidden;
-  transition:transform .2s cubic-bezier(.2,.7,.3,1),border-color .2s,box-shadow .2s}
-.mlk-kpi:hover{transform:translateY(-3px);border-color:var(--line-strong);
-  box-shadow:0 12px 28px -10px rgba(0,0,0,.35)}
-.mlk-kpi:active{transform:translateY(-1px)}
-.mlk-kpi-glow{position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;
-  background:radial-gradient(circle,rgba(16,185,129,.18) 0%,transparent 70%);pointer-events:none}
-.mlk-kpi-em   .mlk-kpi-glow{background:radial-gradient(circle,rgba(16,185,129,.22) 0%,transparent 70%)}
-.mlk-kpi-ok   .mlk-kpi-glow{background:radial-gradient(circle,rgba(43,182,140,.22) 0%,transparent 70%)}
-.mlk-kpi-info .mlk-kpi-glow{background:radial-gradient(circle,rgba(6,182,212,.22) 0%,transparent 70%)}
-.mlk-kpi-warn .mlk-kpi-glow{background:radial-gradient(circle,rgba(251,191,36,.22) 0%,transparent 70%)}
-
-.mlk-kpi-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
-  background:rgba(16,185,129,.14);color:var(--em-500);margin-bottom:6px}
-.mlk-kpi-ok   .mlk-kpi-ic{background:rgba(43,182,140,.18);color:var(--ok-ink)}
-.mlk-kpi-info .mlk-kpi-ic{background:rgba(6,182,212,.18);color:var(--info-ink)}
-.mlk-kpi-warn .mlk-kpi-ic{background:rgba(251,191,36,.18);color:#b45309}
-.mlk-kpi-num{font-family:var(--font-display);font-size:24px;font-weight:900;color:var(--cr-50);
-  line-height:1;letter-spacing:-.5px}
-.mlk-kpi-lb{font-size:12px;color:var(--cr-300);font-weight:600;margin-top:2px}
-.mlk-kpi-sub{font-size:10.5px;color:var(--ok-ink);font-weight:700;margin-top:4px}
-
-/* ─────────────────────────────────────────
-   ٤) رؤوسُ الأقسام
-   ───────────────────────────────────────── */
-.mlk-block{display:flex;flex-direction:column;gap:10px}
-.mlk-block-head{display:flex;align-items:center;gap:8px;padding:0 2px}
-.mlk-block-bar{width:3px;height:18px;border-radius:2px;background:var(--grad-em)}
-.mlk-block-head h3{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--cr-50);
-  margin:0;letter-spacing:-.2px}
-.mlk-block-meta{font-size:11px;color:var(--cr-300);margin-inline-start:auto;font-weight:600;
-  padding:3px 9px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px}
-
-/* ─────────────────────────────────────────
-   ٥) الاختصارات
-   ───────────────────────────────────────── */
-.mlk-shortcuts{display:grid;grid-template-columns:1fr;gap:10px}
-@media (min-width:540px){.mlk-shortcuts{grid-template-columns:repeat(2,1fr)}}
-@media (min-width:900px){.mlk-shortcuts{grid-template-columns:repeat(3,1fr)}}
-
-.mlk-sc{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;
-  background:var(--surface-2);border:1px solid var(--line);text-align:start;cursor:pointer;
-  color:inherit;font:inherit;position:relative;overflow:hidden;
-  transition:transform .2s,border-color .2s,box-shadow .2s,background .2s}
-.mlk-sc:hover{transform:translateY(-1px);border-color:var(--em-500);
-  box-shadow:0 6px 18px -6px rgba(16,185,129,.3)}
-.mlk-sc-ic{width:38px;height:38px;border-radius:10px;background:rgba(16,185,129,.12);color:var(--em-500);
-  display:grid;place-items:center;flex:none}
-.mlk-sc-em .mlk-sc-ic{background:var(--grad-em);color:#fff;box-shadow:0 4px 12px -4px rgba(16,185,129,.45)}
-.mlk-sc-warn .mlk-sc-ic{background:rgba(251,191,36,.18);color:#b45309}
-.mlk-sc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.mlk-sc-ttl{font-size:13.5px;font-weight:800;color:var(--cr-50);display:flex;align-items:center;gap:6px}
-.mlk-sc-sub{font-size:11.5px;color:var(--cr-300)}
-.mlk-sc-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;
-  padding:0 7px;border-radius:11px;background:linear-gradient(135deg,#fbbf24,#f59e0b);
-  color:#1a0f00;font-size:10.5px;font-weight:900;box-shadow:0 2px 6px -2px rgba(245,158,11,.6)}
-.mlk-sc-arrow{font-size:18px;color:var(--cr-300);transition:transform .2s,color .2s}
-.mlk-sc:hover .mlk-sc-arrow{transform:translateX(-3px);color:var(--em-500)}
-
-/* ─────────────────────────────────────────
-   ٦) فيدُ النشاط — timeline
-   ───────────────────────────────────────── */
-.mlk-feed{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0;position:relative}
-.mlk-feed::before{content:"";position:absolute;top:18px;bottom:18px;inset-inline-end:18px;width:2px;
-  background:linear-gradient(180deg,var(--em-500),transparent);opacity:.3;pointer-events:none}
-.mlk-feed-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;
-  background:var(--surface-2);border:1px solid var(--line);margin-bottom:6px;position:relative;
-  transition:transform .15s,border-color .15s}
-.mlk-feed-row:hover{transform:translateX(3px);border-color:var(--line-strong)}
-.mlk-feed-dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;
-  background:var(--surface-3);color:var(--em-500);position:relative;z-index:1;
-  box-shadow:0 0 0 3px var(--surface-2)}
-.mlk-feed-row.tone-em   .mlk-feed-dot{background:var(--grad-em);color:#fff}
-.mlk-feed-row.tone-info .mlk-feed-dot{background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff}
-.mlk-feed-row.tone-gold .mlk-feed-dot{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0f00}
-.mlk-feed-body{flex:1;min-width:0}
-.mlk-feed-lb{font-size:11px;color:var(--cr-300);font-weight:600;margin-bottom:1px}
-.mlk-feed-name{font-size:13px;color:var(--cr-50);font-weight:700;
+/* ─── النشاطُ الأخير ـ قائمةٌ هادئة ـ ─── */
+.mlk-recent-list{list-style:none;padding:0;margin:0;
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.mlk-recent-row{display:flex;align-items:center;gap:12px;padding:13px 16px;
+  border-bottom:1px solid var(--line)}
+.mlk-recent-row:last-child{border-bottom:0}
+.mlk-recent-kind{font-size:11px;font-weight:700;color:var(--em-500);letter-spacing:.3px;
+  min-width:54px;text-align:start}
+.mlk-recent-name{flex:1;font-size:14px;color:var(--cr-50);font-weight:600;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mlk-feed-time{font-size:11px;color:var(--cr-300);flex:none;font-weight:600;
-  padding:3px 8px;background:var(--surface-3);border-radius:999px}
-.mlk-feed-empty{display:flex;align-items:center;justify-content:center;gap:10px;padding:24px 16px;
-  border-radius:14px;background:var(--surface-2);border:1px dashed var(--line);color:var(--cr-300)}
-.mlk-feed-empty svg{color:var(--em-500);opacity:.6}
-
-/* ─────────────────────────────────────────
-   ٧) تَكييفُ الوضع الفاتح
-   ───────────────────────────────────────── */
-:root[data-theme="light"] .mlk-hero{
-  background:linear-gradient(135deg,#065f46 0%,#047857 50%,#10b981 100%);
-  border-color:rgba(16,185,129,.4);
-  box-shadow:0 14px 40px -14px rgba(6,95,70,.4)}
-:root[data-theme="light"] .mlk-revenue{
-  background:linear-gradient(135deg,rgba(16,185,129,.06) 0%,rgba(251,191,36,.08) 100%);
-  border-color:rgba(5,150,105,.32)}
-:root[data-theme="light"] .mlk-kpi,
-:root[data-theme="light"] .mlk-sc,
-:root[data-theme="light"] .mlk-feed-row{
-  background:#ffffff;border-color:rgba(5,150,105,.16);
-  box-shadow:0 1px 3px rgba(6,95,70,.05)}
-:root[data-theme="light"] .mlk-kpi:hover,
-:root[data-theme="light"] .mlk-sc:hover{
-  box-shadow:0 8px 20px -8px rgba(6,95,70,.25);border-color:var(--em-700)}
-:root[data-theme="light"] .mlk-feed-dot{
-  background:#f0fdf4;color:var(--em-700);box-shadow:0 0 0 3px #ffffff}
-:root[data-theme="light"] .mlk-feed-time,
-:root[data-theme="light"] .mlk-block-meta{
-  background:#f0fdf4;border-color:rgba(5,150,105,.18)}
+.mlk-recent-time{font-size:11.5px;color:var(--cr-300);font-weight:500;flex:none}
+.mlk-recent-empty{padding:24px;text-align:center;color:var(--cr-300);font-size:13px;
+  border:1px dashed var(--line);border-radius:12px}
