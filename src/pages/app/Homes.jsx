@@ -297,33 +297,37 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
     finally { setPdfBusy(false) }
   }
   return (
-    <section className="panel" ref={reportRef}>
-      <div className="panel-head">
-        <h3>المشتركون</h3><span className="sub">({subs.length})</span>
-        <span style={{ flex: 1 }} />
-        <button className="btn btn-ghost btn-sm" onClick={exportReportPdf} disabled={subs.length === 0 || pdfBusy}>
-          {pdfBusy ? <span className="spinner" /> : <><Icon name="download" size={15} /> PDF</>}
+    <div className="mlk-tab" ref={reportRef}>
+      <header className="mlk-tab-head">
+        <h1 className="mlk-tab-title">المشتركون</h1>
+        <span className="mlk-tab-count">{subs.length} حملة</span>
+        <button className="mlk-action" onClick={exportReportPdf} disabled={subs.length === 0 || pdfBusy}>
+          {pdfBusy ? <span className="spinner" /> : <><Icon name="download" size={13} /> PDF</>}
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={exportReportDocx} disabled={subs.length === 0}>
-          <Icon name="edit" size={15} /> Word
+        <button className="mlk-action" onClick={exportReportDocx} disabled={subs.length === 0}>
+          <Icon name="edit" size={13} /> Word
         </button>
-      </div>
+      </header>
+
       {!loading && subs.length > 0 && (
         <>
-          <div className="field search" style={{ marginBottom: 8 }}>
+          <div className="field search" style={{ margin: 0 }}>
             <span className="ic"><Icon name="search" size={16} /></span>
             <input type="text" placeholder="ابحث باسم الحملة أو الرابط…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <div className="bus-tabs" style={{ marginBottom: 8 }}>
+          <div className="mlk-filter" style={{ alignItems: 'center' }}>
             {[
               { k: 'all', l: 'الكل' },
               { k: 'paid', l: 'مدفوعة' },
               { k: 'trial', l: 'تجريبية' },
             ].map((x) => (
-              <button key={x.k} className={`bus-tab ${planFilter === x.k ? 'active' : ''}`} onClick={() => setPlanFilter(x.k)}>{x.l}</button>
+              <button key={x.k} className={`mlk-fchip ${planFilter === x.k ? 'active' : ''}`}
+                      onClick={() => setPlanFilter(x.k)}>{x.l}</button>
             ))}
             <span style={{ flex: 1 }} />
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ width: 'auto', padding: '6px 10px', fontSize: 12 }}>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                    style={{ width: 'auto', padding: '7px 10px', fontSize: 12, background: 'var(--surface)',
+                             border: '1px solid var(--line)', borderRadius: 8, color: 'var(--cr-100)' }}>
               <option value="recent">الأحدث</option>
               <option value="name">بالاسم</option>
               <option value="pax">الأكثر معتمرين</option>
@@ -333,40 +337,38 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
         </>
       )}
 
-      {loading ? (
-        <SkeletonList count={4} />
-      ) : subs.length === 0 ? (
-        <Empty title="لا يوجد مشتركون بعد" hint="ستظهر الحملات هنا فور تسجيلها." />
-      ) : filtered.length === 0 ? (
-        <div className="empty"><div className="em-ttl">لا نتائج</div><div>غيّر البحث أو الفلتر.</div></div>
-      ) : (
-        <div className="tbl-wrap">
-          <table className="tbl tbl-cards">
-            <thead><tr><th>الحملة</th><th>الباقة</th><th>رحلات</th><th>معتمرون</th><th>مدفوع</th><th>المحصّل (﷼)</th><th>إجراء</th></tr></thead>
-            <tbody>
-              {filtered.map((s) => (
-                <tr key={s.id} className="sub-row" onClick={() => onOpenDetail?.(s)} style={{ cursor: 'pointer' }}>
-                  <td data-label="الحملة">
-                    {s.org_name}
-                    <div className="ltr" style={{ textAlign: 'right' }}><code className="link-chip">/{s.slug}</code></div>
-                  </td>
-                  <td data-label="الباقة"><span className={`st ${s.plan === 'paid' ? 'ok' : 'warn'}`}>{s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}</span></td>
-                  <td data-label="رحلات">{s.trips_count || 0}</td>
-                  <td data-label="معتمرون">{s.pax_count || 0}</td>
-                  <td data-label="مدفوع">{s.paid_count || 0}</td>
-                  <td data-label="المحصّل (﷼)" style={{ fontFamily: 'var(--font-display)', color: 'var(--gd-300)' }}>{money(s.collected)}</td>
-                  <td data-label="إجراء">
-                    <button className="icon-btn" onClick={(e) => togglePlan(s, e)} disabled={busyId === s.id}>
-                      {busyId === s.id ? <span className="spinner" /> : (s.plan === 'paid' ? 'إرجاع لتجريبية' : 'ترقية لمدفوعة')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+      {loading ? <SkeletonList count={4} /> :
+       subs.length === 0 ? <div className="mlk-empty">لا يوجد مشتركون بعد — ستظهر الحملات هنا فور تسجيلها.</div> :
+       filtered.length === 0 ? <div className="mlk-empty">لا نتائج — غيّر البحث أو الفلتر.</div> :
+       <ul className="mlk-list">
+         {filtered.map((s) => (
+           <li key={s.id}>
+             <button type="button" className="mlk-list-row is-button" onClick={() => onOpenDetail?.(s)}>
+               <div className="mlk-list-body">
+                 <div className="mlk-list-meta">
+                   <span className={`mlk-pill ${s.plan === 'paid' ? 'ok' : 'warn'}`}>
+                     {s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}
+                   </span>
+                   <code className="ltr" style={{ fontSize: 11, color: 'var(--cr-300)' }}>/{s.slug}</code>
+                 </div>
+                 <div className="mlk-list-title">{s.org_name}</div>
+                 <div className="mlk-list-meta">
+                   <span>{s.trips_count || 0} رحلة</span>
+                   <span>·</span>
+                   <span>{s.pax_count || 0} معتمر</span>
+                   <span>·</span>
+                   <span>{s.paid_count || 0} مدفوع</span>
+                   <span style={{ marginInlineStart: 'auto', fontFamily: 'var(--font-display)',
+                                  color: 'var(--em-500)', fontWeight: 700, fontSize: 13 }}>
+                     {money(s.collected)} ﷼
+                   </span>
+                 </div>
+               </div>
+             </button>
+           </li>
+         ))}
+       </ul>}
+    </div>
   )
 }
 

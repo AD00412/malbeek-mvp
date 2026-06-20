@@ -4,7 +4,7 @@ import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
-const STATUS_TAG   = { draft: 'muted', open: 'ok', closed: 'warn', done: 'info' }
+const STATUS_TONE  = { draft: 'muted', open: 'ok', closed: 'warn', done: 'info' }
 
 function fmtDate(v) {
   if (!v) return '—'
@@ -48,54 +48,52 @@ export default function AdminAllTrips() {
   }, [rows, q, stFilter])
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h3>كلّ الرحلات</h3><span className="sub">({rows.length})</span>
-      </div>
+    <div className="mlk-tab">
+      <header className="mlk-tab-head">
+        <h1 className="mlk-tab-title">كلّ الرحلات</h1>
+        <span className="mlk-tab-count">{rows.length} رحلة</span>
+      </header>
 
-      <div className="field search" style={{ marginBottom: 10 }}>
+      <div className="field search" style={{ margin: 0 }}>
         <span className="ic"><Icon name="search" size={16} /></span>
-        <input type="text" placeholder="ابحث بالعنوان أو اسم الحملة أو المسار…"
-          value={q} onChange={(e) => setQ(e.target.value)} />
+        <input type="text" placeholder="ابحث بالعنوان أو الحملة أو المسار…"
+               value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
-      <div className="bus-tabs" style={{ marginBottom: 12 }}>
+      <div className="mlk-filter">
         {[
-          { k: 'all', l: 'الكل', n: rows.length },
-          { k: 'open', l: 'مفتوحة', n: rows.filter((t) => t.status === 'open').length },
-          { k: 'closed', l: 'مغلقة', n: rows.filter((t) => t.status === 'closed').length },
-          { k: 'done', l: 'منتهية', n: rows.filter((t) => t.status === 'done').length },
-          { k: 'draft', l: 'مسودة', n: rows.filter((t) => t.status === 'draft').length },
+          { k: 'all',    l: 'الكل',    n: rows.length },
+          { k: 'open',   l: 'مفتوحة',   n: rows.filter((t) => t.status === 'open').length },
+          { k: 'closed', l: 'مغلقة',    n: rows.filter((t) => t.status === 'closed').length },
+          { k: 'done',   l: 'منتهية',   n: rows.filter((t) => t.status === 'done').length },
+          { k: 'draft',  l: 'مسودة',    n: rows.filter((t) => t.status === 'draft').length },
         ].map((x) => (
-          <button key={x.k} className={`bus-tab ${stFilter === x.k ? 'active' : ''}`} onClick={() => setStFilter(x.k)}>
-            {x.l} <span className="muted">({x.n})</span>
-          </button>
+          <button key={x.k} className={`mlk-fchip ${stFilter === x.k ? 'active' : ''}`}
+                  onClick={() => setStFilter(x.k)}>{x.l} ({x.n})</button>
         ))}
       </div>
 
-      {loading ? (
-        <SkeletonList count={4} />
-      ) : filtered.length === 0 ? (
-        <div className="empty"><div className="em-ttl">لا رحلات</div><div>لا تطابق هذا البحث/الفلتر.</div></div>
-      ) : (
-        <div className="tbl-wrap">
-          <table className="tbl tbl-cards">
-            <thead><tr><th>الرحلة</th><th>الحملة</th><th>المسار</th><th>الذهاب</th><th>السعة</th><th>الحالة</th></tr></thead>
-            <tbody>
-              {filtered.map((t) => (
-                <tr key={t.id}>
-                  <td data-label="الرحلة">{t.title || '—'}</td>
-                  <td data-label="الحملة" style={{ color: 'var(--gd-300)' }}>{t.subscribers?.org_name || '—'}</td>
-                  <td data-label="المسار">{(t.route_from || '—') + ' ← ' + (t.route_to || '—')}</td>
-                  <td data-label="الذهاب">{fmtDate(t.depart_at)}</td>
-                  <td data-label="السعة">{t.capacity || '—'}</td>
-                  <td data-label="الحالة"><span className={`st ${STATUS_TAG[t.status] || 'muted'}`}>{STATUS_LABEL[t.status] || t.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+      {loading ? <SkeletonList count={4} /> :
+       filtered.length === 0 ? <div className="mlk-empty">لا رحلات تُطابق هذا البحث/الفلتر</div> :
+       <ul className="mlk-list">
+         {filtered.map((t) => (
+           <li key={t.id} className="mlk-list-row">
+             <div className="mlk-list-body">
+               <div className="mlk-list-meta">
+                 <span className={`mlk-pill ${STATUS_TONE[t.status] || 'muted'}`}>{STATUS_LABEL[t.status] || t.status}</span>
+                 <span style={{ color: 'var(--em-500)', fontWeight: 600 }}>{t.subscribers?.org_name || '—'}</span>
+                 <span className="mlk-list-time" style={{ marginInlineStart: 'auto' }}>{fmtDate(t.depart_at)}</span>
+               </div>
+               <div className="mlk-list-title">{t.title || '—'}</div>
+               <div className="mlk-list-meta">
+                 <span>{(t.route_from || '—')} ← {(t.route_to || '—')}</span>
+                 <span>·</span>
+                 <span>سعة {t.capacity || '—'}</span>
+               </div>
+             </div>
+           </li>
+         ))}
+       </ul>}
+    </div>
   )
 }
