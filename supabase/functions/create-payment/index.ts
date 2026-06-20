@@ -33,6 +33,22 @@ const json = (status: number, body: unknown) =>
 /** يُعيد {passenger_id} في القالب بقيمةٍ فعليّة */
 const fill = (tpl: string, id: string) => tpl.replace('{passenger_id}', encodeURIComponent(id))
 
+// ★ allowlist هَوست بوّابات الدفع — يَمنع تحويل العميل لرابطٍ مُلفَّقٍ
+//   لو استجابةُ المزوّد عُبثت بها (DNS hijack، مفتاحٌ مُسرَّبٌ في sandbox، إلخ).
+const GATEWAY_HOST_ALLOWLIST: Record<string, RegExp[]> = {
+  moyasar: [/^api\.moyasar\.com$/, /^.*\.moyasar\.com$/],
+  tap:     [/^api\.tap\.company$/, /^.*\.tap\.company$/, /^.*\.gosell\.io$/],
+}
+function isAllowedGatewayUrl(provider: string, raw: unknown): boolean {
+  if (typeof raw !== 'string' || !raw) return false
+  let u: URL
+  try { u = new URL(raw) } catch { return false }
+  if (u.protocol !== 'https:') return false
+  const patterns = GATEWAY_HOST_ALLOWLIST[provider]
+  if (!patterns) return true   // مزوّدٌ ‎generic‎ — تَجاوز (يَتحكّم به المشغّل)
+  return patterns.some((re) => re.test(u.hostname.toLowerCase()))
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors })
   if (req.method !== 'POST')    return json(405, { error: 'method_not_allowed' })
@@ -93,6 +109,10 @@ Deno.serve(async (req) => {
       })
       if (!r.ok) return json(502, { error: 'gateway_failed', details: (await r.text()).slice(0, 200) })
       const inv = await r.json()
+      // ★ تحقّقٌ من URL: يَجب أن يَكون https على هَوست Moyasar — لا تَحويلٌ لرابطٍ ملفَّق
+      if (!isAllowedGatewayUrl('moyasar', inv?.url)) {
+        return json(502, { error: 'gateway_url_rejected', host: 'moyasar' })
+      }
       return json(200, { url: inv.url, id: inv.id, provider: 'moyasar' })
     }
 
@@ -116,6 +136,10 @@ Deno.serve(async (req) => {
       const ch = await r.json()
       const url = ch?.transaction?.url ?? ch?.redirect?.url
       if (!url) return json(502, { error: 'gateway_no_url' })
+      // ★ تحقّقٌ من URL: لا بُدّ من هَوست Tap (api.tap.company أو gosell.io)
+      if (!isAllowedGatewayUrl('tap', url)) {
+        return json(502, { error: 'gateway_url_rejected', host: 'tap' })
+      }
       return json(200, { url, id: ch.id, provider: 'tap' })
     }
 

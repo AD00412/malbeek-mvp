@@ -80,7 +80,12 @@ export function AdminHome() {
 
   const firstAdminLoad = useRef(true)
   const retryAdminRef = useRef(0)
+  const inFlightAdminRef = useRef(false)
   const load = useCallback(async () => {
+    // ★ short-circuit للـconcurrent loads (realtime + retry قد يَستدعيا معًا)
+    if (inFlightAdminRef.current) return
+    inFlightAdminRef.current = true
+    try {
     const cacheKey = 'admin-dash'
     const cached = getCached(cacheKey)
     const hadSubs = (cached?.subs?.length ?? 0) > 0
@@ -91,9 +96,10 @@ export function AdminHome() {
     const { data, error } = await supabase.rpc('admin_campaign_stats')
     if (error) { setLoading(false); return }
     const newSubs = (data ?? []).map((r) => ({ ...r, id: r.subscriber_id }))
-    // حارسُ empty الزائف
+    // حارسُ empty الزائف — نَخفض inFlight قبل setTimeout كي يَسمح للـretry بالعمل
     if (newSubs.length === 0 && hadSubs && retryAdminRef.current < 2) {
       retryAdminRef.current += 1
+      inFlightAdminRef.current = false   // اسمح للـretry بالدخول
       setTimeout(() => load(), 800)
       return
     }
@@ -102,6 +108,9 @@ export function AdminHome() {
     if (newSubs.length > 0 || !hadSubs) setCached(cacheKey, { subs: newSubs })
     setLoading(false)
     firstAdminLoad.current = false
+    } finally {
+      inFlightAdminRef.current = false
+    }
   }, [])
 
   useEffect(() => {
@@ -355,8 +364,13 @@ export function SubscriberHome() {
 
   const firstLoadRef = useRef(true)
   const retryRef = useRef(0)
+  const inFlightRef = useRef(false)
   const load = useCallback(async () => {
     if (!user?.id) return
+    // ★ short-circuit للـconcurrent loads
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    try {
     const cacheKey = `sub-dash:${user.id}`
     const cached = getCached(cacheKey)
     const hadTrips = (cached?.trips?.length ?? 0) > 0
@@ -380,6 +394,7 @@ export function SubscriberHome() {
     //    قد يكون التوكِنُ لم يَنشر بعد. نُعيد المحاولة قبل المسح.
     if (!managedId && hadSub && retryRef.current < 2) {
       retryRef.current += 1
+      inFlightRef.current = false   // اسمح للـretry بالدخول
       setTimeout(() => load(), 800)
       return
     }
@@ -443,6 +458,7 @@ export function SubscriberHome() {
         // ★ حارسُ empty الزائف: لو كانت ٢ نتائج فارغةً ومخزَّنُنا فيه بياناتٌ، أعِد المحاولة
         if (newTrips.length === 0 && newPaxRows.length === 0 && (hadTrips || hadPax) && retryRef.current < 2) {
           retryRef.current += 1
+          inFlightRef.current = false
           setTimeout(() => load(), 800)
           setLoading(false)
           return
@@ -467,6 +483,9 @@ export function SubscriberHome() {
     }
     setLoading(false)
     firstLoadRef.current = false
+    } finally {
+      inFlightRef.current = false
+    }
   }, [user, profile, refreshProfile])
 
   useEffect(() => { load() }, [load])
@@ -970,8 +989,12 @@ export function CustomerHome() {
   const { confirm, toast } = useUI()
   const firstLoadRef = useRef(true)
   const retryCustRef = useRef(0)
+  const inFlightCustRef = useRef(false)
 
   const load = useCallback(async () => {
+    if (inFlightCustRef.current) return
+    inFlightCustRef.current = true
+    try {
     const cacheKey = user?.id ? `cust-dash:${user.id}` : null
     const cached = cacheKey ? getCached(cacheKey) : null
     const hadTrips    = (cached?.trips?.length ?? 0) > 0
@@ -1011,6 +1034,7 @@ export function CustomerHome() {
     const everythingEmpty = !s && newTrips.length === 0 && newBookings.length === 0
     if (everythingEmpty && (hadSub || hadTrips || hadBookings) && retryCustRef.current < 2) {
       retryCustRef.current += 1
+      inFlightCustRef.current = false
       setTimeout(() => load(), 800)
       return
     }
@@ -1029,6 +1053,9 @@ export function CustomerHome() {
 
     setLoading(false)
     firstLoadRef.current = false
+    } finally {
+      inFlightCustRef.current = false
+    }
   }, [subscriberId, user])
 
   useEffect(() => { load() }, [load])

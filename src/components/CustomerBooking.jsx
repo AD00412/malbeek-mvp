@@ -292,11 +292,17 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     try {
       let result, row
       if (booking?.id) {
-        result = await supabase.from('passengers').update(payload).eq('id', booking.id)
+        // ★ defense-in-depth: لا تُرسل status في update — guard في DB يَتولّاه.
+        //   لو سُرّب صلاحيّةٌ ما يومًا، عدم إرسال status يَمنع العميلَ من
+        //   إعادة paid → registered (downgrade) كَتراجعٍ خبيث.
+        const { status: _omitStatus, ...updatePayload } = payload
+        result = await supabase.from('passengers').update(updatePayload).eq('id', booking.id)
           .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, payment_proof_url, bus_id').maybeSingle()
       } else {
+        // الإدراج: status يَنطلق من default 'registered' في الـDB
+        const { status: _omitStatus, ...insertPayload } = payload
         result = await supabase.from('passengers')
-          .insert({ ...payload, trip_id: trip.id, subscriber_id: sub.id, profile_id: user.id })
+          .insert({ ...insertPayload, trip_id: trip.id, subscriber_id: sub.id, profile_id: user.id })
           .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, payment_proof_url, bus_id').maybeSingle()
       }
       if (result.error) {
