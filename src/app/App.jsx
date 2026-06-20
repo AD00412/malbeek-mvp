@@ -40,7 +40,7 @@ export default function App() {
         <Route path="/invite/:token" element={<AcceptInvite />} />
 
         {/* محميّة حسب الدور */}
-        <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminHome /></RequireAuth>} />
+        <Route path="/admin" element={<RequireAuth roles={['admin','support']}><AdminHome /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth roles={['subscriber']}><SubscriberHome /></RequireAuth>} />
         <Route path="/customer" element={<RequireAuth roles={['customer']}><CustomerHome /></RequireAuth>} />
 

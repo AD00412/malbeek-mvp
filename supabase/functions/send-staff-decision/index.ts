@@ -68,19 +68,56 @@ Deno.serve(async (req) => {
   if (invErr) return json(500, { error: 'fetch_failed', detail: invErr.message })
   if (!inv)   return json(404, { error: 'not_found' })
 
-  const isAccept = inv.status === 'final_approved'
-  const isReject = ['rejected_documents','rejected_interview'].includes(inv.status)
-  if (!isAccept && !isReject) {
+  const isAccept   = inv.status === 'final_approved'
+  const isActivate = inv.status === 'active'
+  const isReject   = ['rejected_documents','rejected_interview'].includes(inv.status)
+  if (!isAccept && !isReject && !isActivate) {
     return json(409, { error: 'wrong_stage', status: inv.status })
   }
 
-  const subject = isAccept
+  const subject = isActivate
+    ? '✓ تَفعيلُ حسابك — أهلًا في فريق ملبّيك'
+    : isAccept
     ? '🎉 قَبولٌ نهائيّ — أَكمل نموذج التَّوظيف · ملبّيك'
     : 'بخصوصِ طلب التَّوظيف · ملبّيك'
 
   const link = `${APP_URL.replace(/\/+$/,'')}/invite/${encodeURIComponent(inv.token)}`
 
-  const html = isAccept ? `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(subject)}</title></head>
+  const html = isActivate ? `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(subject)}</title></head>
+<body style="margin:0;background:#f4faf6;font-family:'Segoe UI',Tahoma,Arial;color:#0a1f17;line-height:1.7">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:32px 16px"><tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(6,95,70,.08)">
+      <tr><td style="background:linear-gradient(135deg,#065f46,#047857,#059669);padding:26px 28px;color:#fff">
+        <div style="font-size:24px;font-weight:800">ملبّيك</div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,.78);letter-spacing:2.5px;margin-top:6px">mulabeek.com</div>
+      </td></tr>
+      <tr><td style="padding:22px 28px 0">
+        <div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:99px;padding:6px 14px;font-size:12px;font-weight:700;color:#166534">✓ حسابُك مُفعَّل</div>
+      </td></tr>
+      <tr><td style="padding:18px 28px 0">
+        <div style="font-size:20px;font-weight:800">أهلًا بك ${esc(inv.applicant_full_name || '')} 🤝</div>
+        <div style="font-size:14.5px;color:#5f7a6e;margin-top:10px">
+          فُعِّل دورُك في فريق ملبّيك بصفة <strong>${esc(inv.invited_role === 'admin' ? 'أدمن' : 'دعم')}</strong>.
+          تَستطيع الآن الدخولَ للوحةِ الإدارة.
+        </div>
+      </td></tr>
+      <tr><td style="padding:18px 28px 6px" align="center">
+        <a href="${esc(APP_URL)}/login" style="display:inline-block;background:linear-gradient(135deg,#065f46,#059669);color:#fff;font-weight:800;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:99px;box-shadow:0 4px 12px rgba(6,95,70,.25)">
+          تَسجيلُ الدخول ↩︎
+        </a>
+      </td></tr>
+      <tr><td style="padding:22px 28px 0">
+        <div style="font-size:13.5px;color:#5f7a6e">سَجّل دخولك بإيميلك ${esc(inv.email)} وكلمة المرور التي اخترتها سابقًا.</div>
+      </td></tr>
+      <tr><td style="padding:22px 28px 8px" align="center">
+        <div style="font-size:14px;font-weight:600">— فريق ملبّيك</div>
+      </td></tr>
+      <tr><td style="padding:18px 28px 22px;border-top:1px solid #f0f5f2">
+        <div style="font-size:11.5px;color:#8aa39b"><a href="https://mulabeek.com" style="color:#5f7a6e;text-decoration:none">mulabeek.com</a> · © ملبّيك</div>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>` : isAccept ? `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(subject)}</title></head>
 <body style="margin:0;background:#f4faf6;font-family:'Segoe UI',Tahoma,Arial;color:#0a1f17;line-height:1.7">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:32px 16px"><tr><td align="center">
     <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(6,95,70,.08)">
@@ -153,7 +190,9 @@ Deno.serve(async (req) => {
   </td></tr></table>
 </body></html>`
 
-  const text = isAccept
+  const text = isActivate
+    ? `ملبّيك — حسابُك مُفعَّل ✓\n${'─'.repeat(40)}\nأهلًا ${inv.applicant_full_name || ''}،\n\nسَجّل دخولك من:\n${APP_URL}/login\n\n— فريق ملبّيك\n`
+    : isAccept
     ? `ملبّيك — قَبولٌ نهائيّ 🎉\n${'─'.repeat(40)}\nمبروك ${inv.applicant_full_name || ''}،\n\nتَبقّى نموذجُ التَّوظيف الإداريّ:\n${link}\n\n— فريق ملبّيك\n`
     : `ملبّيك\n${'─'.repeat(40)}\nشكرًا لاهتمامك. اعتذرنا.\n${inv.reject_reason ? '\n' + inv.reject_reason + '\n' : ''}\n— فريق ملبّيك\n`
 
@@ -171,5 +210,5 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json(502, { error: 'smtp_failed', detail: String((e as Error)?.message ?? e) })
   }
-  return json(200, { ok: true, sent_to: inv.email, kind: isAccept ? 'accept' : 'reject' })
+  return json(200, { ok: true, sent_to: inv.email, kind: isActivate ? 'activate' : isAccept ? 'accept' : 'reject' })
 })

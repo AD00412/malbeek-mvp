@@ -153,8 +153,9 @@ export default function InvitationReview({ invitation: inv, onClose, onUpdate })
     if (!ok) return
     setBusy(true); setErr('')
     const { error } = await supabase.rpc('activate_staff_invitation', { p_invitation: inv.id })
+    if (error) { setBusy(false); return setErr(translateRpcError(error, 'تعذّر التَّفعيل.')) }
+    await sendDecisionEmail('decision')
     setBusy(false)
-    if (error) return setErr(translateRpcError(error, 'تعذّر التَّفعيل.'))
     onUpdate?.()
   }
 

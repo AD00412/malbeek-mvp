@@ -6,6 +6,7 @@ import CompassMark from '../components/CompassMark'
 export function homeForRole(role) {
   switch (role) {
     case 'admin':      return '/admin'
+    case 'support':    return '/admin'
     case 'subscriber': return '/dashboard'
     case 'customer':   return '/customer'
     default:           return '/login'
