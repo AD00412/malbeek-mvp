@@ -6,6 +6,7 @@ import { useUI } from '../lib/useUI'
 import { useAuth } from '../app/useAuth'
 import { fmtDateTime, isValidEmail } from '../lib/format'
 import { translateRpcError } from '../lib/rpcErrors'
+import InvitationReview from './InvitationReview'
 
 const ROLE_LABEL = { admin: 'أدمن', support: 'دعم' }
 const ROLE_HINT = {
@@ -14,17 +15,25 @@ const ROLE_HINT = {
 }
 
 const STATUS_LABEL = {
-  pending:   'بانتظار التسجيل',
-  submitted: 'بانتظار المراجعة',
-  approved:  'مقبولة',
-  rejected:  'مرفوضة',
-  expired:   'منتهية',
-  cancelled: 'ملغاة',
+  pending:            'بانتظار التسجيل',
+  submitted:          'مراجعةُ الوَثائق',
+  prelim_approved:    'مَوافقةٌ مَبدئيّة — مقابلة',
+  interview_done:     'انتهت المقابلة',
+  final_approved:     'بانتظار نموذج التَّوظيف',
+  onboarded:          'بانتظار التَّفعيل',
+  active:             'مُفعَّل',
+  rejected_documents: 'رُفض (وَثائق)',
+  rejected_interview: 'رُفض (مقابلة)',
+  expired:            'منتهية',
+  cancelled:          'ملغاة',
 }
 const STATUS_TONE = {
-  pending: 'gold', submitted: 'info', approved: 'ok',
-  rejected: 'danger', expired: 'muted', cancelled: 'muted',
+  pending: 'gold', submitted: 'info', prelim_approved: 'info', interview_done: 'gold',
+  final_approved: 'ok', onboarded: 'gold', active: 'ok',
+  rejected_documents: 'danger', rejected_interview: 'danger',
+  expired: 'muted', cancelled: 'muted',
 }
+const REVIEW_STATES = new Set(['submitted','prelim_approved','interview_done','final_approved','onboarded'])
 
 /**
  * إدارةُ فريق ملبّيك:
@@ -47,6 +56,7 @@ export default function TeamManagement() {
   const [busyId, setBusyId] = useState('')
   const [err, setErr] = useState('')
   const [ok, setOk] = useState('')
+  const [reviewing, setReviewing] = useState(null) // invitation object
 
   // form
   const [addEmail, setAddEmail] = useState('')
@@ -110,34 +120,6 @@ export default function TeamManagement() {
     loadInvites()
   }
 
-  async function approveInv(inv) {
-    const ok2 = await confirm({
-      title: 'الموافقةُ على دعوة',
-      message: `منحُ ${inv.applicant_full_name || inv.email} دور «${ROLE_LABEL[inv.invited_role] || inv.invited_role}»؟`,
-      confirmText: 'موافقة', cancelText: 'إلغاء',
-    })
-    if (!ok2) return
-    setBusyId(inv.id)
-    const { error } = await supabase.rpc('approve_staff_invitation', { p_invitation: inv.id })
-    setBusyId('')
-    if (error) { setErr(translateRpcError(error, 'تعذّرت الموافقة.')); return }
-    flash(setOk, 'تمّت الموافقة ✓')
-    loadInvites(); loadStaff()
-  }
-
-  async function rejectInv(inv) {
-    const reason = window.prompt(`سببُ رفض دعوة ${inv.email}؟ (٥ أحرفٍ فأكثر)`)
-    if (!reason || reason.trim().length < 5) return
-    setBusyId(inv.id)
-    const { error } = await supabase.rpc('reject_staff_invitation', {
-      p_invitation: inv.id, p_reason: reason.trim(),
-    })
-    setBusyId('')
-    if (error) { setErr(translateRpcError(error, 'تعذّر الرفض.')); return }
-    flash(setOk, 'رُفضت الدعوة ✓')
-    loadInvites()
-  }
-
   async function cancelInv(inv) {
     const ok2 = await confirm({
       title: 'إلغاءُ دعوة',
@@ -172,8 +154,8 @@ export default function TeamManagement() {
     loadStaff()
   }
 
-  const pendingReview = invites.filter(i => i.status === 'submitted')
-  const sent = invites.filter(i => ['pending','rejected','expired','cancelled','approved'].includes(i.status))
+  const pendingReview = invites.filter(i => REVIEW_STATES.has(i.status))
+  const sent = invites.filter(i => !REVIEW_STATES.has(i.status))
 
   return (
     <section className="panel">
@@ -192,8 +174,8 @@ export default function TeamManagement() {
         <button className={`chip ${tab === 'staff' ? 'active' : ''}`} onClick={() => setTab('staff')}>
           الفريق ({staff.length})
         </button>
-        <button className={`chip ${tab === 'submitted' ? 'active' : ''}`} onClick={() => setTab('submitted')}>
-          للمراجعة
+        <button className={`chip ${tab === 'submitted' ? 'active' : ''}`} onClick={() => { setTab('submitted'); setReviewing(null) }}>
+          طلباتُ التَّوظيف
           {pendingReview.length > 0 && <span className="tag gold" style={{ marginInlineStart: 6, fontSize: 10, padding: '1px 7px' }}>{pendingReview.length}</span>}
         </button>
         <button className={`chip ${tab === 'sent' ? 'active' : ''}`} onClick={() => setTab('sent')}>
@@ -277,14 +259,16 @@ export default function TeamManagement() {
         </div>
       )}
 
-      {/* تبويب: للمراجعة */}
-      {tab === 'submitted' && (
+      {/* تبويب: للمراجعة — قائمةٌ مختصرة، النقر يَفتح المراجعةَ التَّفصيليّة */}
+      {tab === 'submitted' && !reviewing && (
         loadingInv ? <SkeletonList count={2} /> :
-        pendingReview.length === 0 ? <div className="empty"><div className="em-ttl">لا توجد دعواتٌ بانتظار المراجعة</div></div> :
+        pendingReview.length === 0 ? <div className="empty"><div className="em-ttl">لا توجد طلباتُ توظيفٍ نَشِطة</div></div> :
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pendingReview.map(inv => (
-            <div key={inv.id} className="trip-card" style={{ padding: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <button key={inv.id} className="trip-card"
+                    onClick={() => setReviewing(inv)}
+                    style={{ padding: 12, textAlign: 'inherit', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <strong style={{ flex: 1 }}>{inv.applicant_full_name || '—'}</strong>
                 <span className={`tag ${STATUS_TONE[inv.status]}`}>{STATUS_LABEL[inv.status]}</span>
                 <span className={`tag ${inv.invited_role === 'admin' ? 'gold' : 'info'}`}>
@@ -295,31 +279,29 @@ export default function TeamManagement() {
               {inv.applicant_phone && (
                 <div className="ltr" style={{ fontSize: 13, marginTop: 4 }}>📞 {inv.applicant_phone}</div>
               )}
-              {inv.applicant_message && (
-                <div style={{ marginTop: 8, padding: 10, background: 'var(--bg-2)', borderRadius: 8,
-                              fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                  {inv.applicant_message}
+              {inv.interview_at && inv.status === 'prelim_approved' && (
+                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  🗓 مقابلة: {fmtDateTime(inv.interview_at)}
                 </div>
               )}
               <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>
-                رُفعت: {fmtDateTime(inv.submitted_at)}
+                {inv.onboarded_at ? `مَلأ النموذج: ${fmtDateTime(inv.onboarded_at)}`
+                  : inv.submitted_at ? `رُفع: ${fmtDateTime(inv.submitted_at)}`
+                  : `أُرسل: ${fmtDateTime(inv.created_at)}`}
+                <span style={{ marginInlineStart: 8 }}>← اضغط للمراجعة</span>
               </div>
-              {isAdmin && (
-                <div className="actions-row" style={{ marginTop: 10 }}>
-                  <button className="btn btn-em btn-sm" onClick={() => approveInv(inv)}
-                          disabled={busyId === inv.id}>
-                    {busyId === inv.id ? <span className="spinner" /> : <><Icon name="check" size={14} /> موافقة</>}
-                  </button>
-                  <button className="icon-btn" onClick={() => rejectInv(inv)}
-                          disabled={busyId === inv.id}
-                          style={{ color: 'var(--danger-ink)' }}>
-                    <Icon name="x" size={14} /> رفض
-                  </button>
-                </div>
-              )}
-            </div>
+            </button>
           ))}
         </div>
+      )}
+
+      {/* لوحةُ المراجعة التَّفصيليّة */}
+      {tab === 'submitted' && reviewing && (
+        <InvitationReview
+          invitation={reviewing}
+          onClose={() => setReviewing(null)}
+          onUpdate={() => { setReviewing(null); loadInvites(); loadStaff(); flash(setOk, 'تمّ التَّحديث ✓') }}
+        />
       )}
 
       {/* تبويب: كلّ الدعوات المُرسَلة */}
