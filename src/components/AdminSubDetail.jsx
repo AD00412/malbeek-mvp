@@ -139,226 +139,233 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
 
   return (
     <BottomSheet open={open} onClose={onClose} title={sub.org_name || 'تفاصيل الحملة'}>
-      {/* بطاقة الباقة + معرّف الحملة */}
-      <div className="acct-card" style={{ marginBottom: 12 }}>
-        <div className="acct-card-av" style={{ background: sub.plan === 'paid'
-          ? 'linear-gradient(135deg,var(--gd-300),rgba(196,154,69,.55))'
-          : 'linear-gradient(135deg,rgba(58,160,179,.6),rgba(58,160,179,.25))',
-          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={sub.plan === 'paid' ? 'sparkle' : 'building'} size={22} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="acct-card-nm">{sub.org_name}</div>
-          <button className="acct-card-em ltr link-chip-btn" onClick={() => copy(joinUrl, 'نُسخ رابط الحجز')} title="نسخ رابط الحجز">
+      <div className="mlk-tab">
+        {/* بطاقةُ المشترك */}
+        <div className="mlk-card is-feature">
+          <div className="mlk-list-meta" style={{ marginBottom: 6 }}>
+            <span className={`mlk-pill ${sub.plan === 'paid' ? 'ok' : 'warn'}`}>
+              {sub.plan === 'paid' ? 'باقة مدفوعة' : 'تجريبية'}
+            </span>
+            {isSuspended && <span className="mlk-pill danger">مُعلَّق</span>}
+            {trialExtended && !isSuspended && <span className="mlk-pill em">تَجربةٌ مُمدَّدة</span>}
+          </div>
+          <div className="mlk-list-title" style={{ fontSize: 18 }}>{sub.org_name}</div>
+          <button type="button" className="ltr"
+                  onClick={() => copy(joinUrl, 'نُسخ رابط الحجز')}
+                  style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4,
+                           background: 'transparent', border: 0, color: 'var(--em-500)',
+                           fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
             /{sub.slug} <Icon name="copy" size={11} />
           </button>
-          <span className="acct-role" style={{ background: sub.plan === 'paid'
-            ? 'var(--grad-gold)' : 'rgba(58,160,179,.18)', color: sub.plan === 'paid' ? 'var(--em-950)' : 'var(--info-ink)' }}>
-            {sub.plan === 'paid' ? 'باقة مدفوعة' : 'تجريبية'}
-          </span>
         </div>
-      </div>
 
-      {/* لافتةُ التَّعليق إن وُجدت */}
-      {isSuspended && (
-        <div className="alert err" style={{ marginBottom: 10 }}>
-          <strong>الحساب مُعلَّق</strong>
-          <div style={{ fontSize: 12.5, marginTop: 4 }}>{subData.suspended_reason}</div>
-          <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>منذ: {fmtDateTime(subData.suspended_at)}</div>
-        </div>
-      )}
-      {trialExtended && !isSuspended && (
-        <div className="alert" style={{ marginBottom: 10, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)', color: 'var(--ok-ink)', padding: 10, borderRadius: 8 }}>
-          🎁 تَجربةٌ مُمدَّدة حتّى: <strong>{fmtDateTime(subData.trial_extended_until)}</strong>
-        </div>
-      )}
-
-      {/* الإحصاءات السريعة */}
-      <div className="stats">
-        <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={14} /></span>الرحلات</div><div className="v">{sub.trips_count || 0}</div></div>
-        <div className="stat warn"><div className="top"><span className="ic"><Icon name="customers" size={14} /></span>المعتمرون</div><div className="v">{sub.pax_count || 0}</div></div>
-        <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={14} /></span>المدفوعون</div><div className="v">{sub.paid_count || 0}</div></div>
-      </div>
-      <div className="stats" style={{ marginTop: 10 }}>
-        <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={14} /></span>إجمالي المحصّل</div><div className="v" style={{ fontSize: 22 }}>{Number(sub.collected || 0).toLocaleString('en-US')} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
-      </div>
-
-      {/* ★ مَركزُ الإجراءات — Admin فقط */}
-      {isAdmin && (
-        <>
-          <div className="sec-label" style={{ marginTop: 14 }}>إجراءاتٌ على الحساب</div>
-          <div className="action-grid">
-            {sub.plan !== 'paid' ? (
-              <button className="action-card primary" onClick={() => doSetPlan('paid', 'استلام دفعة الترقية')}>
-                <Icon name="sparkle" size={18} />
-                <span>ترقية لمدفوعة</span>
-                <small>المشترك دفع — رقّ حسابه</small>
-              </button>
-            ) : (
-              <button className="action-card" onClick={() => doSetPlan('trial', 'إعادة لتجريبيّة (انتهاءُ اشتراك)')}>
-                <Icon name="building" size={18} />
-                <span>إرجاع لتجريبيّة</span>
-                <small>انتهت مدّةُ الباقة</small>
-              </button>
-            )}
-            <button className="action-card" onClick={() => setActionPanel(actionPanel === 'extend' ? null : 'extend')}>
-              <Icon name="calendar" size={18} />
-              <span>تَمديد التَّجربة</span>
-              <small>أيّامٌ إضافيّة كهَدية</small>
-            </button>
-            {!isSuspended ? (
-              <button className="action-card danger" onClick={() => setActionPanel(actionPanel === 'suspend' ? null : 'suspend')}>
-                <Icon name="bell" size={18} />
-                <span>تَعليق الحساب</span>
-                <small>إيقافٌ مع سبب</small>
-              </button>
-            ) : (
-              <button className="action-card primary" onClick={doRestore}>
-                <Icon name="check" size={18} />
-                <span>إعادة تَفعيل</span>
-                <small>رفعُ التَّعليق</small>
-              </button>
-            )}
-            <button className="action-card" onClick={() => setActionPanel(actionPanel === 'note' ? null : 'note')}>
-              <Icon name="edit" size={18} />
-              <span>ملاحظةٌ إداريّة</span>
-              <small>خاصّةٌ بفريق ملبّيك</small>
-            </button>
+        {/* إنذاراتٌ تَفصيليّة */}
+        {isSuspended && (
+          <div className="alert err">
+            <strong>سببُ التَّعليق:</strong> {subData.suspended_reason}
+            <div style={{ fontSize: 11.5, marginTop: 4, opacity: .8 }}>منذ: {fmtDateTime(subData.suspended_at)}</div>
           </div>
+        )}
+        {trialExtended && !isSuspended && (
+          <div className="mlk-card is-feature" style={{ fontSize: 13 }}>
+            <strong>تَجربةٌ مُمدَّدة حتّى</strong> {fmtDateTime(subData.trial_extended_until)}
+          </div>
+        )}
 
-          {/* لوحةُ تَمديد التَّجربة */}
-          {actionPanel === 'extend' && (
-            <div className="form" style={{ marginTop: 10, padding: 12, background: 'var(--bg-2)', borderRadius: 12 }}>
+        {/* ٤ KPIs */}
+        <div className="mlk-kpis">
+          <div className="mlk-kpi">
+            <div className="mlk-kpi-num">{sub.trips_count || 0}</div>
+            <div className="mlk-kpi-lb">رحلات</div>
+          </div>
+          <div className="mlk-kpi">
+            <div className="mlk-kpi-num">{sub.pax_count || 0}</div>
+            <div className="mlk-kpi-lb">معتمرون</div>
+          </div>
+          <div className="mlk-kpi">
+            <div className="mlk-kpi-num">{sub.paid_count || 0}</div>
+            <div className="mlk-kpi-lb">مدفوعون</div>
+          </div>
+          <div className="mlk-kpi">
+            <div className="mlk-kpi-num">{Number(sub.collected || 0).toLocaleString('en-US')}</div>
+            <div className="mlk-kpi-lb">﷼ المُحصَّل</div>
+          </div>
+        </div>
+
+        {/* الإجراءات — Admin فقط */}
+        {isAdmin && !actionPanel && (
+          <section>
+            <h2 className="mlk-h2">إجراءاتٌ على الحساب</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {sub.plan !== 'paid' ? (
+                <button className="mlk-action primary" onClick={() => doSetPlan('paid', 'استلام دفعة الترقية')}>
+                  ترقية لمدفوعة
+                </button>
+              ) : (
+                <button className="mlk-action" onClick={() => doSetPlan('trial', 'إعادة لتجريبيّة')}>
+                  إرجاع لتجريبيّة
+                </button>
+              )}
+              <button className="mlk-action" onClick={() => setActionPanel('extend')}>تَمديد التَّجربة</button>
+              {!isSuspended ? (
+                <button className="mlk-action danger" onClick={() => setActionPanel('suspend')}>تَعليق الحساب</button>
+              ) : (
+                <button className="mlk-action primary" onClick={doRestore}>إعادة تَفعيل</button>
+              )}
+              <button className="mlk-action" onClick={() => setActionPanel('note')}>ملاحظةٌ إداريّة</button>
+            </div>
+          </section>
+        )}
+
+        {/* لوحةُ تَمديد التَّجربة */}
+        {actionPanel === 'extend' && (
+          <div className="mlk-card">
+            <h2 className="mlk-h2">تَمديدُ التَّجربة</h2>
+            <div className="form">
               <div className="field">
                 <label>كم يومًا تُريد إضافتَها؟</label>
                 <input type="number" min="1" max="365" value={extendDays}
                        onChange={(e) => setExtendDays(Number(e.target.value) || 0)} />
                 <span className="hint">من اليوم — لا يُعدّل تاريخَ إنشاء التَّجربة</span>
               </div>
-              <div className="actions-row">
-                <button className="btn btn-em btn-sm" onClick={doExtendTrial} disabled={busy}>
-                  {busy ? <span className="spinner" /> : <><Icon name="check" size={14} /> تَمديد</>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="mlk-action primary" onClick={doExtendTrial} disabled={busy}>
+                  {busy ? <span className="spinner" /> : 'تَمديد'}
                 </button>
-                <button className="icon-btn" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
+                <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* لوحةُ التَّعليق */}
-          {actionPanel === 'suspend' && (
-            <div className="form" style={{ marginTop: 10, padding: 12, background: 'var(--bg-2)', borderRadius: 12 }}>
+        {actionPanel === 'suspend' && (
+          <div className="mlk-card">
+            <h2 className="mlk-h2">تَعليقُ الحساب</h2>
+            <div className="form">
               <div className="field">
-                <label>سببُ التَّعليق (يُعرض للمشترك)</label>
+                <label>السبب (يُعرض للمشترك)</label>
                 <textarea rows={3} value={suspendReason}
                           onChange={(e) => setSuspendReason(e.target.value)}
                           placeholder="مثلًا: مخالفةٌ لشروط الخدمة — التواصل: hello@mulabeek.com" />
                 <span className="hint">٥+ أحرف، لغةً واضحةً ومحترمة</span>
               </div>
-              <div className="actions-row">
-                <button className="btn btn-em btn-sm" onClick={doSuspend} disabled={busy} style={{ background: 'var(--danger)' }}>
-                  {busy ? <span className="spinner" /> : <>تَعليق الحساب</>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="mlk-action danger" onClick={doSuspend} disabled={busy}>
+                  {busy ? <span className="spinner" /> : 'تَعليق'}
                 </button>
-                <button className="icon-btn" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
+                <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* لوحةُ الملاحظة الإداريّة */}
-          {actionPanel === 'note' && (
-            <div className="form" style={{ marginTop: 10, padding: 12, background: 'var(--bg-2)', borderRadius: 12 }}>
+        {actionPanel === 'note' && (
+          <div className="mlk-card">
+            <h2 className="mlk-h2">ملاحظةٌ إداريّة</h2>
+            <div className="form">
               <div className="field">
-                <label>ملاحظةٌ خاصّةٌ بإدارة ملبّيك</label>
+                <label>ملاحظةٌ خاصّةٌ بفريق ملبّيك</label>
                 <textarea rows={4} value={adminNote}
                           onChange={(e) => setAdminNote(e.target.value)}
-                          placeholder="ملاحظاتٌ لا يَراها المشترك — مرئيّةٌ للإدارة والدعم فقط…" />
+                          placeholder="لا يَراها المشترك — للإدارة والدعم فقط…" />
               </div>
-              <div className="actions-row">
-                <button className="btn btn-em btn-sm" onClick={doSaveNote} disabled={busy}>
-                  {busy ? <span className="spinner" /> : <><Icon name="check" size={14} /> حفظ</>}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="mlk-action primary" onClick={doSaveNote} disabled={busy}>
+                  {busy ? <span className="spinner" /> : 'حفظ'}
                 </button>
-                <button className="icon-btn" onClick={() => { setActionPanel(null); setAdminNote(sub.admin_notes || '') }} disabled={busy}>إلغاء</button>
+                <button className="mlk-action"
+                        onClick={() => { setActionPanel(null); setAdminNote(sub.admin_notes || '') }}
+                        disabled={busy}>إلغاء</button>
               </div>
             </div>
-          )}
-        </>
-      )}
-
-      {/* ملاحظةٌ إداريّةٌ ظاهرة (لكلّ الدعم) */}
-      {subData.admin_notes && actionPanel !== 'note' && (
-        <>
-          <div className="sec-label" style={{ marginTop: 14 }}>ملاحظةٌ إداريّة</div>
-          <div style={{ padding: 12, background: 'rgba(251,191,36,.08)', border: '1px solid rgba(251,191,36,.25)', borderRadius: 12, fontSize: 13.5, whiteSpace: 'pre-wrap', color: 'var(--cr-100)' }}>
-            {subData.admin_notes}
-          </div>
-        </>
-      )}
-
-      {/* صاحب الحملة */}
-      <div className="sec-label" style={{ marginTop: 14 }}>صاحب الحملة</div>
-      <div className="trip-card" style={{ padding: 12, marginTop: 4 }}>
-        <div style={{ fontWeight: 700, color: 'var(--cr-50)' }}>{owner?.full_name || '—'}</div>
-        {owner?.phone && (
-          <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <a className="btn btn-ghost btn-sm" href={`tel:${owner.phone}`}><Icon name="phone" size={14} /> اتّصال</a>
-            <a className="btn btn-ghost btn-sm" href={`https://wa.me/${String(owner.phone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Icon name="message" size={14} /> واتساب</a>
-            <button className="btn btn-ghost btn-sm" onClick={() => copy(owner.phone, 'نُسخ الرقم')}><Icon name="copy" size={14} /></button>
-            <span className="ltr muted" style={{ fontSize: 12, flex: 1, textAlign: 'left' }}>{owner.phone}</span>
           </div>
         )}
-        {sub.contact_phone && normalizePhone(sub.contact_phone) !== normalizePhone(owner?.phone || '') && (
-          <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>هاتف الحملة: <span className="ltr">{sub.contact_phone}</span></div>
-        )}
-      </div>
 
-      {/* آخر الرحلات */}
-      <div className="sec-label" style={{ marginTop: 14 }}>آخر الرحلات</div>
-      {loading ? (
-        <SkeletonList count={3} />
-      ) : trips.length === 0 ? (
-        <div className="muted" style={{ fontSize: 13, padding: 10 }}>لا رحلات بعد.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {trips.slice(0, 5).map((t) => (
-            <div key={t.id} className="trip-card" style={{ padding: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="tag muted" style={{ fontSize: 10 }}>{STATUS_LABEL[t.status] || t.status}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--cr-50)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title || 'رحلة'}</div>
-                <div className="muted" style={{ fontSize: 11 }}>{t.depart_at ? fmtDateTime(t.depart_at) : '—'} · سعة {t.capacity || 0}</div>
-              </div>
+        {/* ملاحظةٌ إداريّةٌ ظاهرة */}
+        {subData.admin_notes && actionPanel !== 'note' && (
+          <section>
+            <h2 className="mlk-h2">ملاحظةٌ إداريّة</h2>
+            <div className="mlk-card is-feature" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+              {subData.admin_notes}
             </div>
-          ))}
+          </section>
+        )}
+
+        {/* صاحبُ الحملة */}
+        <section>
+          <h2 className="mlk-h2">صاحبُ الحملة</h2>
+          <div className="mlk-card">
+            <div className="mlk-list-title">{owner?.full_name || '—'}</div>
+            {owner?.phone && (
+              <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <a className="mlk-action" href={`tel:${owner.phone}`}>اتّصال</a>
+                <a className="mlk-action" href={`https://wa.me/${String(owner.phone).replace(/\D/g, '')}`}
+                   target="_blank" rel="noopener noreferrer">واتساب</a>
+                <button className="mlk-action" onClick={() => copy(owner.phone, 'نُسخ الرقم')}>نَسخ</button>
+                <span className="ltr" style={{ fontSize: 12, color: 'var(--cr-300)',
+                                                flex: 1, textAlign: 'left' }}>{owner.phone}</span>
+              </div>
+            )}
+            {sub.contact_phone && normalizePhone(sub.contact_phone) !== normalizePhone(owner?.phone || '') && (
+              <div className="mlk-list-meta" style={{ marginTop: 6 }}>
+                هاتف الحملة: <span className="ltr">{sub.contact_phone}</span>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* آخر الرحلات */}
+        <section>
+          <h2 className="mlk-h2">آخر الرحلات</h2>
+          {loading ? <SkeletonList count={3} /> :
+           trips.length === 0 ? <div className="mlk-empty">لا رحلات بعد</div> :
+           <ul className="mlk-list">
+             {trips.slice(0, 5).map((t) => (
+               <li key={t.id} className="mlk-list-row">
+                 <div className="mlk-list-body">
+                   <div className="mlk-list-meta">
+                     <span className="mlk-pill muted">{STATUS_LABEL[t.status] || t.status}</span>
+                     {t.capacity && <span>سعة {t.capacity}</span>}
+                     <span className="mlk-list-time" style={{ marginInlineStart: 'auto' }}>
+                       {t.depart_at ? fmtDateTime(t.depart_at) : '—'}
+                     </span>
+                   </div>
+                   <div className="mlk-list-title">{t.title || 'رحلة'}</div>
+                 </div>
+               </li>
+             ))}
+           </ul>}
           {trips.length > 5 && (
-            <div className="muted" style={{ fontSize: 12, padding: 4 }}>+ {trips.length - 5} رحلةٍ أخرى</div>
+            <div className="mlk-list-meta" style={{ marginTop: 6 }}>+ {trips.length - 5} رحلةٍ أخرى</div>
           )}
-        </div>
-      )}
+        </section>
 
-      {/* سجلّ النَّشاط الإداريّ على هذه الحملة */}
-      <div className="sec-label" style={{ marginTop: 14 }}>سجلّ النَّشاط الإداريّ</div>
-      {loading ? (
-        <SkeletonList count={2} />
-      ) : auditLog.length === 0 ? (
-        <div className="muted" style={{ fontSize: 13, padding: 10 }}>لا نَشاطَ مُسجّل.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {auditLog.map((a) => (
-            <div key={a.id} className="trip-card" style={{ padding: 10, fontSize: 12.5 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                <strong style={{ color: 'var(--cr-50)' }}>{labelAction(a.action)}</strong>
-                <span className="muted" style={{ fontSize: 11 }}>{fmtDateTime(a.created_at)}</span>
-              </div>
-              <div className="muted" style={{ marginTop: 4 }}>
-                {a.admin_name || '—'} <span className="tag muted" style={{ fontSize: 9, marginInlineStart: 6 }}>{a.admin_role}</span>
-              </div>
-              {a.details && Object.keys(a.details).length > 0 && (
-                <div style={{ marginTop: 4, fontSize: 11.5, color: 'var(--cr-200)' }}>{formatDetails(a.details)}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+        {/* سجلّ النَّشاط على هذه الحملة */}
+        <section>
+          <h2 className="mlk-h2">سجلّ النَّشاط</h2>
+          {loading ? <SkeletonList count={2} /> :
+           auditLog.length === 0 ? <div className="mlk-empty">لا نَشاطَ مُسجّل</div> :
+           <ul className="mlk-list">
+             {auditLog.map((a) => (
+               <li key={a.id} className="mlk-list-row">
+                 <div className="mlk-list-body">
+                   <div className="mlk-list-meta">
+                     <span className="mlk-pill em">{labelAction(a.action)}</span>
+                     <span>·</span>
+                     <span>{a.admin_name || '—'}</span>
+                     <span className="mlk-list-time" style={{ marginInlineStart: 'auto' }}>{fmtDateTime(a.created_at)}</span>
+                   </div>
+                   {a.details && Object.keys(a.details).length > 0 && (
+                     <div className="mlk-list-meta">{formatDetails(a.details)}</div>
+                   )}
+                 </div>
+               </li>
+             ))}
+           </ul>}
+        </section>
 
-      <div className="muted" style={{ marginTop: 18, fontSize: 11 }}>أُنشئت: {fmtDateTime(sub.created_at)}</div>
+        <div className="mlk-list-meta" style={{ marginTop: 8 }}>أُنشئت: {fmtDateTime(sub.created_at)}</div>
+      </div>
     </BottomSheet>
   )
 }
