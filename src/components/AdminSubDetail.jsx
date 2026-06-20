@@ -6,6 +6,7 @@ import { SkeletonList } from './Skeleton'
 import { useUI } from '../lib/useUI'
 import { useAuth } from '../app/useAuth'
 import { fmtDateTime, normalizePhone } from '../lib/format'
+import { translateRpcError } from '../lib/rpcErrors'
 
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
 
@@ -73,7 +74,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     const { error } = await supabase.rpc(name, args)
     setBusy(false)
     if (error) {
-      toast('تعذّر التنفيذ: ' + error.message, { type: 'error' })
+      toast(translateRpcError(error, 'تعذّر التنفيذ.'), { type: 'error' })
       return false
     }
     toast(successMsg, { type: 'success' })

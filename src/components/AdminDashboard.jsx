@@ -40,6 +40,9 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
 
   // مَلاحظة: openFb و openMsg تَأتيان من AdminHome — لا نَعيد جَلبَهما هنا.
   // كذلك آخر المشتركين من prop `subs` مباشرةً — لا طلب إضافيّ.
+  // التَّبعيّةُ على عدد المشتركين فقط — لا على مَرجع المصفوفة، لتَجنُّب
+  // إطلاق list_staff_invitations مع كلّ refresh لـadmin_campaign_stats.
+  const subsCount = subs.length
   useEffect(() => {
     let active = true
     ;(async () => {
@@ -50,20 +53,20 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
       if (!active) return
       const hirRows = Array.isArray(hirR.data) ? hirR.data : []
       setPendingHiring(hirRows.length)
-
-      const recentSubs = [...subs]
-        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-        .slice(0, 3)
-
-      const events = [
-        ...recentSubs.map(s => ({ id: 's' + s.id, kind: 'مشترك', name: s.org_name, at: s.created_at })),
-        ...(recMsgs.data || []).map(m => ({ id: 'm' + m.id, kind: 'رسالة', name: m.name || '—', at: m.created_at })),
-        ...hirRows.slice(0, 2).map(h => ({ id: 'h' + h.id, kind: 'توظيف', name: h.applicant_full_name || h.email, at: h.submitted_at || h.created_at })),
-      ].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 6)
-      setActivity(events)
+      setActivity(prev => {
+        const recentSubs = [...subs]
+          .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+          .slice(0, 3)
+        return [
+          ...recentSubs.map(s => ({ id: 's' + s.id, kind: 'مشترك', name: s.org_name, at: s.created_at })),
+          ...(recMsgs.data || []).map(m => ({ id: 'm' + m.id, kind: 'رسالة', name: m.name || '—', at: m.created_at })),
+          ...hirRows.slice(0, 2).map(h => ({ id: 'h' + h.id, kind: 'توظيف', name: h.applicant_full_name || h.email, at: h.submitted_at || h.created_at })),
+        ].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 6)
+      })
     })()
     return () => { active = false }
-  }, [subs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subsCount])
 
   const greeting = useMemo(() => {
     const h = new Date().getHours()
