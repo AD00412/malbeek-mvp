@@ -11,6 +11,11 @@ const FOCUSABLE = 'a[href],button:not([disabled]),textarea:not([disabled]),input
  * Escape يُغلق، النقر خارج البطاقة يُغلق، يُقفل تمرير الجسم أثناء الفتح،
  * يحصر التركيز داخل البطاقة (focus trap) ويعيده للعنصر المُطلِق عند الإغلاق.
  *
+ * ★ iOS Safari fix: onClose يُحفظ في ref بدلَ تَبعيّة، لأنّ كلَّ keystroke في
+ *   نموذجٍ بداخل الورقة يُعيد إنشاءَ closure للأب → تَغيُّرُ مَرجع onClose →
+ *   re-run للـeffect → focus يَنتقل من input → keyboard يَنزل في iOS.
+ *   النِّمطُ الجديد: التَّبعيّةُ على [open] فقط؛ الكلوجراتُ تُقرأ من ref.
+ *
  * @param {boolean}   open
  * @param {string}    title
  * @param {Function}  onClose
@@ -19,7 +24,11 @@ const FOCUSABLE = 'a[href],button:not([disabled]),textarea:not([disabled]),input
 export default function BottomSheet({ open, title, onClose, actions, children }) {
   const cardRef = useRef(null)
   const lastFocusRef = useRef(null)
+  const onCloseRef = useRef(onClose)
   const titleId = useId()
+
+  // يَبقى onCloseRef مُحدَّثًا بآخر دالّة بلا تَسبيب re-run للـeffect.
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     if (!open) return
@@ -27,9 +36,8 @@ export default function BottomSheet({ open, title, onClose, actions, children })
     lastFocusRef.current = document.activeElement
 
     const onKey = (e) => {
-      if (e.key === 'Escape') { onClose?.(); return }
+      if (e.key === 'Escape') { onCloseRef.current?.(); return }
       if (e.key !== 'Tab') return
-      // حصر التركيز داخل البطاقة (Tab/Shift+Tab يدور ضمنها فقط).
       const card = cardRef.current
       if (!card) return
       const items = card.querySelectorAll(FOCUSABLE)
@@ -45,10 +53,12 @@ export default function BottomSheet({ open, title, onClose, actions, children })
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
 
-    // ركّز أوّل عنصرٍ داخل البطاقة (أو البطاقة نفسها) بعد الرسم.
+    // ركّز أوّل عنصرٍ داخل البطاقة بعد الرسم — مرّةً واحدةً عند الفتح.
     const t = setTimeout(() => {
       const card = cardRef.current
       if (!card) return
+      // تَجنّب إعادةَ التَّركيز لو المستخدم بدأ يَكتب في حقلٍ أصلًا.
+      if (card.contains(document.activeElement)) return
       const first = card.querySelector(FOCUSABLE)
       ;(first || card).focus?.()
     }, 0)
@@ -58,11 +68,12 @@ export default function BottomSheet({ open, title, onClose, actions, children })
       openCount = Math.max(0, openCount - 1)
       if (openCount === 0) document.body.style.overflow = savedOverflow
       window.removeEventListener('keydown', onKey)
-      // أعِد التركيز للعنصر الذي فتح الورقة (إن بقي في DOM).
       const el = lastFocusRef.current
       if (el && typeof el.focus === 'function' && document.contains(el)) el.focus()
     }
-  }, [open, onClose])
+    // ★ التَّبعيّة على [open] فقط — onClose عبر ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   if (!open) return null
   return (

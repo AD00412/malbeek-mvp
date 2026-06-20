@@ -561,8 +561,8 @@ export function SubscriberHome() {
 
   function openCreate() { setEditing(null); setModalOpen(true) }
   function openEdit(t) { setEditing(t); setModalOpen(true) }
-  function closeModal() { setModalOpen(false); setEditing(null) }
-  function handleSaved() { closeModal(); load() }
+  const closeModal = useCallback(() => { setModalOpen(false); setEditing(null) }, [])
+  const handleSaved = useCallback(() => { closeModal(); load() }, [closeModal, load])
 
   async function remove(t) {
     if (!t?.id) return
