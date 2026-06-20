@@ -208,6 +208,7 @@ export function AdminHome() {
             <AdminDashboard
               subs={subs} paid={paid} trips={trips} pax={pax}
               collected={collected} recent7={recent7}
+              openFb={openFb} openMsg={openMsg}
               onTab={setView}
             />
           </>

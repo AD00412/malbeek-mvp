@@ -33,37 +33,37 @@ function relTime(iso) {
  *   ٣) «تَحتاج انتباهك» — يَظهر فقط لو فيه عدّاد > 0
  *   ٤) النشاطُ الحيّ — قائمةٌ بسيطة
  */
-export default function AdminDashboard({ subs, paid, trips, pax, collected, recent7, onTab }) {
+export default function AdminDashboard({ subs, paid, trips, pax, collected, recent7, onTab, openFb = 0, openMsg = 0 }) {
   const { profile } = useAuth()
   const [activity, setActivity] = useState([])
   const [pendingHiring, setPendingHiring] = useState(0)
-  const [openFb, setOpenFb] = useState(0)
-  const [openMsg, setOpenMsg] = useState(0)
 
+  // مَلاحظة: openFb و openMsg تَأتيان من AdminHome — لا نَعيد جَلبَهما هنا.
+  // كذلك آخر المشتركين من prop `subs` مباشرةً — لا طلب إضافيّ.
   useEffect(() => {
     let active = true
     ;(async () => {
-      const [fbR, msgR, hirR, recSubs, recMsgs] = await Promise.all([
-        supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-        supabase.from('public_messages').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+      const [hirR, recMsgs] = await Promise.all([
         supabase.rpc('list_staff_invitations', { p_filter: 'review' }),
-        supabase.from('subscribers').select('id, org_name, created_at').order('created_at', { ascending: false }).limit(3),
-        supabase.from('public_messages').select('id, name, subject, created_at').order('created_at', { ascending: false }).limit(2),
+        supabase.from('public_messages').select('id, name, created_at').order('created_at', { ascending: false }).limit(2),
       ])
       if (!active) return
-      if (typeof fbR.count === 'number') setOpenFb(fbR.count)
-      if (typeof msgR.count === 'number') setOpenMsg(msgR.count)
       const hirRows = Array.isArray(hirR.data) ? hirR.data : []
       setPendingHiring(hirRows.length)
+
+      const recentSubs = [...subs]
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+        .slice(0, 3)
+
       const events = [
-        ...(recSubs.data || []).map(s => ({ id: 's' + s.id, kind: 'مشترك', name: s.org_name, at: s.created_at })),
+        ...recentSubs.map(s => ({ id: 's' + s.id, kind: 'مشترك', name: s.org_name, at: s.created_at })),
         ...(recMsgs.data || []).map(m => ({ id: 'm' + m.id, kind: 'رسالة', name: m.name || '—', at: m.created_at })),
         ...hirRows.slice(0, 2).map(h => ({ id: 'h' + h.id, kind: 'توظيف', name: h.applicant_full_name || h.email, at: h.submitted_at || h.created_at })),
       ].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 6)
       setActivity(events)
     })()
     return () => { active = false }
-  }, [subs.length])
+  }, [subs])
 
   const greeting = useMemo(() => {
     const h = new Date().getHours()
