@@ -37,10 +37,15 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const refresh = useCallback(async () => {
     if (!sub?.id) return
     setLoading(true)
+    // مَلاحظة: profiles يَتجنّبُ الطلبَ حين owner_id فارغ
+    // (وإلّا يُعيد PostgREST 400 على eq(null)).
+    const ownerPromise = sub.owner_id
+      ? supabase.from('profiles').select('full_name, phone, id').eq('id', sub.owner_id).maybeSingle()
+      : Promise.resolve({ data: null })
     const [{ data: ts }, { data: prof }, { data: alog }, { data: srow }] = await Promise.all([
       supabase.from('trips').select('id, title, status, depart_at, capacity').eq('subscriber_id', sub.id)
         .order('depart_at', { ascending: false, nullsFirst: false }).limit(20),
-      supabase.from('profiles').select('full_name, phone, id').eq('id', sub.owner_id).maybeSingle(),
+      ownerPromise,
       supabase.from('platform_audit_log').select('id, admin_name, admin_role, action, details, created_at')
         .eq('target_type', 'subscriber').eq('target_id', sub.id)
         .order('created_at', { ascending: false }).limit(20),
