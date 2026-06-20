@@ -1,19 +1,27 @@
 /**
- * ذاكرةُ تخزينٍ مؤقّتٌ بسيطٌ بنمطِ SWR (Stale-While-Revalidate):
+ * ذاكرةُ تخزينٍ مؤقّتٌ بنمطِ SWR + TTL:
  *
- *  - عند فتح صفحةٍ تحتوي بيانات في الذاكرة: تُعرض **فورًا** بلا انتظار،
- *    ثمّ تُحدَّث في الخلفيّة من قاعدة البيانات.
- *  - تنمحي تلقائيًّا عند تسجيل الخروج (manyAll()) لمنع تسرّبَ بياناتِ
- *    حسابٍ إلى حسابٍ آخر.
- *  - تُحفظ في sessionStorage فقط (تنمحي عند إغلاق التبويب)، فلا تبقى
- *    البيانات الحسّاسةُ على القرص.
+ *  - عند فتح صفحةٍ تحتوي بيانات حديثة (< TTL): تُعرض **فورًا**، ثمّ
+ *    تُحدَّث في الخلفيّة من قاعدة البيانات.
+ *  - بياناتٌ أَقدمُ من TTL تُعامَل كأنّها غير موجودة → تَحميلٌ كاملٌ
+ *    من DB. يَمنع عرضَ بياناتٍ بائدةٍ بعد ساعاتٍ من عدم الاستعمال.
+ *  - تنمحي تلقائيًّا عند تسجيل الخروج (invalidateAll) — لا تَسرُّبَ بين حسابات.
+ *  - sessionStorage فقط — تَختفي عند إغلاق التبويب، فلا تَبقى على القرص.
  *
- *  المفاتيحُ المعياريّةُ:
- *    sub-dash:<userId>     — لوحةُ المشترك (الحملة + الرحلات + الإحصاءات)
- *    cust-dash:<userId>    — لوحةُ العميل (الحملة + الرحلات + حجوزاتي)
- *    admin-dash            — لوحةُ الأدمن (الإحصاءات المجمَّعة)
+ *  ما يُخزَّن (TTL ٥ دقائق):
+ *    sub-dash:<userId>     لوحةُ المشترك  (sub + trips + paxStats)
+ *    cust-dash:<userId>    لوحةُ العميل (sub + trips + bookings)
+ *    admin-dash            لوحةُ الأدمن (الإحصاءات المجمَّعة)
+ *    trip-mgr:<tripId>     إدارةُ الرحلة (passengers + waitlist + buses)
+ *    cust-booking:<tripId>:<userId> صفحةُ حجزِ العميل
+ *
+ *  ما لا يُخزَّن أبدًا (لا cache):
+ *    - الإشعارات (notifications) — حيٌّ بـrealtime، الـcache يُضلِّل
+ *    - عدّاد الجرس (unread count) — يَتغيّر بفعل المستخدم نفسه
+ *    - أيُّ بياناتٍ تَخصّ خطواتِ التهيئة (تُحسَب من cache المشترك مباشرةً)
  */
 const KEY_PREFIX = 'malbeek.cache.'
+const DEFAULT_TTL_MS = 5 * 60 * 1000   // ٥ دقائق — بعدها cache باطل
 const mem = new Map()
 
 function readSession(key) {
@@ -28,18 +36,37 @@ function writeSession(key, val) {
   try { sessionStorage.setItem(KEY_PREFIX + key, JSON.stringify(val)) } catch { /* ممتلئٌ — تجاهل */ }
 }
 
-/** يُعيد القيمةَ المخزّنةَ أو null. ينقلُ من sessionStorage إلى الذاكرة المباشرة عند أوّل قراءة. */
-export function getCached(key) {
-  if (mem.has(key)) return mem.get(key)
-  const s = readSession(key)
-  if (s) mem.set(key, s)
-  return s
+/** يُغلّف القيمةَ بـ {v, t} حيث t هو وقتُ الكتابة. شفّافٌ للمستدعِي. */
+function pack(val) { return { v: val, t: Date.now() } }
+function unpack(entry) {
+  if (!entry) return null
+  // توافقٌ خلفيٌّ مع cache قديم بدون غلاف
+  if (entry.v === undefined || entry.t === undefined) return entry
+  if (Date.now() - entry.t > DEFAULT_TTL_MS) return null   // باطلٌ
+  return entry.v
 }
 
-/** يحفظ القيمة في الذاكرة + sessionStorage. */
+/** يُعيد القيمةَ المخزّنةَ (إن كانت لم تَنتهِ صلاحيّتُها) أو null. */
+export function getCached(key) {
+  let entry = mem.get(key)
+  if (!entry) {
+    entry = readSession(key)
+    if (entry) mem.set(key, entry)
+  }
+  const value = unpack(entry)
+  if (entry && value === null) {
+    // انتهت الصلاحيّةُ → امسحه ليُحرَّر المكان
+    mem.delete(key)
+    try { sessionStorage.removeItem(KEY_PREFIX + key) } catch { /* ignore */ }
+  }
+  return value
+}
+
+/** يحفظ القيمة مع طابعٍ زمنيٍّ — تنتهي صلاحيّتُها بعد ٥ دقائق. */
 export function setCached(key, val) {
-  mem.set(key, val)
-  writeSession(key, val)
+  const entry = pack(val)
+  mem.set(key, entry)
+  writeSession(key, entry)
 }
 
 /** يحذف مفتاحًا واحدًا من الذاكرة + sessionStorage. */
