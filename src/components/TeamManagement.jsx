@@ -103,7 +103,7 @@ export default function TeamManagement() {
       return
     }
     const row = Array.isArray(data) ? data[0] : data
-    const invitationId = row?.invitation_id
+    const invitationId = row?.out_invitation_id ?? row?.invitation_id
     // ابعث البريد
     try {
       const { data: send, error: sErr } = await supabase.functions.invoke('send-staff-invite', {
