@@ -1979,3 +1979,101 @@ body.fab-interacting *{
 
 /* العلامة الجديدة M·٢ الطواف (ملفّ ‎CompassMark.jsx v2.0‎) لا تحتاج تحريكًا — هويّةٌ هادئةٌ.
    الـ classNames القديمة ‎mk-compass / mk-qibla‎ حُذفت مع تحديث المكوّن. */
+
+/* ============================================================
+   لوحةُ الإدارة الجديدة — هويّةٌ موحَّدةٌ، KPIs، اختصارات، فيد
+   ============================================================ */
+
+.adm-dash{display:flex;flex-direction:column;gap:18px}
+
+/* ─── شريطُ التَّرحيب ─── */
+.adm-hero{position:relative;border-radius:22px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(6,95,70,.95) 0%,rgba(4,120,87,.88) 50%,rgba(16,185,129,.85) 100%);
+  border:1px solid rgba(16,185,129,.25);
+  box-shadow:0 10px 36px -12px rgba(6,95,70,.5)}
+.adm-hero-bg{position:absolute;inset:0;
+  background-image:radial-gradient(circle at 90% 10%,rgba(251,191,36,.18),transparent 45%),
+                   radial-gradient(circle at 10% 90%,rgba(255,255,255,.08),transparent 50%);
+  pointer-events:none}
+.adm-hero-inner{position:relative;padding:22px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.adm-hero-greet{flex:1;min-width:0;color:#fff}
+.adm-hero-eyebrow{font-size:12px;color:rgba(255,255,255,.78);letter-spacing:.5px;margin-bottom:6px}
+.adm-hero-title{font-family:var(--font-display);font-size:24px;font-weight:800;line-height:1.2;margin:0;color:#fff}
+.adm-hero-name{color:#fde68a}
+.adm-hero-sub{font-size:13.5px;color:rgba(255,255,255,.85);margin-top:8px;line-height:1.6}
+.adm-hero-pulse{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,.12);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);
+  border-radius:14px;color:#fff}
+.adm-hero-pulse-dot{width:10px;height:10px;border-radius:50%;background:#fde68a;box-shadow:0 0 0 4px rgba(253,230,138,.3);
+  animation:pulse 1.8s ease-in-out infinite}
+.adm-hero-pulse-num{font-family:var(--font-display);font-size:22px;font-weight:800;line-height:1;color:#fde68a}
+.adm-hero-pulse-lb{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
+
+/* ─── شبكةُ KPI ─── */
+.adm-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:760px){.adm-kpi-grid{grid-template-columns:repeat(4,1fr)}}
+.adm-kpi{display:flex;flex-direction:column;gap:6px;padding:16px 16px 14px;border-radius:16px;
+  background:var(--surface-2);border:1px solid var(--line);text-align:start;cursor:pointer;
+  transition:transform .18s,border-color .18s,box-shadow .18s;color:inherit;font:inherit}
+.adm-kpi:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:0 6px 22px -8px rgba(0,0,0,.25)}
+.adm-kpi:active{transform:translateY(0)}
+.adm-kpi-ic{width:36px;height:36px;border-radius:10px;background:rgba(16,185,129,.14);
+  display:grid;place-items:center;color:var(--em-500);margin-bottom:4px}
+.adm-kpi.adm-kpi-ok .adm-kpi-ic{background:rgba(43,182,140,.16);color:var(--ok-ink)}
+.adm-kpi.adm-kpi-info .adm-kpi-ic{background:rgba(58,160,179,.16);color:var(--info-ink)}
+.adm-kpi.adm-kpi-warn .adm-kpi-ic{background:rgba(251,191,36,.16);color:#92400e}
+.adm-kpi-num{font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--cr-50);line-height:1}
+.adm-kpi-lb{font-size:12.5px;color:var(--cr-300)}
+.adm-kpi-trend{font-size:10.5px;color:var(--ok-ink);font-weight:700;margin-top:2px}
+
+/* ─── شريطُ الإيرادات ─── */
+.adm-revenue{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:18px;
+  background:linear-gradient(135deg,rgba(43,182,140,.1) 0%,rgba(16,185,129,.06) 100%);
+  border:1px solid rgba(43,182,140,.3)}
+.adm-revenue-side{flex:1;min-width:0}
+.adm-revenue-lb{font-size:12px;color:var(--cr-300);margin-bottom:6px}
+.adm-revenue-num{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--cr-50);line-height:1}
+.adm-revenue-cur{font-size:15px;color:var(--ok-ink);font-weight:600;margin-inline-start:4px}
+.adm-revenue-hint{font-size:12px;color:var(--cr-300);margin-top:6px}
+.adm-revenue-icn{color:var(--em-500);opacity:.5}
+
+/* ─── أقسام ─── */
+.adm-section{display:flex;flex-direction:column;gap:10px}
+.adm-section-head{display:flex;align-items:baseline;gap:10px;padding:0 2px}
+.adm-section-head h3{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--cr-50);margin:0}
+.adm-section-meta{font-size:11.5px;color:var(--cr-300);margin-inline-start:auto}
+
+/* ─── اختصارات ─── */
+.adm-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:760px){.adm-actions{grid-template-columns:repeat(3,1fr)}}
+.adm-action{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;
+  background:var(--surface-2);border:1px solid var(--line);text-align:start;cursor:pointer;
+  transition:transform .18s,border-color .18s,box-shadow .18s;color:inherit;font:inherit}
+.adm-action:hover{transform:translateY(-1px);border-color:var(--em-500);box-shadow:0 4px 18px -6px rgba(16,185,129,.3)}
+.adm-action-ic{width:38px;height:38px;border-radius:10px;background:rgba(16,185,129,.12);color:var(--em-500);
+  display:grid;place-items:center;flex:none}
+.adm-action.adm-action-em .adm-action-ic{background:var(--grad-em);color:#fff}
+.adm-action.adm-action-alert .adm-action-ic{background:rgba(251,191,36,.16);color:#92400e}
+.adm-action-ttl{font-size:13.5px;font-weight:700;color:var(--cr-50);display:flex;align-items:center;gap:6px}
+.adm-action-sub{font-size:11.5px;color:var(--cr-300);margin-top:2px}
+.adm-action-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;
+  padding:0 6px;border-radius:9px;background:var(--grad-gold);color:#1a0f00;font-size:10.5px;font-weight:800}
+
+/* ─── فيد ─── */
+.adm-feed{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.adm-feed-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;
+  background:var(--surface-2);border:1px solid var(--line)}
+.adm-feed-ic{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:none}
+.adm-feed-row.tone-em .adm-feed-ic{background:rgba(16,185,129,.14);color:var(--em-500)}
+.adm-feed-row.tone-info .adm-feed-ic{background:rgba(58,160,179,.16);color:var(--info-ink)}
+.adm-feed-row.tone-gold .adm-feed-ic{background:rgba(251,191,36,.14);color:#92400e}
+.adm-feed-body{flex:1;min-width:0}
+.adm-feed-ttl{font-size:12px;color:var(--cr-300);font-weight:600}
+.adm-feed-name{font-size:13.5px;color:var(--cr-50);font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adm-feed-time{font-size:11px;color:var(--cr-300);flex:none}
+.adm-feed-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 20px;
+  border-radius:14px;background:var(--surface-2);border:1px dashed var(--line);color:var(--cr-300);text-align:center}
+
+/* تَحسينُ التَّباعد في AdminHome */
+.shell .main .content > .adm-dash{padding:0}

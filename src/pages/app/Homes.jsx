@@ -15,6 +15,7 @@ import FeedbackInbox from '../../components/FeedbackInbox'
 import PublicMessagesInbox from '../../components/PublicMessagesInbox'
 import TeamManagement from '../../components/TeamManagement'
 import AdminAuditLog from '../../components/AdminAuditLog'
+import AdminDashboard from '../../components/AdminDashboard'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
@@ -195,7 +196,6 @@ export function AdminHome() {
         <div key={view} className="view-fade">
         {view === 'overview' && (
           <>
-            {/* ★ B1 — لافتةُ خطأٍ قابلةٌ لإعادة المحاولة */}
             {err && (
               <div className="alert err" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Icon name="bell" size={16} />
@@ -205,16 +205,11 @@ export function AdminHome() {
                 </button>
               </div>
             )}
-            <div className="stats">
-              <div className="stat"><div className="top"><span className="ic"><Icon name="building" size={15} /></span>المشتركون</div><div className="v">{subs.length}{recent7 > 0 && <span style={{ fontSize: 12, color: 'var(--ok-ink)', marginInlineStart: 8 }}>+{recent7} هذا الأسبوع</span>}</div></div>
-              <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>الباقات المدفوعة</div><div className="v">{paid}</div></div>
-              <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={15} /></span>الرحلات</div><div className="v">{trips}</div></div>
-              <div className="stat warn"><div className="top"><span className="ic"><Icon name="customers" size={15} /></span>المعتمرون</div><div className="v">{pax}</div></div>
-            </div>
-            <div className="stats" style={{ marginTop: 12 }}>
-              <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>إجمالي المحصّل عبر المنصّة</div><div className="v" style={{ fontSize: 26 }}>{money(collected)} <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>﷼</span></div></div>
-            </div>
-            <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />
+            <AdminDashboard
+              subs={subs} paid={paid} trips={trips} pax={pax}
+              collected={collected} recent7={recent7}
+              onTab={setView}
+            />
           </>
         )}
         {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />}
