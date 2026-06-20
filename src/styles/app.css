@@ -1657,6 +1657,15 @@ body.fab-interacting *{
   border-radius:var(--r-sm);border:1px solid var(--line)}
 .doc-actions{display:flex;flex-direction:column;gap:10px}
 
+/* PublicMessageModal — صفّ أزرارٍ سَلِسٌ (إرسال متمدِّد + إلغاء مدمج) */
+.pmsg-actions{display:flex;align-items:center;gap:10px}
+.pmsg-actions .btn{height:48px;justify-content:center;font-size:15px}
+.pmsg-actions .btn-ghost{min-width:88px;font-size:14px}
+@media (max-width: 380px){
+  .pmsg-actions{flex-direction:column-reverse;align-items:stretch}
+  .pmsg-actions .btn-ghost{min-width:0}
+}
+
 /* الوضع الفاتح */
 :root[data-theme="light"] .doc-modal-overlay{background:rgba(11,92,67,.32)}
 :root[data-theme="light"] .doc-modal{background:#fff;border-color:rgba(11,92,67,.16)}

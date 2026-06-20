@@ -12,6 +12,7 @@ import FeedbackSheet from '../../components/FeedbackSheet'
 import FeedbackFab, { showFeedbackFab } from '../../components/FeedbackFab'
 import { getCached, setCached, invalidate, buildPaxStats, rehydratePaxStats } from '../../lib/dataCache'
 import FeedbackInbox from '../../components/FeedbackInbox'
+import PublicMessagesInbox from '../../components/PublicMessagesInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
@@ -131,6 +132,7 @@ export function AdminHome() {
     { key: 'trips', label: 'الرحلات', icon: 'trips' },
     { key: 'search', label: 'البحث', icon: 'search' },
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message' },
+    { key: 'messages', label: 'الرسائل العامّة', icon: 'message' },
     { section: 'الحساب' },
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
@@ -185,6 +187,7 @@ export function AdminHome() {
         {view === 'trips' && <AdminAllTrips />}
         {view === 'search' && <AdminPilgrimSearch />}
         {view === 'feedback' && <FeedbackInbox />}
+        {view === 'messages' && <PublicMessagesInbox />}
         </div>
       </AppShell>
 

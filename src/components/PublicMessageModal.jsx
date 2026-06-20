@@ -327,13 +327,13 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
 
               {err && <div className="alert err">{err}</div>}
 
-              <div className="doc-actions" style={{ marginTop: 6 }}>
-                <button type="submit" className="btn btn-em btn-block" disabled={busy}>
+              <div className="pmsg-actions" style={{ marginTop: 8 }}>
+                <button type="submit" className="btn btn-em" disabled={busy} style={{ flex: 1 }}>
                   {busy
                     ? <><span className="spinner" /> جارٍ الإرسال…</>
                     : <><Icon name="check" size={15} /> {isContact ? 'إرسال' : 'إرسال الملاحظة'}</>}
                 </button>
-                <button type="button" className="btn btn-ghost btn-block" onClick={onClose} disabled={busy}>إلغاء</button>
+                <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>
               </div>
             </form>
           </>
