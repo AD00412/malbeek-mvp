@@ -30,6 +30,8 @@ export function useRealtime(key, filters, onChange, debounceMs = 200, deps = [])
 
     let ch = null
     function subscribe() {
+      // ★ نظّفِ المؤقّتَ الذي قد يُطلق fire قديمًا قبل أو بعد إعادة الضمّ
+      if (timer) { clearTimeout(timer); timer = null }
       if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
       ch = supabase.channel(`rt:${key}`)
       for (const f of filters) {

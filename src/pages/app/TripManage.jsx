@@ -135,13 +135,22 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   }, [cacheKey])
 
   const firstLoad = useRef(true)
+  // ★ حارسٌ ضدّ السباق: لو المستخدم بدّل الرحلةَ أثناء التحميل، نُلغي
+  //   استدعاءَ setState لاحقًا فلا تُكتب بياناتُ الرحلة A على الرحلة B.
+  const loadedTripIdRef = useRef(null)
   const loadPassengers = useCallback(async (retry = 0) => {
     if (!trip?.id) return
+    const currentTripId = trip.id  // التَقَطه في الإغلاق
+    loadedTripIdRef.current = currentTripId
     const cached = cacheKey ? getCached(cacheKey) : null
     const hadData = (cached?.passengers?.length ?? 0) > 0
-    // skeleton فقط في التحميل الأوّل بلا cache — لا نُومض القائمة مع كلّ تحديثٍ حيّ
     if (firstLoad.current && !cached) setLoading(true)
     setErr('')
+
+    // مساعدٌ: لا نُحدّث state لو الرحلةُ المعروضةُ تَغيّرت
+    const safeSet = (setter) => (v) => {
+      if (loadedTripIdRef.current === currentTripId) setter(v)
+    }
 
     const { data, error } = await supabase
       .from('passengers')
@@ -150,51 +159,57 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       .order('seat_no', { ascending: true, nullsFirst: false })
 
     if (error) {
-      setErr('تعذّر تحميل المعتمرين: ' + error.message)
+      if (loadedTripIdRef.current === currentTripId) setErr('تعذّر تحميل المعتمرين: ' + error.message)
       setLoading(false); firstLoad.current = false
       return
     }
 
+    // ★ تحقّقٌ من سباق: لو المستخدم بدّل الرحلةَ، نَتجاهل النتائج
+    if (loadedTripIdRef.current !== currentTripId) return
+
     const rows = data ?? []
-    // ★ حارسُ «empty الزائف»: لو لدينا (في الحالة أو الـ cache) بياناتٌ ثمّ رجعت []،
-    //    نُعيد المحاولة مرّتَين قبل تَصديق الفراغ. السبب: التوكِنُ المُجدَّد لم يَنشر بعد.
     if (rows.length === 0 && (hadData || passengers.length > 0) && retry < 2) {
       setTimeout(() => loadPassengers(retry + 1), 800)
       setLoading(false); firstLoad.current = false
       return
     }
 
-    setPassengers(rows)
+    safeSet(setPassengers)(rows)
     setLoading(false); firstLoad.current = false
 
-    // قائمة الانتظار للرحلة
+    // قائمة الانتظار
     const { data: w } = await supabase
       .from('waitlist').select('id, profile_id, full_name, phone, notified_at, created_at')
-      .eq('trip_id', trip.id).order('created_at', { ascending: true })
+      .eq('trip_id', currentTripId).order('created_at', { ascending: true })
+    if (loadedTripIdRef.current !== currentTripId) return  // الرحلةُ تغيّرت
     const wRows = w ?? []
     const cachedWait = cached?.waitlist?.length ?? 0
-    if (wRows.length > 0 || cachedWait === 0) setWaitlist(wRows)
+    if (wRows.length > 0 || cachedWait === 0) safeSet(setWaitlist)(wRows)
 
-    // باصات الرحلة (لتعدّد الباصات)
-    const bs = await loadTripBuses(trip.id)
+    // باصات الرحلة
+    const bs = await loadTripBuses(currentTripId)
+    if (loadedTripIdRef.current !== currentTripId) return
     const cachedBuses = cached?.buses?.length ?? 0
     let nextMapBusId = mapBusId
     if ((bs?.length ?? 0) > 0 || cachedBuses === 0) {
-      setBuses(bs)
-      setMapBusId((cur) => {
-        const next = (cur && bs.some((b) => b.id === cur)) ? cur : bs[0]?.id ?? null
-        nextMapBusId = next
-        return next
-      })
+      safeSet(setBuses)(bs)
+      if (loadedTripIdRef.current === currentTripId) {
+        setMapBusId((cur) => {
+          const next = (cur && bs.some((b) => b.id === cur)) ? cur : bs[0]?.id ?? null
+          nextMapBusId = next
+          return next
+        })
+      }
     }
 
-    // سجلّ مدفوعات البوّابة لهذه الرحلة (يقرؤه المالك عبر RLS؛ يمتلئ عند تفعيل الـ Webhook)
+    // مدفوعات البوّابة
     const { data: pm } = await supabase
       .from('payments').select('id, passenger_id, provider, provider_ref, amount, currency, created_at')
-      .eq('trip_id', trip.id).order('created_at', { ascending: false }).limit(200)
+      .eq('trip_id', currentTripId).order('created_at', { ascending: false }).limit(200)
+    if (loadedTripIdRef.current !== currentTripId) return
     const pmRows = pm ?? []
     const cachedPay = cached?.payments?.length ?? 0
-    if (pmRows.length > 0 || cachedPay === 0) setPayments(pmRows)
+    if (pmRows.length > 0 || cachedPay === 0) safeSet(setPayments)(pmRows)
 
     // ★ احفظ snapshot للـ cache — يَنجو من re-mount بعد التنقّل
     if (cacheKey) {

@@ -10,7 +10,7 @@ import Roadmap from '../../components/Roadmap'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
 import FeedbackFab, { showFeedbackFab } from '../../components/FeedbackFab'
-import { getCached, setCached, buildPaxStats, rehydratePaxStats } from '../../lib/dataCache'
+import { getCached, setCached, invalidate, buildPaxStats, rehydratePaxStats } from '../../lib/dataCache'
 import FeedbackInbox from '../../components/FeedbackInbox'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
@@ -1176,7 +1176,13 @@ export function CustomerHome() {
                             if (!ok) return
                             const { data, error } = await supabase.rpc('cancel_booking', { p_passenger: b.id })
                             if (error) toast(translateRpcError(error, 'تعذّر إلغاء الحجز.'), { type: 'error' })
-                            else { toast(data?.refund_requested ? 'أُلغي الحجز وسُجّل طلب الاسترداد ✓' : 'تم إلغاء الحجز', { type: 'info' }); load() }
+                            else {
+                              // ★ تنظيفُ cache المرتبط بالحجز فورًا — لا أَثر PII بائد
+                              try { invalidate(`cust-booking:${b.trip_id}:${user.id}`) } catch { /* ignore */ }
+                              try { invalidate(`cust-dash:${user.id}`) } catch { /* ignore */ }
+                              toast(data?.refund_requested ? 'أُلغي الحجز وسُجّل طلب الاسترداد ✓' : 'تم إلغاء الحجز', { type: 'info' })
+                              load()
+                            }
                           }}><Icon name="trash" size={15} /> إلغاء</button>
                         ) : (
                           <span className="muted" style={{ fontSize: 12 }}>للتعديل أو الإلغاء تواصل مع الحملة</span>
