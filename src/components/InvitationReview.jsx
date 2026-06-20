@@ -72,6 +72,16 @@ export default function InvitationReview({ invitation: inv, onClose, onUpdate })
     return () => { active = false }
   }, [inv.id])
 
+  async function sendDecisionEmail(kind) {
+    // kind = 'interview' | 'decision' — يُستدعى بعد كلّ انتقال
+    try {
+      await supabase.functions.invoke(
+        kind === 'interview' ? 'send-staff-interview' : 'send-staff-decision',
+        { body: { invitation_id: inv.id } },
+      )
+    } catch { /* الإيميل تَلقائيٌّ — لا نُجبر فشلَه على الفشل العامّ */ }
+  }
+
   async function doPrelim(e) {
     e.preventDefault()
     if (!interviewAt) return setErr('حدّد موعد المقابلة.')
@@ -82,9 +92,9 @@ export default function InvitationReview({ invitation: inv, onClose, onUpdate })
       p_location: interviewLoc.trim() || null,
       p_notes: interviewNotes.trim() || null,
     })
-    setBusy(false)
-    if (error) return setErr(translateRpcError(error, 'تعذّرت الموافقة المبدئيّة.'))
-    setShowPrelim(false)
+    if (error) { setBusy(false); return setErr(translateRpcError(error, 'تعذّرت الموافقة المبدئيّة.')) }
+    await sendDecisionEmail('interview')
+    setBusy(false); setShowPrelim(false)
     onUpdate?.()
   }
 
@@ -109,9 +119,9 @@ export default function InvitationReview({ invitation: inv, onClose, onUpdate })
       p_invitation: inv.id,
       p_notes: finalNotes.trim() || null,
     })
-    setBusy(false)
-    if (error) return setErr(translateRpcError(error, 'تعذّر القبول النهائيّ.'))
-    setShowFinal(false)
+    if (error) { setBusy(false); return setErr(translateRpcError(error, 'تعذّر القبول النهائيّ.')) }
+    await sendDecisionEmail('decision')
+    setBusy(false); setShowFinal(false)
     onUpdate?.()
   }
 
@@ -128,8 +138,9 @@ export default function InvitationReview({ invitation: inv, onClose, onUpdate })
     const { error } = await supabase.rpc('reject_staff_invitation', {
       p_invitation: inv.id, p_reason: reason.trim(),
     })
+    if (error) { setBusy(false); return setErr(translateRpcError(error, 'تعذّر الرفض.')) }
+    await sendDecisionEmail('decision')
     setBusy(false)
-    if (error) return setErr(translateRpcError(error, 'تعذّر الرفض.'))
     onUpdate?.()
   }
 
