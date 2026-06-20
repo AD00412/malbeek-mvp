@@ -18,6 +18,11 @@ const SMTP_HOST = Deno.env.get('SMTP_HOST') ?? 'mail.mulabeek.com'
 const SMTP_PORT = Number(Deno.env.get('SMTP_PORT') ?? '465')
 const SMTP_USER = Deno.env.get('SMTP_USER') ?? 'hello@mulabeek.com'
 const SMTP_PASS = Deno.env.get('SMTP_PASS') ?? ''
+
+// ★ منافذُ SMTP المسموحة فقط — يَمنع تعريضَ كلمة السرّ على المنفذ ٢٥ (cleartext).
+//   ٤٦٥: SMTPS (TLS مباشر) — secure: true
+//   ٥٨٧: STARTTLS (TLS بعد التفاوض) — secure: false + requireTLS: true
+const ALLOWED_SMTP_PORTS = new Set([465, 587])
 const MAIL_TO   = Deno.env.get('MAIL_TO')   ?? 'hello@mulabeek.com'
 const MAIL_FROM = Deno.env.get('MAIL_FROM') ?? 'hello@mulabeek.com'
 const HOOK_SECRET = Deno.env.get('NOTIFY_WEBHOOK_SECRET') ?? ''
@@ -323,11 +328,24 @@ Deno.serve(async (req) => {
     `\n${'─'.repeat(40)}\nللردّ: استخدم زرّ "رد" — يصل ${rec.email} مباشرةً.\nmulabeek.com\n`
 
   // ٤) الإرسال عبر nodemailer — يتولّى ترميز UTF-8 وMIME تلقائيًّا
+  // ★ نَرفض أيَّ منفذٍ خارج {465, 587} لمنع كلمة سرّ SMTP من السَّفر cleartext
+  //   (مثلًا لو شخصٌ ضبط ٢٥ سهوًا، الـSMTP صعبٌ كشفُه من سجلّات الـEdge function).
+  if (!ALLOWED_SMTP_PORTS.has(SMTP_PORT)) {
+    return json(500, {
+      error: 'smtp_port_not_allowed',
+      detail: `port ${SMTP_PORT} not in {465, 587}. Refusing to send to prevent cleartext credentials.`,
+    })
+  }
   const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: SMTP_PORT === 465,                  // true لـ 465 (SSL)، false لـ 587 (STARTTLS)
+    secure: SMTP_PORT === 465,         // true لـ 465 (SSL مباشر)
+    requireTLS: SMTP_PORT === 587,     // ★ يَفرض STARTTLS على ٥٨٧ — لا fallback لـ cleartext
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    tls: {
+      minVersion: 'TLSv1.2',           // ★ TLS 1.2+ فقط — يَرفض SSLv3/TLSv1.0/1.1
+      rejectUnauthorized: true,        // شهاداتٌ صالحةٌ فقط (لا self-signed)
+    },
   })
 
   try {
