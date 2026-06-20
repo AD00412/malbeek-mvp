@@ -83,17 +83,31 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     return true
   }
 
-  // ── الإجراءات الستّة ──
+  // ── الإجراءات ──
   async function doSetPlan(nextPlan, reasonLabel) {
+    if (nextPlan === 'paid') {
+      // ترقيةٌ يدويّة — تَستعمل الـRPC الجديد الذي يُغلق الطلبات المُعلَّقة كذلك
+      const ok = await confirm({
+        title: 'ترقيةٌ يدويّةٌ لمدفوعة',
+        message: `${sub.org_name}: استلام دفعةٍ خارج المنصّة؟ سيُرقّى فورًا.`,
+        confirmText: 'رقّ يدويًّا', cancelText: 'إلغاء',
+      })
+      if (!ok) return
+      await rpcAction('admin_upgrade_subscriber',
+        { p_sub: sub.id, p_reason: reasonLabel },
+        'رُقّي للباقة المدفوعة ✓'
+      )
+      return
+    }
     const ok = await confirm({
-      title: nextPlan === 'paid' ? 'ترقية لباقةٍ مدفوعة' : 'إرجاعٌ لباقةٍ تجريبيّة',
+      title: 'إرجاعٌ لباقةٍ تجريبيّة',
       message: `هل تَأكّدت من ${reasonLabel}؟`,
       confirmText: 'تَنفيذ', cancelText: 'إلغاء',
     })
     if (!ok) return
     await rpcAction('set_subscriber_plan',
       { p_sub: sub.id, p_plan: nextPlan, p_reason: reasonLabel },
-      nextPlan === 'paid' ? 'رُقّيت لباقةٍ مدفوعة ✓' : 'أُعيدت لتجريبيّة ✓'
+      'أُعيدت لتجريبيّة ✓'
     )
   }
 

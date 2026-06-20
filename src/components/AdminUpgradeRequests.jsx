@@ -63,18 +63,25 @@ export default function AdminUpgradeRequests() {
     setter(msg); setTimeout(() => setter(''), 3500)
   }
 
+  async function sendDecisionEmail(r) {
+    try {
+      await supabase.functions.invoke('send-upgrade-decision', { body: { request_id: r.id } })
+    } catch { /* best-effort */ }
+  }
+
   async function doApprove(r) {
     const ok2 = await confirm({
       title: 'الموافقةُ والترقية',
-      message: `سيُرقّى «${r.org_name}» إلى الباقة المدفوعة فورًا. تأكيد؟`,
+      message: `سيُرقّى «${r.org_name}» إلى الباقة المدفوعة فورًا، ويَستلم إيميلَ تَأكيدٍ. تأكيد؟`,
       confirmText: 'وافق ورقّ', cancelText: 'إلغاء',
     })
     if (!ok2) return
     setBusy(r.id); setErr('')
     const { error } = await supabase.rpc('approve_plan_upgrade', { p_req: r.id, p_notes: null })
+    if (error) { setBusy(''); return setErr(translateRpcError(error, 'تعذّرت الموافقة.')) }
+    await sendDecisionEmail(r)
     setBusy('')
-    if (error) return setErr(translateRpcError(error, 'تعذّرت الموافقة.'))
-    flash(setOk, 'وُوفق ورُقّي ✓')
+    flash(setOk, 'وُوفق ورُقّي ✓ — أُرسل الإيميل')
     load()
   }
 
@@ -83,9 +90,10 @@ export default function AdminUpgradeRequests() {
     if (!reason || reason.trim().length < 5) return
     setBusy(r.id); setErr('')
     const { error } = await supabase.rpc('reject_plan_upgrade', { p_req: r.id, p_reason: reason.trim() })
+    if (error) { setBusy(''); return setErr(translateRpcError(error, 'تعذّر الرفض.')) }
+    await sendDecisionEmail(r)
     setBusy('')
-    if (error) return setErr(translateRpcError(error, 'تعذّر الرفض.'))
-    flash(setOk, 'رُفض الطلب')
+    flash(setOk, 'رُفض الطلب ✓ — أُرسل الإيميل')
     load()
   }
 
