@@ -13,6 +13,8 @@ import FeedbackFab, { showFeedbackFab } from '../../components/FeedbackFab'
 import { getCached, setCached, invalidate, buildPaxStats, rehydratePaxStats } from '../../lib/dataCache'
 import FeedbackInbox from '../../components/FeedbackInbox'
 import PublicMessagesInbox from '../../components/PublicMessagesInbox'
+import TeamManagement from '../../components/TeamManagement'
+import AdminAuditLog from '../../components/AdminAuditLog'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
@@ -163,6 +165,9 @@ export function AdminHome() {
     // ★ A2 — badges للـinboxes، C5 — أيقونتان مختلفتان
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message', badge: openFb || undefined },
     { key: 'messages', label: 'الرسائل العامّة', icon: 'bell',    badge: openMsg || undefined },
+    { section: 'النظام' },
+    { key: 'team',     label: 'فريق ملبّيك',     icon: 'customers' },
+    { key: 'audit',    label: 'سجلّ النَّشاط',   icon: 'manifest' },
     { section: 'الحساب' },
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
@@ -217,6 +222,8 @@ export function AdminHome() {
         {view === 'search' && <AdminPilgrimSearch />}
         {view === 'feedback' && <FeedbackInbox />}
         {view === 'messages' && <PublicMessagesInbox />}
+        {view === 'team'     && <TeamManagement />}
+        {view === 'audit'    && <AdminAuditLog />}
         </div>
       </AppShell>
 
