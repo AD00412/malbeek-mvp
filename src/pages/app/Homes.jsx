@@ -16,6 +16,7 @@ import PublicMessagesInbox from '../../components/PublicMessagesInbox'
 import TeamManagement from '../../components/TeamManagement'
 import AdminAuditLog from '../../components/AdminAuditLog'
 import AdminDashboard from '../../components/AdminDashboard'
+import AdminUpgradeRequests from '../../components/AdminUpgradeRequests'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
 import TrialBanner from '../../components/TrialBanner'
@@ -161,6 +162,7 @@ export function AdminHome() {
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     // ★ A1 — badge يَعرض الجديد هذا الأسبوع (لا العدد الكلّيّ المُضلِّل)
     { key: 'subs',     label: 'المشتركون',     icon: 'building', badge: recent7Badge(subs) || undefined },
+    { key: 'upgrades', label: 'طلبات الترقية', icon: 'payments' },
     { key: 'trips',    label: 'الرحلات',        icon: 'trips' },
     { key: 'search',   label: 'البحث',         icon: 'search' },
     // ★ A2 — badges للـinboxes، C5 — أيقونتان مختلفتان
@@ -214,6 +216,7 @@ export function AdminHome() {
           </>
         )}
         {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />}
+        {view === 'upgrades' && <AdminUpgradeRequests />}
         {view === 'trips' && <AdminAllTrips />}
         {view === 'search' && <AdminPilgrimSearch />}
         {view === 'feedback' && <FeedbackInbox />}
