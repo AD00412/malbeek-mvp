@@ -93,6 +93,7 @@ export function AdminHome() {
   const [err, setErr] = useState('')                                  // ★ A3+B1 — حالةُ خطأٍ للوحة
   const [openFb, setOpenFb] = useState(0)                            // ★ A2 — عدّاد فيدباك مفتوحة
   const [openMsg, setOpenMsg] = useState(0)                          // ★ A2 — عدّاد رسائل عامّة مفتوحة
+  const [pendingUpgrades, setPendingUpgrades] = useState(0)          // طلبات ترقية للمراجعة
   const [detailSub, setDetailSub] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -137,12 +138,14 @@ export function AdminHome() {
 
   // ★ A2 — جلبٌ مستقلٌّ لعدّادات الـinbox غير المعالجة
   const loadInboxCounts = useCallback(async () => {
-    const [fb, msg] = await Promise.all([
+    const [fb, msg, upg] = await Promise.all([
       supabase.from('feedback').select('*', { count: 'exact', head: true }).eq('status', 'open'),
       supabase.from('public_messages').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase.from('plan_upgrade_requests').select('*', { count: 'exact', head: true }).eq('status', 'submitted'),
     ])
     if (typeof fb.count === 'number') setOpenFb(fb.count)
     if (typeof msg.count === 'number') setOpenMsg(msg.count)
+    if (typeof upg.count === 'number') setPendingUpgrades(upg.count)
   }, [])
   useEffect(() => {
     let active = true
@@ -155,6 +158,7 @@ export function AdminHome() {
   useRealtime('admin-home', [
     { table: 'subscribers' }, { table: 'trips' }, { table: 'passengers' },
     { table: 'feedback' }, { table: 'public_messages' },
+    { table: 'plan_upgrade_requests' },
   ], () => { load(); loadInboxCounts() }, 400, [load, loadInboxCounts])
 
   const tabs = [
@@ -162,7 +166,7 @@ export function AdminHome() {
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     // ★ A1 — badge يَعرض الجديد هذا الأسبوع (لا العدد الكلّيّ المُضلِّل)
     { key: 'subs',     label: 'المشتركون',     icon: 'building', badge: recent7Badge(subs) || undefined },
-    { key: 'upgrades', label: 'طلبات الترقية', icon: 'payments' },
+    { key: 'upgrades', label: 'طلبات الترقية', icon: 'payments', badge: pendingUpgrades || undefined },
     { key: 'trips',    label: 'الرحلات',        icon: 'trips' },
     { key: 'search',   label: 'البحث',         icon: 'search' },
     // ★ A2 — badges للـinboxes، C5 — أيقونتان مختلفتان
@@ -354,6 +358,18 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
                      {s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}
                    </span>
                    <code className="ltr" style={{ fontSize: 11, color: 'var(--cr-300)' }}>/{s.slug}</code>
+                   <button type="button" title="نَسخ رابط الحجز"
+                           onClick={async (e) => {
+                             e.stopPropagation()
+                             const url = `${window.location.origin}/${s.slug}`
+                             try { await navigator.clipboard.writeText(url); toast('نُسخ رابطُ الحجز ✓', { type: 'success' }) }
+                             catch { toast(url, { type: 'info' }) }
+                           }}
+                           style={{ marginInlineStart: 'auto', background: 'transparent', border: 0,
+                                    color: 'var(--cr-300)', cursor: 'pointer', padding: 0,
+                                    display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11 }}>
+                     <Icon name="copy" size={11} /> نَسخ الرابط
+                   </button>
                  </div>
                  <div className="mlk-list-title">{s.org_name}</div>
                  <div className="mlk-list-meta">

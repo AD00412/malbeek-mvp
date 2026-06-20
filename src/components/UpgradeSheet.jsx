@@ -74,6 +74,10 @@ export default function UpgradeSheet({ open, onClose, onUpgraded }) {
         p_notes: notes.trim() || null,
       })
       if (error) throw error
+      // إيميلُ استلامٍ تَلقائيٌّ — best-effort
+      try {
+        await supabase.functions.invoke('send-upgrade-received', { body: { request_id: request.id } })
+      } catch { /* لا يَكسر التَّدفّق لو الإيميل فَشل */ }
       await load()
     } catch (e2) {
       setErr(translateRpcError(e2, 'تعذّر إرسالُ الإثبات.'))
