@@ -198,7 +198,18 @@ export function AdminHome() {
   return (
     <>
       <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view}
-        onTab={(k) => { if (k === 'settings') { setSettingsOpen(true); return } setView(k) }}>
+        onTab={(k) => { if (k === 'settings') { setSettingsOpen(true); return } setView(k) }}
+        onNotifNavigate={(n) => {
+          // مُوجّهٌ ذكيٌّ حَسب عنوان الإشعار
+          const t = (n.title || '') + ' ' + (n.body || '')
+          if (/ترقية|إثبات/.test(t)) { setView('upgrades'); return }
+          if (/توظيف|دعوة|موظّف/.test(t))   { setView('team'); return }
+          if (/رسالة|تواصل/.test(t))         { setView('messages'); return }
+          if (/تَغذية|راجعة/.test(t))         { setView('feedback'); return }
+          if (n.ref_feedback)                 { setView('feedback'); return }
+          // افتراضيًّا: الرئيسيّة
+          setView('overview')
+        }}>
         <div key={view} className="view-fade">
         {view === 'overview' && (
           <>
@@ -742,7 +753,10 @@ export function SubscriberHome() {
             open={searchOpen}
             subscriberId={sub.id}
             onClose={() => setSearchOpen(false)}
-            onOpenTrip={(tripId) => { const t = trips.find((x) => x.id === tripId); if (t) setManaging(t) }}
+            onOpenPassenger={(tripId, p) => {
+              const t = trips.find((x) => x.id === tripId)
+              if (t) { setManaging(t); setManageInitial({ kind: 'editPax', passenger: p }) }
+            }}
           />
         )}
 

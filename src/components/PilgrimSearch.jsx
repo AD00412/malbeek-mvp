@@ -11,9 +11,9 @@ const STATUS_CLS = { registered: 'muted', paid: 'ok', boarded: 'info', checked_i
  * @param {boolean} open
  * @param {string}  subscriberId
  * @param {Function} onClose
- * @param {Function} onOpenTrip   (tripId) => void — يفتح رحلة المعتمر
+ * @param {Function} onOpenPassenger  (tripId, passenger) => void — يفتح رحلة المعتمر + ورقة المعتمر
  */
-export default function PilgrimSearch({ open, subscriberId, onClose, onOpenTrip }) {
+export default function PilgrimSearch({ open, subscriberId, onClose, onOpenPassenger, onOpenTrip }) {
   const [q, setQ] = useState('')
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -48,7 +48,7 @@ export default function PilgrimSearch({ open, subscriberId, onClose, onOpenTrip 
     <BottomSheet open={open} onClose={onClose} title="بحثٌ عن معتمر">
       <div className="field search" style={{ marginBottom: 10 }}>
         <span className="ic"><Icon name="search" size={17} /></span>
-        <input autoFocus type="text" placeholder="الاسم / رقم الهوية / الجوال — عبر كلّ الرحلات"
+        <input type="text" placeholder="الاسم / رقم الهوية / الجوال — عبر كلّ الرحلات"
           value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
@@ -62,7 +62,13 @@ export default function PilgrimSearch({ open, subscriberId, onClose, onOpenTrip 
         <div className="pax-list">
           {rows.map((p) => (
             <button key={p.id} type="button" className="pax-row" style={{ cursor: 'pointer', textAlign: 'start' }}
-              onClick={() => { if (p.trip_id) { onOpenTrip?.(p.trip_id); onClose?.() } }}>
+              onClick={() => {
+                if (!p.trip_id) return
+                // أوّلًا: استعمال onOpenPassenger إن كان متاحًا (يَفتح الرحلة + ورقة المعتمر مباشرةً)
+                if (onOpenPassenger) onOpenPassenger(p.trip_id, p)
+                else if (onOpenTrip) onOpenTrip(p.trip_id)
+                onClose?.()
+              }}>
               <div className="pax-seat">{p.seat_no || '—'}</div>
               <div className="pax-main">
                 <div className="pax-name">{p.full_name || '—'}</div>

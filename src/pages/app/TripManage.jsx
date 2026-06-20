@@ -112,6 +112,10 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   // فتحٌ مباشرٌ لنموذجٍ معيّنٍ عند الدخول (مثلًا من جولة التهيئة: «بيانات المؤسسة»).
   useEffect(() => {
     if (initialOpen === 'crew') setCrewOpen(true)
+    else if (initialOpen?.kind === 'editPax' && initialOpen.passenger) {
+      setEditingPax(initialOpen.passenger)
+      setPaxOpen(true)
+    }
     onInitialConsumed?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -44,11 +44,15 @@ export default function NotificationsBell({ onNavigate }) {
   const load = useCallback(async () => {
     if (!user?.id || !open) return
     setLoading(true); setErr('')
+    // ★ فلترةٌ ذكيّة: لا نَجلب الإشعارات المقروءةَ القديمة (يَتراكم في الذاكرة).
+    //   نَعرض: غير المقروءة + المقروءة آخر ٧ أيّامٍ كذاكرةٍ قصيرة.
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString()
     const { data, error } = await supabase
       .from('notifications')
       .select('id, kind, title, body, ref_trip, ref_passenger, ref_feedback, read_at, created_at')
+      .or(`read_at.is.null,created_at.gte.${sevenDaysAgo}`)
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(50)
     if (error) {
       setErr('تعذّر التحميل — تحقّق من اتصالك ثمّ حدّث.')
       setLoading(false)
@@ -74,31 +78,25 @@ export default function NotificationsBell({ onNavigate }) {
     }
   }, [open])
 
-  async function markRead(id) {
-    const now = new Date().toISOString()
-    // ★ تحديثٌ تفاؤليّ فوريّ — الـUI يَنعكس قبل ردِّ الشبكة
-    setItems((prev) => prev.map((n) => n.id === id ? { ...n, read_at: now } : n))
-    const { error } = await supabase.from('notifications').update({ read_at: now }).eq('id', id)
-    if (error) {
-      // فشل → استرجع الحالة + أعد تحميل
-      setItems((prev) => prev.map((n) => n.id === id ? { ...n, read_at: null } : n))
-      load()
-    } else {
-      reloadUnread()  // حدّث شارة الجرس فورًا
-    }
+  // ★ بَدلَ مَجرّد read_at، نَحذف الإشعار بعد المعالجة لتَفادي
+  //   تَراكُمها في الذاكرة والـDB. تفاؤليٌّ فوريّ.
+  async function dismiss(id) {
+    setItems((prev) => prev.filter((n) => n.id !== id))
+    const { error } = await supabase.from('notifications').delete().eq('id', id)
+    if (error) load()
+    else reloadUnread()
   }
-  async function markAllRead() {
-    const ids = items.filter((n) => !n.read_at).map((n) => n.id)
-    if (!ids.length) return
-    const now = new Date().toISOString()
-    // ★ تحديثٌ تفاؤليّ
-    setItems((prev) => prev.map((n) => ids.includes(n.id) ? { ...n, read_at: now } : n))
-    const { error } = await supabase.from('notifications').update({ read_at: now }).in('id', ids)
-    if (error) {
-      load()  // استرجع
-    } else {
-      reloadUnread()
-    }
+  async function markRead(id) {
+    // أُبقي على هذه للحالات التي نَستعملها في onClick قبل المُلاحقة
+    return dismiss(id)
+  }
+  async function dismissAll() {
+    if (!items.length) return
+    const ids = items.map((n) => n.id)
+    setItems([])
+    const { error } = await supabase.from('notifications').delete().in('id', ids)
+    if (error) load()
+    else reloadUnread()
   }
 
   return (
@@ -116,8 +114,8 @@ export default function NotificationsBell({ onNavigate }) {
             <strong>الإشعارات</strong>
             {unread > 0 && <span className="notif-pop-count">{unread} جديد</span>}
             <span style={{ flex: 1 }} />
-            {items.some((n) => !n.read_at) && (
-              <button className="notif-pop-action" onClick={markAllRead}>تعليم الكلّ كمقروء</button>
+            {items.length > 0 && (
+              <button className="notif-pop-action" onClick={dismissAll}>مَسحُ الكلّ</button>
             )}
           </div>
 
@@ -145,8 +143,10 @@ export default function NotificationsBell({ onNavigate }) {
                     className={`notif-row ${n.read_at ? '' : 'unread'}`}
                     key={n.id}
                     onClick={() => {
-                      if (!n.read_at) markRead(n.id)
+                      // أوّلًا: تَنقّل لو مَتاحٌ، ثمّ احذف الإشعار
                       if (n.ref_trip && onNavigate) { onNavigate(n); setOpen(false) }
+                      // احذف الإشعارَ بعد القراءة دائمًا — لا تَراكم
+                      dismiss(n.id)
                     }}
                   >
                     <span className="notif-ic"><Icon name={KIND_ICON[n.kind] || 'bell'} size={15} /></span>
