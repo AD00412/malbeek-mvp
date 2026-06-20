@@ -28,8 +28,8 @@ const STATUS_LABEL = {
   cancelled:          'ملغاة',
 }
 const STATUS_TONE = {
-  pending: 'gold', submitted: 'info', prelim_approved: 'info', interview_done: 'gold',
-  final_approved: 'ok', onboarded: 'gold', active: 'ok',
+  pending: 'warn', submitted: 'info', prelim_approved: 'info', interview_done: 'warn',
+  final_approved: 'ok', onboarded: 'warn', active: 'ok',
   rejected_documents: 'danger', rejected_interview: 'danger',
   expired: 'muted', cancelled: 'muted',
 }
@@ -158,141 +158,114 @@ export default function TeamManagement() {
   const sent = invites.filter(i => !REVIEW_STATES.has(i.status))
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h3>فريق ملبّيك</h3>
-        <span style={{ flex: 1 }} />
-        <button className="icon-btn" onClick={() => { loadStaff(); loadInvites() }}
+    <div className="mlk-tab">
+      <header className="mlk-tab-head">
+        <h1 className="mlk-tab-title">فريق ملبّيك</h1>
+        <span className="mlk-tab-count">{staff.length} عضو</span>
+        <button className="mlk-action" onClick={() => { loadStaff(); loadInvites() }}
                 disabled={loadingStaff || loadingInv}>
-          {(loadingStaff || loadingInv) ? <span className="spinner" /> : <Icon name="refresh" size={15} />}
+          {(loadingStaff || loadingInv) ? <span className="spinner" /> : <Icon name="refresh" size={13} />}
           تحديث
         </button>
-      </div>
+      </header>
 
-      {/* تبويباتٌ مع شارة عدد المراجعة */}
-      <div className="chips" style={{ marginBottom: 12 }}>
-        <button className={`chip ${tab === 'staff' ? 'active' : ''}`} onClick={() => setTab('staff')}>
+      <div className="mlk-filter">
+        <button className={`mlk-fchip ${tab === 'staff' ? 'active' : ''}`} onClick={() => setTab('staff')}>
           الفريق ({staff.length})
         </button>
-        <button className={`chip ${tab === 'submitted' ? 'active' : ''}`} onClick={() => { setTab('submitted'); setReviewing(null) }}>
-          طلباتُ التَّوظيف
-          {pendingReview.length > 0 && <span className="tag gold" style={{ marginInlineStart: 6, fontSize: 10, padding: '1px 7px' }}>{pendingReview.length}</span>}
+        <button className={`mlk-fchip ${tab === 'submitted' ? 'active' : ''}`} onClick={() => { setTab('submitted'); setReviewing(null) }}>
+          طلباتُ التَّوظيف{pendingReview.length > 0 ? ` (${pendingReview.length})` : ''}
         </button>
-        <button className={`chip ${tab === 'sent' ? 'active' : ''}`} onClick={() => setTab('sent')}>
+        <button className={`mlk-fchip ${tab === 'sent' ? 'active' : ''}`} onClick={() => setTab('sent')}>
           الدعوات ({sent.length})
         </button>
       </div>
 
-      {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
-      {ok  && <div className="alert ok"  style={{ marginBottom: 10 }}>{ok}</div>}
+      {err && <div className="alert err">{err}</div>}
+      {ok  && <div className="alert ok">{ok}</div>}
 
-      {/* نموذج إرسال دعوةٍ جديدة — Admin فقط */}
+      {/* نموذجُ إرسال دعوةٍ جديدة — Admin فقط */}
       {isAdmin && tab !== 'staff' && (
-        <form onSubmit={sendInvitation} className="form"
-              style={{ marginBottom: 14, padding: 14, background: 'var(--bg-2)', borderRadius: 12 }}>
-          <div className="sec-label" style={{ marginTop: 0 }}>
-            <Icon name="mail" size={14} /> إرسالُ دعوةٍ جديدة
-          </div>
-          <div className="grid-2">
-            <div className="field ltr">
-              <label>البريد</label>
-              <input type="email" placeholder="staff@example.com" value={addEmail}
-                     onChange={(e) => setAddEmail(e.target.value)} required />
+        <form onSubmit={sendInvitation} className="mlk-card is-feature">
+          <h2 className="mlk-h2">إرسالُ دعوةٍ جديدة</h2>
+          <div className="form">
+            <div className="grid-2">
+              <div className="field ltr">
+                <label>البريد</label>
+                <input type="email" placeholder="staff@example.com" value={addEmail}
+                       onChange={(e) => setAddEmail(e.target.value)} required />
+              </div>
+              <div className="field">
+                <label>الدور المقترح</label>
+                <select value={addRole} onChange={(e) => setAddRole(e.target.value)}>
+                  <option value="support">دعم — قراءةٌ والردُّ على الرسائل</option>
+                  <option value="admin">أدمن — صلاحيّةٌ كاملة</option>
+                </select>
+              </div>
             </div>
-            <div className="field">
-              <label>الدور المقترح</label>
-              <select value={addRole} onChange={(e) => setAddRole(e.target.value)}>
-                <option value="support">دعم — قراءةٌ والردُّ على الرسائل</option>
-                <option value="admin">أدمن — صلاحيّةٌ كاملة</option>
-              </select>
-            </div>
-          </div>
-          <div className="actions-row">
-            <button className="btn btn-em btn-sm" type="submit" disabled={sending || !addEmail}>
-              {sending ? <span className="spinner" /> : <><Icon name="send" size={14} /> أرسل الدعوة</>}
+            <button className="mlk-action primary" type="submit" disabled={sending || !addEmail}
+                    style={{ marginTop: 12 }}>
+              {sending ? <span className="spinner" /> : 'أرسل الدعوة'}
             </button>
           </div>
-          <span className="hint" style={{ marginTop: 8, display: 'block' }}>
-            سيَستلم البريدُ رابطَ دعوةٍ شخصيًّا، يَملأ فيه بياناتِه، ثمّ تُراجعها الإدارة.
-          </span>
         </form>
       )}
 
       {/* تبويب: الفريق */}
       {tab === 'staff' && (
         loadingStaff ? <SkeletonList count={3} /> :
-        staff.length === 0 ? <div className="empty"><div className="em-ttl">لا يَوجد فريقٌ بعد</div></div> :
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        staff.length === 0 ? <div className="mlk-empty">لا يَوجد فريقٌ بعد</div> :
+        <ul className="mlk-list">
           {staff.map((s) => {
             const isMe = s.profile_id === profile?.id
             return (
-              <div key={s.profile_id} className="trip-card" style={{ padding: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 38, height: 38, borderRadius: '50%',
-                    background: s.role === 'admin' ? 'var(--grad-gold)' : 'rgba(58,160,179,.18)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: s.role === 'admin' ? 'var(--em-950)' : 'var(--info-ink)', fontWeight: 800 }}>
-                    {(s.full_name || s.email || '?').charAt(0)}
+              <li key={s.profile_id} className="mlk-list-row">
+                <div className="mlk-list-body">
+                  <div className="mlk-list-meta">
+                    <span className={`mlk-pill ${s.role === 'admin' ? 'em' : 'info'}`}>{ROLE_LABEL[s.role]}</span>
+                    {isMe && <span className="mlk-pill muted">أنت</span>}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--cr-50)' }}>
-                      {s.full_name || '—'}
-                      {isMe && <span className="tag muted" style={{ fontSize: 9, marginInlineStart: 6 }}>أنت</span>}
-                    </div>
-                    <div className="muted ltr" style={{ fontSize: 12 }}>{s.email}</div>
-                  </div>
-                  <span className={`tag ${s.role === 'admin' ? 'gold' : 'info'}`}>{ROLE_LABEL[s.role]}</span>
+                  <div className="mlk-list-title">{s.full_name || '—'}</div>
+                  <div className="mlk-list-meta ltr">{s.email}</div>
                 </div>
-                <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{ROLE_HINT[s.role]}</div>
                 {isAdmin && !isMe && (
-                  <div className="actions-row" style={{ marginTop: 10 }}>
-                    <button className="icon-btn" onClick={() => removeMember(s)}
-                            disabled={busyId === s.profile_id}
-                            style={{ color: 'var(--danger-ink)' }}>
-                      <Icon name="trash" size={14} /> نَزع
-                    </button>
-                  </div>
+                  <button className="mlk-action danger" onClick={() => removeMember(s)}
+                          disabled={busyId === s.profile_id}>
+                    نَزع
+                  </button>
                 )}
-              </div>
+              </li>
             )
           })}
-        </div>
+        </ul>
       )}
 
-      {/* تبويب: للمراجعة — قائمةٌ مختصرة، النقر يَفتح المراجعةَ التَّفصيليّة */}
+      {/* تبويب: للمراجعة */}
       {tab === 'submitted' && !reviewing && (
         loadingInv ? <SkeletonList count={2} /> :
-        pendingReview.length === 0 ? <div className="empty"><div className="em-ttl">لا توجد طلباتُ توظيفٍ نَشِطة</div></div> :
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        pendingReview.length === 0 ? <div className="mlk-empty">لا توجد طلباتُ توظيفٍ نَشِطة</div> :
+        <ul className="mlk-list">
           {pendingReview.map(inv => (
-            <button key={inv.id} className="trip-card"
-                    onClick={() => setReviewing(inv)}
-                    style={{ padding: 12, textAlign: 'inherit', cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <strong style={{ flex: 1 }}>{inv.applicant_full_name || '—'}</strong>
-                <span className={`tag ${STATUS_TONE[inv.status]}`}>{STATUS_LABEL[inv.status]}</span>
-                <span className={`tag ${inv.invited_role === 'admin' ? 'gold' : 'info'}`}>
-                  {ROLE_LABEL[inv.invited_role]}
-                </span>
-              </div>
-              <div className="muted ltr" style={{ fontSize: 12 }}>{inv.email}</div>
-              {inv.applicant_phone && (
-                <div className="ltr" style={{ fontSize: 13, marginTop: 4 }}>📞 {inv.applicant_phone}</div>
-              )}
-              {inv.interview_at && inv.status === 'prelim_approved' && (
-                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                  🗓 مقابلة: {fmtDateTime(inv.interview_at)}
+            <li key={inv.id}>
+              <button type="button" className="mlk-list-row is-button" onClick={() => setReviewing(inv)}>
+                <div className="mlk-list-body">
+                  <div className="mlk-list-meta">
+                    <span className={`mlk-pill ${STATUS_TONE[inv.status]}`}>{STATUS_LABEL[inv.status]}</span>
+                    <span className={`mlk-pill ${inv.invited_role === 'admin' ? 'em' : 'info'}`}>{ROLE_LABEL[inv.invited_role]}</span>
+                  </div>
+                  <div className="mlk-list-title">{inv.applicant_full_name || inv.email}</div>
+                  <div className="mlk-list-meta">
+                    {inv.applicant_phone && <span className="ltr">{inv.applicant_phone}</span>}
+                    {inv.interview_at && inv.status === 'prelim_approved' && (
+                      <span>مقابلة: {fmtDateTime(inv.interview_at)}</span>
+                    )}
+                  </div>
                 </div>
-              )}
-              <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>
-                {inv.onboarded_at ? `مَلأ النموذج: ${fmtDateTime(inv.onboarded_at)}`
-                  : inv.submitted_at ? `رُفع: ${fmtDateTime(inv.submitted_at)}`
-                  : `أُرسل: ${fmtDateTime(inv.created_at)}`}
-                <span style={{ marginInlineStart: 8 }}>← اضغط للمراجعة</span>
-              </div>
-            </button>
+                <span className="mlk-list-time">←</span>
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {/* لوحةُ المراجعة التَّفصيليّة */}
@@ -307,37 +280,30 @@ export default function TeamManagement() {
       {/* تبويب: كلّ الدعوات المُرسَلة */}
       {tab === 'sent' && (
         loadingInv ? <SkeletonList count={2} /> :
-        sent.length === 0 ? <div className="empty"><div className="em-ttl">لا توجد دعوات</div></div> :
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        sent.length === 0 ? <div className="mlk-empty">لا توجد دعوات</div> :
+        <ul className="mlk-list">
           {sent.map(inv => (
-            <div key={inv.id} className="trip-card" style={{ padding: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="ltr" style={{ fontWeight: 600, fontSize: 13 }}>{inv.email}</div>
-                  <div className="muted" style={{ fontSize: 11 }}>
-                    {fmtDateTime(inv.created_at)} · {ROLE_LABEL[inv.invited_role]}
-                  </div>
+            <li key={inv.id} className="mlk-list-row">
+              <div className="mlk-list-body">
+                <div className="mlk-list-meta">
+                  <span className={`mlk-pill ${STATUS_TONE[inv.status]}`}>{STATUS_LABEL[inv.status]}</span>
+                  <span>·</span>
+                  <span>{ROLE_LABEL[inv.invited_role]}</span>
+                  <span className="mlk-list-time" style={{ marginInlineStart: 'auto' }}>{fmtDateTime(inv.created_at)}</span>
                 </div>
-                <span className={`tag ${STATUS_TONE[inv.status]}`}>{STATUS_LABEL[inv.status]}</span>
+                <div className="mlk-list-title ltr">{inv.email}</div>
+                {inv.reject_reason && (
+                  <div className="mlk-list-meta">سببُ الرفض: {inv.reject_reason}</div>
+                )}
               </div>
-              {inv.reject_reason && (
-                <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                  سببُ الرفض: {inv.reject_reason}
-                </div>
-              )}
               {isAdmin && inv.status === 'pending' && (
-                <div className="actions-row" style={{ marginTop: 8 }}>
-                  <button className="icon-btn" onClick={() => cancelInv(inv)}
-                          disabled={busyId === inv.id}
-                          style={{ color: 'var(--danger-ink)' }}>
-                    <Icon name="x" size={14} /> إلغاء الدعوة
-                  </button>
-                </div>
+                <button className="mlk-action danger" onClick={() => cancelInv(inv)}
+                        disabled={busyId === inv.id}>إلغاء</button>
               )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </section>
+    </div>
   )
 }

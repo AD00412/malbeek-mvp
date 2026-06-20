@@ -2042,3 +2042,75 @@ body.fab-interacting *{
 .mlk-recent-time{font-size:11.5px;color:var(--cr-300);font-weight:500;flex:none}
 .mlk-recent-empty{padding:24px;text-align:center;color:var(--cr-300);font-size:13px;
   border:1px dashed var(--line);border-radius:12px}
+
+/* ============================================================
+   هويّةُ v4 — أَدواتٌ مُشتركةٌ للتبويبات
+   ============================================================ */
+
+/* وعاءُ تَبويبٍ مُوحَّد */
+.mlk-tab{display:flex;flex-direction:column;gap:18px;font-family:var(--font-sans)}
+.mlk-tab-head{display:flex;align-items:center;gap:10px;padding-bottom:14px;
+  border-bottom:1px solid var(--line)}
+.mlk-tab-title{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--cr-50);
+  margin:0;letter-spacing:-.3px;flex:1}
+.mlk-tab-count{font-size:12.5px;color:var(--cr-300);font-weight:500}
+
+/* عنوانٌ ثَانويّ */
+.mlk-h2{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--cr-50);
+  margin:0 0 10px;letter-spacing:-.2px}
+
+/* مُرشِّحاتٌ نَظيفة */
+.mlk-filter{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin:-4px 0 0;
+  scrollbar-width:thin}
+.mlk-filter::-webkit-scrollbar{height:4px}
+.mlk-filter::-webkit-scrollbar-thumb{background:var(--line)}
+.mlk-fchip{flex:none;padding:7px 14px;border-radius:8px;background:transparent;
+  border:1px solid var(--line);color:var(--cr-300);font-size:13px;font-weight:600;
+  cursor:pointer;transition:border-color .15s,color .15s,background .15s;font-family:inherit}
+.mlk-fchip:hover{color:var(--cr-100);border-color:var(--line-strong)}
+.mlk-fchip.active{background:var(--em-700);border-color:var(--em-700);color:#fff}
+
+/* قائمةٌ بسيطةٌ مُوحَّدة (admin tabs) */
+.mlk-list{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:12px;
+  overflow:hidden;background:var(--surface)}
+.mlk-list-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--line);transition:background .15s}
+.mlk-list-row:last-child{border-bottom:0}
+.mlk-list-row:hover{background:var(--surface-2)}
+.mlk-list-row.is-button{cursor:pointer;width:100%;text-align:start;color:inherit;font:inherit}
+.mlk-list-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mlk-list-title{font-size:14px;color:var(--cr-50);font-weight:700}
+.mlk-list-meta{font-size:12px;color:var(--cr-300);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mlk-list-time{font-size:11.5px;color:var(--cr-300);flex:none}
+
+/* بطاقةٌ تَنفيذيّةٌ بسيطة */
+.mlk-card{padding:16px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.mlk-card.is-feature{border-inline-start:3px solid var(--em-500)}
+
+/* فراغُ التَّبويب */
+.mlk-empty{padding:30px 20px;text-align:center;color:var(--cr-300);font-size:13.5px;
+  border:1px dashed var(--line);border-radius:12px;background:var(--surface)}
+
+/* شريطُ حالةٍ صَغير (badge) */
+.mlk-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:.2px;line-height:1.4}
+.mlk-pill.em{background:rgba(16,185,129,.12);color:var(--em-500)}
+.mlk-pill.ok{background:rgba(43,182,140,.12);color:var(--ok-ink)}
+.mlk-pill.warn{background:rgba(251,191,36,.14);color:#b45309}
+.mlk-pill.info{background:rgba(6,182,212,.14);color:var(--info-ink)}
+.mlk-pill.danger{background:rgba(239,68,68,.14);color:var(--danger-ink)}
+.mlk-pill.muted{background:var(--surface-2);color:var(--cr-300)}
+
+/* زرٌّ نَصّيٌّ مُوحَّد */
+.mlk-action{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;
+  background:transparent;border:1px solid var(--line);color:var(--cr-100);font-size:13px;font-weight:600;
+  cursor:pointer;transition:border-color .15s,color .15s,background .15s;font-family:inherit}
+.mlk-action:hover{border-color:var(--em-500);color:var(--em-500)}
+.mlk-action.primary{background:var(--em-700);border-color:var(--em-700);color:#fff}
+.mlk-action.primary:hover{background:var(--em-800);border-color:var(--em-800);color:#fff}
+.mlk-action.danger{color:var(--danger-ink)}
+.mlk-action.danger:hover{border-color:var(--danger-ink);background:rgba(239,68,68,.06)}
+
+:root[data-theme="light"] .mlk-fchip.active,
+:root[data-theme="light"] .mlk-action.primary{background:#065f46;border-color:#065f46}
+:root[data-theme="light"] .mlk-action.primary:hover{background:#064e3b;border-color:#064e3b}

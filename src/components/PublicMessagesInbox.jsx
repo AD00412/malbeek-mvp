@@ -8,7 +8,7 @@ const KIND_AR = {
   question: 'سؤال', feature: 'ميزة',
 }
 const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمّت', spam: 'سبام' }
-const STATUS_CLS = { open: 'warn', in_progress: 'info', resolved: 'ok', spam: 'muted' }
+const STATUS_TONE = { open: 'warn', in_progress: 'info', resolved: 'ok', spam: 'muted' }
 
 function fmt(v) {
   if (!v) return '—'
@@ -78,19 +78,17 @@ export default function PublicMessagesInbox() {
   }
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h3>صندوق الرسائل العامّة</h3>
-        <span className="sub">({rows.length})</span>
-        <span style={{ flex: 1 }} />
-        <button className="icon-btn" onClick={load} disabled={loading}>
-          {loading ? <span className="spinner" /> : <Icon name="refresh" size={15} />}
+    <div className="mlk-tab">
+      <header className="mlk-tab-head">
+        <h1 className="mlk-tab-title">الرسائل العامّة</h1>
+        <span className="mlk-tab-count">{rows.length} رسالة</span>
+        <button className="mlk-action" onClick={load} disabled={loading}>
+          {loading ? <span className="spinner" /> : <Icon name="refresh" size={13} />}
           تحديث
         </button>
-      </div>
+      </header>
 
-      {/* ★ C1 — نَفسُ ترتيب الفلاتر في FeedbackInbox + spam في النهاية قبل الكلّ */}
-      <div className="chips" style={{ marginTop: 0, marginBottom: 8 }}>
+      <div className="mlk-filter">
         {[
           { k: 'open',        t: 'مفتوحة' },
           { k: 'in_progress', t: 'قيد المعالجة' },
@@ -98,91 +96,81 @@ export default function PublicMessagesInbox() {
           { k: 'spam',        t: 'سبام' },
           { k: 'all',         t: 'الكل' },
         ].map((c) => (
-          <button key={c.k} className={`chip ${filter === c.k ? 'active' : ''}`} onClick={() => setFilter(c.k)}>{c.t}</button>
+          <button key={c.k} className={`mlk-fchip ${filter === c.k ? 'active' : ''}`}
+                  onClick={() => setFilter(c.k)}>{c.t}</button>
         ))}
       </div>
 
-      {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
-      {ok  && <div className="alert ok"  style={{ marginBottom: 10 }}>{ok}</div>}
+      {err && <div className="alert err">{err}</div>}
+      {ok  && <div className="alert ok">{ok}</div>}
 
-      {loading ? (
-        <SkeletonList count={4} />
-      ) : rows.length === 0 ? (
-        <div className="empty"><div className="em-ttl">لا توجد رسائلُ في هذه التصفية</div></div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {rows.map((m) => (
-            <div key={m.id} className="trip-card" style={{ padding: 14 }}>
-              <div className="tags">
-                <span className="tag gold">{KIND_AR[m.kind] || m.kind}</span>
-                <span className={`tag ${STATUS_CLS[m.status] || 'muted'}`}>{STATUS_AR[m.status] || m.status}</span>
-                <span className="tag muted">{fmt(m.created_at)}</span>
-              </div>
-              <div style={{ marginTop: 6, fontSize: 13, color: 'var(--cr-300)' }}>
-                <strong style={{ color: 'var(--cr-100)' }}>{m.name}</strong>
-                <span> · </span>
-                <a href={`mailto:${encodeURIComponent(m.email)}`}
-                   style={{ color: 'var(--em-300)', textDecoration: 'none' }}
-                   dir="ltr">{m.email}</a>
-              </div>
-              {m.subject && <div style={{ fontWeight: 700, color: 'var(--cr-50)', marginTop: 6 }}>{m.subject}</div>}
-              <div className="muted" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap', marginTop: 4 }}>{m.body}</div>
-              {/* ★ B5 — مرفقاتٌ كروابطَ موقَّعةٍ قابلةٍ للفتح (٧ أيّامٍ) */}
-              {Array.isArray(m.attachments) && m.attachments.length > 0 && (
-                <PublicAttachmentLinks paths={m.attachments} />
-              )}
+      {loading ? <SkeletonList count={4} /> :
+       rows.length === 0 ? <div className="mlk-empty">لا توجد رسائلُ في هذه التصفية</div> :
+       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+         {rows.map((m) => (
+           <article key={m.id} className="mlk-card">
+             <div className="mlk-list-meta" style={{ marginBottom: 6 }}>
+               <span className="mlk-pill em">{KIND_AR[m.kind] || m.kind}</span>
+               <span className={`mlk-pill ${STATUS_TONE[m.status] || 'muted'}`}>{STATUS_AR[m.status] || m.status}</span>
+               <span style={{ marginInlineStart: 'auto', fontSize: 11.5, color: 'var(--cr-300)' }}>{fmt(m.created_at)}</span>
+             </div>
+             <div style={{ fontSize: 13, color: 'var(--cr-100)', marginBottom: 4 }}>
+               <strong>{m.name}</strong> · <a href={`mailto:${m.email}`} dir="ltr" style={{ color: 'var(--em-500)' }}>{m.email}</a>
+             </div>
+             {m.subject && <div className="mlk-list-title" style={{ marginTop: 6 }}>{m.subject}</div>}
+             <div style={{ fontSize: 13.5, color: 'var(--cr-200)', whiteSpace: 'pre-wrap', marginTop: 4, lineHeight: 1.7 }}>{m.body}</div>
 
-              {m.reply && (
-                <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)' }}>
-                  <div style={{ fontSize: 12, color: 'var(--ok-ink)', fontWeight: 700, marginBottom: 4 }}>ردُّ ملبّيك · {fmt(m.replied_at)}</div>
-                  <div style={{ fontSize: 13.5, color: 'var(--cr-100)', whiteSpace: 'pre-wrap' }}>{m.reply}</div>
-                </div>
-              )}
+             {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+               <PublicAttachmentLinks paths={m.attachments} />
+             )}
 
-              {editing === m.id ? (
-                <div className="form" style={{ marginTop: 10 }}>
-                  <div className="field">
-                    <label>الردّ المنسَّق (سيُرسَل لـ {m.email})</label>
-                    <textarea rows={4} value={reply} onChange={(e) => setReply(e.target.value)}
-                              placeholder="اكتب ردًّا واضحًا — سيُرسل في قالبِ ملبّيك المنسَّق…" />
-                    <span className="hint">{reply.length}/8000</span>
-                  </div>
-                  <div className="actions-row">
-                    <button className="btn btn-em btn-sm" onClick={() => sendReply(m)} disabled={busy}>
-                      {busy ? <><span className="spinner" /> جارٍ الإرسال…</> : <><Icon name="check" size={15} /> إرسال الردّ</>}
-                    </button>
-                    <button className="icon-btn" onClick={() => { setEditing(null); setReply('') }} disabled={busy}>إلغاء</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="actions-row" style={{ marginTop: 10 }}>
-                  {m.status !== 'resolved' && m.status !== 'spam' && (
-                    <button className="icon-btn" onClick={() => { setEditing(m.id); setReply(m.reply || '') }}>
-                      <Icon name="message" size={15} /> ردّ منسَّق
-                    </button>
-                  )}
-                  {m.status === 'open' && (
-                    <button className="icon-btn" onClick={() => patch(m.id, { status: 'in_progress' })} disabled={busy}>قيد المعالجة</button>
-                  )}
-                  {/* ★ C6 — زرّ «إغلاق» الأبرز يَحصل على btn-em */}
-                  {m.status !== 'resolved' && m.status !== 'spam' && (
-                    <button className="btn btn-em btn-sm" onClick={() => patch(m.id, { status: 'resolved', replied_at: new Date().toISOString() })} disabled={busy}>
-                      <Icon name="check" size={15} /> إغلاق
-                    </button>
-                  )}
-                  {m.status !== 'spam' && (
-                    <button className="icon-btn" onClick={() => patch(m.id, { status: 'spam' })} disabled={busy}>سبام</button>
-                  )}
-                  {m.status === 'spam' && (
-                    <button className="icon-btn" onClick={() => patch(m.id, { status: 'open' })} disabled={busy}>إعادة فتح</button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+             {m.reply && (
+               <div className="mlk-card is-feature" style={{ marginTop: 10 }}>
+                 <div className="mlk-list-meta">ردُّ ملبّيك · {fmt(m.replied_at)}</div>
+                 <div style={{ fontSize: 13.5, color: 'var(--cr-100)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{m.reply}</div>
+               </div>
+             )}
+
+             {editing === m.id ? (
+               <div className="form" style={{ marginTop: 10 }}>
+                 <div className="field">
+                   <label>الردّ المنسَّق (سيُرسَل لـ {m.email})</label>
+                   <textarea rows={4} value={reply} onChange={(e) => setReply(e.target.value)}
+                             placeholder="اكتب ردًّا واضحًا…" />
+                   <span className="hint">{reply.length}/8000</span>
+                 </div>
+                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                   <button className="mlk-action primary" onClick={() => sendReply(m)} disabled={busy}>
+                     {busy ? <><span className="spinner" /> إرسال…</> : 'إرسال الردّ'}
+                   </button>
+                   <button className="mlk-action" onClick={() => { setEditing(null); setReply('') }} disabled={busy}>إلغاء</button>
+                 </div>
+               </div>
+             ) : (
+               <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                 {m.status !== 'resolved' && m.status !== 'spam' && (
+                   <button className="mlk-action" onClick={() => { setEditing(m.id); setReply(m.reply || '') }}>
+                     ردّ منسَّق
+                   </button>
+                 )}
+                 {m.status === 'open' && (
+                   <button className="mlk-action" onClick={() => patch(m.id, { status: 'in_progress' })} disabled={busy}>قيد المعالجة</button>
+                 )}
+                 {m.status !== 'resolved' && m.status !== 'spam' && (
+                   <button className="mlk-action primary" onClick={() => patch(m.id, { status: 'resolved', replied_at: new Date().toISOString() })} disabled={busy}>إغلاق</button>
+                 )}
+                 {m.status !== 'spam' && (
+                   <button className="mlk-action" onClick={() => patch(m.id, { status: 'spam' })} disabled={busy}>سبام</button>
+                 )}
+                 {m.status === 'spam' && (
+                   <button className="mlk-action" onClick={() => patch(m.id, { status: 'open' })} disabled={busy}>إعادة فتح</button>
+                 )}
+               </div>
+             )}
+           </article>
+         ))}
+       </div>}
+    </div>
   )
 }
 
