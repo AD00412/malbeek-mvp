@@ -11,7 +11,12 @@ import Icon from './Icon'
  * @param {Function} onShare
  * @param {Function} onManageFirst   فتح إدارة أوّل رحلة (لإضافة معتمر/ضبط الباص)
  */
-export default function OnboardingChecklist({ sub, trips = [], totals, onCreateTrip, onShare, onManageFirst, onOrgData }) {
+export default function OnboardingChecklist({ sub, trips = [], totals, onCreateTrip, onShare, onManageFirst, onOrgData, loading = false }) {
+  // ★ لا نَرسم البطاقةَ قبل أن تَصل البياناتُ الفعليّةُ — يَمنع وميضًا
+  //   من ٠٪ (state أوّليّ فارغ) إلى ٢٥٪ (بعد load). نَنتظرُ sub.
+  //   لو sub موجودٌ من cache نَرسم فورًا بقيمته الحقيقيّة.
+  if (loading && !sub) return null
+  if (!sub) return null   // مالكٌ جديدٌ بلا حملة بعد — لا داعي للبطاقة
   const hasTrip = trips.length > 0
   // «ضبط الباص» مُنجَزٌ فعلًا حين تحوي رحلةٌ صفوفًا وسياسة مقاعد — لا بمجرّد وجود رحلة.
   const hasBusSetup = trips.some((t) => t?.bus_rows && t?.seating_policy)

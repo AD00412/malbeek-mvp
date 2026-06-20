@@ -595,25 +595,34 @@ export function SubscriberHome() {
               <>
                 <PendingInviteBanner />
                 <TrialBanner sub={sub} />
-                <Overview
-                  sub={sub}
-                  profile={profile}
-                  trips={trips}
-                  totalSeats={totalSeats}
-                  planLabel={planLabel}
-                  totals={paxStats.totals}
-                  paxByTrip={paxStats.byTrip}
-                  onCreate={openCreate}
-                  onShare={() => setShareOpen(true)}
-                  onAnalytics={() => setView('analytics')}
-                  onScan={() => setScanMode('pick')}
-                  onManage={(t) => setManaging(t)}
-                  onSearch={() => setSearchOpen(true)}
-                />
+                {/* ★ لا نَرسم Overview قبل وصول sub فعلًا — يَمنع ومضةَ ٠/٠
+                    قبل ظهور الأرقام الحقيقيّة. SWR cache يَحلّ هذا للزائر
+                    العائد، لكنّ الزائر الجديد (بلا cache) كان يَرى أصفارًا
+                    ثوانٍ قبل الأرقام الفعليّة. */}
+                {(!loading || sub) ? (
+                  <Overview
+                    sub={sub}
+                    profile={profile}
+                    trips={trips}
+                    totalSeats={totalSeats}
+                    planLabel={planLabel}
+                    totals={paxStats.totals}
+                    paxByTrip={paxStats.byTrip}
+                    onCreate={openCreate}
+                    onShare={() => setShareOpen(true)}
+                    onAnalytics={() => setView('analytics')}
+                    onScan={() => setScanMode('pick')}
+                    onManage={(t) => setManaging(t)}
+                    onSearch={() => setSearchOpen(true)}
+                  />
+                ) : (
+                  <OverviewSkeleton />
+                )}
                 <OnboardingChecklist
                   sub={sub}
                   trips={trips}
                   totals={paxStats.totals}
+                  loading={loading}
                   onCreateTrip={openCreate}
                   onShare={() => setShareOpen(true)}
                   onManageFirst={manageFirst}
@@ -734,6 +743,29 @@ function daysLabel(depart) {
   if (d === 2) return 'بعد يومين'
   if (d <= 10) return `بعد ${d} أيّام`
   return `بعد ${d} يومًا`
+}
+
+/* ---------- هيكلٌ عظميٌّ للنظرة العامّة قبل وصول البيانات ----------
+   يَمنع وميضَ «٠ معتمر · ٠٪» قبل ظهور القيم الحقيقيّة. النَّسجُ بسيطٌ
+   لا يَستهلك طاقةً — مجرّدُ صناديقَ رماديّةٍ بنبضةٍ خفيفة. */
+function OverviewSkeleton() {
+  return (
+    <>
+      <section className="hero" style={{ opacity: .6 }}>
+        <span className="tag" style={{ background: 'rgba(255,255,255,.06)', color: 'transparent' }}>منصّة عُمرة</span>
+        <h2 style={{ background: 'rgba(255,255,255,.05)', color: 'transparent', borderRadius: 6, width: '60%' }}>—</h2>
+        <p style={{ background: 'rgba(255,255,255,.04)', color: 'transparent', borderRadius: 6, width: '85%' }}>—</p>
+      </section>
+      <div className="stats" style={{ opacity: .55 }}>
+        {[0,1,2,3].map((i) => (
+          <div className="stat" key={i}>
+            <div className="top" style={{ color: 'transparent' }}>—</div>
+            <div className="v" style={{ color: 'transparent' }}>—</div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
 }
 
 /* ---------- نظرة عامة ---------- */
