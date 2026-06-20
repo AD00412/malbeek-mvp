@@ -83,9 +83,13 @@ export default function PublicMessagesInbox() {
         <h3>صندوق الرسائل العامّة</h3>
         <span className="sub">({rows.length})</span>
         <span style={{ flex: 1 }} />
-        <button className="icon-btn" onClick={load} disabled={loading}><Icon name="refresh" size={15} /> تحديث</button>
+        <button className="icon-btn" onClick={load} disabled={loading}>
+          {loading ? <span className="spinner" /> : <Icon name="refresh" size={15} />}
+          تحديث
+        </button>
       </div>
 
+      {/* ★ C1 — نَفسُ ترتيب الفلاتر في FeedbackInbox + spam في النهاية قبل الكلّ */}
       <div className="chips" style={{ marginTop: 0, marginBottom: 8 }}>
         {[
           { k: 'open',        t: 'مفتوحة' },
@@ -123,10 +127,9 @@ export default function PublicMessagesInbox() {
               </div>
               {m.subject && <div style={{ fontWeight: 700, color: 'var(--cr-50)', marginTop: 6 }}>{m.subject}</div>}
               <div className="muted" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap', marginTop: 4 }}>{m.body}</div>
+              {/* ★ B5 — مرفقاتٌ كروابطَ موقَّعةٍ قابلةٍ للفتح (٧ أيّامٍ) */}
               {Array.isArray(m.attachments) && m.attachments.length > 0 && (
-                <div style={{ marginTop: 6, fontSize: 12, color: 'var(--cr-300)' }}>
-                  📎 {m.attachments.length} مرفق(ات)
-                </div>
+                <PublicAttachmentLinks paths={m.attachments} />
               )}
 
               {m.reply && (
@@ -161,8 +164,9 @@ export default function PublicMessagesInbox() {
                   {m.status === 'open' && (
                     <button className="icon-btn" onClick={() => patch(m.id, { status: 'in_progress' })} disabled={busy}>قيد المعالجة</button>
                   )}
+                  {/* ★ C6 — زرّ «إغلاق» الأبرز يَحصل على btn-em */}
                   {m.status !== 'resolved' && m.status !== 'spam' && (
-                    <button className="icon-btn" onClick={() => patch(m.id, { status: 'resolved', replied_at: new Date().toISOString() })} disabled={busy}>
+                    <button className="btn btn-em btn-sm" onClick={() => patch(m.id, { status: 'resolved', replied_at: new Date().toISOString() })} disabled={busy}>
                       <Icon name="check" size={15} /> إغلاق
                     </button>
                   )}
@@ -179,5 +183,43 @@ export default function PublicMessagesInbox() {
         </div>
       )}
     </section>
+  )
+}
+
+/** يَكسر مرفقات الرسائل العامّة إلى روابطَ موقّعة (٧ أيّامٍ). */
+function PublicAttachmentLinks({ paths }) {
+  const [urls, setUrls] = useState({})
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!Array.isArray(paths) || paths.length === 0) return
+      const { data } = await supabase.storage
+        .from('public-attachments').createSignedUrls(paths, 60 * 60 * 24 * 7)
+      if (cancelled) return
+      const map = {}
+      for (const s of data ?? []) if (s.path && s.signedUrl) map[s.path] = s.signedUrl
+      setUrls(map)
+    })()
+    return () => { cancelled = true }
+  }, [paths])
+
+  return (
+    <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--bg-3)', borderRadius: 8, border: '1px solid var(--cr-800)' }}>
+      <div style={{ fontSize: 12, color: 'var(--cr-300)', marginBottom: 6 }}>📎 المرفقات ({paths.length})</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {paths.map((p, i) => {
+          const url = urls[p]
+          const filename = (p.split('/').pop() || `مرفق ${i + 1}`).replace(/^\d{10,}-[a-z0-9]+-/i, '')
+          return url ? (
+            <a key={p} href={url} target="_blank" rel="noreferrer"
+               style={{ fontSize: 13, color: 'var(--em-300)', textDecoration: 'none', wordBreak: 'break-all' }}>
+              ↓ {filename}
+            </a>
+          ) : (
+            <span key={p} style={{ fontSize: 13, color: 'var(--cr-400)' }}>{filename}</span>
+          )
+        })}
+      </div>
+    </div>
   )
 }

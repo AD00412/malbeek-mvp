@@ -4,7 +4,7 @@ import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 import { useUI } from '../lib/useUI'
-import { fmtDateTime } from '../lib/format'
+import { fmtDateTime, normalizePhone } from '../lib/format'
 
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
 
@@ -19,6 +19,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const [busy, setBusy] = useState(false)
   const { toast } = useUI()
 
+  // ★ A5 — التبعيّةُ على sub?.id بدل الكائن sub (لا re-fetch زائدٌ، لا سباق)
   useEffect(() => {
     if (!open || !sub?.id) return
     let alive = true
@@ -35,7 +36,8 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
       setLoading(false)
     })()
     return () => { alive = false }
-  }, [open, sub])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sub?.id])
 
   if (!sub) return null
 
@@ -61,10 +63,12 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     <BottomSheet open={open} onClose={onClose} title={sub.org_name || 'تفاصيل الحملة'}>
       {/* بطاقة الباقة + معرّف الحملة */}
       <div className="acct-card" style={{ marginBottom: 12 }}>
+        {/* ★ C3 — أيقوناتٌ بدل glyphs (sparkle للمدفوع، trial chip للباقة التجريبيّة) */}
         <div className="acct-card-av" style={{ background: sub.plan === 'paid'
           ? 'linear-gradient(135deg,var(--gd-300),rgba(196,154,69,.55))'
-          : 'linear-gradient(135deg,rgba(58,160,179,.6),rgba(58,160,179,.25))' }}>
-          {sub.plan === 'paid' ? '★' : '◔'}
+          : 'linear-gradient(135deg,rgba(58,160,179,.6),rgba(58,160,179,.25))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={sub.plan === 'paid' ? 'sparkle' : 'building'} size={22} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="acct-card-nm">{sub.org_name}</div>
@@ -78,12 +82,14 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
         </div>
       </div>
 
-      {/* الإحصاءات السريعة */}
+      {/* الإحصاءات السريعة — ★ C7: المحصّل في صفٍّ مستقلٍّ لتفادي الـoverflow على أرقامٍ كبيرة */}
       <div className="stats">
         <div className="stat info"><div className="top"><span className="ic"><Icon name="trips" size={14} /></span>الرحلات</div><div className="v">{sub.trips_count || 0}</div></div>
         <div className="stat warn"><div className="top"><span className="ic"><Icon name="customers" size={14} /></span>المعتمرون</div><div className="v">{sub.pax_count || 0}</div></div>
         <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={14} /></span>المدفوعون</div><div className="v">{sub.paid_count || 0}</div></div>
-        <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={14} /></span>المحصّل</div><div className="v" style={{ fontSize: 20 }}>{Number(sub.collected || 0).toLocaleString('en-US')} <span style={{ fontSize: 12 }}>﷼</span></div></div>
+      </div>
+      <div className="stats" style={{ marginTop: 10 }}>
+        <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={14} /></span>إجمالي المحصّل</div><div className="v" style={{ fontSize: 22 }}>{Number(sub.collected || 0).toLocaleString('en-US')} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
       </div>
 
       {/* صاحب الحملة وبيانات التواصل */}
@@ -92,13 +98,15 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
         <div style={{ fontWeight: 700, color: 'var(--cr-50)' }}>{owner?.full_name || '—'}</div>
         {owner?.phone && (
           <div style={{ marginTop: 6, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <a className="btn btn-ghost btn-sm" href={`tel:${owner.phone}`} title="اتّصال"><Icon name="bell" size={14} /> اتّصال</a>
+            {/* ★ B6 — أيقونة الهاتف الصحيحة (كانت bell خطأً) */}
+            <a className="btn btn-ghost btn-sm" href={`tel:${owner.phone}`} title="اتّصال"><Icon name="phone" size={14} /> اتّصال</a>
             <a className="btn btn-ghost btn-sm" href={`https://wa.me/${String(owner.phone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"><Icon name="message" size={14} /> واتساب</a>
             <button className="btn btn-ghost btn-sm" onClick={() => copy(owner.phone, 'نُسخ الرقم')}><Icon name="copy" size={14} /></button>
             <span className="ltr muted" style={{ fontSize: 12, flex: 1, textAlign: 'left' }}>{owner.phone}</span>
           </div>
         )}
-        {sub.contact_phone && sub.contact_phone !== owner?.phone && (
+        {/* ★ A6 — مقارنةٌ بعد التطبيع (لا تَظهر «هاتف الحملة» لو يساوي صاحبَ الحملة بأشكالٍ مختلفة) */}
+        {sub.contact_phone && normalizePhone(sub.contact_phone) !== normalizePhone(owner?.phone || '') && (
           <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>هاتف الحملة: <span className="ltr">{sub.contact_phone}</span></div>
         )}
       </div>

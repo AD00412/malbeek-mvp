@@ -72,18 +72,30 @@ function Empty({ title, hint, mark = true }) {
 /* ============================================================
    لوحة الإدارة (تبقى بسيطةً للآن)
    ============================================================ */
+
+/** badgeٌ صغيرٌ للأدمن: عدّ المشتركين الجُدُد آخرَ ٧ أيّام. */
+function recent7Badge(subs) {
+  const now = Date.now()
+  const week = 7 * 86400000
+  let c = 0
+  for (const s of subs) if (s.created_at && (now - new Date(s.created_at).getTime()) < week) c++
+  return c
+}
+
 export function AdminHome() {
   const [view, setView] = useStickyState('admin:view', 'overview')
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [detailSub, setDetailSub] = useState(null)   // الحملة المفتوحة في ورقة التفاصيل
+  const [err, setErr] = useState('')                                  // ★ A3+B1 — حالةُ خطأٍ للوحة
+  const [openFb, setOpenFb] = useState(0)                            // ★ A2 — عدّاد فيدباك مفتوحة
+  const [openMsg, setOpenMsg] = useState(0)                          // ★ A2 — عدّاد رسائل عامّة مفتوحة
+  const [detailSub, setDetailSub] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const firstAdminLoad = useRef(true)
   const retryAdminRef = useRef(0)
   const inFlightAdminRef = useRef(false)
   const load = useCallback(async () => {
-    // ★ short-circuit للـconcurrent loads (realtime + retry قد يَستدعيا معًا)
     if (inFlightAdminRef.current) return
     inFlightAdminRef.current = true
     try {
@@ -95,12 +107,17 @@ export function AdminHome() {
       else setLoading(true)
     }
     const { data, error } = await supabase.rpc('admin_campaign_stats')
-    if (error) { setLoading(false); return }
+    if (error) {
+      // ★ A3 — أَظهر الخطأَ بدل بَلعه
+      setErr('تعذّر تحميل إحصاءات المنصّة: ' + error.message)
+      setLoading(false)
+      return
+    }
+    setErr('')
     const newSubs = (data ?? []).map((r) => ({ ...r, id: r.subscriber_id }))
-    // حارسُ empty الزائف — نَخفض inFlight قبل setTimeout كي يَسمح للـretry بالعمل
     if (newSubs.length === 0 && hadSubs && retryAdminRef.current < 2) {
       retryAdminRef.current += 1
-      inFlightAdminRef.current = false   // اسمح للـretry بالدخول
+      inFlightAdminRef.current = false
       setTimeout(() => load(), 800)
       return
     }
@@ -114,25 +131,38 @@ export function AdminHome() {
     }
   }, [])
 
+  // ★ A2 — جلبٌ مستقلٌّ لعدّادات الـinbox غير المعالجة
+  const loadInboxCounts = useCallback(async () => {
+    const [fb, msg] = await Promise.all([
+      supabase.from('feedback').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase.from('public_messages').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+    ])
+    if (typeof fb.count === 'number') setOpenFb(fb.count)
+    if (typeof msg.count === 'number') setOpenMsg(msg.count)
+  }, [])
   useEffect(() => {
     let active = true
     ;(async () => { if (active) await load() })()
+    ;(async () => { if (active) await loadInboxCounts() })()
     return () => { active = false }
-  }, [load])
+  }, [load, loadInboxCounts])
 
-  // Realtime للإدارة: مشتركون جدد، رحلات/ركّاب/مدفوعات، ملاحظات جديدة.
+  // Realtime يَعيد تحميلَ العدّادات + الإحصاءات
   useRealtime('admin-home', [
-    { table: 'subscribers' }, { table: 'trips' }, { table: 'passengers' }, { table: 'feedback' },
-  ], load, 400, [load])
+    { table: 'subscribers' }, { table: 'trips' }, { table: 'passengers' },
+    { table: 'feedback' }, { table: 'public_messages' },
+  ], () => { load(); loadInboxCounts() }, 400, [load, loadInboxCounts])
 
   const tabs = [
     { section: 'الإدارة' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
-    { key: 'subs', label: 'المشتركون', icon: 'building', badge: subs.length || undefined },
-    { key: 'trips', label: 'الرحلات', icon: 'trips' },
-    { key: 'search', label: 'البحث', icon: 'search' },
-    { key: 'feedback', label: 'التغذية الراجعة', icon: 'message' },
-    { key: 'messages', label: 'الرسائل العامّة', icon: 'message' },
+    // ★ A1 — badge يَعرض الجديد هذا الأسبوع (لا العدد الكلّيّ المُضلِّل)
+    { key: 'subs',     label: 'المشتركون',     icon: 'building', badge: recent7Badge(subs) || undefined },
+    { key: 'trips',    label: 'الرحلات',        icon: 'trips' },
+    { key: 'search',   label: 'البحث',         icon: 'search' },
+    // ★ A2 — badges للـinboxes، C5 — أيقونتان مختلفتان
+    { key: 'feedback', label: 'التغذية الراجعة', icon: 'message', badge: openFb || undefined },
+    { key: 'messages', label: 'الرسائل العامّة', icon: 'bell',    badge: openMsg || undefined },
     { section: 'الحساب' },
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
@@ -160,6 +190,16 @@ export function AdminHome() {
         <div key={view} className="view-fade">
         {view === 'overview' && (
           <>
+            {/* ★ B1 — لافتةُ خطأٍ قابلةٌ لإعادة المحاولة */}
+            {err && (
+              <div className="alert err" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Icon name="bell" size={16} />
+                <span style={{ flex: 1 }}>{err}</span>
+                <button className="btn btn-em btn-sm" onClick={load}>
+                  <Icon name="refresh" size={14} /> إعادة المحاولة
+                </button>
+              </div>
+            )}
             <div className="stats">
               <div className="stat"><div className="top"><span className="ic"><Icon name="building" size={15} /></span>المشتركون</div><div className="v">{subs.length}{recent7 > 0 && <span style={{ fontSize: 12, color: 'var(--ok-ink)', marginInlineStart: 8 }}>+{recent7} هذا الأسبوع</span>}</div></div>
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>الباقات المدفوعة</div><div className="v">{paid}</div></div>
@@ -169,17 +209,6 @@ export function AdminHome() {
             <div className="stats" style={{ marginTop: 12 }}>
               <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>إجمالي المحصّل عبر المنصّة</div><div className="v" style={{ fontSize: 26 }}>{money(collected)} <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>﷼</span></div></div>
             </div>
-
-            {/* الاختصارات منقولةٌ للدرج الجانبيّ (☰) — أبسطُ وأقلُّ تكرار */}
-            <div className="actions" style={{ marginTop: 16, display: 'none' }}>
-              <div className="sec-label">إجراءاتٌ سريعة</div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button className="action" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('subs')}><Icon name="building" size={17} /> كلّ الحملات</button>
-                <button className="action info" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('trips')}><Icon name="trips" size={17} /> كلّ الرحلات</button>
-                <button className="action warn" style={{ flex: 1, minWidth: 140 }} onClick={() => setView('search')}><Icon name="search" size={17} /> بحث المعتمرين</button>
-              </div>
-            </div>
-
             <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />
           </>
         )}
@@ -191,7 +220,8 @@ export function AdminHome() {
         </div>
       </AppShell>
 
-      <AdminSubDetail open={!!detailSub} sub={detailSub} onClose={() => setDetailSub(null)} onChanged={() => { load(); setDetailSub(null) }} />
+      {/* ★ A7 — لا نُغلق الورقةَ عند التعديل (الأدمن يَواصل عمله فيها) */}
+      <AdminSubDetail open={!!detailSub} sub={detailSub} onClose={() => setDetailSub(null)} onChanged={load} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={null} />
     </>
   )

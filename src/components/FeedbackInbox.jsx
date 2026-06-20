@@ -24,14 +24,20 @@ export default function FeedbackInbox() {
   const [reply, setReply] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [ok, setOk]   = useState('')   // ★ B4 — رسالةُ نجاحٍ بعد تَغيير حالة
 
   const load = useCallback(async () => {
-    setLoading(true)
+    setLoading(true); setErr('')
     let q = supabase.from('feedback')
       .select('id, audience, kind, subject, body, reply, status, replied_at, created_at, profile_id, subscriber_id, attachment_url, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
       .order('created_at', { ascending: false }).limit(200)
     if (filter !== 'all') q = q.eq('status', filter)
-    const { data } = await q
+    const { data, error } = await q
+    if (error) {                                       // ★ A4 — معالجةُ الخطأ
+      setErr('تعذّر التحميل: ' + error.message)
+      setLoading(false)
+      return
+    }
     const all = data ?? []
     setRows(all)
     const paths = all.map((r) => r.attachment_url).filter(Boolean)
@@ -46,13 +52,17 @@ export default function FeedbackInbox() {
   }, [filter])
   useEffect(() => { load() }, [load])
 
-  async function patch(id, updates) {
-    setBusy(true); setErr('')
+  async function patch(id, updates, successMsg) {
+    setBusy(true); setErr(''); setOk('')
     try {
       const { error } = await supabase.from('feedback').update(updates).eq('id', id)
       if (error) throw error
       await load()
       setEditing(null); setReply('')
+      if (successMsg) {
+        setOk(successMsg)
+        setTimeout(() => setOk(''), 3000)
+      }
     } catch (e) {
       setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر الحفظ.')
     } finally { setBusy(false) }
@@ -60,7 +70,7 @@ export default function FeedbackInbox() {
 
   async function sendReply(row) {
     if (!reply.trim()) { setErr('اكتب الردّ.'); return }
-    await patch(row.id, { reply: reply.trim(), status: 'resolved', replied_at: new Date().toISOString() })
+    await patch(row.id, { reply: reply.trim(), status: 'resolved', replied_at: new Date().toISOString() }, 'أُرسل الردُّ ✓')
   }
 
   return (
@@ -69,7 +79,10 @@ export default function FeedbackInbox() {
         <h3>صندوق التغذية الراجعة</h3>
         <span className="sub">({rows.length})</span>
         <span style={{ flex: 1 }} />
-        <button className="icon-btn" onClick={load} disabled={loading}><Icon name="refresh" size={15} /> تحديث</button>
+        <button className="icon-btn" onClick={load} disabled={loading}>
+          {loading ? <span className="spinner" /> : <Icon name="refresh" size={15} />}
+          تحديث
+        </button>
       </div>
 
       <div className="chips" style={{ marginTop: 0, marginBottom: 8 }}>
@@ -78,6 +91,7 @@ export default function FeedbackInbox() {
       </div>
 
       {err && <div className="alert err" style={{ marginBottom: 10 }}>{err}</div>}
+      {ok  && <div className="alert ok"  style={{ marginBottom: 10 }}>{ok}</div>}
 
       {loading ? (
         <SkeletonList count={4} />
@@ -122,10 +136,10 @@ export default function FeedbackInbox() {
                     <textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="اكتب ردًّا واضحًا ومحترمًا…" />
                   </div>
                   <div className="actions-row">
-                    <button className="btn btn-gold btn-sm" onClick={() => sendReply(f)} disabled={busy}>
+                    <button className="btn btn-em btn-sm" onClick={() => sendReply(f)} disabled={busy}>
                       {busy ? <span className="spinner" /> : <><Icon name="check" size={15} /> إرسال الردّ</>}
                     </button>
-                    <button className="icon-btn" onClick={() => { setEditing(null); setReply('') }}>إلغاء</button>
+                    <button className="icon-btn" onClick={() => { setEditing(null); setReply('') }} disabled={busy}>إلغاء</button>
                   </div>
                 </div>
               ) : (
@@ -136,15 +150,16 @@ export default function FeedbackInbox() {
                     </button>
                   )}
                   {f.status === 'open' && (
-                    <button className="icon-btn" onClick={() => patch(f.id, { status: 'in_progress' })} disabled={busy}>قيد المعالجة</button>
+                    <button className="icon-btn" onClick={() => patch(f.id, { status: 'in_progress' }, 'قيد المعالجة ✓')} disabled={busy}>قيد المعالجة</button>
                   )}
+                  {/* ★ C6 — زرّ «إغلاق» الأبرز يَحصل على btn-em */}
                   {f.status !== 'resolved' && (
-                    <button className="icon-btn" onClick={() => patch(f.id, { status: 'resolved', replied_at: new Date().toISOString() })} disabled={busy}>
+                    <button className="btn btn-em btn-sm" onClick={() => patch(f.id, { status: 'resolved', replied_at: new Date().toISOString() }, 'أُغلقت ✓')} disabled={busy}>
                       <Icon name="check" size={15} /> إغلاق
                     </button>
                   )}
                   {f.status === 'resolved' && (
-                    <button className="icon-btn" onClick={() => patch(f.id, { status: 'open' })} disabled={busy}>إعادة فتح</button>
+                    <button className="icon-btn" onClick={() => patch(f.id, { status: 'open' }, 'أُعيد فتحُها')} disabled={busy}>إعادة فتح</button>
                   )}
                 </div>
               )}
