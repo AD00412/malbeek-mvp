@@ -41,7 +41,33 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t))
 }
 
-/* ★ Monkey-patch لـsupabase.auth.getSession مع مهلة ٣ث + fallback من localStorage.
+/* ★ قراءةُ الجلسة من localStorage بدعمِ أشكالٍ متعدّدةٍ من supabase-js.
+   النسخُ القديمة (v1) تَستخدم ‎{ currentSession }‎، النسخ الحديثة (v2/auth-js)
+   تَكتب الـsession مباشرةً. نَفحص ٤ مَواقعَ محتملةٍ ثمّ نَتأكّد من
+   ‎access_token‎ — حتّى لو expires_at مرَّ، نَرجعها (الخادمُ يُعالج 401). */
+function readStoredSession() {
+  try {
+    const stored = localStorage.getItem('malbeek.auth')
+    if (!stored) return null
+    const parsed = JSON.parse(stored)
+    if (!parsed || typeof parsed !== 'object') return null
+    // نَتفقّد أشكالًا معروفةً بترتيبِ الأكثرِ احتمالًا
+    const candidates = [
+      parsed,                            // v2/auth-js: parsed IS the session
+      parsed.currentSession,             // v1: { currentSession: {...} }
+      parsed.session,                    // أحيانًا: { session: {...} }
+      parsed.data?.session,              // شكلُ Response: { data: { session } }
+    ]
+    for (const c of candidates) {
+      if (c && typeof c === 'object' && typeof c.access_token === 'string' && c.access_token) {
+        return c
+      }
+    }
+    return null
+  } catch { return null }
+}
+
+/* ★ Monkey-patch لـsupabase.auth.getSession مع مهلة ١.٥ث + fallback من localStorage.
    اكتشفنا من سجلّ المستخدم أنّ getSession() يَعلِق إلى الأبد بعد عودة iOS
    (لأنّ supabase-js v2 يَنتظر promise refresh معلَّقًا داخليًّا).
    الحلُّ: race مع ٣ث؛ لو هَنغت نَرجع الجلسة المُخزَّنة محلّيًّا — التوكِنُ
@@ -62,18 +88,12 @@ function patchAuthGetSession() {
         ])
       } catch (e) {
         logEvent('AUTH', 'getSession hung 1.5s — using cached', { message: e?.message })
-        // fallback من localStorage (نَستعمل storageKey نفسه في supabaseClient)
-        try {
-          const stored = localStorage.getItem('malbeek.auth')
-          if (stored) {
-            const parsed = JSON.parse(stored)
-            const session = parsed?.currentSession || parsed?.session || parsed
-            if (session?.access_token) {
-              return { data: { session }, error: null }
-            }
-          }
-        } catch { /* ignore */ }
-        return { data: { session: null }, error: { message: 'getSession timeout' } }
+        const session = readStoredSession()
+        // ★ مهمٌّ: نَرجع ‎error: null‎ حتّى لو لم نَجد session — تَجنّبًا
+        //   لإطلاقِ منطقِ تسجيل الخروج التلقائيِّ في supabase-js (الذي قد
+        //   يَحدث لو فسّر الخطأَ كـ«فشلِ مصادقةٍ»). الـUI يَتعامل مع
+        //   ‎session=null‎ بنفسِ مَا يَفعل عند مستخدمٍ مَجهول.
+        return { data: { session }, error: null }
       }
     }
     logEvent('AUTH', 'getSession patched with 1.5s timeout + cached fallback')
