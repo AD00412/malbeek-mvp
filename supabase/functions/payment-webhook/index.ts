@@ -111,7 +111,27 @@ Deno.serve(async (req) => {
     pax = data
   }
 
-  // 4) سجلّ الدفع (idempotent عبر القيد الفريد provider+ref) — يمنع المعالجة المكرّرة
+  // 4) ★ فحصُ مبلغ الدفع: لا نَقبل دَفعةً أقلَّ من السعر المتوقَّع.
+  //    المتوقَّع = pax.amount لو محدَّدٌ، وإلّا trip.price. نَسمح بسماحٍ
+  //    صغيرٍ (TOLERANCE) لأخطاء التقريب بين هللاتٍ وريالاتٍ ورسوم تحويلٍ صغيرة.
+  //    لو الدَفعةُ أقلّ بشكلٍ ملحوظ → نَسجّلها كـ 'underpaid' ولا نُعلّم الراكبَ
+  //    'paid' — يُراجعها المالكُ يدويًّا في سجلّ المدفوعات بدل أن يَخسر فرقًا صامتًا.
+  const AMOUNT_TOLERANCE = 1   // ١ ريال — يَسمح بالتقريب
+  let expected: number | null = null
+  if (pax) {
+    expected = typeof pax.amount === 'number' ? pax.amount : null
+    if (expected == null && pax.trip_id) {
+      const { data: trip } = await db.from('trips')
+        .select('price').eq('id', pax.trip_id).maybeSingle()
+      expected = typeof trip?.price === 'number' ? trip.price : null
+    }
+  }
+  const isUnderpaid = expected != null
+    && typeof e.amount === 'number'
+    && (e.amount + AMOUNT_TOLERANCE) < expected
+
+  // 5) سجلّ الدفع (idempotent عبر القيد الفريد provider+ref) — يمنع المعالجة المكرّرة.
+  //    حتّى لو underpaid نَكتب السجلَّ — للتدقيق ولتجنّب إعادة الإرسال من المزوّد.
   const payRow = {
     passenger_id: pax?.id ?? null,
     trip_id: pax?.trip_id ?? null,
@@ -120,7 +140,7 @@ Deno.serve(async (req) => {
     provider_ref: e.ref ?? `pax:${e.passengerId}`,
     amount: e.amount,
     currency: e.currency,
-    status: 'paid',
+    status: isUnderpaid ? 'underpaid' : 'paid',
     raw: ev,
   }
   const { data: inserted, error: insErr } = await db
@@ -128,8 +148,8 @@ Deno.serve(async (req) => {
   if (insErr) return json(500, { error: 'record_failed' })
   if (!inserted || inserted.length === 0) return json(200, { ok: true, duplicate: true })  // عولج سابقًا
 
-  // 5) تأكيد حجز الراكب (إن وُجد) — التريغر يختم paid_at؛ نمرّر amount صراحةً
-  if (pax && pax.status !== 'paid' && pax.status !== 'boarded' && pax.status !== 'checked_in') {
+  // 6) تأكيد حجز الراكب (إن وُجد ولم يَكن underpaid) — التريغر يختم paid_at
+  if (pax && !isUnderpaid && pax.status !== 'paid' && pax.status !== 'boarded' && pax.status !== 'checked_in') {
     await db.from('passengers').update({
       status: 'paid',
       amount: e.amount ?? pax.amount ?? null,
@@ -137,5 +157,9 @@ Deno.serve(async (req) => {
     }).eq('id', pax.id)
   }
 
-  return json(200, { ok: true, matched: Boolean(pax) })
+  return json(200, {
+    ok: true,
+    matched: Boolean(pax),
+    ...(isUnderpaid ? { warning: 'underpaid', expected, actual: e.amount } : {}),
+  })
 })
