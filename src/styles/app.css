@@ -830,7 +830,11 @@
   .mf-table{font-size:7.5pt}
   .mf-table thead th{padding:1.2mm 0.8mm;font-size:7pt}
   .mf-table tbody td{padding:0.7mm 1mm;height:4.8mm;line-height:1.15}
-  .mf-foot{padding-top:1.5mm;gap:6px}
+  /* ★ التوقيع يَلتصق بالجدول — لا يَفيض لصفحةٍ ثانية */
+  .mf-foot{padding-top:1.5mm;gap:6px;page-break-before:avoid;break-before:avoid;page-break-inside:avoid;break-inside:avoid}
+  .mf-table{page-break-inside:avoid;break-inside:avoid}
+  .mf-sheet{page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  .mf-sheet:last-of-type{page-break-after:auto;break-after:auto}
   .mf-note{font-size:7pt}
   .mf-stamp-img{max-width:22mm;max-height:12mm}
   .no-print{display:none !important}
