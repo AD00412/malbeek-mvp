@@ -52,6 +52,8 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
 
   async function revokeInvite(id) {
     if (acting) return
+    const ok = await confirm({ title: 'إلغاء الدعوة', message: 'إلغاء هذه الدعوة المعلّقة؟ لن يَستطيع العضو القبولَ برابطها بعد الإلغاء.', confirmText: 'إلغاء الدعوة', cancelText: 'تراجع', danger: true })
+    if (!ok) return
     setActing(true)
     const { error } = await supabase.from('subscriber_invites').delete().eq('id', id)
     setActing(false)
