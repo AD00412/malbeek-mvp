@@ -19,6 +19,7 @@ import AdminDashboard from '../../components/AdminDashboard'
 import AdminUpgradeRequests from '../../components/AdminUpgradeRequests'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
 import CampaignAnalytics from '../../components/CampaignAnalytics'
+import MarketingBroadcasts from '../../components/MarketingBroadcasts'
 import TrialBanner from '../../components/TrialBanner'
 import { useRealtime } from '../../lib/useRealtime'
 import { fmtDateTime } from '../../lib/format'
@@ -618,6 +619,7 @@ export function SubscriberHome() {
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
     { key: 'add', label: 'إضافة', icon: 'plus', fab: true },
     { key: 'analytics', label: 'التحليلات', icon: 'chart' },
+    { key: 'marketing', label: 'تَسويق', icon: 'message' },
     { key: 'feedback', label: 'الدعم', icon: 'message' },
     { section: 'اختصارات' },
     { key: 'scan', label: 'مسح تذكرة', icon: 'qr', disabled: !trips.length },
@@ -721,6 +723,10 @@ export function SubscriberHome() {
 
             {view === 'analytics' && (
               <CampaignAnalytics trips={trips} byTrip={paxStats.byTrip} totals={paxStats.totals} subscriberId={sub?.id} org={sub?.org_name} />
+            )}
+
+            {view === 'marketing' && sub?.id && (
+              <MarketingBroadcasts subscriberId={sub.id} trips={trips} />
             )}
 
             {view === 'trips' && (
