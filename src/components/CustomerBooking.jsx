@@ -639,12 +639,33 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 </div>
               )}
 
-              {sub?.store_url && (
+              {(sub?.store_url || sub?.bank_iban) && (
                 <div className="form" style={{ marginTop: 14 }}>
-                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع عبر المتجر' : 'الدفع عبر المتجر'}</div>
-                  <a className="btn btn-em btn-block" href={sub.store_url} target="_blank" rel="noopener noreferrer">
-                    <Icon name="external" size={16} /> ادفع عبر متجر الحملة (زد/سلة)
-                  </a>
+                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع بطريقةٍ أخرى' : 'طرق الدفع'}</div>
+
+                  {sub?.bank_iban && (
+                    <div className="alert info" style={{ display: 'block', marginBottom: 8 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Icon name="payments" size={16} /> تحويلٌ بنكيّ
+                      </div>
+                      {sub.bank_account_name && <div style={{ fontSize: 13 }}>الاسم: <strong>{sub.bank_account_name}</strong></div>}
+                      {sub.bank_name && <div style={{ fontSize: 13 }}>البنك: <strong>{sub.bank_name}</strong></div>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <span className="ltr" style={{ fontFamily: 'monospace', fontSize: 13, letterSpacing: '.5px' }}>{sub.bank_iban}</span>
+                        <button type="button" className="icon-btn" onClick={async () => {
+                          try { await navigator.clipboard.writeText(sub.bank_iban); toast('نُسخ الآيبان ✓', { type: 'success' }) }
+                          catch { toast(sub.bank_iban, { type: 'info' }) }
+                        }}><Icon name="copy" size={14} /> نسخ</button>
+                      </div>
+                      <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>حوّل المبلغ ثمّ أرفِق صورة الإيصال أدناه — يؤكّده صاحب الحملة.</p>
+                    </div>
+                  )}
+
+                  {sub?.store_url && (
+                    <a className="btn btn-em btn-block" href={sub.store_url} target="_blank" rel="noopener noreferrer">
+                      <Icon name="external" size={16} /> ادفع عبر متجر الحملة (زد/سلة)
+                    </a>
+                  )}
 
                   {/* إثبات الدفع: لقطة إتمام الطلب (متاحٌ بعد تأكيد الحجز) */}
                   {booking?.id ? (

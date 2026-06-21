@@ -7,6 +7,15 @@ import { SkeletonList } from './Skeleton'
 const KIND_AR = { suggestion: 'اقتراح', problem: 'مشكلة', question: 'سؤال', feature: 'ميزة' }
 const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمّت' }
 const STATUS_TONE = { open: 'warn', in_progress: 'info', resolved: 'ok' }
+const PRIORITY_AR = { low: 'منخفضة', normal: 'عاديّة', high: 'عالية', urgent: 'عاجلة' }
+const PRIORITY_TONE = { low: 'muted', normal: 'muted', high: 'warn', urgent: 'danger' }
+const SLA_DAYS = 3   // تذكرةٌ غير محلولةٍ أقدمُ من ٣ أيّامٍ → متأخّرة
+
+// عمرُ التذكرة بالأيّام (لمؤشّر SLA)
+function ageDays(iso) {
+  if (!iso) return 0
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+}
 
 function fmt(v) {
   if (!v) return '—'
@@ -29,9 +38,10 @@ export default function FeedbackInbox() {
   const load = useCallback(async () => {
     setLoading(true); setErr('')
     let q = supabase.from('feedback')
-      .select('id, audience, kind, subject, body, reply, status, replied_at, created_at, profile_id, subscriber_id, attachment_url, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
+      .select('id, audience, kind, subject, body, reply, status, priority, escalated_at, resolved_at, resolution, replied_at, created_at, profile_id, subscriber_id, attachment_url, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
       .order('created_at', { ascending: false }).limit(200)
-    if (filter !== 'all') q = q.eq('status', filter)
+    if (filter === 'escalated') q = q.not('escalated_at', 'is', null)
+    else if (filter !== 'all') q = q.eq('status', filter)
     const { data, error } = await q
     if (error) {                                       // ★ A4 — معالجةُ الخطأ
       setErr('تعذّر التحميل: ' + error.message)
@@ -70,7 +80,19 @@ export default function FeedbackInbox() {
 
   async function sendReply(row) {
     if (!reply.trim()) { setErr('اكتب الردّ.'); return }
-    await patch(row.id, { reply: reply.trim(), status: 'resolved', replied_at: new Date().toISOString() }, 'أُرسل الردُّ ✓')
+    const now = new Date().toISOString()
+    await patch(row.id, { reply: reply.trim(), status: 'resolved', replied_at: now, resolved_at: now, resolution: reply.trim() }, 'أُرسل الردُّ ✓')
+  }
+
+  async function escalate(row) {
+    await patch(row.id, {
+      escalated_at: new Date().toISOString(), priority: 'urgent',
+      status: row.status === 'open' ? 'in_progress' : row.status,
+    }, 'صُعّدت التذكرة (عاجلة) ✓')
+  }
+
+  async function deescalate(row) {
+    await patch(row.id, { escalated_at: null, priority: 'normal' }, 'خُفّض التصعيد')
   }
 
   return (
@@ -85,7 +107,7 @@ export default function FeedbackInbox() {
       </header>
 
       <div className="mlk-filter">
-        {[{ k: 'open', t: 'مفتوحة' }, { k: 'in_progress', t: 'قيد المعالجة' }, { k: 'resolved', t: 'تمّت' }, { k: 'all', t: 'الكل' }]
+        {[{ k: 'open', t: 'مفتوحة' }, { k: 'in_progress', t: 'قيد المعالجة' }, { k: 'escalated', t: 'مُصعّدة' }, { k: 'resolved', t: 'تمّت' }, { k: 'all', t: 'الكل' }]
           .map((c) => (
             <button key={c.k} className={`mlk-fchip ${filter === c.k ? 'active' : ''}`}
                     onClick={() => setFilter(c.k)}>{c.t}</button>
@@ -103,6 +125,13 @@ export default function FeedbackInbox() {
              <div className="mlk-list-meta" style={{ marginBottom: 6 }}>
                <span className="mlk-pill em">{KIND_AR[f.kind] || f.kind}</span>
                <span className={`mlk-pill ${STATUS_TONE[f.status] || 'muted'}`}>{STATUS_AR[f.status] || f.status}</span>
+               {f.escalated_at && <span className="mlk-pill danger">مُصعّدة</span>}
+               {!f.escalated_at && (f.priority === 'high' || f.priority === 'urgent') && (
+                 <span className={`mlk-pill ${PRIORITY_TONE[f.priority]}`}>{PRIORITY_AR[f.priority]}</span>
+               )}
+               {f.status !== 'resolved' && ageDays(f.created_at) >= SLA_DAYS && (
+                 <span className="mlk-pill warn">متأخّرة · {ageDays(f.created_at)} يوم</span>
+               )}
                <span className="mlk-pill info">{f.audience === 'subscriber' ? 'مشترك' : 'عميل'}</span>
                <span style={{ marginInlineStart: 'auto', fontSize: 11.5, color: 'var(--cr-300)' }}>{fmt(f.created_at)}</span>
              </div>
@@ -125,6 +154,12 @@ export default function FeedbackInbox() {
                <div className="mlk-card is-feature" style={{ marginTop: 10 }}>
                  <div className="mlk-list-meta">ردّك · {fmt(f.replied_at)}</div>
                  <div style={{ fontSize: 13.5, color: 'var(--cr-100)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{f.reply}</div>
+               </div>
+             )}
+
+             {f.status === 'resolved' && f.resolved_at && (
+               <div className="mlk-list-meta" style={{ marginTop: 8, color: 'var(--ok-ink, var(--em-500))' }}>
+                 <Icon name="check" size={13} /> حُلّت في {fmt(f.resolved_at)}
                </div>
              )}
 
@@ -151,11 +186,17 @@ export default function FeedbackInbox() {
                  {f.status === 'open' && (
                    <button className="mlk-action" onClick={() => patch(f.id, { status: 'in_progress' }, 'قيد المعالجة ✓')} disabled={busy}>قيد المعالجة</button>
                  )}
+                 {f.status !== 'resolved' && !f.escalated_at && (
+                   <button className="mlk-action danger" onClick={() => escalate(f)} disabled={busy}>تصعيد</button>
+                 )}
+                 {f.escalated_at && f.status !== 'resolved' && (
+                   <button className="mlk-action" onClick={() => deescalate(f)} disabled={busy}>خفض التصعيد</button>
+                 )}
                  {f.status !== 'resolved' && (
-                   <button className="mlk-action primary" onClick={() => patch(f.id, { status: 'resolved', replied_at: new Date().toISOString() }, 'أُغلقت ✓')} disabled={busy}>إغلاق</button>
+                   <button className="mlk-action primary" onClick={() => { const n = new Date().toISOString(); patch(f.id, { status: 'resolved', replied_at: n, resolved_at: n }, 'أُغلقت ✓') }} disabled={busy}>إغلاق</button>
                  )}
                  {f.status === 'resolved' && (
-                   <button className="mlk-action" onClick={() => patch(f.id, { status: 'open' }, 'أُعيد فتحُها')} disabled={busy}>إعادة فتح</button>
+                   <button className="mlk-action" onClick={() => patch(f.id, { status: 'open', resolved_at: null }, 'أُعيد فتحُها')} disabled={busy}>إعادة فتح</button>
                  )}
                </div>
              )}
