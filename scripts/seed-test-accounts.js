@@ -105,15 +105,15 @@ async function main() {
   //   يبقى فعّالًا حتّى مع service_role (يتجاوز RLS لا المحفّزات)، فالعمود يجب
   //   أن يُرفَع فعليًّا وإلّا فشل إدراجُ الرحلة الثانية بـ TRIAL_TRIP_LIMIT.
   {
-    const { error: limErr } = await db.from('subscribers').update({ trial_trip_limit: 5 }).eq('id', SUB_ID)
+    const { error: limErr } = await db.from('subscribers').update({ trial_trip_limit: 10 }).eq('id', SUB_ID)
     if (limErr) {
-      if (limErr.code === 'PGRST204' || limErr.code === '42703' || /trial_trip_limit/i.test(limErr.message || '')) {
-        console.error('\n✗ العمود trial_trip_limit غير موجود — طبّق APPLY_admin_trial_trip_limit.sql أوّلًا في SQL Editor، ثمّ أعِد التشغيل.')
+      if (limErr.code === 'PGRST204' || limErr.code === '42703' || /trial_trip_limit|column.*not exist/i.test(limErr.message || '')) {
+        console.error('\n✗ العمود trial_trip_limit غير موجود (column does not exist) — طبّق APPLY_admin_trial_trip_limit.sql أوّلًا في SQL Editor، ثمّ أعِد التشغيل.')
         process.exit(1)
       }
       throw limErr
     }
-    console.log('    ↳ رُفِع حدُّ الرحلات التجريبيّة إلى ٥')
+    console.log('    ↳ رُفِع حدُّ الرحلات التجريبيّة إلى ١٠')
   }
 
   // ٤) ٣ رحلات: منقضية / جارية / قادمة
