@@ -29,6 +29,9 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
   const [storeUrl, setStoreUrl] = useState('')
   const [licenseNo, setLicenseNo] = useState('')
   const [carrierCompany, setCarrierCompany] = useState('')
+  const [bankAccountName, setBankAccountName] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [bankIban, setBankIban] = useState('')
 
   // الهويّة
   const [logoUrl, setLogoUrl] = useState('')
@@ -45,6 +48,9 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
     setStoreUrl(sub?.store_url || '')
     setLicenseNo(sub?.license_no || '')
     setCarrierCompany(sub?.carrier_company || '')
+    setBankAccountName(sub?.bank_account_name || '')
+    setBankName(sub?.bank_name || '')
+    setBankIban(sub?.bank_iban || '')
     setLogoUrl(sub?.logo_url || '')
     setStampUrl(sub?.stamp_url || '')
     setTab('profile')
@@ -76,6 +82,10 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
       store_url: storeUrl.trim() || null,
       license_no: licenseNo.trim() || null,
       carrier_company: carrierCompany.trim() || null,
+      bank_account_name: bankAccountName.trim() || null,
+      bank_name: bankName.trim() || null,
+      // الآيبان: تطهيرٌ خفيفٌ (إزالةُ الفراغات + كبير) — التحقّقُ الكاملُ في الواجهة
+      bank_iban: bankIban.replace(/\s+/g, '').toUpperCase() || null,
     }
     // نُحدِّث الـ slug فقط إن تغيّر — لتجنّب توليد خطأٍ بسبب الفريديّة (unique).
     if (safeSlug && safeSlug !== sub.slug) payload.slug = safeSlug
@@ -181,6 +191,27 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <label>رابط متجر الدفع (زِد / سلّة)</label>
             <input type="url" className="ltr" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} placeholder="https://store.example.com/..." />
           </div>
+
+          <div className="sec-label" style={{ marginTop: 4 }}>التحويل البنكيّ <span className="muted" style={{ fontSize: 11.5 }}>(اختياريّ — يظهر للمعتمر كوسيلةِ دفع)</span></div>
+          <div className="field">
+            <label>اسمُ صاحب الحساب</label>
+            <input type="text" value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} placeholder="كما يظهر في البنك" />
+          </div>
+          <div className="grid-2">
+            <div className="field">
+              <label>اسمُ البنك</label>
+              <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="مثال: الراجحي" />
+            </div>
+            <div className="field ltr">
+              <label>الآيبان (IBAN)</label>
+              <input type="text" className="ltr" value={bankIban} onChange={(e) => setBankIban(e.target.value)} placeholder="SA00 0000 0000 0000 0000 0000" />
+            </div>
+          </div>
+          {bankIban.replace(/\s+/g, '') && !/^SA[0-9]{22}$/i.test(bankIban.replace(/\s+/g, '')) && (
+            <p className="muted" style={{ fontSize: 11.5, marginTop: -4, color: 'var(--danger-ink, #b4503a)' }}>
+              تنبيه: الآيبان السعوديّ يبدأ بـ SA ويتبعه ٢٢ رقمًا. تأكّد منه قبل الحفظ.
+            </p>
+          )}
           <div className="field">
             <label>رقم التصريح / الترخيص</label>
             <input type="text" value={licenseNo} onChange={(e) => setLicenseNo(e.target.value)} placeholder="رقم التصريح" />
