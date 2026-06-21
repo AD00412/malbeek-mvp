@@ -758,13 +758,16 @@
 /* .mf-info كان قسمَ معلومات الرحلة في السابق — استُغني عنه لصالح .mf-carrier في الترويسة */
 
 /* ====== جدولُ الركّاب — أعمدةٌ ثابتةُ القياسِ موحَّدةٌ بين كلِّ الكشوفات ====== */
-.mf-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5pt;flex:1}
+.mf-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt;flex:1}
 .mf-table thead th{background:#0b5c43;color:#fff;font-family:var(--font-display);font-weight:700;
-  padding:2mm 1.5mm;border:0.6pt solid #074734;text-align:center;font-size:8pt;letter-spacing:.01em;
+  padding:1.6mm 1.2mm;border:0.6pt solid #074734;text-align:center;font-size:7.5pt;letter-spacing:.01em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mf-table tbody td{padding:1.6mm 1.5mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
-  background:#fff;line-height:1.25;vertical-align:middle;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mf-table tbody td{padding:1.1mm 1.2mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
+  background:#fff;line-height:1.2;vertical-align:middle;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;height:5.6mm}
+/* تَكرارُ الترويسة في كلّ صفحةٍ مَطبوعةٍ (حِفظًا لقابليّة القراءة لو افتُرقت الأوراق) */
+.mf-table thead{display:table-header-group}
+.mf-table tbody tr{page-break-inside:avoid;break-inside:avoid}
 .mf-table tbody tr:nth-child(even) td{background:#f6faf8}
 /* الاسم يحقُّ له سطران فقط (يلتفّ عند الحاجةِ بدون تداخل) */
 .mf-table .mf-name{white-space:normal;word-wrap:break-word;line-height:1.3}

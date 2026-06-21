@@ -7,8 +7,11 @@ const STATUS_AR = {
 }
 const NO_BP = 'بلا مكان محدَّد'
 const DEFAULT_CAPACITY = 49
-/** عددُ الصفوف لكلِّ صفحةٍ A4 — مضبوطٌ مع رأسٍ موحَّدٍ يحوي بيانات الناقل */
-const ROWS_PER_PAGE = 22
+/** عددُ الصفوف لكلِّ صفحةٍ A4 — مَضبوطٌ بدقّةٍ على ارتفاع A4 ناقصًا
+ *  الترويسةَ والتذييل، مع كثافةٍ مَدروسةٍ تَحفظ القراءة. */
+const ROWS_PER_PAGE = 38
+/** الحدُّ الأدنى لصفوفٍ في صفحةٍ ثانيةٍ مُنفصلة — تَجنّبًا لصفحةٍ تَحوي صفًّا أو اثنين */
+const MIN_TAIL_ROWS = 6
 
 /* تنسيقُ تاريخٍ هجريٍّ بصيغةِ ١٣/٠٦/١٤٤٧ — يستخدمُ تقويمَ أمّ القرى. */
 function fmtHijri(v) {
@@ -210,10 +213,23 @@ function sortBoardingPoints(arr) {
   })
 }
 
+/**
+ * يَحسب عدد الصفوف الكُلّيّ للكشف:
+ *  - صفحةٌ واحدةٌ تَفيض دائمًا إلى ROWS_PER_PAGE (نَموذجٌ نَظيف بصفوفٍ فارغةٍ
+ *    للإضافة اليدويّة لو احتُيج)
+ *  - إن زاد الفعليّون عن ذلك، نَستعمل عددهم تمامًا (محدودًا بالسَّعة)
+ *  - حِراسةٌ ضدّ صفحةٍ ثانيةٍ شبهَ فارغةٍ (≤ MIN_TAIL_ROWS): نُضيف للأولى
+ *    بَدلَ إنشاء صفحةٍ ثانيةٍ فيها صفّان فقط (ينكسر بصريًّا).
+ */
 function targetRowCount(filledCount, capacity) {
-  const buffer = 5
-  const target = Math.max(filledCount + buffer, ROWS_PER_PAGE)
-  return Math.min(target, capacity)
+  if (filledCount <= ROWS_PER_PAGE) return Math.min(ROWS_PER_PAGE, capacity)
+  // حِراسةٌ ضدّ صفحةٍ ثانيةٍ شبهَ فارغة: لو الـtail < MIN_TAIL_ROWS،
+  // نَدفعها لـMIN_TAIL_ROWS بإضافة صفوفٍ فارغة. هكذا تَبقى الورقتان
+  // مَتوازنتَين بصريًّا.
+  const tail = filledCount % ROWS_PER_PAGE
+  let total = filledCount
+  if (tail > 0 && tail < MIN_TAIL_ROWS) total += (MIN_TAIL_ROWS - tail)
+  return Math.min(total, capacity)
 }
 
 /**
