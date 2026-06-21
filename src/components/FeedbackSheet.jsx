@@ -54,8 +54,9 @@ export default function FeedbackSheet({ open, audience, onClose }) {
   const loadMine = useCallback(async () => {
     if (!user?.id) return
     setLoading(true)
+    // قراءةٌ عبر الـVIEW الآمنة (تستثني resolution_internal — لا يراه المُبلِّغ)
     const { data } = await supabase
-      .from('feedback')
+      .from('v_my_feedback')
       .select('id, kind, subject, body, reply, status, replied_at, created_at, attachment_url')
       .eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50)
     const rows = data ?? []

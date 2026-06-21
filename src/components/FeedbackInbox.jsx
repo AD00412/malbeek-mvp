@@ -31,6 +31,7 @@ export default function FeedbackInbox() {
   const [filter, setFilter] = useState('open')   // 'all' | 'open' | 'in_progress' | 'resolved'
   const [editing, setEditing] = useState(null)
   const [reply, setReply] = useState('')
+  const [internalNote, setInternalNote] = useState('')   // resolution_internal — للفريق فقط
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [ok, setOk]   = useState('')   // ★ B4 — رسالةُ نجاحٍ بعد تَغيير حالة
@@ -38,7 +39,7 @@ export default function FeedbackInbox() {
   const load = useCallback(async () => {
     setLoading(true); setErr('')
     let q = supabase.from('feedback')
-      .select('id, audience, kind, subject, body, reply, status, priority, escalated_at, resolved_at, resolution, replied_at, created_at, profile_id, subscriber_id, attachment_url, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
+      .select('id, audience, kind, subject, body, reply, status, priority, escalated_at, resolved_at, resolution_internal, replied_at, created_at, profile_id, subscriber_id, attachment_url, profiles:profile_id(full_name), subscribers:subscriber_id(org_name)')
       .order('created_at', { ascending: false }).limit(200)
     if (filter === 'escalated') q = q.not('escalated_at', 'is', null)
     else if (filter !== 'all') q = q.eq('status', filter)
@@ -68,7 +69,7 @@ export default function FeedbackInbox() {
       const { error } = await supabase.from('feedback').update(updates).eq('id', id)
       if (error) throw error
       await load()
-      setEditing(null); setReply('')
+      setEditing(null); setReply(''); setInternalNote('')
       if (successMsg) {
         setOk(successMsg)
         setTimeout(() => setOk(''), 3000)
@@ -81,7 +82,11 @@ export default function FeedbackInbox() {
   async function sendReply(row) {
     if (!reply.trim()) { setErr('اكتب الردّ.'); return }
     const now = new Date().toISOString()
-    await patch(row.id, { reply: reply.trim(), status: 'resolved', replied_at: now, resolved_at: now, resolution: reply.trim() }, 'أُرسل الردُّ ✓')
+    // ملاحظةُ الفريق الداخليّة (اختياريّة) تُحفظ منفصلةً عن الردّ — لا يراها المُبلِّغ.
+    await patch(row.id, {
+      reply: reply.trim(), status: 'resolved', replied_at: now, resolved_at: now,
+      resolution_internal: internalNote.trim() || null,
+    }, 'أُرسل الردُّ ✓')
   }
 
   async function escalate(row) {
@@ -157,6 +162,13 @@ export default function FeedbackInbox() {
                </div>
              )}
 
+             {f.resolution_internal && (
+               <div className="mlk-card" style={{ marginTop: 8, borderInlineStart: '3px solid var(--warn-ink, #c98e2e)' }}>
+                 <div className="mlk-list-meta">🔒 ملاحظةٌ داخليّة <span className="muted">(لا يراها المُبلِّغ)</span></div>
+                 <div style={{ fontSize: 13, color: 'var(--cr-200)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{f.resolution_internal}</div>
+               </div>
+             )}
+
              {f.status === 'resolved' && f.resolved_at && (
                <div className="mlk-list-meta" style={{ marginTop: 8, color: 'var(--ok-ink, var(--em-500))' }}>
                  <Icon name="check" size={13} /> حُلّت في {fmt(f.resolved_at)}
@@ -166,20 +178,24 @@ export default function FeedbackInbox() {
              {editing === f.id ? (
                <div className="form" style={{ marginTop: 10 }}>
                  <div className="field">
-                   <label>الردّ</label>
+                   <label>الردّ <span className="muted" style={{ fontSize: 11.5 }}>(يراه المُبلِّغ)</span></label>
                    <textarea rows={3} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="اكتب ردًّا واضحًا ومحترمًا…" />
+                 </div>
+                 <div className="field">
+                   <label>ملاحظةٌ داخليّة <span className="muted" style={{ fontSize: 11.5 }}>(اختياريّة — للفريق فقط، لا يراها المُبلِّغ)</span></label>
+                   <textarea rows={2} value={internalNote} onChange={(e) => setInternalNote(e.target.value)} placeholder="سياقٌ داخليٌّ لكيفيّة المعالجة…" />
                  </div>
                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                    <button className="mlk-action primary" onClick={() => sendReply(f)} disabled={busy}>
                      {busy ? <span className="spinner" /> : 'إرسال الردّ'}
                    </button>
-                   <button className="mlk-action" onClick={() => { setEditing(null); setReply('') }} disabled={busy}>إلغاء</button>
+                   <button className="mlk-action" onClick={() => { setEditing(null); setReply(''); setInternalNote('') }} disabled={busy}>إلغاء</button>
                  </div>
                </div>
              ) : (
                <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                  {f.status !== 'resolved' && (
-                   <button className="mlk-action" onClick={() => { setEditing(f.id); setReply(f.reply || '') }}>
+                   <button className="mlk-action" onClick={() => { setEditing(f.id); setReply(f.reply || ''); setInternalNote(f.resolution_internal || '') }}>
                      ردّ
                    </button>
                  )}
