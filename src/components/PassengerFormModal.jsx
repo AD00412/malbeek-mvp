@@ -1,11 +1,13 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import SeatMap from './SeatMap'
+import RatingStars from './RatingStars'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone } from '../lib/format'
 import { busLayout, busName } from '../lib/buses'
 import { translateRpcError } from '../lib/rpcErrors'
+import { useUI } from '../lib/useUI'
 import { PASSENGER_STATUS } from '../lib/passengerStatus'
 
 const GENDERS = [
@@ -41,6 +43,52 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
   const [notes, setNotes] = useState(passenger?.notes ?? '')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const { toast } = useUI()
+
+  // ── تقييمُ المعتمر (مشترك → معتمر) — للحجوزات الذاتيّة فقط (لها حسابٌ) ──
+  const ratable = isEdit && Boolean(passenger?.profile_id) && Boolean(tripId)
+  const [rStars, setRStars] = useState(0)
+  const [rComment, setRComment] = useState('')
+  const [rId, setRId] = useState(null)
+  const [rBusy, setRBusy] = useState(false)
+  useEffect(() => {
+    if (!ratable) return
+    let cancel = false
+    ;(async () => {
+      const { data } = await supabase.from('ratings')
+        .select('id, stars, comment')
+        .eq('trip_id', tripId).eq('profile_id', passenger.profile_id)
+        .eq('direction', 'subscriber_to_customer').maybeSingle()
+      if (cancel || !data) return
+      setRId(data.id); setRStars(data.stars || 0); setRComment(data.comment || '')
+    })()
+    return () => { cancel = true }
+  }, [ratable, tripId, passenger?.profile_id])
+
+  async function saveRating() {
+    if (rBusy || !rStars) { if (!rStars) toast('اختر عددَ النجوم أوّلًا.', { type: 'error' }); return }
+    setRBusy(true)
+    const payload = {
+      subscriber_id: subscriberId, trip_id: tripId, profile_id: passenger.profile_id,
+      passenger_id: passenger.id, direction: 'subscriber_to_customer',
+      stars: rStars, comment: rComment.trim() || null,
+    }
+    try {
+      let res
+      if (rId) res = await supabase.from('ratings').update({ stars: payload.stars, comment: payload.comment }).eq('id', rId)
+      else     res = await supabase.from('ratings').insert(payload)
+      if (res.error) {
+        if (res.error.code === '23505') {
+          const { data: ex } = await supabase.from('ratings').select('id')
+            .eq('trip_id', tripId).eq('profile_id', passenger.profile_id).eq('direction', 'subscriber_to_customer').maybeSingle()
+          if (ex?.id) { await supabase.from('ratings').update({ stars: payload.stars, comment: payload.comment }).eq('id', ex.id); setRId(ex.id) }
+        } else throw res.error
+      }
+      toast('حُفِظ تقييمُ المعتمر ✓', { type: 'success' })
+    } catch (e) {
+      toast(translateRpcError(e, 'تعذّر حفظ التقييم.'), { type: 'error' })
+    } finally { setRBusy(false) }
+  }
 
   const forPassenger = useMemo(() => ({
     id: passenger?.id, gender, is_family: isFamily,
@@ -194,6 +242,29 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
           <label>ملاحظات (اختياري)</label>
           <textarea placeholder="أي ملاحظةٍ على المعتمر…" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
+
+        {ratable && (
+          <div className="rating-box">
+            <div className="sec-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="sparkle" size={15} /> تقييمُ المعتمر
+              <span className="tag muted" style={{ fontSize: 9, padding: '1px 6px' }}>خاصٌّ بحملتك</span>
+            </div>
+            <p className="muted" style={{ fontSize: 12.5, marginTop: -4 }}>
+              قيّمُ التزامَه وتعاملَه في هذه الرحلة. لا يراه المعتمر — يساعدك في حجوزاته القادمة.
+            </p>
+            <div className="rating-pick">
+              <RatingStars value={rStars} onChange={setRStars} size={32} />
+              <span className="rating-pick-label">{rStars ? `${rStars} من ٥` : 'لم يُقيَّم بعد'}</span>
+            </div>
+            <div className="field">
+              <textarea placeholder="ملاحظةٌ داخليّةٌ على المعتمر… (اختياريّ)" value={rComment}
+                        maxLength={1000} onChange={(e) => setRComment(e.target.value)} />
+            </div>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={saveRating} disabled={rBusy}>
+              {rBusy ? <span className="spinner" /> : <><Icon name="check" size={14} /> {rId ? 'تحديث التقييم' : 'حفظ التقييم'}</>}
+            </button>
+          </div>
+        )}
       </div>
     </BottomSheet>
   )
