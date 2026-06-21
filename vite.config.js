@@ -3,7 +3,12 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    host: true,           // ⇦ يَستمع على 0.0.0.0 فيَصل من iPhone/Android على نفس Wi-Fi
+    strictPort: false,
+    hmr: { overlay: true }
+  },
   build: {
     rollupOptions: {
       output: {
