@@ -31,6 +31,12 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const [tripLimit, setTripLimit] = useState(1)
   const [suspendReason, setSuspendReason] = useState('')
   const [adminNote, setAdminNote] = useState('')
+  // وصولُ الدعم المؤقّت (JIT)
+  const [supportGrants, setSupportGrants] = useState([])
+  const [supportUsers, setSupportUsers] = useState([])
+  const [grantUserId, setGrantUserId] = useState('')
+  const [grantHours, setGrantHours] = useState(24)
+  const [grantReason, setGrantReason] = useState('')
   const { toast, confirm } = useUI()
 
   // دمجٌ: props.sub (إحصاءات من RPC) + fullSub (الحقول الجديدة)
@@ -60,8 +66,20 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     setFullSub(srow || null)
     setAdminNote(srow?.admin_notes || '')
     setTripLimit(srow?.trial_trip_limit || 1)
+    // وصولُ الدعم: المنحُ النشطة + قائمةُ موظّفي الدعم (أدمن فقط)
+    if (isAdmin) {
+      const [{ data: grants }, { data: sUsers }] = await Promise.all([
+        supabase.from('support_access_grants')
+          .select('id, support_id, reason, granted_at, expires_at, profiles:support_id(full_name)')
+          .eq('subscriber_id', sub.id).is('revoked_at', null).gt('expires_at', new Date().toISOString())
+          .order('granted_at', { ascending: false }),
+        supabase.rpc('list_support_users'),
+      ])
+      setSupportGrants(grants ?? [])
+      setSupportUsers(sUsers ?? [])
+    }
     setLoading(false)
-  }, [sub?.id, sub?.owner_id])
+  }, [sub?.id, sub?.owner_id, isAdmin])
 
   useEffect(() => {
     if (open && sub?.id) refresh()
@@ -129,6 +147,22 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
       `حُدّد حدُّ الرحلات التجريبيّة بـ ${tripLimit} ✓`
     )
     if (success) setActionPanel(null)
+  }
+
+  async function doGrantSupport() {
+    if (!grantUserId) { toast('اختر موظّفَ دعمٍ أوّلًا.', { type: 'error' }); return }
+    if (grantHours < 1 || grantHours > 168) { toast('المدّة بين ١ و١٦٨ ساعة.', { type: 'error' }); return }
+    const success = await rpcAction('grant_support_access',
+      { p_support: grantUserId, p_sub: sub.id, p_hours: grantHours, p_reason: grantReason.trim() || null },
+      `مُنِح وصولُ الدعم (${grantHours} ساعة) ✓`
+    )
+    if (success) { setGrantUserId(''); setGrantReason(''); setActionPanel(null) }
+  }
+
+  async function doRevokeSupport(id, name) {
+    const ok = await confirm({ title: 'سحبُ وصول الدعم', message: `سحبُ وصول «${name || 'موظّف الدعم'}» لبيانات هذه الحملة فورًا؟`, confirmText: 'سحب', danger: true })
+    if (!ok) return
+    await rpcAction('revoke_support_access', { p_grant: id }, 'سُحب الوصول ✓')
   }
 
   async function doSuspend() {
@@ -244,6 +278,9 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
               {sub.plan !== 'paid' && (
                 <button className="mlk-action" onClick={() => setActionPanel('triplimit')}>حدُّ الرحلات</button>
               )}
+              <button className="mlk-action" onClick={() => setActionPanel('support')}>
+                وصول الدعم {supportGrants.length > 0 && `(${supportGrants.length})`}
+              </button>
               {!isSuspended ? (
                 <button className="mlk-action danger" onClick={() => setActionPanel('suspend')}>تَعليق الحساب</button>
               ) : (
@@ -290,6 +327,62 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
                   {busy ? <span className="spinner" /> : 'حفظ الحدّ'}
                 </button>
                 <button className="mlk-action" onClick={() => { setActionPanel(null); setTripLimit(subData.trial_trip_limit || 1) }} disabled={busy}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {actionPanel === 'support' && (
+          <div className="mlk-card">
+            <h2 className="mlk-h2">وصولُ الدعم المؤقّت</h2>
+            <p className="muted" style={{ fontSize: 12.5, marginTop: -4 }}>
+              الدعمُ لا يرى بياناتِ المعتمرين الحسّاسةَ افتراضيًّا. امنحه وصولًا مؤقّتًا لهذه الحملة عند الحاجة — يُسحب تلقائيًّا بانتهاء المدّة، ويُوثَّق.
+            </p>
+            {/* المنحُ النشطة */}
+            {supportGrants.length > 0 ? (
+              <ul className="mlk-list" style={{ marginTop: 8 }}>
+                {supportGrants.map((g) => (
+                  <li key={g.id} className="mlk-list-row">
+                    <div className="mlk-list-body">
+                      <div className="mlk-list-title">{g.profiles?.full_name || 'موظّف دعم'}</div>
+                      <div className="mlk-list-meta">
+                        <span className="mlk-pill ok">نشِط</span>
+                        <span>ينتهي {fmtDateTime(g.expires_at)}</span>
+                        {g.reason && <span>· {g.reason}</span>}
+                      </div>
+                    </div>
+                    <button className="mlk-action danger" onClick={() => doRevokeSupport(g.id, g.profiles?.full_name)} disabled={busy}>سحب</button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mlk-empty" style={{ marginTop: 8 }}>لا منحَ نشطةً — الدعمُ يرى الإحصاءاتِ المجمّعةَ فقط.</div>
+            )}
+            {/* منحٌ جديد */}
+            <div className="form" style={{ marginTop: 10 }}>
+              <div className="field">
+                <label>منحُ موظّفِ دعم</label>
+                <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)}>
+                  <option value="">— اختر موظّفَ الدعم —</option>
+                  {supportUsers.map((u) => <option key={u.id} value={u.id}>{u.full_name || u.id.slice(0, 8)}</option>)}
+                </select>
+                {supportUsers.length === 0 && <span className="hint">لا يوجد مستخدمو دعمٍ بعد.</span>}
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>المدّة (ساعات)</label>
+                  <input type="number" min="1" max="168" value={grantHours} onChange={(e) => setGrantHours(Number(e.target.value) || 0)} />
+                </div>
+                <div className="field">
+                  <label>السبب (اختياريّ)</label>
+                  <input type="text" value={grantReason} onChange={(e) => setGrantReason(e.target.value)} placeholder="مثلًا: تذكرةُ دعمٍ #…" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="mlk-action primary" onClick={doGrantSupport} disabled={busy || !grantUserId}>
+                  {busy ? <span className="spinner" /> : 'منحُ الوصول'}
+                </button>
+                <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إغلاق</button>
               </div>
             </div>
           </div>
@@ -435,6 +528,8 @@ function labelAction(a) {
     case 'restore':      return 'إعادة تَفعيل'
     case 'set_note':     return 'تَحديث ملاحظة'
     case 'set_trip_limit': return 'حدُّ الرحلات'
+    case 'grant_support_access':  return 'منحُ وصول دعم'
+    case 'revoke_support_access': return 'سحبُ وصول دعم'
     default: return a
   }
 }
