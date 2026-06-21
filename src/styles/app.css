@@ -794,7 +794,7 @@
   padding:2mm 6mm;font-size:8pt;text-align:center}
 .mf-stamp-img{max-width:26mm;max-height:14mm;object-fit:contain;transform:rotate(-3deg)}
 
-/* ====== الجوال: نُصغّر المعاينة (الطباعةُ تستردُّ A4) ====== */
+/* ====== الجوال: نُصغّر المعاينة (الطباعةُ تَستردُّ A4 الحقيقيّ) ====== */
 @media(max-width:760px){
   .mf-sheet{width:100%;min-height:auto;padding:8mm 7mm;gap:4mm}
   .mf-head{flex-direction:column;align-items:stretch;gap:8px}
@@ -803,12 +803,37 @@
   .mf-c-row{font-size:9pt}
   .mf-c-k{min-width:24mm;font-size:8.5pt}
   .mf-subtitle{flex-direction:column;align-items:flex-start;gap:3px;padding:2mm 3mm}
-  .mf-table{font-size:8pt}
-  .mf-table thead th{padding:2mm 1mm;font-size:7.5pt}
-  .mf-table tbody td{padding:1.8mm 1mm}
   .mf-pickup{padding:3mm 4mm;gap:8px}
   .mf-pickup-v{font-size:11pt}
   .mf-foot{flex-direction:column;align-items:flex-start;gap:10px}
+}
+
+/* ====== الطباعة: A4 مَضبوطٌ + كَثافةٌ تَفي بـ٢٨ صفًّا فعلًا ====== */
+@media print {
+  @page { size: A4 portrait; margin: 6mm 6mm; }
+  html, body { background: #fff; }
+  .mf-sheet{width:198mm;min-height:auto;padding:6mm 4mm;gap:2.5mm;box-shadow:none;border-radius:0}
+  .mf-head{padding-bottom:1.5mm}
+  .mf-logo{height:11mm;max-width:24mm}
+  .mf-org{font-size:11pt}
+  .mf-org-sub{font-size:7.5pt}
+  .mf-carrier{padding:1.5mm 2mm}
+  .mf-c-row{font-size:7.5pt;line-height:1.3}
+  .mf-c-k{min-width:18mm;font-size:7pt}
+  .mf-subtitle{padding:1mm 2mm}
+  .mf-st-main{font-size:9pt}
+  .mf-st-page{font-size:7.5pt}
+  .mf-pickup{padding:1.5mm 3mm}
+  .mf-pickup-v{font-size:10pt}
+  .mf-pickup-k{font-size:7.5pt}
+  .mf-pickup-count{font-size:8pt}
+  .mf-table{font-size:7.5pt}
+  .mf-table thead th{padding:1.2mm 0.8mm;font-size:7pt}
+  .mf-table tbody td{padding:0.7mm 1mm;height:4.8mm;line-height:1.15}
+  .mf-foot{padding-top:1.5mm;gap:6px}
+  .mf-note{font-size:7pt}
+  .mf-stamp-img{max-width:22mm;max-height:12mm}
+  .no-print{display:none !important}
 }
 
 /* ============================================================
