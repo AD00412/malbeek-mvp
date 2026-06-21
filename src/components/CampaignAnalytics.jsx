@@ -4,6 +4,7 @@ import { tableToDocx } from '../lib/docx'
 import { useUI } from '../lib/useUI'
 import { trace } from '../lib/debugLog'
 import Icon from './Icon'
+import RatingStars from './RatingStars'
 import FinancialReport from './FinancialReport'
 
 function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
@@ -37,6 +38,25 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
   // تفاصيلٌ زمنية + نقاط الركوب + التحصيل — تُحمَّل مرّةً عند تغيّر الحملة
   const [detail, setDetail] = useState({ daily: [], topBoarding: [], collected: 0, refunded: 0, refundPending: 0, refundPendingCount: 0 })
   const [loadErr, setLoadErr] = useState(false)
+  // تقييمُ الحملة (المعتمرون → الحملة) — متوسّطٌ + عددٌ + أحدثُ التعليقات
+  const [ratingSummary, setRatingSummary] = useState({ avg: 0, count: 0, recent: [] })
+  useEffect(() => {
+    if (!subscriberId) { setRatingSummary({ avg: 0, count: 0, recent: [] }); return }
+    let cancel = false
+    ;(async () => {
+      const { data, error } = await supabase.from('ratings')
+        .select('stars, comment, created_at')
+        .eq('subscriber_id', subscriberId).eq('direction', 'customer_to_subscriber')
+        .order('created_at', { ascending: false })
+      if (cancel || error) return
+      const rows = data || []
+      const sum = rows.reduce((s, r) => s + (Number(r.stars) || 0), 0)
+      const avg = rows.length ? sum / rows.length : 0
+      const recent = rows.filter((r) => (r.comment || '').trim()).slice(0, 5)
+      setRatingSummary({ avg, count: rows.length, recent })
+    })()
+    return () => { cancel = true }
+  }, [subscriberId])
   useEffect(() => {
     let cancel = false
     if (!subscriberId) { setDetail({ daily: [], topBoarding: [], collected: 0, refunded: 0, refundPending: 0, refundPendingCount: 0 }); return }
@@ -223,6 +243,27 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
           <span>قبل ٣٠ يومًا</span><span>اليوم</span>
         </div>
       </section>
+
+      {ratingSummary.count > 0 && (
+        <section className="panel">
+          <div className="panel-head">
+            <h3>تقييمُ الحملة</h3>
+            <span className="sub">من المعتمرين</span>
+            <span style={{ flex: 1 }} />
+            <RatingStars value={ratingSummary.avg} size={18} count={ratingSummary.count} />
+          </div>
+          {ratingSummary.recent.length > 0 && (
+            <div className="rating-reviews">
+              {ratingSummary.recent.map((r, i) => (
+                <div className="rating-review" key={i}>
+                  <RatingStars value={r.stars} size={14} />
+                  <p>{r.comment}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {detail.topBoarding.length > 0 && (
         <section className="panel">

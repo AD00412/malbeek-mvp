@@ -32,6 +32,8 @@ import { SkeletonList } from '../../components/Skeleton'
 import TeamSheet from '../../components/TeamSheet'
 import PendingInviteBanner from '../../components/PendingInviteBanner'
 import StatusTimeline from '../../components/StatusTimeline'
+import RatingSheet from '../../components/RatingSheet'
+import RatingStars from '../../components/RatingStars'
 import PilgrimSearch from '../../components/PilgrimSearch'
 import AdminAllTrips from '../../components/AdminAllTrips'
 import AdminPilgrimSearch from '../../components/AdminPilgrimSearch'
@@ -1062,6 +1064,8 @@ export function CustomerHome() {
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(null)        // الرحلة قيد الحجز (شاشة كاملة)
   const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
+  const [ratingFor, setRatingFor] = useState(null)    // رحلةٌ منتهيةٌ لتقييم حملتها { trip }
+  const [myRatings, setMyRatings] = useState(new Map())// trip_id → { stars, comment } (تقييماتي للحملة)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { confirm, toast } = useUI()
@@ -1150,6 +1154,22 @@ export function CustomerHome() {
     for (const b of myBookings) m.set(b.trip_id, b)
     return m
   }, [myBookings])
+
+  // تقييماتي للحملة (اتّجاه customer_to_subscriber) — لإظهار النجوم/زرّ التعديل.
+  useEffect(() => {
+    if (!user?.id) { setMyRatings(new Map()); return }
+    let cancel = false
+    ;(async () => {
+      const { data, error } = await supabase.from('ratings')
+        .select('trip_id, stars, comment')
+        .eq('profile_id', user.id).eq('direction', 'customer_to_subscriber')
+      if (cancel || error) return
+      const m = new Map()
+      for (const r of data || []) m.set(r.trip_id, { stars: r.stars, comment: r.comment })
+      setMyRatings(m)
+    })()
+    return () => { cancel = true }
+  }, [user?.id, myBookings])
 
   const tabs = [
     { section: 'رحلاتي' },
@@ -1244,6 +1264,9 @@ export function CustomerHome() {
               ) : (
                 myBookings.map((b) => {
                   const t = trips.find((x) => x.id === b.trip_id)
+                  const lc = t ? tripLifecycle(t) : null
+                  const ended = !!(lc && (lc.returned || lc.phase === 'returned'))
+                  const myRating = myRatings.get(b.trip_id)
                   return (
                     <div className="trip-card" key={b.id}>
                       <div className="tags">
@@ -1293,6 +1316,28 @@ export function CustomerHome() {
                           <span className="muted" style={{ fontSize: 12 }}>للتعديل أو الإلغاء تواصل مع الحملة</span>
                         )}
                       </div>
+                      {ended && t && (
+                        <div className="rating-cta">
+                          {myRating ? (
+                            <>
+                              <span className="rating-cta-lb"><Icon name="check" size={14} /> تقييمُك للحملة</span>
+                              <RatingStars value={myRating.stars} size={18} />
+                              <span style={{ flex: 1 }} />
+                              <button className="icon-btn" onClick={() => setRatingFor({ trip: t })}>
+                                <Icon name="edit" size={14} /> تعديل
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="rating-cta-lb">انتهت الرحلة — شاركنا تجربتك</span>
+                              <span style={{ flex: 1 }} />
+                              <button className="btn btn-gold btn-sm" onClick={() => setRatingFor({ trip: t })}>
+                                <Icon name="sparkle" size={14} /> قيّم الحملة
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })
@@ -1306,6 +1351,20 @@ export function CustomerHome() {
       <FeedbackFab onOpen={() => setFeedbackOpen(true)} />
       <FeedbackSheet open={feedbackOpen} audience="customer" onClose={() => setFeedbackOpen(false)} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={null} />
+      {ratingFor?.trip && (
+        <RatingSheet
+          open
+          direction="customer_to_subscriber"
+          subscriberId={ratingFor.trip.subscriber_id || sub?.id || subscriberId}
+          tripId={ratingFor.trip.id}
+          profileId={user?.id}
+          contextName={orgName || sub?.org_name}
+          onClose={() => setRatingFor(null)}
+          onSaved={({ stars, comment }) => {
+            setMyRatings((m) => { const n = new Map(m); n.set(ratingFor.trip.id, { stars, comment }); return n })
+          }}
+        />
+      )}
     </>
   )
 }

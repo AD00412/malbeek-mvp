@@ -815,6 +815,44 @@
 .fr-totals{background:#0b3a2c !important;color:#fbf7ee !important}
 .fr-totals td{background:#0b3a2c !important;color:#fbf7ee !important;border-top:0.8pt solid #0b5c43 !important;padding:1.5mm 1mm !important}
 
+/* ============================================================
+   التَّقييم الثُّنائيّ (RatingStars / RatingSheet) — هويّةُ mlk
+   ============================================================ */
+.rating-stars{display:inline-flex;align-items:center;gap:2px;direction:ltr}
+.rating-star{background:none;border:0;padding:0 1px;line-height:1;cursor:default;
+  color:var(--line);transition:color .12s ease,transform .1s ease}
+.rating-star.on{color:var(--gd-300)}
+.rating-star.editable{cursor:pointer}
+.rating-star.editable:hover{transform:scale(1.12)}
+.rating-count{font-family:var(--font-display);font-weight:800;font-size:12px;
+  color:var(--cr-200);margin-inline-start:8px;direction:rtl}
+
+/* اختيارُ النجوم داخل الورقة/النموذج */
+.rating-pick{display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:14px;margin:10px 0;border:1px solid var(--line);border-radius:14px;
+  background:var(--surface-2)}
+.rating-pick-label{font-family:var(--font-display);font-weight:800;font-size:13px;color:var(--gd-300)}
+
+/* سياقُ التقييم (اسمُ الحملة/المعتمر) */
+.rating-context{display:flex;align-items:center;gap:8px;color:var(--cr-50);
+  font-family:var(--font-display);font-weight:800;font-size:15px}
+.rating-context svg{color:var(--gd-300);flex:none}
+
+/* زرّ/شريطُ الدعوة للتقييم في بطاقة التذكرة */
+.rating-cta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;
+  padding-top:10px;border-top:1px dashed var(--line)}
+.rating-cta-lb{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--cr-200)}
+.rating-cta-lb svg{color:var(--em-500)}
+
+/* قسمُ تقييم المعتمر داخل نموذج الراكب */
+.rating-box{margin-top:14px;padding:14px;border:1px solid var(--line);
+  border-radius:14px;background:var(--surface-2)}
+
+/* أحدثُ تعليقات المعتمرين في التحليلات */
+.rating-reviews{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.rating-review{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.rating-review p{margin:6px 0 0;font-size:13px;color:var(--cr-200);line-height:1.55}
+
 /* ====== الجوال: نُصغّر المعاينة (الطباعةُ تَستردُّ A4 الحقيقيّ) ====== */
 @media(max-width:760px){
   .mf-sheet{width:100%;min-height:auto;padding:8mm 7mm;gap:4mm}
