@@ -101,6 +101,21 @@ async function main() {
     { subscriber_id: SUB_ID, profile_id: sub.id, role: 'owner' }, { onConflict: 'subscriber_id,profile_id' })
   console.log(`    ↳ حملة الاختبار (${SUB_ID})`)
 
+  // ★ ارفع حدَّ الرحلات التجريبيّة قبل الإدراج: المحفّز enforce_trial_trip_limit
+  //   يبقى فعّالًا حتّى مع service_role (يتجاوز RLS لا المحفّزات)، فالعمود يجب
+  //   أن يُرفَع فعليًّا وإلّا فشل إدراجُ الرحلة الثانية بـ TRIAL_TRIP_LIMIT.
+  {
+    const { error: limErr } = await db.from('subscribers').update({ trial_trip_limit: 10 }).eq('id', SUB_ID)
+    if (limErr) {
+      if (limErr.code === 'PGRST204' || limErr.code === '42703' || /trial_trip_limit|column.*not exist/i.test(limErr.message || '')) {
+        console.error('\n✗ العمود trial_trip_limit غير موجود (column does not exist) — طبّق APPLY_admin_trial_trip_limit.sql أوّلًا في SQL Editor، ثمّ أعِد التشغيل.')
+        process.exit(1)
+      }
+      throw limErr
+    }
+    console.log('    ↳ رُفِع حدُّ الرحلات التجريبيّة إلى ١٠')
+  }
+
   // ٤) ٣ رحلات: منقضية / جارية / قادمة
   const tripDefs = [
     { title: 'رحلة الاختبار — منقضية', depart_at: iso(-20), return_at: iso(-13), status: 'done',  price: 1500 },
@@ -206,6 +221,17 @@ async function main() {
   }
   console.log(`    ↳ حجوزُ المعتمر (${bookings.length}) + فردُ عائلة`)
 
+  // ── ملخّصٌ نهائيّ ──
+  const acct = [admin, support, sub, manager, agent, pilgrim]
+  const createdCount = acct.filter((a) => a.created).length
+  const [{ count: tripCount }, { count: paxCount }] = await Promise.all([
+    db.from('trips').select('*', { count: 'exact', head: true }).eq('subscriber_id', SUB_ID),
+    db.from('passengers').select('*', { count: 'exact', head: true }).eq('subscriber_id', SUB_ID),
+  ])
+  console.log('\n── ملخّصُ البذر ──')
+  console.log(`  الحسابات : ${acct.length} (جديد: ${createdCount}، موجود: ${acct.length - createdCount})`)
+  console.log(`  الرحلات  : ${tripCount ?? '?'}`)
+  console.log(`  المعتمرون: ${paxCount ?? '?'} (مُدخَلون + حجوزُ المعتمر + فردُ العائلة)`)
   console.log('\n✓ تمّ البذر. كلمة السرّ الموحّدة:', PASSWORD)
   console.log('  الحسابات: test+admin / test+support / test+sub / test+manager / test+agent / test+pilgrim @mulabeek.com')
 }

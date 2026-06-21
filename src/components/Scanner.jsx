@@ -52,6 +52,25 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         return
       }
 
+      // ★ مرحلتان متسلسلتان (صعود → تسكين) برمزٍ واحد:
+      //   التسكين يتطلّب صعودًا سابقًا، ومنعُ التكرار والتخطّي.
+      if (mode === 'checkin' && data.status !== 'boarded' && data.status !== 'checked_in') {
+        setResult({ ok: false, msg: `لم يُسجَّل صعودُه بعد — امسح «صعود الحافلة» أوّلًا · ${data.full_name}`, passenger: data })
+        return
+      }
+      // مُسجَّلٌ مسبقًا في نفس المرحلة → تأكيدٌ لطيفٌ بلا تحديثٍ مكرّر
+      if (data.status === targetStatus) {
+        lastScanRef.current = { code, at: Date.now() }
+        setResult({ ok: true, msg: `${targetLabel}: مُسجَّلٌ مسبقًا · ${data.full_name}`, passenger: data })
+        return
+      }
+      // في وضع الصعود: مَن سُكّن فقد صعد قطعًا — لا تُرجِعه للخلف
+      if (mode === 'board' && data.status === 'checked_in') {
+        lastScanRef.current = { code, at: Date.now() }
+        setResult({ ok: true, msg: `سبق صعودُه وتسكينُه · ${data.full_name}`, passenger: data })
+        return
+      }
+
       const patch = { status: targetStatus }
       if (mode === 'checkin') patch.checked_in_at = new Date().toISOString()
       else patch.boarded_at = new Date().toISOString()

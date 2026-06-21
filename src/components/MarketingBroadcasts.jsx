@@ -18,6 +18,7 @@ const STATUS_TONE = {
 const TARGET_LABEL = {
   all_customers: 'كلُّ المعتمرين',
   customers_of_trip: 'معتمرو رحلةٍ مُحدَّدة',
+  post_umrah: 'معتمرو الرحلات المنتهية',
   specific_emails: 'إيميلاتٌ يدويّة',
 }
 
@@ -175,8 +176,12 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
                 <select value={target} onChange={e => setTarget(e.target.value)}>
                   <option value="all_customers">كلُّ المعتمرين السابقين</option>
                   <option value="customers_of_trip">معتمرو رحلةٍ مُحدَّدة</option>
+                  <option value="post_umrah">معتمرو الرحلات المنتهية (عروضُ ما بعد العمرة)</option>
                   <option value="specific_emails">إيميلاتٌ يدويّة (إضافيّة)</option>
                 </select>
+                {target === 'post_umrah' && (
+                  <span className="hint">يُرسَل لمن أتمّ عمرته (رحلاتٌ منتهية) — مثاليٌّ لعروضِ المتابعة والرحلة القادمة.</span>
+                )}
               </div>
               {target === 'customers_of_trip' && (
                 <div className="field">

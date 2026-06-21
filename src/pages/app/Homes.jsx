@@ -1093,7 +1093,7 @@ export function CustomerHome() {
       setLoading(true)
     }
 
-    let sq = supabase.from('subscribers').select('id, org_name, store_url, logo_url')
+    let sq = supabase.from('subscribers').select('id, org_name, store_url, logo_url, bank_account_name, bank_name, bank_iban')
     sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
     let tq = supabase
       .from('trips')
