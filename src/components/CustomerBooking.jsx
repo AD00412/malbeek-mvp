@@ -50,6 +50,9 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [email, setEmail] = useState('')
   const [gender, setGender] = useState('male')
   const [isFamily, setIsFamily] = useState(false)
+  // أفراد العائلة (يُضافون فقط لو is_family=true ومَوضوعون كركّابٍ
+  // مَربوطين بـfamily_group_id مُشتركٍ بعد إتمام الحجز الرئيس)
+  const [familyMembers, setFamilyMembers] = useState([])  // [{name, relation, national_id, phone, gender}]
   const [seatNo, setSeatNo] = useState('')
   const [paymentRef, setPaymentRef] = useState('')
   const [boardingPoint, setBoardingPoint] = useState('')
@@ -276,10 +279,30 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     if (!booking?.id && !lc.bookable) { setErr(lc.reason); return }
     if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
     if (!phone.trim() || !isValidSaPhone(phone)) { setErr('رقم الجوال مطلوب (مثال: 05XXXXXXXX).'); return }
-    if (!email.trim() || !isValidEmail(email)) { setErr('البريد الإلكترونيّ مطلوب (لاستلام التذكرة والتَّحديثات).'); return }
-    if (nationalId.trim() && !isValidNationalId(nationalId)) { setErr('رقم الهوية/الإقامة غير صحيح (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
-    if (!boardingPoint.trim()) { setErr('مكان الركوب مطلوب (نَستهدف به المناطق).'); return }
+    if (!email.trim() || !isValidEmail(email)) { setErr('البريد الإلكترونيّ مطلوب.'); return }
+    if (!nationalId.trim() || !isValidNationalId(nationalId)) { setErr('رقم الهويّة الوطنيّة / الإقامة مَطلوبٌ (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
+    if (!boardingPoint.trim()) { setErr('مكان الركوب مَطلوبٌ (نَستهدف به المناطق).'); return }
     if (!seatNo) { setErr('اختر مقعدك من الخريطة.'); return }
+    // التحقّقُ من أفراد العائلة (إن وُجدوا)
+    if (isFamily) {
+      if (familyMembers.length === 0) {
+        setErr('اخترت «ضمن عائلة» — أَضف أفراد العائلة أو ألغِ الاختيار.'); return
+      }
+      for (let i = 0; i < familyMembers.length; i++) {
+        const m = familyMembers[i]
+        const n = (m.name || '').trim()
+        const nid = (m.national_id || '').trim()
+        if (!n) { setErr(`الفرد ${i + 1}: الاسم مَطلوب.`); return }
+        if (n.split(/\s+/).filter(Boolean).length < 2) { setErr(`الفرد ${i + 1}: اكتب اسمًا ثُنائيًّا فأكثر.`); return }
+        if (!m.relation) { setErr(`الفرد ${i + 1}: صِلةُ القرابة مَطلوبة.`); return }
+        if (!nid || !isValidNationalId(nid)) { setErr(`الفرد ${i + 1}: رقم الهويّة مَطلوبٌ وصحيح.`); return }
+        if (m.phone && !isValidSaPhone(m.phone)) { setErr(`الفرد ${i + 1}: رقمُ جوّالٍ غير صحيح.`); return }
+      }
+      // مَنعُ تَكرارِ رقمَي هويّاتٍ بين الأفراد + مع الحاجز الرئيس
+      const allIds = [toLatinDigits(nationalId).trim(), ...familyMembers.map(m => toLatinDigits(m.national_id).trim())]
+      const dupe = allIds.find((v, idx) => allIds.indexOf(v) !== idx)
+      if (dupe) { setErr(`رقمُ الهويّة ${dupe} مُكرَّرٌ — تَحقّق من الأسماء.`); return }
+    }
     setErr(''); setBusy(true)
     const payload = {
       full_name: cleanName(fullName),
@@ -316,6 +339,41 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       }
       row = result.data
       setBooking(row)
+
+      // ★ إنشاءُ أفراد العائلة (ركّابٌ منفصلون بـfamily_group_id مُشترك)
+      //   ملاحظة: المقاعدُ تُترك null للأدمن لتَخصيصها أو يَحجزها كلُّ
+      //   فردٍ لاحقًا (مَرحلة ٢). نَسجّل العائلةَ بالكامل تَحت الحاجز
+      //   الرئيس مع علاقاتهم.
+      if (isFamily && familyMembers.length > 0 && row?.id) {
+        const familyGroupId = row.family_group_id || crypto.randomUUID()
+        // تَعليمُ الرئيس بنفس family_group_id + family_relation='self'
+        await supabase.from('passengers').update({
+          family_group_id: familyGroupId,
+          family_relation: 'self',
+        }).eq('id', row.id)
+        // إدراجُ كلّ فردٍ كَركّابٍ مَربوطٍ
+        const membersPayload = familyMembers.map(m => ({
+          trip_id: trip.id,
+          subscriber_id: sub.id,
+          full_name: cleanName(m.name),
+          national_id: toLatinDigits(m.national_id).trim(),
+          phone: m.phone ? normalizePhone(m.phone) : null,
+          gender: m.gender || 'male',
+          is_family: true,
+          family_group_id: familyGroupId,
+          family_relation: m.relation,
+          boarding_point: boardingPoint.trim(),
+          // seat_no يَبقى null — تُخصَّص من قِبل الحملة لاحقًا
+        }))
+        const { error: famErr } = await supabase.from('passengers').insert(membersPayload)
+        if (famErr) {
+          // فشلٌ في إدراج العائلة — الحجزُ الرئيسُ نجح، لكن نُخبر المستخدم
+          toast('تَمّ حَجزُك، لكن تَعذّر تَسجيلُ بعض أفراد العائلة. تَواصل مع الحملة.', { type: 'error' })
+        } else {
+          toast(`تَمّ تَسجيلُ ${familyMembers.length} فرد عائلة ✓`, { type: 'success' })
+        }
+      }
+
       // ★ مُزامنةُ customers (بريد + مكان ركوب + اسم/جوّال/هويّة)
       //   لِيَستفيد التَّسويقُ الجماعيّ وتَسهيلُ الحجوزات القادمة.
       try {
@@ -421,9 +479,98 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                     </select>
                   </div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--cr-200)', alignSelf: 'flex-end', paddingBottom: 12 }}>
-                    <input type="checkbox" checked={isFamily} onChange={(e) => setIsFamily(e.target.checked)} /> ضمن عائلة
+                    <input type="checkbox" checked={isFamily} onChange={(e) => {
+                      setIsFamily(e.target.checked)
+                      if (e.target.checked && familyMembers.length === 0) {
+                        setFamilyMembers([{ name: '', relation: '', national_id: '', phone: '', gender: 'male' }])
+                      }
+                    }} /> ضمن عائلة
                   </label>
                 </div>
+
+                {/* أفراد العائلة — يَظهر فقط لو الخيار مُفعَّل */}
+                {isFamily && (
+                  <div style={{ marginTop: 8, padding: 14, border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface-2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+                      <strong style={{ fontSize: 14, color: 'var(--cr-50)' }}>أفرادُ العائلة</strong>
+                      <span style={{ flex: 1 }} />
+                      <span className="muted" style={{ fontSize: 11.5 }}>{familyMembers.length} فرد</span>
+                    </div>
+                    <div className="hint" style={{ marginBottom: 10, display: 'block' }}>
+                      مكانُ الركوب مُوحَّدٌ معك. كلُّ فردٍ يَحتاج اسمَه ورقمَ هويّته وصِلةَ القرابة.
+                      المقاعدُ تُخصّصها الحملة بَعدَ الحجز.
+                    </div>
+                    {familyMembers.map((m, i) => (
+                      <div key={i} style={{ padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                          <strong style={{ fontSize: 12.5, color: 'var(--em-500)' }}>الفرد {i + 1}</strong>
+                          <span style={{ flex: 1 }} />
+                          <button type="button" style={{ background: 'transparent', border: 0, color: 'var(--danger-ink)', cursor: 'pointer', fontSize: 12 }}
+                                  onClick={() => setFamilyMembers(prev => prev.filter((_, idx) => idx !== i))}>
+                            إزالة
+                          </button>
+                        </div>
+                        <div className="field" style={{ marginBottom: 8 }}>
+                          <label style={{ fontSize: 12 }}>الاسم الرباعي *</label>
+                          <input type="text" value={m.name} placeholder="الاسم كما في الهوية"
+                                 onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} />
+                        </div>
+                        <div className="grid-2">
+                          <div className="field">
+                            <label style={{ fontSize: 12 }}>صِلةُ القرابة *</label>
+                            <select value={m.relation}
+                                    onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, relation: e.target.value } : x))}>
+                              <option value="">— اختر —</option>
+                              <option value="spouse">زوج/زوجة</option>
+                              <option value="son">ابن</option>
+                              <option value="daughter">ابنة</option>
+                              <option value="father">أب</option>
+                              <option value="mother">أم</option>
+                              <option value="brother">أخ</option>
+                              <option value="sister">أخت</option>
+                              <option value="grandfather">جدّ</option>
+                              <option value="grandmother">جدّة</option>
+                              <option value="grandson">حفيد</option>
+                              <option value="granddaughter">حفيدة</option>
+                              <option value="uncle">عمّ/خال</option>
+                              <option value="aunt">عمّة/خالة</option>
+                              <option value="nephew">ابن أخ/أخت</option>
+                              <option value="niece">ابنة أخ/أخت</option>
+                              <option value="other">قريبٌ آخر</option>
+                            </select>
+                          </div>
+                          <div className="field">
+                            <label style={{ fontSize: 12 }}>الجنس</label>
+                            <select value={m.gender}
+                                    onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, gender: e.target.value } : x))}>
+                              <option value="male">ذكر</option>
+                              <option value="female">أنثى</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="grid-2">
+                          <div className="field ltr">
+                            <label style={{ fontSize: 12 }}>رقم الهويّة / الإقامة *</label>
+                            <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={m.national_id}
+                                   onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, national_id: e.target.value } : x))} />
+                          </div>
+                          <div className="field ltr">
+                            <label style={{ fontSize: 12 }}>رقم الجوال <span className="muted">(اختياريّ)</span></label>
+                            <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={m.phone}
+                                   onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, phone: e.target.value } : x))} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button"
+                            onClick={() => setFamilyMembers(prev => [...prev, { name: '', relation: '', national_id: '', phone: '', gender: 'male' }])}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                                     background: 'transparent', border: '1px dashed var(--em-500)', color: 'var(--em-500)',
+                                     borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      <Icon name="plus" size={14} /> إضافةُ فردٍ آخر
+                    </button>
+                  </div>
+                )}
               </div>
 
               {isFull && (
