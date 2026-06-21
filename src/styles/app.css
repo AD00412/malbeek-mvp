@@ -794,6 +794,27 @@
   padding:2mm 6mm;font-size:8pt;text-align:center}
 .mf-stamp-img{max-width:26mm;max-height:14mm;object-fit:contain;transform:rotate(-3deg)}
 
+/* ============================================================
+   تَقريرٌ ماليّ (FinancialReport) — يَتبنّى هَيكلَ الكَشف نَفسه،
+   مع إضافة بطاقاتِ مُلخَّصٍ كبيرةٍ وجدولِ تَفصيل
+   ============================================================ */
+.fr-sheet{padding-top:8mm}
+.fr-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin:2mm 0 3mm}
+.fr-kpi{background:linear-gradient(180deg,#f4f1e7 0%,#ece6d4 100%);
+  border:0.6pt solid #c9beaa;border-radius:4px;padding:4mm 3mm;
+  display:flex;flex-direction:column;gap:1.5mm;min-height:22mm;justify-content:center}
+.fr-kpi-lb{font-size:8.5pt;color:#5a6a5e;font-weight:600}
+.fr-kpi-num{font-family:var(--font-display);font-weight:900;font-size:18pt;color:#0b3a2c;line-height:1}
+.fr-kpi-num > span{font-size:10pt;color:#5a6a5e;font-weight:600;margin-inline-start:2px}
+.fr-kpi-sub{font-size:7.5pt;color:#5a6a5e;line-height:1.3}
+.fr-kpi-net{background:linear-gradient(180deg,#e6f0e9 0%,#cfe2d5 100%);border-color:#0b5c43}
+.fr-kpi-net .fr-kpi-num{color:#0b5c43}
+.fr-alert{background:#fef4e8;border:0.6pt solid #c98e2e;color:#7a4a08;
+  border-radius:4px;padding:2.5mm 3mm;font-size:9pt;font-weight:600;margin-bottom:3mm}
+.fr-table tbody tr:nth-child(even){background:#fafaf6}
+.fr-totals{background:#0b3a2c !important;color:#fbf7ee !important}
+.fr-totals td{background:#0b3a2c !important;color:#fbf7ee !important;border-top:0.8pt solid #0b5c43 !important;padding:1.5mm 1mm !important}
+
 /* ====== الجوال: نُصغّر المعاينة (الطباعةُ تَستردُّ A4 الحقيقيّ) ====== */
 @media(max-width:760px){
   .mf-sheet{width:100%;min-height:auto;padding:8mm 7mm;gap:4mm}
@@ -806,6 +827,8 @@
   .mf-pickup{padding:3mm 4mm;gap:8px}
   .mf-pickup-v{font-size:11pt}
   .mf-foot{flex-direction:column;align-items:flex-start;gap:10px}
+  .fr-kpis{grid-template-columns:repeat(2,1fr)}
+  .fr-kpi-num{font-size:15pt}
 }
 
 /* ====== الطباعة: A4 مَضبوطٌ + كَثافةٌ تَفي بـ٢٨ صفًّا فعلًا ====== */
@@ -837,6 +860,14 @@
   .mf-sheet:last-of-type{page-break-after:auto;break-after:auto}
   .mf-note{font-size:7pt}
   .mf-stamp-img{max-width:22mm;max-height:12mm}
+  .fr-kpis{gap:2.5mm;margin:1.5mm 0 2.5mm}
+  .fr-kpi{padding:3mm 2.5mm;min-height:18mm}
+  .fr-kpi-lb{font-size:7.5pt}
+  .fr-kpi-num{font-size:14pt}
+  .fr-kpi-num > span{font-size:8.5pt}
+  .fr-kpi-sub{font-size:6.5pt}
+  .fr-alert{font-size:8pt;padding:1.5mm 2.5mm;margin-bottom:2mm}
+  .fr-totals td{padding:1.2mm 1mm !important;font-size:8pt !important}
   .no-print{display:none !important}
 }
 

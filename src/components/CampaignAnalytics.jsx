@@ -4,6 +4,7 @@ import { tableToDocx } from '../lib/docx'
 import { useUI } from '../lib/useUI'
 import { trace } from '../lib/debugLog'
 import Icon from './Icon'
+import FinancialReport from './FinancialReport'
 
 function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
 function dayKey(iso) { return iso ? iso.slice(0, 10) : '' }
@@ -16,8 +17,9 @@ function dayKey(iso) { return iso ? iso.slice(0, 10) : '' }
  * @param {string} subscriberId   لجلب التفاصيل الزمنية ونقاط الركوب
  * @param {string} [org]          اسم الحملة لتبييض التقرير المُصدَّر
  */
-export default function CampaignAnalytics({ trips = [], byTrip, totals, subscriberId, org }) {
+export default function CampaignAnalytics({ trips = [], byTrip, totals, subscriberId, org, sub }) {
   const { toast } = useUI()
+  const [showReport, setShowReport] = useState(false)
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   const totalSeats = trips.reduce((s, t) => s + (Number(t.capacity) || 0), 0)
   const occupancy = pct(tt.count, totalSeats)
@@ -170,8 +172,11 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
             <h3>التحصيل المالي</h3>
             <span className="sub">عبر الحملة</span>
             <span style={{ flex: 1 }} />
+            <button className="btn btn-em btn-sm" onClick={() => setShowReport(true)} disabled={trips.length === 0}>
+              <Icon name="manifest" size={14} /> تَقرير PDF
+            </button>
             <button className="btn btn-ghost btn-sm" onClick={exportFinancial} disabled={trips.length === 0}>
-              <Icon name="edit" size={14} /> تقرير Word
+              <Icon name="edit" size={14} /> تَقرير Word
             </button>
             {hasPricing && (
               <span className={`tag ${expectedRevenue > 0 && detail.collected >= expectedRevenue ? 'ok' : 'warn'}`}>
@@ -257,6 +262,10 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
             </table>
           </div>
         </section>
+      )}
+
+      {showReport && (
+        <FinancialReport trips={trips} byTrip={byTrip} sub={sub} onClose={() => setShowReport(false)} />
       )}
     </>
   )

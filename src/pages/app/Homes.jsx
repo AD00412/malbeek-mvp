@@ -722,7 +722,7 @@ export function SubscriberHome() {
             )}
 
             {view === 'analytics' && (
-              <CampaignAnalytics trips={trips} byTrip={paxStats.byTrip} totals={paxStats.totals} subscriberId={sub?.id} org={sub?.org_name} />
+              <CampaignAnalytics trips={trips} byTrip={paxStats.byTrip} totals={paxStats.totals} subscriberId={sub?.id} org={sub?.org_name} sub={sub} />
             )}
 
             {view === 'marketing' && sub?.id && (
