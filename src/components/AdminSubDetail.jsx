@@ -28,6 +28,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [actionPanel, setActionPanel] = useState(null)  // 'extend' | 'suspend' | 'note' | null
   const [extendDays, setExtendDays] = useState(30)
+  const [tripLimit, setTripLimit] = useState(1)
   const [suspendReason, setSuspendReason] = useState('')
   const [adminNote, setAdminNote] = useState('')
   const { toast, confirm } = useUI()
@@ -50,7 +51,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
       supabase.from('platform_audit_log').select('id, admin_name, admin_role, action, details, created_at')
         .eq('target_type', 'subscriber').eq('target_id', sub.id)
         .order('created_at', { ascending: false }).limit(20),
-      supabase.from('subscribers').select('id, admin_notes, suspended_at, suspended_reason, trial_extended_until, contact_phone, plan, created_at')
+      supabase.from('subscribers').select('id, admin_notes, suspended_at, suspended_reason, trial_extended_until, trial_trip_limit, contact_phone, plan, created_at')
         .eq('id', sub.id).maybeSingle(),
     ])
     setTrips(ts ?? [])
@@ -58,6 +59,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     setAuditLog(alog ?? [])
     setFullSub(srow || null)
     setAdminNote(srow?.admin_notes || '')
+    setTripLimit(srow?.trial_trip_limit || 1)
     setLoading(false)
   }, [sub?.id, sub?.owner_id])
 
@@ -120,6 +122,15 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     if (success) setActionPanel(null)
   }
 
+  async function doSetTripLimit() {
+    if (tripLimit < 1 || tripLimit > 100) { toast('الحدّ بين ١ و١٠٠', { type: 'error' }); return }
+    const success = await rpcAction('set_trial_trip_limit',
+      { p_sub: sub.id, p_limit: tripLimit, p_reason: null },
+      `حُدّد حدُّ الرحلات التجريبيّة بـ ${tripLimit} ✓`
+    )
+    if (success) setActionPanel(null)
+  }
+
   async function doSuspend() {
     if (suspendReason.trim().length < 5) { toast('اكتب سببًا واضحًا (٥+ أحرف)', { type: 'error' }); return }
     const success = await rpcAction('suspend_subscriber',
@@ -168,6 +179,9 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
             </span>
             {isSuspended && <span className="mlk-pill danger">مُعلَّق</span>}
             {trialExtended && !isSuspended && <span className="mlk-pill em">تَجربةٌ مُمدَّدة</span>}
+            {sub.plan !== 'paid' && subData.trial_trip_limit > 1 && (
+              <span className="mlk-pill em">حدُّ الرحلات: {subData.trial_trip_limit}</span>
+            )}
           </div>
           <div className="mlk-list-title" style={{ fontSize: 18 }}>{sub.org_name}</div>
           <button type="button" className="ltr"
@@ -227,6 +241,9 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
                 </button>
               )}
               <button className="mlk-action" onClick={() => setActionPanel('extend')}>تَمديد التَّجربة</button>
+              {sub.plan !== 'paid' && (
+                <button className="mlk-action" onClick={() => setActionPanel('triplimit')}>حدُّ الرحلات</button>
+              )}
               {!isSuspended ? (
                 <button className="mlk-action danger" onClick={() => setActionPanel('suspend')}>تَعليق الحساب</button>
               ) : (
@@ -253,6 +270,26 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
                   {busy ? <span className="spinner" /> : 'تَمديد'}
                 </button>
                 <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {actionPanel === 'triplimit' && (
+          <div className="mlk-card">
+            <h2 className="mlk-h2">حدُّ الرحلات التجريبيّة</h2>
+            <div className="form">
+              <div className="field">
+                <label>كم رحلةً تُتاح للباقة التجريبيّة؟</label>
+                <input type="number" min="1" max="100" value={tripLimit}
+                       onChange={(e) => setTripLimit(Number(e.target.value) || 0)} />
+                <span className="hint">الافتراضيّ ١. يُطبَّق على إنشاء الرحلات للمشترك على الباقة التجريبيّة فقط.</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="mlk-action primary" onClick={doSetTripLimit} disabled={busy}>
+                  {busy ? <span className="spinner" /> : 'حفظ الحدّ'}
+                </button>
+                <button className="mlk-action" onClick={() => { setActionPanel(null); setTripLimit(subData.trial_trip_limit || 1) }} disabled={busy}>إلغاء</button>
               </div>
             </div>
           </div>
@@ -397,12 +434,14 @@ function labelAction(a) {
     case 'suspend':      return 'تَعليق الحساب'
     case 'restore':      return 'إعادة تَفعيل'
     case 'set_note':     return 'تَحديث ملاحظة'
+    case 'set_trip_limit': return 'حدُّ الرحلات'
     default: return a
   }
 }
 
 function formatDetails(d) {
   if (d.from && d.to) return `${d.from} → ${d.to}`
+  if (d.action === 'set_trip_limit' || (d.old != null && d.new != null)) return `${d.old} → ${d.new} رحلة`
   if (d.days) return `${d.days} يومًا`
   if (d.reason) return d.reason
   return null
