@@ -7,7 +7,7 @@ import Icon from './Icon'
 import SeatMap from './SeatMap'
 import SignedImage from './SignedImage'
 import CompassMark from './CompassMark'
-import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, safeExt } from '../lib/format'
+import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, isValidEmail, safeExt } from '../lib/format'
 import { loadTripBuses, busLayout, busName } from '../lib/buses'
 import { translateRpcError } from '../lib/rpcErrors'
 import { tripLifecycle } from '../lib/tripLifecycle'
@@ -47,6 +47,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [fullName, setFullName] = useState('')
   const [nationalId, setNationalId] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [gender, setGender] = useState('male')
   const [isFamily, setIsFamily] = useState(false)
   const [seatNo, setSeatNo] = useState('')
@@ -120,7 +121,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
         .eq('trip_id', trip.id).eq('profile_id', user.id).maybeSingle(),
       loadTripBuses(trip.id),
       subId
-        ? supabase.from('customers').select('pickup_location')
+        ? supabase.from('customers').select('id, pickup_location, email')
             .eq('profile_id', user.id).eq('subscriber_id', subId).maybeSingle()
         : Promise.resolve({ data: null }),
     ])
@@ -149,9 +150,11 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       setIsFamily(!!mine.is_family); setSeatNo(mine.seat_no ?? '')
       setPaymentRef(mine.payment_ref ?? '')
       setBoardingPoint(mine.boarding_point ?? '')
+      setEmail(myCustomer?.email ?? user?.email ?? '')
     } else if (!cached?.booking) {
       // لا تَكتب فوق نموذجٍ مَملوءٍ من المخزَّن لو الشبكة رجعت null زائفًا
       setFullName(profile?.full_name ?? ''); setPhone(profile?.phone ?? '')
+      setEmail(myCustomer?.email ?? user?.email ?? '')
       setBoardingPoint(myCustomer?.pickup_location || trip?.boarding_point || '')
     }
 
@@ -272,8 +275,10 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     // قفل دورة الحياة: لا حجزَ جديدٌ في رحلةٍ مغلقةٍ/منتهيةٍ أو فات موعدها (القاعدة تحرس أيضًا).
     if (!booking?.id && !lc.bookable) { setErr(lc.reason); return }
     if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
+    if (!phone.trim() || !isValidSaPhone(phone)) { setErr('رقم الجوال مطلوب (مثال: 05XXXXXXXX).'); return }
+    if (!email.trim() || !isValidEmail(email)) { setErr('البريد الإلكترونيّ مطلوب (لاستلام التذكرة والتَّحديثات).'); return }
     if (nationalId.trim() && !isValidNationalId(nationalId)) { setErr('رقم الهوية/الإقامة غير صحيح (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
-    if (phone.trim() && !isValidSaPhone(phone)) { setErr('رقم الجوال غير صحيح (مثال: 05XXXXXXXX).'); return }
+    if (!boardingPoint.trim()) { setErr('مكان الركوب مطلوب (نَستهدف به المناطق).'); return }
     if (!seatNo) { setErr('اختر مقعدك من الخريطة.'); return }
     setErr(''); setBusy(true)
     const payload = {
@@ -311,6 +316,31 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       }
       row = result.data
       setBooking(row)
+      // ★ مُزامنةُ customers (بريد + مكان ركوب + اسم/جوّال/هويّة)
+      //   لِيَستفيد التَّسويقُ الجماعيّ وتَسهيلُ الحجوزات القادمة.
+      try {
+        const subId = sub?.id ?? trip?.subscriber_id
+        if (subId && user?.id) {
+          const customerPayload = {
+            subscriber_id: subId,
+            profile_id: user.id,
+            full_name: cleanName(fullName),
+            national_id: toLatinDigits(nationalId).trim() || null,
+            phone: normalizePhone(phone) || null,
+            email: email.trim().toLowerCase(),
+            pickup_location: boardingPoint.trim(),
+          }
+          // upsert على (profile_id, subscriber_id) — يَتطلّب unique index
+          // (موجودٌ ضمنيًّا عبر RLS، لكن نَستعمل select-then-update/insert)
+          const { data: existing } = await supabase.from('customers')
+            .select('id').eq('profile_id', user.id).eq('subscriber_id', subId).maybeSingle()
+          if (existing?.id) {
+            await supabase.from('customers').update(customerPayload).eq('id', existing.id)
+          } else {
+            await supabase.from('customers').insert(customerPayload)
+          }
+        }
+      } catch { /* مُزامنةُ CRM best-effort — لا تَكسر الحجز */ }
       onBooked?.()
       toast(booking?.id ? 'تم تحديث حجزك ✓' : 'تم تأكيد حجزك بنجاح ✓', { type: 'success' })
       setShowTicket(true)
@@ -370,13 +400,17 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 </div>
                 <div className="grid-2">
                   <div className="field ltr">
-                    <label>رقم الهوية / الإقامة</label>
-                    <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+                    <label>رقم الجوال <span className="req">*</span></label>
+                    <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                   </div>
                   <div className="field ltr">
-                    <label>رقم الجوال</label>
-                    <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <label>البريد الإلكترونيّ <span className="req">*</span></label>
+                    <input type="email" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
+                </div>
+                <div className="field ltr">
+                  <label>رقم الهوية / الإقامة</label>
+                  <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
                 </div>
                 <div className="grid-2">
                   <div className="field">
@@ -432,10 +466,11 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
               </div>
 
               <div className="field" style={{ marginTop: 12 }}>
-                <label>مكان الركوب</label>
-                <input type="text"
+                <label>مكان الركوب <span className="req">*</span></label>
+                <input type="text" required
                   placeholder={trip?.boarding_point || 'مثال: محطّة جازان المركزيّة'}
                   value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
+                <span className="hint">يَستهدف به صاحبُ الحملة عُروضَه المُستقبليّة لمنطقتك.</span>
               </div>
 
               {trip?.price != null && (
