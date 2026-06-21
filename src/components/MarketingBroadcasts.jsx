@@ -102,7 +102,7 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
       })
       if (error) throw error
       const row = Array.isArray(data) ? data[0] : data
-      const broadcastId = row?.broadcast_id
+      const broadcastId = row?.out_broadcast_id ?? row?.broadcast_id
       if (!broadcastId) throw new Error('فشل إنشاءُ الحملة')
 
       // ٢) إطلاقُ المُرسل (قد يَحتاج عدّةَ batches)
