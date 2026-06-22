@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
 import Icon from './Icon'
 import { fmtDateTime } from '../lib/format'
+import BottomSheet from './BottomSheet'
+import StaffRolesSheet from './StaffRolesSheet'
 
 const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
 const DAYS_AR = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
@@ -37,6 +39,7 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
   const { profile } = useAuth()
   const [activity, setActivity] = useState([])
   const [pendingHiring, setPendingHiring] = useState(0)
+  const [rolesOpen, setRolesOpen] = useState(false)
 
   // مَلاحظة: openFb و openMsg تَأتيان من AdminHome — لا نَعيد جَلبَهما هنا.
   // كذلك آخر المشتركين من prop `subs` مباشرةً — لا طلب إضافيّ.
@@ -161,6 +164,20 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
           </ul>
         )}
       </section>
+
+      {/* ─── ٦) الرتب والصلاحيات — للمالك فقط (admin) ─── */}
+      {profile?.role === 'admin' && (
+        <section className="mlk-recent" style={{ marginTop: 14 }}>
+          <h2 className="mlk-h">الفريق والصلاحيات</h2>
+          <button type="button" className="btn btn-ghost btn-block" onClick={() => setRolesOpen(true)}>
+            <Icon name="user" size={16} /> إدارة الرتب والصلاحيات
+          </button>
+        </section>
+      )}
+
+      <BottomSheet open={rolesOpen} onClose={() => setRolesOpen(false)} title="الرتب والصلاحيات">
+        {rolesOpen && <StaffRolesSheet />}
+      </BottomSheet>
     </div>
   )
 }
