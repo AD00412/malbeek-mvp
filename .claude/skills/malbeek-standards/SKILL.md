@@ -43,5 +43,14 @@ description: "استدعِه في أيّ مهمّة على منصّة ملبّي
 ## ٨) سير العمل لكل وحدة
 فرع → بناء `npm run build` نظيف → معاينة Playwright فعليّة (الوضعان + ٣٩٠px وديسكتوب) → `apply_migration` عبر MCP لو لزم + `get_advisors` → PR + دمج بعد التحقّق → تقرير مرقّم في «تقارير عمل منصة ملبّيك». **لا تقل «تمام» إلا بعد تحقّقٍ بصريٍّ فعليّ.** التواصل مقتضب (صمتٌ افتراضيّ، تقريرٌ عند الإنجاز).
 
-## مراجع
-السكِلز المرافقة: `supabase` + `supabase-postgres-best-practices` (RLS/هجرات/أمن) · `frontend-design` (اتجاه بصريّ) · `web-artifacts-builder` (بناء React/Tailwind). ملف المصادر: `Desktop/skills.md`.
+## التحقّق البصريّ الحيّ (إلزاميّ قبل الدمج)
+استخدم سكِل **`webapp-testing`** (Playwright) للتحقّق الفعليّ — لا تكتفِ بالبناء:
+- بدّل الثيم فعليّاً وافحص **الوضعين**؛ اختبر على **٣٩٠px + ديسكتوب** (صفر تجاوز أفقيّ، صفر عنصر داكن شاذّ في الفاتح، FAB في الوسط).
+- سجّل الدخول بحسابات `test+admin/manager/sub/support/pilgrim@mulabeek.com`، تنقّل بعدوانيّة، وارصد `console.error` بالـstack الكامل.
+- عند أي انهيار: `ErrorBoundary` يحفظ التفاصيل في `localStorage['mlk:last-error']` ويعرض «تفاصيل تقنية» — استخرج الرسالة + component stack لتحديد السبب الجذريّ.
+
+## مراجع السكِلز المرافقة
+- `supabase` + `supabase-postgres-best-practices` — RLS/هجرات/أمن/أداء.
+- `frontend-design` — اتجاه بصريّ. · `web-artifacts-builder` — بناء React/Tailwind.
+- `webapp-testing` — اختبار Playwright (التحقّق الحيّ). · `skill-creator` — تأليف سكِلز جديدة لملبّيك.
+- ملف المصادر: `Desktop/skills.md`.
