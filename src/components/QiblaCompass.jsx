@@ -7,7 +7,9 @@ import { useEffect, useState, useRef } from 'react'
  *  - زاوية القبلة مع رمز الكعبة المتحرّك
  *  - إحداثيّات المستخدم (مع اسم الموقع التقريبيّ)
  *  - المسافة الفعليّة إلى المسجد الحرام
- *  - توهّج ذهبيّ + اهتزاز خفيف عند المحاذاة (±٥°)
+ *  - توهّج زمرّديّ + اهتزاز خفيف عند المحاذاة (±٥°)
+ *  - زرٌّ واحدٌ يطلب إذن الحركة (DeviceOrientationEvent.requestPermission) ضمن
+ *    إيماءة المستخدم — بلا أيّ تعليمات سفاري. تدوير بـwebkitCompassHeading/alpha.
  */
 export default function QiblaCompass() {
   const [heading, setHeading] = useState(null)
@@ -54,6 +56,25 @@ export default function QiblaCompass() {
 
   async function activate() {
     setStage('asking')
+
+    // ① إذنُ الحركة/الاتجاه أوّلًا — يجب أن يُطلَب داخل إيماءة المستخدم مباشرةً
+    //    (iOS 13+). أيُّ await قبله (كالموقع) يُبطِل الإيماءة فيفشل الإذن. زرٌّ
+    //    واحدٌ يستدعي requestPermission() — بلا أيّ تعليمات سفاري.
+    const DOE = typeof DeviceOrientationEvent !== 'undefined' ? DeviceOrientationEvent : null
+    if (DOE && typeof DOE.requestPermission === 'function') {
+      try {
+        const result = await DOE.requestPermission()
+        if (result !== 'granted') { setStage('denied'); return }
+      } catch { setStage('denied'); return }
+    }
+
+    // ② فعّل مستمعَ الاتجاه فورًا (القرص يبدأ الدوران)
+    const evtName = 'ondeviceorientationabsolute' in window
+      ? 'deviceorientationabsolute' : 'deviceorientation'
+    window.addEventListener(evtName, onOrientation, true)
+    setStage('active')
+
+    // ③ ثمّ الموقع (لا يؤثّر على إذن الحركة) — يحسب زاوية القبلة والمسافة
     try {
       const pos = await new Promise((resolve, reject) => {
         if (!navigator.geolocation) return reject(new Error('no-geo'))
@@ -66,24 +87,11 @@ export default function QiblaCompass() {
       setQiblaDeg(calcQiblaBearing(latitude, longitude))
       setDistance(calcDistance(latitude, longitude))
     } catch {
-      // فولباك: الرياض كمركزٍ افتراضيٍّ للسعوديّة
+      // فولباك: الرياض كمركزٍ افتراضيٍّ للسعوديّة (القبلة تقريبيّة حتى يُتاح الموقع)
       setCoords({ lat: 24.7136, lon: 46.6753, accuracy: null })
       setQiblaDeg(calcQiblaBearing(24.7136, 46.6753))
       setDistance(calcDistance(24.7136, 46.6753))
     }
-
-    const DOE = typeof DeviceOrientationEvent !== 'undefined' ? DeviceOrientationEvent : null
-    if (DOE && typeof DOE.requestPermission === 'function') {
-      try {
-        const result = await DOE.requestPermission()
-        if (result !== 'granted') { setStage('denied'); return }
-      } catch { setStage('denied'); return }
-    }
-
-    const evtName = 'ondeviceorientationabsolute' in window
-      ? 'deviceorientationabsolute' : 'deviceorientation'
-    window.addEventListener(evtName, onOrientation, true)
-    setStage('active')
   }
 
   useEffect(() => {
@@ -222,7 +230,7 @@ export default function QiblaCompass() {
           {/* إبرةُ الاتجاه الثابتة — تُشير لأعلى دائمًا */}
           <g filter={aligned ? 'drop-shadow(0 0 9px rgba(52,211,153,.85))' : 'drop-shadow(0 2px 4px rgba(16,185,129,.5))'}>
             <polygon points={`${CX},20 ${CX - 8},${CY - 6} ${CX + 8},${CY - 6}`}
-              fill={aligned ? '#fbbf24' : 'url(#qb-needle)'}
+              fill={aligned ? '#34d399' : 'url(#qb-needle)'}
               style={{ transition: 'fill .25s' }} />
             <polygon points={`${CX},${VB - 20} ${CX - 6},${CY + 6} ${CX + 6},${CY + 6}`}
               fill="rgba(241,245,243,.4)" />
@@ -273,8 +281,8 @@ export default function QiblaCompass() {
         )}
         {stage === 'denied' && (
           <div className="qibla-denied">
-            <strong>الإذن مطلوبٌ لتعمل البوصلة</strong>
-            <span>على iPhone افتح Safari ← الإعدادات ← أعد تفعيل «الموقع» و«الحركة والاتجاه»</span>
+            <strong>نحتاج إذن الحركة والاتّجاه</strong>
+            <span>اضغط «إعادة المحاولة» وامنح الإذن ليبدأ القرص بالدوران.</span>
             <button type="button" className="btn btn-em btn-sm" onClick={activate}>إعادة المحاولة</button>
           </div>
         )}
