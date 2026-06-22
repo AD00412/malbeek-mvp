@@ -121,7 +121,13 @@ function makeFetchWithTimeout() {
   }
 }
 
-export const supabase = createClient(url, anon, {
+// حارسٌ آمن: عند غياب env (الاختبارات/CI بلا secrets، أو أدواتٌ تستورد الوحدات)
+// نستعمل قيمًا نائبةً كي لا يرمي createClient «supabaseUrl is required» فيعطّل
+// استيراد الوحدة. الإنتاج/التطوير يملكان env حقيقيًّا دائمًا فلا يتأثّران (التحذير
+// أعلاه يبقى يُنبّه على النقص). لا اتصالاتٍ شبكيّةً تحدث عند الإنشاء.
+const SAFE_URL = url || 'http://localhost:54321'
+const SAFE_ANON = anon || 'placeholder-anon-key'
+export const supabase = createClient(SAFE_URL, SAFE_ANON, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
