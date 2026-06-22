@@ -7,7 +7,7 @@ const KIND_AR = {
   contact: 'تواصل', suggestion: 'اقتراح', problem: 'مشكلة',
   question: 'سؤال', feature: 'ميزة',
 }
-const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمّت', spam: 'سبام' }
+const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمت', spam: 'سبام' }
 const STATUS_TONE = { open: 'warn', in_progress: 'info', resolved: 'ok', spam: 'muted' }
 
 function fmt(v) {
@@ -17,9 +17,9 @@ function fmt(v) {
 }
 
 /**
- * صندوقُ واردِ الرسائل العامّة (من نموذج التواصل في صفحة الهبوط).
- * يَعرض كلَّ رسائل public_messages للأدمن، مع إمكان الردِّ بقالبِ
- * منسَّقٍ عبر Edge Function reply-public-message.
+ * صندوق وارد الرسائل العامة (من نموذج التواصل في صفحة الهبوط).
+ * يعرض كل رسائل public_messages للأدمن، مع إمكان الرد بقالب
+ * منسق عبر Edge Function reply-public-message.
  */
 export default function PublicMessagesInbox() {
   const [rows, setRows] = useState([])
@@ -38,7 +38,7 @@ export default function PublicMessagesInbox() {
       .order('created_at', { ascending: false }).limit(200)
     if (filter !== 'all') q = q.eq('status', filter)
     const { data, error } = await q
-    if (error) setErr('تعذّر التحميل: ' + error.message)
+    if (error) setErr('تعذر التحميل: ' + error.message)
     else setRows(data ?? [])
     setLoading(false)
   }, [filter])
@@ -51,14 +51,14 @@ export default function PublicMessagesInbox() {
       if (error) throw error
       await load()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر الحفظ.')
+      setErr(e?.message ? 'تعذر الحفظ: ' + e.message : 'تعذر الحفظ.')
     } finally { setBusy(false) }
   }
 
-  /** يَستدعي Edge function ليُرسل ردًّا منسَّقًا + يُحدّث الـ DB */
+  /** يستدعي Edge function ليرسل ردا منسقا + يحدث الـ DB */
   async function sendReply(row) {
     const text = reply.trim()
-    if (text.length < 5) { setErr('اكتب ردًّا ٥ أحرفٍ فأكثر.'); return }
+    if (text.length < 5) { setErr('اكتب ردا ٥ أحرف فأكثر.'); return }
     setBusy(true); setErr(''); setOk('')
     try {
       const { data, error } = await supabase.functions.invoke('reply-public-message', {
@@ -66,11 +66,11 @@ export default function PublicMessagesInbox() {
       })
       if (error) throw error
       if (!data?.ok) throw new Error(data?.error || 'unknown')
-      setOk(`أُرسل الردُّ إلى ${data.sent_to} ✓`)
+      setOk(`أرسل الرد إلى ${data.sent_to} ✓`)
       setEditing(null); setReply('')
       await load()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الإرسال: ' + e.message : 'تعذّر إرسال الردّ.')
+      setErr(e?.message ? 'تعذر الإرسال: ' + e.message : 'تعذر إرسال الرد.')
     } finally {
       setBusy(false)
       setTimeout(() => setOk(''), 4000)
@@ -80,7 +80,7 @@ export default function PublicMessagesInbox() {
   return (
     <div className="mlk-tab">
       <header className="mlk-tab-head">
-        <h1 className="mlk-tab-title">الرسائل العامّة</h1>
+        <h1 className="mlk-tab-title">الرسائل العامة</h1>
         <span className="mlk-tab-count">{rows.length} رسالة</span>
         <button className="mlk-action" onClick={load} disabled={loading}>
           {loading ? <span className="spinner" /> : <Icon name="refresh" size={13} />}
@@ -92,7 +92,7 @@ export default function PublicMessagesInbox() {
         {[
           { k: 'open',        t: 'مفتوحة' },
           { k: 'in_progress', t: 'قيد المعالجة' },
-          { k: 'resolved',    t: 'تمّت' },
+          { k: 'resolved',    t: 'تمت' },
           { k: 'spam',        t: 'سبام' },
           { k: 'all',         t: 'الكل' },
         ].map((c) => (
@@ -105,7 +105,7 @@ export default function PublicMessagesInbox() {
       {ok  && <div className="alert ok">{ok}</div>}
 
       {loading ? <SkeletonList count={4} /> :
-       rows.length === 0 ? <div className="mlk-empty">لا توجد رسائلُ في هذه التصفية</div> :
+       rows.length === 0 ? <div className="mlk-empty">لا توجد رسائل في هذه التصفية</div> :
        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
          {rows.map((m) => (
            <article key={m.id} className="mlk-card">
@@ -126,7 +126,7 @@ export default function PublicMessagesInbox() {
 
              {m.reply && (
                <div className="mlk-card is-feature" style={{ marginTop: 10 }}>
-                 <div className="mlk-list-meta">ردُّ ملبّيك · {fmt(m.replied_at)}</div>
+                 <div className="mlk-list-meta">رد ملبّيك · {fmt(m.replied_at)}</div>
                  <div style={{ fontSize: 13.5, color: 'var(--cr-100)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{m.reply}</div>
                </div>
              )}
@@ -134,14 +134,14 @@ export default function PublicMessagesInbox() {
              {editing === m.id ? (
                <div className="form" style={{ marginTop: 10 }}>
                  <div className="field">
-                   <label>الردّ المنسَّق (سيُرسَل لـ {m.email})</label>
+                   <label>الرد المنسق (سيرسل لـ {m.email})</label>
                    <textarea rows={4} value={reply} onChange={(e) => setReply(e.target.value)}
-                             placeholder="اكتب ردًّا واضحًا…" />
+                             placeholder="اكتب ردا واضحا…" />
                    <span className="hint">{reply.length}/8000</span>
                  </div>
                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                    <button className="mlk-action primary" onClick={() => sendReply(m)} disabled={busy}>
-                     {busy ? <><span className="spinner" /> إرسال…</> : 'إرسال الردّ'}
+                     {busy ? <><span className="spinner" /> إرسال…</> : 'إرسال الرد'}
                    </button>
                    <button className="mlk-action" onClick={() => { setEditing(null); setReply('') }} disabled={busy}>إلغاء</button>
                  </div>
@@ -150,7 +150,7 @@ export default function PublicMessagesInbox() {
                <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                  {m.status !== 'resolved' && m.status !== 'spam' && (
                    <button className="mlk-action" onClick={() => { setEditing(m.id); setReply(m.reply || '') }}>
-                     ردّ منسَّق
+                     رد منسق
                    </button>
                  )}
                  {m.status === 'open' && (
@@ -174,7 +174,7 @@ export default function PublicMessagesInbox() {
   )
 }
 
-/** يَكسر مرفقات الرسائل العامّة إلى روابطَ موقّعة (٧ أيّامٍ). */
+/** يكسر مرفقات الرسائل العامة إلى روابط موقعة (٧ أيام). */
 function PublicAttachmentLinks({ paths }) {
   const [urls, setUrls] = useState({})
   useEffect(() => {

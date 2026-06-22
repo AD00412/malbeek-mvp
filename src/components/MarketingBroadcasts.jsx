@@ -7,8 +7,8 @@ import { fmtDateTime } from '../lib/format'
 import { translateRpcError } from '../lib/rpcErrors'
 
 const STATUS_LABEL = {
-  draft: 'مسودة', queued: 'جاهزة (الإرسال موقوف)', sending: 'يُرسَل…',
-  sent: 'أُرسلت', failed: 'فَشَل', cancelled: 'مُلغاة',
+  draft: 'مسودة', queued: 'جاهزة (الإرسال موقوف)', sending: 'يرسل…',
+  sent: 'أرسلت', failed: 'فشل', cancelled: 'ملغاة',
 }
 const STATUS_TONE = {
   draft: 'muted', queued: 'info', sending: 'info',
@@ -16,17 +16,17 @@ const STATUS_TONE = {
 }
 
 const TARGET_LABEL = {
-  all_customers: 'كلُّ المعتمرين',
-  customers_of_trip: 'معتمرو رحلةٍ مُحدَّدة',
+  all_customers: 'كل المعتمرين',
+  customers_of_trip: 'معتمرو رحلة محددة',
   post_umrah: 'معتمرو الرحلات المنتهية',
-  specific_emails: 'إيميلاتٌ يدويّة',
+  specific_emails: 'إيميلات يدوية',
 }
 
 /**
- * حملاتُ التَّسويق الجماعيّ — لصاحب الحملة فقط.
- * - مُؤلِّفٌ مُبسَّط (موضوع + نصّ + مُستهدَفون)
- * - عدّادُ مُتلقّين قبل الإرسال
- * - قائمةُ حملاتٍ سابقة بالحالات والعدّادات
+ * حملات التسويق الجماعي — لصاحب الحملة فقط.
+ * - مؤلف مبسط (موضوع + نص + مستهدفون)
+ * - عداد متلقين قبل الإرسال
+ * - قائمة حملات سابقة بالحالات والعدادات
  */
 export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
   const { toast, confirm } = useUI()
@@ -48,13 +48,13 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
   const loadHistory = useCallback(async () => {
     setLoading(true); setErr('')
     const { data, error } = await supabase.rpc('list_my_broadcasts', { p_limit: 30 })
-    if (error) setErr('تعذّر تحميل التاريخ: ' + (error.message || ''))
+    if (error) setErr('تعذر تحميل التاريخ: ' + (error.message || ''))
     else setHistory(data ?? [])
     setLoading(false)
   }, [])
   useEffect(() => { loadHistory() }, [loadHistory])
 
-  // عَدّاد الجمهور (تَحديثٌ تلقائيٌّ عند تَغيير الفلتر)
+  // عداد الجمهور (تحديث تلقائي عند تغيير الفلتر)
   useEffect(() => {
     let active = true
     ;(async () => {
@@ -73,22 +73,22 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
     return () => { active = false }
   }, [target, tripId, extraEmails])
 
-  // ★★ الإرسالُ الفعليُّ موقوفٌ عمدًا (حدٌّ صارم من الإدارة): لا استدعاءَ لـ
-  //    send-marketing-broadcast. هذا الإجراء يُجهّز الحملةَ ويحفظها «جاهزةً»
-  //    مع قائمة المتلقّين فقط — لا تُغادر أيُّ رسالةٍ النظامَ. تفعيلُ الإرسال
-  //    يحتاج إذنَ إدارة ملبّيك + ربطَ مزوّد واتساب/بريد.
+  // ★★ الإرسال الفعلي موقوف عمدا (حد صارم من الإدارة): لا استدعاء لـ
+  //    send-marketing-broadcast. هذا الإجراء يجهز الحملة ويحفظها «جاهزة»
+  //    مع قائمة المتلقين فقط — لا تغادر أي رسالة النظام. تفعيل الإرسال
+  //    يحتاج إذن إدارة ملبّيك + ربط مزود واتساب/بريد.
   async function handleSaveReady() {
     setErr('')
-    if (subject.trim().length < 3) return setErr('الموضوع قصيرٌ جدًّا.')
-    if (body.trim().length < 10) return setErr('النصّ قصيرٌ جدًّا.')
+    if (subject.trim().length < 3) return setErr('الموضوع قصير جدا.')
+    if (body.trim().length < 10) return setErr('النص قصير جدا.')
     if (target === 'customers_of_trip' && !tripId) return setErr('اختر رحلة.')
-    if (target === 'specific_emails' && audience === 0) return setErr('لا إيميلاتٌ صحيحة.')
-    if (audience === 0) return setErr('لا يَوجد جمهور بهذه الفلترة.')
+    if (target === 'specific_emails' && audience === 0) return setErr('لا إيميلات صحيحة.')
+    if (audience === 0) return setErr('لا يوجد جمهور بهذه الفلترة.')
 
     const ok = await confirm({
-      title: 'حفظُ الحملة',
-      message: `ستُحفَظ الحملةُ وتُجهَّز قائمةُ ${audience} متلقٍّ. لن تُرسَل الآن — الإرسالُ الفعليُّ موقوف.`,
-      confirmText: 'احفظ كحملةٍ جاهزة', cancelText: 'إلغاء',
+      title: 'حفظ الحملة',
+      message: `ستحفظ الحملة وتجهز قائمة ${audience} متلق. لن ترسل الآن — الإرسال الفعلي موقوف.`,
+      confirmText: 'احفظ كحملة جاهزة', cancelText: 'إلغاء',
     })
     if (!ok) return
 
@@ -105,13 +105,13 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
         p_extra_emails: emailsArr,
       })
       if (error) throw error
-      // لا إرسالَ — الحملةُ محفوظةٌ جاهزةً فقط.
-      toast('حُفظت الحملةُ وجُهِّز متلقّوها ✓ — الإرسالُ الفعليُّ موقوف.', { type: 'success' })
+      // لا إرسال — الحملة محفوظة جاهزة فقط.
+      toast('حفظت الحملة وجهز متلقوها ✓ — الإرسال الفعلي موقوف.', { type: 'success' })
       setSubject(''); setBody(''); setExtraEmails('')
       setTab('history')
       loadHistory()
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر حفظُ الحملة.'))
+      setErr(translateRpcError(e, 'تعذر حفظ الحملة.'))
     } finally {
       setSending(false)
     }
@@ -120,12 +120,12 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
   return (
     <div className="mlk-tab">
       <header className="mlk-tab-head">
-        <h1 className="mlk-tab-title">حملاتُ التَّسويق</h1>
+        <h1 className="mlk-tab-title">حملات التسويق</h1>
       </header>
 
       <div className="mlk-filter">
         <button className={`mlk-fchip ${tab === 'compose' ? 'active' : ''}`} onClick={() => setTab('compose')}>
-          إنشاءُ حملة
+          إنشاء حملة
         </button>
         <button className={`mlk-fchip ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>
           السابقة{history.length > 0 ? ` (${history.length})` : ''}
@@ -134,20 +134,20 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
 
       {tab === 'compose' && (
         <>
-          {/* المُؤلِّف */}
+          {/* المؤلف */}
           <div className="mlk-card">
             <h2 className="mlk-h2">الرسالة</h2>
             <div className="form">
               <div className="field">
                 <label>الموضوع</label>
                 <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
-                       placeholder="مثلًا: رحلاتُ رمضان الجديدة — احجز مبكّرًا" maxLength={150} />
+                       placeholder="مثلا: رحلات رمضان الجديدة — احجز مبكرا" maxLength={150} />
               </div>
               <div className="field">
-                <label>نصُّ الرسالة <span className="muted">(يُرى للمعتمر باسمه)</span></label>
+                <label>نص الرسالة <span className="muted">(يرى للمعتمر باسمه)</span></label>
                 <textarea rows={6} value={body} onChange={e => setBody(e.target.value)}
-                          placeholder="السلامُ عليكم،&#10;فُتحت حجوزاتُ رحلات رمضان…" maxLength={5000} />
-                <span className="hint">{body.length}/5000 — يُمكن استعمال أسطرٍ متعدّدة</span>
+                          placeholder="السلام عليكم،&#10;فتحت حجوزات رحلات رمضان…" maxLength={5000} />
+                <span className="hint">{body.length}/5000 — يمكن استعمال أسطر متعددة</span>
               </div>
             </div>
           </div>
@@ -159,13 +159,13 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
               <div className="field">
                 <label>الفئة</label>
                 <select value={target} onChange={e => setTarget(e.target.value)}>
-                  <option value="all_customers">كلُّ المعتمرين السابقين</option>
-                  <option value="customers_of_trip">معتمرو رحلةٍ مُحدَّدة</option>
-                  <option value="post_umrah">معتمرو الرحلات المنتهية (عروضُ ما بعد العمرة)</option>
-                  <option value="specific_emails">إيميلاتٌ يدويّة (إضافيّة)</option>
+                  <option value="all_customers">كل المعتمرين السابقين</option>
+                  <option value="customers_of_trip">معتمرو رحلة محددة</option>
+                  <option value="post_umrah">معتمرو الرحلات المنتهية (عروض ما بعد العمرة)</option>
+                  <option value="specific_emails">إيميلات يدوية (إضافية)</option>
                 </select>
                 {target === 'post_umrah' && (
-                  <span className="hint">يُرسَل لمن أتمّ عمرته (رحلاتٌ منتهية) — مثاليٌّ لعروضِ المتابعة والرحلة القادمة.</span>
+                  <span className="hint">يرسل لمن أتم عمرته (رحلات منتهية) — مثالي لعروض المتابعة والرحلة القادمة.</span>
                 )}
               </div>
               {target === 'customers_of_trip' && (
@@ -179,20 +179,20 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
               )}
               {target === 'specific_emails' && (
                 <div className="field ltr">
-                  <label>إيميلات (سطرٌ لكلّ واحد، أو فاصلة)</label>
+                  <label>إيميلات (سطر لكل واحد، أو فاصلة)</label>
                   <textarea rows={4} value={extraEmails} onChange={e => setExtraEmails(e.target.value)}
                             placeholder="customer1@example.com&#10;customer2@example.com" />
                 </div>
               )}
               <div className="alert" style={{ background: 'var(--surface-2)', color: 'var(--cr-100)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Icon name="customers" size={16} />
-                <span>سيَستلم <strong style={{ color: 'var(--em-500)' }}>{audience}</strong> {audience === 1 ? 'مُتلقّي' : 'مُتلقّيًا'}</span>
+                <span>سيستلم <strong style={{ color: 'var(--em-500)' }}>{audience}</strong> {audience === 1 ? 'متلقي' : 'متلقيا'}</span>
               </div>
               {audience === 0 && (
                 <p className="hint" style={{ color: 'var(--cr-300)' }}>
                   {target === 'specific_emails'
-                    ? 'أدخل إيميلاتٍ صحيحةً (سطرٌ لكلّ واحد).'
-                    : 'لا معتمرين بإيميلٍ وموافقةٍ تسويقيّة في هذه الفئة. أضف إيميلاتِ معتمريك، أو شاركهم رابطَ الحجز ليُسجّلوا بأنفسهم بإيميلاتهم.'}
+                    ? 'أدخل إيميلات صحيحة (سطر لكل واحد).'
+                    : 'لا معتمرين بإيميل وموافقة تسويقية في هذه الفئة. أضف إيميلات معتمريك، أو شاركهم رابط الحجز ليسجلوا بأنفسهم بإيميلاتهم.'}
                 </p>
               )}
             </div>
@@ -200,35 +200,35 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
 
           {err && <div className="alert err">{err}</div>}
 
-          {/* ★ إيقافُ الإرسال الفعليّ — حدٌّ صارم */}
+          {/* ★ إيقاف الإرسال الفعلي — حد صارم */}
           <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
             <Icon name="info" size={16} />
-            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى تأذن إدارةُ ملبّيك ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع الآن تجهيزَ الحملة وحفظَها «جاهزةً» مع قائمة المتلقّين.</span>
+            <span>الإرسال الفعلي <strong>موقوف</strong> حتى تأذن إدارة ملبّيك ويربط مزود رسائل (واتساب/بريد). تستطيع الآن تجهيز الحملة وحفظها «جاهزة» مع قائمة المتلقين.</span>
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="mlk-action primary" onClick={handleSaveReady} disabled={sending || audience === 0}
                     style={{ fontSize: 14, padding: '12px 18px' }}>
-              {sending ? <><span className="spinner" /> جارٍ الحفظ…</> : `حفظ كحملةٍ جاهزة (${audience})`}
+              {sending ? <><span className="spinner" /> جار الحفظ…</> : `حفظ كحملة جاهزة (${audience})`}
             </button>
             <button className="mlk-action" onClick={() => setShowPreview(s => !s)}>
               {showPreview ? 'إخفاء المعاينة' : 'معاينة'}
             </button>
             <button className="mlk-action" disabled aria-disabled="true"
-                    title="موقوف: يحتاج إذن إدارة ملبّيك + ربط مزوّد واتساب/بريد"
+                    title="موقوف: يحتاج إذن إدارة ملبّيك + ربط مزود واتساب/بريد"
                     style={{ opacity: .5, cursor: 'not-allowed' }}>
-              إرسال فعليّ (موقوف)
+              إرسال فعلي (موقوف)
             </button>
           </div>
 
           {showPreview && (
             <div className="mlk-card">
-              <h2 className="mlk-h2">معاينة (كما يَراها المعتمر)</h2>
+              <h2 className="mlk-h2">معاينة (كما يراها المعتمر)</h2>
               <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 10,
                             fontSize: 13.5, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
                 <strong>{subject || '(الموضوع)'}</strong>
                 {'\n\n'}
-                مرحبًا [اسم المعتمر]،{'\n\n'}{body || '(نصّ الرسالة)'}
+                مرحبا [اسم المعتمر]،{'\n\n'}{body || '(نص الرسالة)'}
               </div>
             </div>
           )}
@@ -237,7 +237,7 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
 
       {tab === 'history' && (
         loading ? <SkeletonList count={3} /> :
-        history.length === 0 ? <div className="mlk-empty">لا حملاتٌ بعد — اِبدأ بإنشاء أُولاها</div> :
+        history.length === 0 ? <div className="mlk-empty">لا حملات بعد — ابدأ بإنشاء أولاها</div> :
         <ul className="mlk-list">
           {history.map(b => (
             <li key={b.id} className="mlk-list-row">
@@ -249,8 +249,8 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
                 </div>
                 <div className="mlk-list-title">{b.subject}</div>
                 <div className="mlk-list-meta">
-                  <span>{b.sent_count}/{b.recipient_count} أُرسلت</span>
-                  {b.failed_count > 0 && <span style={{ color: 'var(--danger-ink)' }}>· {b.failed_count} فَشل</span>}
+                  <span>{b.sent_count}/{b.recipient_count} أرسلت</span>
+                  {b.failed_count > 0 && <span style={{ color: 'var(--danger-ink)' }}>· {b.failed_count} فشل</span>}
                 </div>
                 {b.error_detail && (
                   <div className="mlk-list-meta" style={{ color: 'var(--danger-ink)' }}>{b.error_detail}</div>

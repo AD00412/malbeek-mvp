@@ -8,11 +8,11 @@ import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
 import { ScreenLoader, homeForRole } from '../../app/RequireAuth'
 
-const ROLE_AR = { manager: 'مشرف', staff: 'موظّف' }
+const ROLE_AR = { manager: 'مشرف', staff: 'موظف' }
 
 /**
- * صفحة قبول دعوة الانضمام لفريق حملة عبر رابطٍ يُرسله المالك للموظّف.
- * تتعامل مع التسجيل/الدخول بالبريد المدعوّ ثمّ القبول — دون إنشاء حملةٍ تلقائيّة.
+ * صفحة قبول دعوة الانضمام لفريق حملة عبر رابط يرسله المالك للموظف.
+ * تتعامل مع التسجيل/الدخول بالبريد المدعو ثم القبول — دون إنشاء حملة تلقائية.
  */
 export default function JoinTeam() {
   const { id } = useParams()
@@ -46,7 +46,7 @@ export default function JoinTeam() {
     setErr(''); setBusy(true)
     const { error } = await supabase.rpc('accept_invite', { p_invite: id })
     setBusy(false)
-    if (error) { setErr(translateRpcError(error, 'تعذّر قبول الدعوة.')); return }
+    if (error) { setErr(translateRpcError(error, 'تعذر قبول الدعوة.')); return }
     await refreshProfile?.()
     navigate('/dashboard', { replace: true })
   }
@@ -55,7 +55,7 @@ export default function JoinTeam() {
     e.preventDefault()
     if (busy) return
     if (cleanName(fullName).split(/\s+/).filter(Boolean).length < 2) { setErr('اكتب اسمك الكامل.'); return }
-    if (password.length < 6) { setErr('كلمة المرور ٦ أحرفٍ على الأقلّ.'); return }
+    if (password.length < 6) { setErr('كلمة المرور ٦ أحرف على الأقل.'); return }
     setErr(''); setInfo(''); setBusy(true)
     const { data, error } = await supabase.auth.signUp({
       email: invite.email,
@@ -65,32 +65,32 @@ export default function JoinTeam() {
     if (error) {
       setBusy(false)
       if (/already registered|already been registered/i.test(error.message)) {
-        setErr('هذا البريد مسجّلٌ مسبقًا — سجّل الدخول لقبول الدعوة.')
-      } else setErr('تعذّر إنشاء الحساب. حاول مجدّدًا.')
+        setErr('هذا البريد مسجل مسبقا — سجل الدخول لقبول الدعوة.')
+      } else setErr('تعذر إنشاء الحساب. حاول مجددا.')
       return
     }
-    if (!data.session) {   // تأكيد البريد مفعّل
+    if (!data.session) {   // تأكيد البريد مفعل
       setBusy(false)
-      setInfo('أنشأنا حسابك. فعّل بريدك ثمّ ارجع لهذا الرابط لقبول الدعوة.')
+      setInfo('أنشأنا حسابك. فعل بريدك ثم ارجع لهذا الرابط لقبول الدعوة.')
       return
     }
-    // لدينا جلسة بالبريد المدعوّ نفسه → اقبل فورًا (لا تُنشأ حملةٌ تلقائيّة هنا)
+    // لدينا جلسة بالبريد المدعو نفسه → اقبل فورا (لا تنشأ حملة تلقائية هنا)
     const { error: accErr } = await supabase.rpc('accept_invite', { p_invite: id })
     setBusy(false)
-    if (accErr) { setErr(translateRpcError(accErr, 'تعذّر قبول الدعوة.')); return }
+    if (accErr) { setErr(translateRpcError(accErr, 'تعذر قبول الدعوة.')); return }
     await refreshProfile?.()
     navigate('/dashboard', { replace: true })
   }
 
-  if (resolving) return <ScreenLoader label="جارٍ فتح الدعوة…" />
+  if (resolving) return <ScreenLoader label="جار فتح الدعوة…" />
 
   if (notFound) {
     return (
-      <AuthShell footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}>
+      <AuthShell footer={<>لديك حساب بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}>
         <div className="join-state">
           <span className="join-state-ic warn"><Icon name="customers" size={30} /></span>
-          <h2 className="ttl">تعذّر فتح الدعوة</h2>
-          <p className="desc">قد تكون الدعوة أُلغيت أو قُبلت سابقًا. اطلب من صاحب الحملة إرسال دعوةٍ جديدة.</p>
+          <h2 className="ttl">تعذر فتح الدعوة</h2>
+          <p className="desc">قد تكون الدعوة ألغيت أو قبلت سابقا. اطلب من صاحب الحملة إرسال دعوة جديدة.</p>
         </div>
       </AuthShell>
     )
@@ -98,18 +98,18 @@ export default function JoinTeam() {
 
   const roleAr = ROLE_AR[invite?.role] || 'عضو'
 
-  // مسجّلٌ الدخول: زرّ قبولٍ مباشر (مع رسائل خطأٍ واضحةٍ لعدم تطابق البريد/ملكيّة حملة)
+  // مسجل الدخول: زر قبول مباشر (مع رسائل خطأ واضحة لعدم تطابق البريد/ملكية حملة)
   if (session && user) {
     const sameEmail = (user.email || '').toLowerCase() === (invite?.email || '').toLowerCase()
     return (
       <AuthShell>
         <div className="join-state">
           <span className="join-state-ic ok"><Icon name="customers" size={30} /></span>
-          <h2 className="ttl">انضمامٌ كـ«{roleAr}»</h2>
-          <p className="desc">دُعيتَ للانضمام لفريق حملة «{invite?.org_name}». أنت مسجّلٌ بـ {user.email}.</p>
+          <h2 className="ttl">انضمام كـ«{roleAr}»</h2>
+          <p className="desc">دعيت للانضمام لفريق حملة «{invite?.org_name}». أنت مسجل بـ {user.email}.</p>
           {!sameEmail && (
             <div className="alert warn" style={{ marginTop: 8 }}>
-              هذه الدعوة لبريد <b className="ltr">{invite?.email}</b>. سجّل خروجًا وادخل بذلك البريد لقبولها.
+              هذه الدعوة لبريد <b className="ltr">{invite?.email}</b>. سجل خروجا وادخل بذلك البريد لقبولها.
             </div>
           )}
           {err && <div className="alert err" style={{ marginTop: 8 }}>{err}</div>}
@@ -126,19 +126,19 @@ export default function JoinTeam() {
     )
   }
 
-  // غير مسجّل: تسجيلٌ سريعٌ بالبريد المدعوّ (مقفل) ثمّ قبولٌ فوريّ
+  // غير مسجل: تسجيل سريع بالبريد المدعو (مقفل) ثم قبول فوري
   return (
     <AuthShell
       title="قبول الدعوة"
-      sub={`دعوةٌ للانضمام لفريق «${invite?.org_name || ''}» كـ«${roleAr}».`}
-      footer={<>لديك حسابٌ بالبريد نفسه؟ <Link to="/login">سجّل الدخول</Link> ثمّ ارجع لهذا الرابط.</>}
+      sub={`دعوة للانضمام لفريق «${invite?.org_name || ''}» كـ«${roleAr}».`}
+      footer={<>لديك حساب بالبريد نفسه؟ <Link to="/login">سجل الدخول</Link> ثم ارجع لهذا الرابط.</>}
     >
       {info ? (
         <div className="alert ok" style={{ marginTop: 8 }}>{info}</div>
       ) : (
         <form className="auth-form" onSubmit={signUpAndAccept}>
           <div className="field with-ic ltr">
-            <label>البريد الإلكتروني (المدعوّ)</label>
+            <label>البريد الإلكتروني (المدعو)</label>
             <span className="f-ic"><Icon name="mail" size={17} /></span>
             <input type="email" value={invite?.email || ''} readOnly disabled />
           </div>

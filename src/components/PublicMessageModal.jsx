@@ -4,12 +4,12 @@ import { withTimeout } from '../lib/format'
 import Icon from './Icon'
 
 /* ============================================================
-   نموذجٌ عامٌّ موحَّدٌ — تواصلٌ + ملاحظاتٌ (للزوّار غير المسجَّلين)
+   نموذج عام موحد — تواصل + ملاحظات (للزوار غير المسجلين)
    - mode="contact": اسم/بريد/موضوع/رسالة + مرفقات
    - mode="feedback": اسم/بريد/نوع/تفاصيل + مرفقات (نوع = اقتراح/مشكلة/...)
-   - يُرسل إلى جدول public.public_messages عبر RPC ‎submit_public_message‎
-     فلا حاجة للـ session ولا للـ RLS المعقّدة
-   - المرفقات تُرفع لـ bucket ‎public-attachments‎ تحت مسارٍ مجهولٍ
+   - يرسل إلى جدول public.public_messages عبر RPC ‎submit_public_message‎
+     فلا حاجة للـ session ولا للـ RLS المعقدة
+   - المرفقات ترفع لـ bucket ‎public-attachments‎ تحت مسار مجهول
    ============================================================ */
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -17,10 +17,10 @@ const MAX_FILES = 3
 const OK_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
 
 const FEEDBACK_KINDS = [
-  { v: 'suggestion', t: 'اقتراحٌ' },
+  { v: 'suggestion', t: 'اقتراح' },
   { v: 'problem',    t: 'مشكلة' },
   { v: 'question',   t: 'سؤال' },
-  { v: 'feature',    t: 'ميزةٌ جديدةٌ' },
+  { v: 'feature',    t: 'ميزة جديدة' },
 ]
 
 function isValidEmail(s = '') { return /^\S+@\S+\.\S+$/.test(String(s).trim()) }
@@ -40,7 +40,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
   const fileInput             = useRef(null)
   const dropRef               = useRef(null)
 
-  // إغلاقٌ بـ Escape + قفلُ تمرير الصفحة + تنظيفُ معاينات الملفّات
+  // إغلاق بـ Escape + قفل تمرير الصفحة + تنظيف معاينات الملفات
   useEffect(() => {
     if (!open) return
     const onKey = (e) => { if (e.key === 'Escape' && !busy) onClose() }
@@ -53,7 +53,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
     }
   }, [open, busy, onClose])
 
-  // عند الإغلاق: مسحُ الحالة وroot URLs للمعاينة (تجنّب تسرّب الذاكرة)
+  // عند الإغلاق: مسح الحالة وroot URLs للمعاينة (تجنب تسرب الذاكرة)
   useEffect(() => {
     if (!open) {
       files.forEach((f) => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl) })
@@ -68,7 +68,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
     const incoming = Array.from(list || [])
     if (!incoming.length) return
     const slots = MAX_FILES - files.length
-    if (slots <= 0) { setErr(`الحدّ الأقصى ${MAX_FILES} مرفقات.`); return }
+    if (slots <= 0) { setErr(`الحد الأقصى ${MAX_FILES} مرفقات.`); return }
     const accepted = []
     for (const f of incoming.slice(0, slots)) {
       if (!OK_TYPES.includes(f.type)) { setErr('الصيغ المسموحة: PNG · JPG · WebP · PDF'); continue }
@@ -115,16 +115,16 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
     if (busy) return
     setErr('')
 
-    // تحقّقٌ يدويٌّ — تجربةٌ أنظف من رسائل المتصفّح الأصليّة
+    // تحقق يدوي — تجربة أنظف من رسائل المتصفح الأصلية
     if (!name.trim() || name.trim().length < 2) { setErr('اكتب اسمك (حرفان فأكثر).'); return }
-    if (!isValidEmail(email))                   { setErr('بريدٌ إلكترونيٌّ غير صحيح.'); return }
-    if (!body.trim() || body.trim().length < 10){ setErr('اكتب رسالتك (١٠ أحرفٍ على الأقلّ).'); return }
+    if (!isValidEmail(email))                   { setErr('بريد إلكتروني غير صحيح.'); return }
+    if (!body.trim() || body.trim().length < 10){ setErr('اكتب رسالتك (١٠ أحرف على الأقل).'); return }
 
     setBusy(true)
     try {
-      // ١) رفع المرفقات (إن وُجدت) إلى المجلّد العامّ
+      // ١) رفع المرفقات (إن وجدت) إلى المجلد العام
       // الامتدادات المسموحة فقط — تطابق MIME types المقبولة وتمنع رفع
-      // ملفّاتٍ بامتداداتٍ خطرةٍ (html/exe/php...) حتّى لو spoofed.
+      // ملفات بامتدادات خطرة (html/exe/php...) حتى لو spoofed.
       const SAFE_EXT_FOR_MIME = {
         'image/png': 'png',
         'image/jpeg': 'jpg',
@@ -134,10 +134,10 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
       const uploaded = []
       for (const f of files) {
         const rand = Math.random().toString(36).slice(2, 8)
-        // نشتقّ الامتدادَ من MIME (لا من اسم الملف) — لا spoofing ممكن
+        // نشتق الامتداد من MIME (لا من اسم الملف) — لا spoofing ممكن
         const ext = SAFE_EXT_FOR_MIME[f.file.type] || 'bin'
-        // نُبقي اسم الملف الأصليّ ضمن المسار — لتظهر في البريد بشكلٍ مفهومٍ.
-        // نحتفظ بالأحرف العربيّة واللاتينيّة والأرقام والشرطات فقط، ونحدّ الطول.
+        // نبقي اسم الملف الأصلي ضمن المسار — لتظهر في البريد بشكل مفهوم.
+        // نحتفظ بالأحرف العربية واللاتينية والأرقام والشرطات فقط، ونحد الطول.
         const baseName = (f.file.name.replace(/\.[^.]+$/, '') || 'file')
           .replace(/[^\w؀-ۿݐ-ݿ-]+/g, '_')
           .slice(0, 50)
@@ -147,13 +147,13 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
             .from('public-attachments')
             .upload(path, f.file, { upsert: false, contentType: f.file.type, cacheControl: '3600' }),
           30000,
-          'تعذّر رفع المرفق — استغرق وقتًا طويلًا. أعد المحاولة أو أرسل دون مرفقات.'
+          'تعذر رفع المرفق — استغرق وقتا طويلا. أعد المحاولة أو أرسل دون مرفقات.'
         )
         if (upErr) throw upErr
         uploaded.push(path)
       }
 
-      // ٢) استدعاء RPC submit_public_message (يلتفّ على RLS بصلاحيّةٍ controlled)
+      // ٢) استدعاء RPC submit_public_message (يلتف على RLS بصلاحية controlled)
       const { error } = await withTimeout(
         supabase.rpc('submit_public_message', {
           p_mode:    mode,
@@ -165,17 +165,17 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
           p_attachments: uploaded,
         }),
         15000,
-        'تعذّر الإرسال — تحقّق من اتصالك وأعد المحاولة.'
+        'تعذر الإرسال — تحقق من اتصالك وأعد المحاولة.'
       )
       if (error) throw error
 
       setStage('success')
     } catch (e2) {
-      // رسالةٌ مفيدةٌ بدل التفاصيل التقنيّة
+      // رسالة مفيدة بدل التفاصيل التقنية
       const msg = String(e2?.message || '')
-      if (msg.includes('Bucket not found')) setErr('خدمةُ المرفقات غير مهيّأةٍ بعد. أرسل رسالتك دون مرفقاتٍ، أو راسلنا على hello@mulabeek.com مباشرةً.')
-      else if (msg.includes('function') && msg.includes('does not exist')) setErr('خدمةُ النموذج غير مهيّأةٍ بعد. راسلنا على hello@mulabeek.com مباشرةً.')
-      else setErr('تعذّر الإرسال. حاول مرّةً أخرى — أو راسلنا على hello@mulabeek.com.')
+      if (msg.includes('Bucket not found')) setErr('خدمة المرفقات غير مهيأة بعد. أرسل رسالتك دون مرفقات، أو راسلنا على hello@mulabeek.com مباشرة.')
+      else if (msg.includes('function') && msg.includes('does not exist')) setErr('خدمة النموذج غير مهيأة بعد. راسلنا على hello@mulabeek.com مباشرة.')
+      else setErr('تعذر الإرسال. حاول مرة أخرى — أو راسلنا على hello@mulabeek.com.')
     } finally {
       setBusy(false)
     }
@@ -195,7 +195,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
           <div className="pmsg-success">
             <div className="pmsg-success-ic"><Icon name="check" size={28} /></div>
             <h3>وصلت رسالتك ✓</h3>
-            <p>نقرأ كلّ رسالةٍ بأنفسنا — سنردُّ عليك على بريدك <b className="ltr">{email}</b> خلال يومَي عمل.</p>
+            <p>نقرأ كل رسالة بأنفسنا — سنرد عليك على بريدك <b className="ltr">{email}</b> خلال يومي عمل.</p>
             <button type="button" className="btn btn-em btn-block" onClick={onClose}>تمام</button>
           </div>
         ) : (
@@ -206,7 +206,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
               </div>
               <div>
                 <h3>{isContact ? 'تواصل معنا' : 'أرسل ملاحظة'}</h3>
-                <span className="doc-modal-sub">{isContact ? 'سؤالٌ، عرضُ شراكةٍ، أو أيّ شيءٍ يخطر ببالك' : 'بلاغٌ، اقتراحٌ، أو ميزةٌ تودّ رؤيتها'}</span>
+                <span className="doc-modal-sub">{isContact ? 'سؤال، عرض شراكة، أو أي شيء يخطر ببالك' : 'بلاغ، اقتراح، أو ميزة تود رؤيتها'}</span>
               </div>
               <button
                 type="button"
@@ -247,10 +247,10 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
 
               {isContact ? (
                 <div className="field">
-                  <label>الموضوع <span className="muted" style={{ fontSize: 12 }}>(اختياريّ)</span></label>
+                  <label>الموضوع <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
                   <input
                     type="text"
-                    placeholder="مثلًا: استفسارٌ عن الباقات"
+                    placeholder="مثلا: استفسار عن الباقات"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     disabled={busy}
@@ -258,7 +258,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
                 </div>
               ) : (
                 <div className="field">
-                  <label>نوعُ الملاحظة <span className="req">*</span></label>
+                  <label>نوع الملاحظة <span className="req">*</span></label>
                   <select value={kind} onChange={(e) => setKind(e.target.value)} disabled={busy}>
                     {FEEDBACK_KINDS.map((k) => <option key={k.v} value={k.v}>{k.t}</option>)}
                   </select>
@@ -269,19 +269,19 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
                 <label>الرسالة <span className="req">*</span></label>
                 <textarea
                   rows={5}
-                  placeholder={isContact ? 'اكتب لنا بصراحةٍ ما تحتاج — كلّ رسالةٍ تصلنا نقرؤها' : 'صف الموقف بأكبر تفصيلٍ ممكنٍ — اللحظة، الخطوة، النتيجة المتوقّعة'}
+                  placeholder={isContact ? 'اكتب لنا بصراحة ما تحتاج — كل رسالة تصلنا نقرؤها' : 'صف الموقف بأكبر تفصيل ممكن — اللحظة، الخطوة، النتيجة المتوقعة'}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   disabled={busy}
                 />
                 <span className="hint" style={{ marginTop: 4 }}>
-                  {body.length > 0 ? `${body.length} حرفًا` : '١٠ أحرفٍ على الأقلّ'}
+                  {body.length > 0 ? `${body.length} حرفا` : '١٠ أحرف على الأقل'}
                 </span>
               </div>
 
-              {/* منطقةُ المرفقات */}
+              {/* منطقة المرفقات */}
               <div className="field">
-                <label>مرفقاتٌ <span className="muted" style={{ fontSize: 12 }}>(اختياريّ · حدّى ٣ ملفّات)</span></label>
+                <label>مرفقات <span className="muted" style={{ fontSize: 12 }}>(اختياري · حدى ٣ ملفات)</span></label>
                 <div ref={dropRef} className="pmsg-drop">
                   <input
                     ref={fileInput}
@@ -298,8 +298,8 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
                     disabled={busy || files.length >= MAX_FILES}
                   >
                     <Icon name="download" size={18} style={{ transform: 'rotate(180deg)' }} />
-                    <strong>أضِف ملفًّا أو اسحبه هنا</strong>
-                    <span className="muted">PNG · JPG · WebP · PDF — حتّى ٥ ميغا</span>
+                    <strong>أضف ملفا أو اسحبه هنا</strong>
+                    <span className="muted">PNG · JPG · WebP · PDF — حتى ٥ ميغا</span>
                   </button>
 
                   {files.length > 0 && (
@@ -315,7 +315,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
                             type="button"
                             className="pmsg-file-x"
                             onClick={() => removeFile(i)}
-                            aria-label="إزالة الملفّ"
+                            aria-label="إزالة الملف"
                             disabled={busy}
                           >×</button>
                         </li>
@@ -330,7 +330,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
               <div className="pmsg-actions" style={{ marginTop: 8 }}>
                 <button type="submit" className="btn btn-em" disabled={busy} style={{ flex: 1 }}>
                   {busy
-                    ? <><span className="spinner" /> جارٍ الإرسال…</>
+                    ? <><span className="spinner" /> جار الإرسال…</>
                     : <><Icon name="check" size={15} /> {isContact ? 'إرسال' : 'إرسال الملاحظة'}</>}
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>إلغاء</button>

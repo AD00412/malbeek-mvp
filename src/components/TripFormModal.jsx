@@ -24,7 +24,7 @@ function isoToLocalInput(iso) {
 /**
  * نافذة إنشاء/تعديل رحلة
  * @param {object|null} trip          رحلة للتعديل، أو null للإنشاء
- * @param {string}      subscriberId  معرّف الحملة (يُستخدم عند الإدراج)
+ * @param {string}      subscriberId  معرف الحملة (يستخدم عند الإدراج)
  * @param {Function}    onClose
  * @param {Function}    onSaved
  */
@@ -50,10 +50,10 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
   const [busy, setBusy] = useState(false)
   const { toast } = useUI()
 
-  // تحقّقٌ حيّ: العودة بعد الذهاب (يطابق تريغر validate_trip في القاعدة)
+  // تحقق حي: العودة بعد الذهاب (يطابق تريغر validate_trip في القاعدة)
   const dateErr = depart && ret && new Date(ret) < new Date(depart) ? 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب.' : ''
 
-  // محوّلٌ آمنٌ لتاريخٍ من <input type="datetime-local">: يردّ ISO أو null لتفادي
+  // محول آمن لتاريخ من <input type="datetime-local">: يرد ISO أو null لتفادي
   // RangeError على "Invalid Date" (قاعدة MUTAMIR ب-٤: التواريخ الفارغة → null).
   const safeISO = (v) => {
     if (!v) return null
@@ -96,7 +96,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
       toast(isEdit ? 'تم حفظ تعديلات الرحلة ✓' : 'تم إنشاء الرحلة ✓', { type: 'success' })
       onSaved?.()
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر حفظ الرحلة. حاول مرة أخرى.'))
+      setErr(translateRpcError(e, 'تعذر حفظ الرحلة. حاول مرة أخرى.'))
     } finally {
       setBusy(false)
     }
@@ -121,7 +121,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
         <div className="form" style={{ marginTop: 0 }}>
           <div className="field">
             <label>عنوان الرحلة *</label>
-            <input type="text" placeholder="مثال: عُمرة رمضان — الفوج الأول" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <input type="text" placeholder="مثال: عمرة رمضان — الفوج الأول" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div className="grid-2">

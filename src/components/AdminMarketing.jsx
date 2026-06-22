@@ -7,17 +7,17 @@ import { fmtDateTime } from '../lib/format'
 import Icon from './Icon'
 
 /**
- * تسويقُ المنصّة — لإدارة ملبّيك (الأدمن فقط).
- * قناتان: ملبّيك → المشتركون (إعلانات/تحديثات) · ملبّيك → المعتمرون (عبر كلّ
- * الحملات، باحترام الموافقة التسويقيّة). الإرسالُ الفعليُّ موقوفٌ بزرٍّ معطّل
- * — تجهيزٌ وحفظٌ «جاهز» فقط (لا transmission). القناةُ الثالثة (صاحب الحملة →
- * معتمريه) في لوحة كلّ مشترك.
+ * تسويق المنصة — لإدارة ملبّيك (الأدمن فقط).
+ * قناتان: ملبّيك → المشتركون (إعلانات/تحديثات) · ملبّيك → المعتمرون (عبر كل
+ * الحملات، باحترام الموافقة التسويقية). الإرسال الفعلي موقوف بزر معطل
+ * — تجهيز وحفظ «جاهز» فقط (لا transmission). القناة الثالثة (صاحب الحملة →
+ * معتمريه) في لوحة كل مشترك.
  */
 const AUD = {
-  subscribers: { label: 'المشتركون (أصحاب الحملات)', hint: 'إعلاناتٌ وتحديثاتٌ وعروضٌ لأصحاب الحملات.' },
-  pilgrims:    { label: 'المعتمرون (كلُّ الحملات)',    hint: 'يُرسَل لمن وافق على التسويق فقط — عبر كلّ الحملات.' },
+  subscribers: { label: 'المشتركون (أصحاب الحملات)', hint: 'إعلانات وتحديثات وعروض لأصحاب الحملات.' },
+  pilgrims:    { label: 'المعتمرون (كل الحملات)',    hint: 'يرسل لمن وافق على التسويق فقط — عبر كل الحملات.' },
 }
-const STATUS_LABEL = { draft: 'جاهزة (الإرسال موقوف)', sent: 'أُرسلت', failed: 'فشل' }
+const STATUS_LABEL = { draft: 'جاهزة (الإرسال موقوف)', sent: 'أرسلت', failed: 'فشل' }
 
 export default function AdminMarketing() {
   const { toast, confirm } = useUI()
@@ -50,13 +50,13 @@ export default function AdminMarketing() {
 
   async function handleSaveReady() {
     setErr('')
-    if (subject.trim().length < 3) return setErr('الموضوع قصيرٌ جدًّا.')
-    if (body.trim().length < 10) return setErr('النصّ قصيرٌ جدًّا.')
-    if (count === 0) return setErr('لا جمهورَ بهذه الفئة.')
+    if (subject.trim().length < 3) return setErr('الموضوع قصير جدا.')
+    if (body.trim().length < 10) return setErr('النص قصير جدا.')
+    if (count === 0) return setErr('لا جمهور بهذه الفئة.')
     const ok = await confirm({
-      title: 'حفظُ حملة المنصّة',
-      message: `ستُحفَظ الحملةُ وتُجهَّز قائمةُ ${count} متلقٍّ (${AUD[audience].label}). لن تُرسَل — الإرسالُ موقوف.`,
-      confirmText: 'احفظ كحملةٍ جاهزة',
+      title: 'حفظ حملة المنصة',
+      message: `ستحفظ الحملة وتجهز قائمة ${count} متلق (${AUD[audience].label}). لن ترسل — الإرسال موقوف.`,
+      confirmText: 'احفظ كحملة جاهزة',
     })
     if (!ok) return
     setBusy(true)
@@ -65,20 +65,20 @@ export default function AdminMarketing() {
         p_audience: audience, p_subject: subject.trim(), p_body: body.trim(),
       })
       if (error) throw error
-      // لا إرسالَ — محفوظةٌ جاهزةً فقط.
-      toast('حُفظت حملةُ المنصّة وجُهِّز متلقّوها ✓ — الإرسالُ موقوف.', { type: 'success' })
+      // لا إرسال — محفوظة جاهزة فقط.
+      toast('حفظت حملة المنصة وجهز متلقوها ✓ — الإرسال موقوف.', { type: 'success' })
       setSubject(''); setBody(''); setTab('history'); loadHistory()
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر حفظُ الحملة.'))
+      setErr(translateRpcError(e, 'تعذر حفظ الحملة.'))
     } finally { setBusy(false) }
   }
 
   return (
     <div className="mlk-tab">
-      <header className="mlk-tab-head"><h1 className="mlk-tab-title">تسويقُ المنصّة</h1></header>
+      <header className="mlk-tab-head"><h1 className="mlk-tab-title">تسويق المنصة</h1></header>
 
       <div className="mlk-filter">
-        <button className={`mlk-fchip ${tab === 'compose' ? 'active' : ''}`} onClick={() => setTab('compose')}>إنشاءُ حملة</button>
+        <button className={`mlk-fchip ${tab === 'compose' ? 'active' : ''}`} onClick={() => setTab('compose')}>إنشاء حملة</button>
         <button className={`mlk-fchip ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>
           السابقة{history.length > 0 ? ` (${history.length})` : ''}
         </button>
@@ -87,7 +87,7 @@ export default function AdminMarketing() {
       {tab === 'compose' && (
         <>
           <div className="mlk-card is-feature">
-            <h2 className="mlk-h2">الجمهور المستهدَف</h2>
+            <h2 className="mlk-h2">الجمهور المستهدف</h2>
             <div className="form">
               <div className="field">
                 <label>الفئة</label>
@@ -99,13 +99,13 @@ export default function AdminMarketing() {
               </div>
               <div className="alert" style={{ background: 'var(--surface-2)', color: 'var(--cr-100)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Icon name="customers" size={16} />
-                <span>سيَستلم <strong style={{ color: 'var(--em-500)' }}>{count}</strong> {count === 1 ? 'متلقٍّ' : 'متلقّياً'}</span>
+                <span>سيستلم <strong style={{ color: 'var(--em-500)' }}>{count}</strong> {count === 1 ? 'متلق' : 'متلقيا'}</span>
               </div>
               {count === 0 && (
                 <p className="hint" style={{ color: 'var(--cr-300)' }}>
                   {audience === 'subscribers'
-                    ? 'لا مشتركين بإيميلٍ مُسجَّل بعد.'
-                    : 'لا معتمرين بإيميلٍ وموافقةٍ تسويقيّة عبر الحملات بعد.'}
+                    ? 'لا مشتركين بإيميل مسجل بعد.'
+                    : 'لا معتمرين بإيميل وموافقة تسويقية عبر الحملات بعد.'}
                 </p>
               )}
             </div>
@@ -116,11 +116,11 @@ export default function AdminMarketing() {
             <div className="form">
               <div className="field">
                 <label>الموضوع</label>
-                <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} placeholder="مثلًا: تحديثٌ جديدٌ في منصّة ملبّيك" />
+                <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} placeholder="مثلا: تحديث جديد في منصة ملبّيك" />
               </div>
               <div className="field">
-                <label>نصُّ الرسالة</label>
-                <textarea rows={6} value={body} onChange={(e) => setBody(e.target.value)} maxLength={5000} placeholder="السلامُ عليكم،" />
+                <label>نص الرسالة</label>
+                <textarea rows={6} value={body} onChange={(e) => setBody(e.target.value)} maxLength={5000} placeholder="السلام عليكم،" />
                 <span className="hint">{body.length}/5000</span>
               </div>
             </div>
@@ -128,19 +128,19 @@ export default function AdminMarketing() {
 
           {err && <div className="alert err">{err}</div>}
 
-          {/* ★ إيقافُ الإرسال الفعليّ — حدٌّ صارم */}
+          {/* ★ إيقاف الإرسال الفعلي — حد صارم */}
           <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
             <Icon name="info" size={16} />
-            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى تأذن إدارةُ ملبّيك ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع تجهيزَ الحملة وحفظَها «جاهزةً».</span>
+            <span>الإرسال الفعلي <strong>موقوف</strong> حتى تأذن إدارة ملبّيك ويربط مزود رسائل (واتساب/بريد). تستطيع تجهيز الحملة وحفظها «جاهزة».</span>
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="mlk-action primary" onClick={handleSaveReady} disabled={busy || count === 0} style={{ fontSize: 14, padding: '12px 18px' }}>
-              {busy ? <><span className="spinner" /> جارٍ الحفظ…</> : `حفظ كحملةٍ جاهزة (${count})`}
+              {busy ? <><span className="spinner" /> جار الحفظ…</> : `حفظ كحملة جاهزة (${count})`}
             </button>
             <button className="mlk-action" onClick={() => setShowPreview((s) => !s)}>{showPreview ? 'إخفاء المعاينة' : 'معاينة'}</button>
-            <button className="mlk-action" disabled aria-disabled="true" title="موقوف: يحتاج إذن إدارة ملبّيك + مزوّد رسائل" style={{ opacity: .5, cursor: 'not-allowed' }}>
-              إرسال فعليّ (موقوف)
+            <button className="mlk-action" disabled aria-disabled="true" title="موقوف: يحتاج إذن إدارة ملبّيك + مزود رسائل" style={{ opacity: .5, cursor: 'not-allowed' }}>
+              إرسال فعلي (موقوف)
             </button>
           </div>
 
@@ -148,7 +148,7 @@ export default function AdminMarketing() {
             <div className="mlk-card">
               <h2 className="mlk-h2">معاينة</h2>
               <div style={{ padding: 16, background: 'var(--surface-2)', borderRadius: 10, fontSize: 13.5, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
-                <strong>{subject || '(الموضوع)'}</strong>{'\n\n'}{body || '(نصّ الرسالة)'}
+                <strong>{subject || '(الموضوع)'}</strong>{'\n\n'}{body || '(نص الرسالة)'}
               </div>
             </div>
           )}
@@ -157,7 +157,7 @@ export default function AdminMarketing() {
 
       {tab === 'history' && (
         loadingHist ? <SkeletonList count={3} /> :
-        history.length === 0 ? <div className="mlk-empty">لا حملاتٍ بعد — ابدأ بإنشاء أُولاها</div> :
+        history.length === 0 ? <div className="mlk-empty">لا حملات بعد — ابدأ بإنشاء أولاها</div> :
         <ul className="mlk-list">
           {history.map((b) => (
             <li key={b.id} className="mlk-list-row">
@@ -168,7 +168,7 @@ export default function AdminMarketing() {
                   <span className="mlk-list-time" style={{ marginInlineStart: 'auto' }}>{fmtDateTime(b.created_at)}</span>
                 </div>
                 <div className="mlk-list-title">{b.subject}</div>
-                <div className="mlk-list-meta"><span>{b.recipient_count} متلقٍّ مُجهَّز</span></div>
+                <div className="mlk-list-meta"><span>{b.recipient_count} متلق مجهز</span></div>
               </div>
             </li>
           ))}

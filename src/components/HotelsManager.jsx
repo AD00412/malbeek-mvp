@@ -13,8 +13,8 @@ const ROOM_GENDER = [
 ]
 
 /**
- * مديرُ الفنادق والغرف — شاشةٌ كاملة. يدير فنادق رحلةٍ معيّنة + غرفها + إسناد
- * المعتمرين للغرف. يحترم حدّ السعة وتوافق الجنس عبر تريغر القاعدة.
+ * مدير الفنادق والغرف — شاشة كاملة. يدير فنادق رحلة معينة + غرفها + إسناد
+ * المعتمرين للغرف. يحترم حد السعة وتوافق الجنس عبر تريغر القاعدة.
  */
 export default function HotelsManager({ trip, sub, passengers = [], onClose, onChanged }) {
   const [hotels, setHotels] = useState([])
@@ -25,7 +25,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
   const [roomOpen, setRoomOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState(null)
   const [picking, setPicking] = useState(null)        // {room}
-  const [assigning, setAssigning] = useState(null)     // {passenger} — تسكينٌ من المعتمر
+  const [assigning, setAssigning] = useState(null)     // {passenger} — تسكين من المعتمر
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const { confirm, toast } = useUI()
@@ -47,7 +47,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
 
   const activeHotel = hotels.find((h) => h.id === activeHotelId) || null
   const hotelRooms = useMemo(() => rooms.filter((r) => r.hotel_id === activeHotelId), [rooms, activeHotelId])
-  // عدد ساكني كل غرفة (من passengers الحاليّين)
+  // عدد ساكني كل غرفة (من passengers الحاليين)
   const occupancy = useMemo(() => {
     const m = new Map()
     for (const p of passengers) if (p.room_id) m.set(p.room_id, (m.get(p.room_id) || 0) + 1)
@@ -64,7 +64,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
   const unassigned = passengers.filter((p) => !p.room_id)
 
   async function removeHotel(h) {
-    if (!(await confirm({ title: 'حذف فندق', message: `حذف فندق «${h.name}» وكلّ غرفه؟ سيُلغى إسناد ساكنيه.`, confirmText: 'حذف', danger: true }))) return
+    if (!(await confirm({ title: 'حذف فندق', message: `حذف فندق «${h.name}» وكل غرفه؟ سيلغى إسناد ساكنيه.`, confirmText: 'حذف', danger: true }))) return
     const { error } = await supabase.from('hotels').delete().eq('id', h.id)
     if (error) { setErr(translateRpcError(error)); return }
     toast('تم حذف الفندق', { type: 'success' })
@@ -112,8 +112,8 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
           <SkeletonList count={3} />
         ) : hotels.length === 0 ? (
           <div className="empty">
-            <div className="em-ttl">لا توجد فنادقُ بعد</div>
-            <div>أضِف فندقَك الأوّل لتبدأ التسكين.</div>
+            <div className="em-ttl">لا توجد فنادق بعد</div>
+            <div>أضف فندقك الأول لتبدأ التسكين.</div>
             <button className="btn btn-gold" style={{ marginTop: 12 }} onClick={() => { setEditingHotel(null); setHotelOpen(true) }}>
               <Icon name="plus" size={16} /> فندق جديد
             </button>
@@ -131,7 +131,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
               ))}
             </div>
 
-            {/* بطاقة الفندق النشِط */}
+            {/* بطاقة الفندق النشط */}
             {activeHotel && (
               <section className="panel">
                 <div className="panel-head">
@@ -159,7 +159,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
                 </div>
 
                 {hotelRooms.length === 0 ? (
-                  <div className="muted" style={{ fontSize: 13 }}>أضف غرفًا لتبدأ التسكين.</div>
+                  <div className="muted" style={{ fontSize: 13 }}>أضف غرفا لتبدأ التسكين.</div>
                 ) : (
                   <div className="rooms-grid">
                     {hotelRooms.map((r) => {
@@ -209,17 +209,17 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
               </section>
             )}
 
-            {/* غير المسكَّنين */}
+            {/* غير المسكنين */}
             <section className="panel">
               <div className="panel-head">
-                <h3>غير المسكَّنين</h3>
+                <h3>غير المسكنين</h3>
                 <span className="sub">({unassigned.length})</span>
               </div>
               {unassigned.length === 0 ? (
-                <div className="muted" style={{ fontSize: 13 }}>كلّ المعتمرين مسكَّنون ✓</div>
+                <div className="muted" style={{ fontSize: 13 }}>كل المعتمرين مسكنون ✓</div>
               ) : (
                 <>
-                  <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>اضغط على معتمرٍ لاختيار غرفته مباشرةً.</div>
+                  <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>اضغط على معتمر لاختيار غرفته مباشرة.</div>
                   <div className="chip-list">
                     {unassigned.map((p) => (
                       <button key={p.id} type="button" className={`chip ${p.gender === 'female' ? 'warn' : 'info'}`}
@@ -284,7 +284,7 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
   )
 }
 
-/* اختيار غرفةٍ لمعتمرٍ بعينه (تسكينٌ من المعتمر) — يعرض الغرف المتوافقة وغير الممتلئة */
+/* اختيار غرفة لمعتمر بعينه (تسكين من المعتمر) — يعرض الغرف المتوافقة وغير الممتلئة */
 function PickRoom({ passenger, hotels, rooms, occupancy, onClose, onPick }) {
   const hotelName = (id) => hotels.find((h) => h.id === id)?.name || 'فندق'
   const compatible = rooms.filter((r) => {
@@ -302,8 +302,8 @@ function PickRoom({ passenger, hotels, rooms, occupancy, onClose, onPick }) {
     >
       {compatible.length === 0 ? (
         <div className="empty">
-          <div className="em-ttl">لا توجد غرفةٌ متاحة</div>
-          <div>أضِف غرفةً جديدةً أو فرّغ مقعدًا — يجب أن تتوافق مع جنس المعتمر وتتّسع له.</div>
+          <div className="em-ttl">لا توجد غرفة متاحة</div>
+          <div>أضف غرفة جديدة أو فرغ مقعدا — يجب أن تتوافق مع جنس المعتمر وتتسع له.</div>
         </div>
       ) : (
         <div className="pax-list">
@@ -376,7 +376,7 @@ function HotelFormSheet({ open, hotel, tripId, subscriberId, onClose, onSaved })
       <div className="form" style={{ marginTop: 0 }}>
         <div className="field">
           <label>اسم الفندق *</label>
-          <input type="text" placeholder="مثال: فندق المكّيّ" value={f.name} onChange={(e) => set('name', e.target.value)} />
+          <input type="text" placeholder="مثال: فندق المكي" value={f.name} onChange={(e) => set('name', e.target.value)} />
         </div>
         <div className="grid-2">
           <div className="field">
@@ -491,7 +491,7 @@ function PickPassenger({ room, candidates, onClose, onPick }) {
       {filtered.length === 0 ? (
         <div className="empty">
           <div className="em-ttl">لا معتمرين متاحين</div>
-          <div>{candidates.length > 0 ? 'الموجودون لا يطابقون نوع الغرفة.' : 'جميع المعتمرين مسكَّنون.'}</div>
+          <div>{candidates.length > 0 ? 'الموجودون لا يطابقون نوع الغرفة.' : 'جميع المعتمرين مسكنون.'}</div>
         </div>
       ) : (
         <div className="pax-list">

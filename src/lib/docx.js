@@ -1,29 +1,29 @@
-// تصدير Word (.docx) للكشوفات — قابلٌ للتعديل لاحقًا في Microsoft Word/Google Docs/LibreOffice.
-// المكتبة تُحمَّل كسولًا عند أوّل تصديرٍ.
+// تصدير Word (.docx) للكشوفات — قابل للتعديل لاحقا في Microsoft Word/Google Docs/LibreOffice.
+// المكتبة تحمل كسولا عند أول تصدير.
 
 /**
- * يبني مستند Word من جدولٍ + ترويسةٍ، يدعم RTL والعربيّة.
+ * يبني مستند Word من جدول + ترويسة، يدعم RTL والعربية.
  * @param {object}   opts
- * @param {string}   opts.title       عنوانٌ في صدر المستند
- * @param {string}   opts.subtitle    سطرٌ فرعيٌّ (اختياري)
+ * @param {string}   opts.title       عنوان في صدر المستند
+ * @param {string}   opts.subtitle    سطر فرعي (اختياري)
  * @param {string[]} opts.headers     رؤوس الأعمدة
- * @param {any[][]}  opts.rows        صفوف القيم (مصفوفةٌ من المصفوفات)
- * @param {string[]} [opts.meta]      أسطرُ بياناتٍ قبل الجدول (اختياري)
- * @param {string}   [opts.org]       اسم الحملة — يُبيّض المستند لها (بدل ملبّيك)
- * @param {string}   opts.filename    اسم الملفّ
+ * @param {any[][]}  opts.rows        صفوف القيم (مصفوفة من المصفوفات)
+ * @param {string[]} [opts.meta]      أسطر بيانات قبل الجدول (اختياري)
+ * @param {string}   [opts.org]       اسم الحملة — يبيض المستند لها (بدل ملبّيك)
+ * @param {string}   opts.filename    اسم الملف
  */
 export async function tableToDocx({ title, subtitle, headers, rows, meta = [], org, filename }) {
   let docx
   try { docx = await import('docx') }
   catch (e) {
-    throw new Error('مكتبة Word غير مثبّتة. أوقف الـ dev server وشغّل: npm install ثم npm run dev')
+    throw new Error('مكتبة Word غير مثبتة. أوقف الـ dev server وشغل: npm install ثم npm run dev')
   }
   const {
     Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
     Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType,
   } = docx.default || docx
 
-  const FONT = 'Arial'  // متوفّرٌ في كلّ نظام، يدعم العربيّة بالكامل
+  const FONT = 'Arial'  // متوفر في كل نظام، يدعم العربية بالكامل
   const NAVY = '063D2C'
   const GOLD = 'C49A45'
 
@@ -59,10 +59,10 @@ export async function tableToDocx({ title, subtitle, headers, rows, meta = [], o
     },
   })
 
-  // تذييلٌ مخصّصٌ للحملة عند تمرير org، وإلّا تذييل المنصّة (تقارير الإدارة).
+  // تذييل مخصص للحملة عند تمرير org، وإلا تذييل المنصة (تقارير الإدارة).
   const footerText = org
-    ? `كشفٌ رسميٌّ صادرٌ عن ${org} — بتاريخ ${new Date().toLocaleDateString('ar-SA')}`
-    : `صُدر هذا الكشف من منصّة ملبّيك بتاريخ ${new Date().toLocaleDateString('ar-SA')}`
+    ? `كشف رسمي صادر عن ${org} — بتاريخ ${new Date().toLocaleDateString('ar-SA')}`
+    : `صدر هذا الكشف من منصة ملبّيك بتاريخ ${new Date().toLocaleDateString('ar-SA')}`
 
   const doc = new Document({
     creator: org || 'ملبّيك',

@@ -49,7 +49,7 @@ const TripManage = lazy(() => import('./TripManage'))
 
 const LazyScanner = lazy(() => import('../../components/Scanner'))
 
-/** قائمةُ أعمدة المؤسسة المشتركة بين الـ select قراءاتٍ متعدّدة (تفادي الانحراف). */
+/** قائمة أعمدة المؤسسة المشتركة بين الـ select قراءات متعددة (تفادي الانحراف). */
 const SUBSCRIBER_COLS =
   'id, owner_id, org_name, slug, plan, trial_ends_at, trial_trip_limit, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url, carrier_company'
 
@@ -69,7 +69,7 @@ function fmtShort(v) {
   catch { return '—' }
 }
 
-/* حالةٌ فارغةٌ أنيقة */
+/* حالة فارغة أنيقة */
 function Empty({ title, hint, mark = true }) {
   return (
     <div className="empty">
@@ -81,10 +81,10 @@ function Empty({ title, hint, mark = true }) {
 }
 
 /* ============================================================
-   لوحة الإدارة (تبقى بسيطةً للآن)
+   لوحة الإدارة (تبقى بسيطة للآن)
    ============================================================ */
 
-/** badgeٌ صغيرٌ للأدمن: عدّ المشتركين الجُدُد آخرَ ٧ أيّام. */
+/** badge صغير للأدمن: عد المشتركين الجدد آخر ٧ أيام. */
 function recent7Badge(subs) {
   const now = Date.now()
   const week = 7 * 86400000
@@ -97,9 +97,9 @@ export function AdminHome() {
   const [view, setView] = useStickyState('admin:view', 'overview')
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [err, setErr] = useState('')                                  // ★ A3+B1 — حالةُ خطأٍ للوحة
-  const [openFb, setOpenFb] = useState(0)                            // ★ A2 — عدّاد فيدباك مفتوحة
-  const [openMsg, setOpenMsg] = useState(0)                          // ★ A2 — عدّاد رسائل عامّة مفتوحة
+  const [err, setErr] = useState('')                                  // ★ A3+B1 — حالة خطأ للوحة
+  const [openFb, setOpenFb] = useState(0)                            // ★ A2 — عداد فيدباك مفتوحة
+  const [openMsg, setOpenMsg] = useState(0)                          // ★ A2 — عداد رسائل عامة مفتوحة
   const [pendingUpgrades, setPendingUpgrades] = useState(0)          // طلبات ترقية للمراجعة
   const [detailSub, setDetailSub] = useState(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -120,8 +120,8 @@ export function AdminHome() {
     }
     const { data, error } = await supabase.rpc('admin_campaign_stats')
     if (error) {
-      // ★ A3 — أَظهر الخطأَ بدل بَلعه
-      setErr('تعذّر تحميل إحصاءات المنصّة: ' + error.message)
+      // ★ A3 — أظهر الخطأ بدل بلعه
+      setErr('تعذر تحميل إحصاءات المنصة: ' + error.message)
       setLoading(false)
       return
     }
@@ -143,7 +143,7 @@ export function AdminHome() {
     }
   }, [])
 
-  // ★ A2 — جلبٌ مستقلٌّ لعدّادات الـinbox غير المعالجة
+  // ★ A2 — جلب مستقل لعدادات الـinbox غير المعالجة
   const loadInboxCounts = useCallback(async () => {
     const [fb, msg, upg] = await Promise.all([
       supabase.from('feedback').select('*', { count: 'exact', head: true }).eq('status', 'open'),
@@ -161,7 +161,7 @@ export function AdminHome() {
     return () => { active = false }
   }, [load, loadInboxCounts])
 
-  // Realtime يَعيد تحميلَ العدّادات + الإحصاءات
+  // Realtime يعيد تحميل العدادات + الإحصاءات
   useRealtime('admin-home', [
     { table: 'subscribers' }, { table: 'trips' }, { table: 'passengers' },
     { table: 'feedback' }, { table: 'public_messages' },
@@ -172,24 +172,24 @@ export function AdminHome() {
     { section: 'الإدارة' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
     { key: 'fleet',    label: 'برج الباصات',   icon: 'trips' },
-    // ★ A1 — badge يَعرض الجديد هذا الأسبوع (لا العدد الكلّيّ المُضلِّل)
+    // ★ A1 — badge يعرض الجديد هذا الأسبوع (لا العدد الكلي المضلل)
     { key: 'subs',     label: 'المشتركون',     icon: 'building', badge: recent7Badge(subs) || undefined },
     { key: 'upgrades', label: 'طلبات الترقية', icon: 'payments', badge: pendingUpgrades || undefined },
     { key: 'trips',    label: 'الرحلات',        icon: 'trips' },
     { key: 'search',   label: 'البحث',         icon: 'search' },
     // ★ A2 — badges للـinboxes، C5 — أيقونتان مختلفتان
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message', badge: openFb || undefined },
-    { key: 'messages', label: 'الرسائل العامّة', icon: 'bell',    badge: openMsg || undefined },
-    { key: 'pmarketing', label: 'تسويق المنصّة', icon: 'message' },
+    { key: 'messages', label: 'الرسائل العامة', icon: 'bell',    badge: openMsg || undefined },
+    { key: 'pmarketing', label: 'تسويق المنصة', icon: 'message' },
     { section: 'النظام' },
     { key: 'team',     label: 'فريق ملبّيك',     icon: 'customers' },
-    { key: 'audit',    label: 'سجلّ النَّشاط',   icon: 'manifest' },
+    { key: 'audit',    label: 'سجل النشاط',   icon: 'manifest' },
     { section: 'الحساب' },
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
   const money = (n) => Number(n || 0).toLocaleString('en-US')
-  // إحصاءاتٌ مجمَّعةٌ في useMemo — تُحسَب فقط حين تتغيّر subs، لا مع كلّ rerender
-  // (تبديل التبويب، فتح ورقةٍ…). على ١٠٠+ مشتركٍ الفرق ملحوظ.
+  // إحصاءات مجمعة في useMemo — تحسب فقط حين تتغير subs، لا مع كل rerender
+  // (تبديل التبويب، فتح ورقة…). على ١٠٠+ مشترك الفرق ملحوظ.
   const { paid, trips, pax, collected, recent7 } = useMemo(() => {
     const now = Date.now()
     const week = 7 * 86400000
@@ -206,18 +206,18 @@ export function AdminHome() {
 
   return (
     <>
-      <AppShell title="لوحة الإدارة" subtitle="إشرافٌ عامٌ على منصّة ملبّيك" tabs={tabs} active={view}
+      <AppShell title="لوحة الإدارة" subtitle="إشراف عام على منصة ملبّيك" tabs={tabs} active={view}
         onTab={(k) => { if (k === 'settings') { setSettingsOpen(true); return } setView(k) }}
         onNotifNavigate={(n) => {
-          // مُوجّهٌ ذكيٌّ: أوّلًا الـrefs (الأدقّ)، ثمّ الكلماتُ المفتاحيّة
+          // موجه ذكي: أولا الـrefs (الأدق)، ثم الكلمات المفتاحية
           if (n.ref_feedback)             { setView('feedback'); return }
           if (n.kind === 'new_feedback')  { setView('feedback'); return }
           const t = (n.title || '') + ' ' + (n.body || '')
           if (/ترقية|إثبات الدفع|باقة المدفوعة/.test(t)) { setView('upgrades'); return }
-          if (/توظيف|الموظَّف|دعوة/.test(t))               { setView('team'); return }
-          if (/الرسائل العامّة|تواصل|الرسالة العامّة/.test(t)) { setView('messages'); return }
-          if (/تغذية|تَغذية/.test(t))                       { setView('feedback'); return }
-          // افتراضيًّا: الرئيسيّة
+          if (/توظيف|الموظف|دعوة/.test(t))               { setView('team'); return }
+          if (/الرسائل العامة|تواصل|الرسالة العامة/.test(t)) { setView('messages'); return }
+          if (/تغذية|تغذية/.test(t))                       { setView('feedback'); return }
+          // افتراضيا: الرئيسية
           setView('overview')
         }}>
         <div key={view} className="view-fade">
@@ -253,7 +253,7 @@ export function AdminHome() {
         </div>
       </AppShell>
 
-      {/* ★ A7 — لا نُغلق الورقةَ عند التعديل (الأدمن يَواصل عمله فيها) */}
+      {/* ★ A7 — لا نغلق الورقة عند التعديل (الأدمن يواصل عمله فيها) */}
       <AdminSubDetail open={!!detailSub} sub={detailSub} onClose={() => setDetailSub(null)} onChanged={load} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={null} />
     </>
@@ -274,8 +274,8 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
     const next = s.plan === 'paid' ? 'trial' : 'paid'
     const { error } = await supabase.from('subscribers').update({ plan: next }).eq('id', s.id)
     setBusyId(null)
-    if (error) toast(translateRpcError(error, 'تعذّر تحديث الباقة.'), { type: 'error' })
-    else { toast(next === 'paid' ? 'تمت ترقية الحملة لمدفوعة' : 'أُعيدت الحملة لتجريبية', { type: 'success' }); onReload?.() }
+    if (error) toast(translateRpcError(error, 'تعذر تحديث الباقة.'), { type: 'error' })
+    else { toast(next === 'paid' ? 'تمت ترقية الحملة لمدفوعة' : 'أعيدت الحملة لتجريبية', { type: 'success' }); onReload?.() }
   }
 
   const filtered = useMemo(() => {
@@ -295,7 +295,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
     return arr
   }, [subs, q, planFilter, sortBy])
 
-  const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصّل (﷼)','تاريخ الاشتراك']
+  const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصل (﷼)','تاريخ الاشتراك']
   function reportRows() {
     return filtered.map((s) => [
       s.org_name || '', `/${s.slug}`, s.plan === 'paid' ? 'مدفوعة' : 'تجريبية',
@@ -304,27 +304,27 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
     ])
   }
   async function exportReportDocx() {
-    toast('جارٍ تجهيز ملفّ Word…', { type: 'info' })
+    toast('جار تجهيز ملف Word…', { type: 'info' })
     try {
       await tableToDocx({
-        title: 'تقرير حملات منصّة ملبّيك',
+        title: 'تقرير حملات منصة ملبّيك',
         subtitle: `إجمالي الحملات: ${subs.length}`,
-        meta: [`صُدر بتاريخ ${new Date().toLocaleDateString('ar-SA')}`],
+        meta: [`صدر بتاريخ ${new Date().toLocaleDateString('ar-SA')}`],
         headers: reportHeaders,
         rows: reportRows(),
         filename: 'تقرير-الحملات',
       })
       toast('تم تنزيل تقرير Word', { type: 'success' })
-    } catch (e) { console.error(e); toast('تعذّر إنشاء ملفّ Word — حاول مجدّدًا.', { type: 'error' }) }
+    } catch (e) { console.error(e); toast('تعذر إنشاء ملف Word — حاول مجددا.', { type: 'error' }) }
   }
   const reportRef = useRef(null)
   const [pdfBusy, setPdfBusy] = useState(false)
   async function exportReportPdf() {
     if (pdfBusy || !reportRef.current) return
     setPdfBusy(true)
-    toast('جارٍ تجهيز ملفّ PDF…', { type: 'info' })
+    toast('جار تجهيز ملف PDF…', { type: 'info' })
     try { await htmlToPdf(reportRef.current, 'تقرير-الحملات'); toast('تم تنزيل تقرير PDF', { type: 'success' }) }
-    catch (e) { console.error(e); toast('تعذّر إنشاء ملفّ PDF — حاول مجدّدًا.', { type: 'error' }) }
+    catch (e) { console.error(e); toast('تعذر إنشاء ملف PDF — حاول مجددا.', { type: 'error' }) }
     finally { setPdfBusy(false) }
   }
   return (
@@ -362,7 +362,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
               <option value="recent">الأحدث</option>
               <option value="name">بالاسم</option>
               <option value="pax">الأكثر معتمرين</option>
-              <option value="collected">الأعلى تحصيلًا</option>
+              <option value="collected">الأعلى تحصيلا</option>
             </select>
           </div>
         </>
@@ -370,11 +370,11 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
 
       {loading ? <SkeletonList count={4} /> :
        subs.length === 0 ? <div className="mlk-empty">لا يوجد مشتركون بعد — ستظهر الحملات هنا فور تسجيلها.</div> :
-       filtered.length === 0 ? <div className="mlk-empty">لا نتائج — غيّر البحث أو الفلتر.</div> :
+       filtered.length === 0 ? <div className="mlk-empty">لا نتائج — غير البحث أو الفلتر.</div> :
        <ul className="mlk-list">
          {filtered.map((s) => (
            <li key={s.id}>
-             {/* صفٌّ نقريّ كـ div (لا button) حتى لا يتداخل زرُّ النسخ بداخله مع زرٍّ — HTML صالح. */}
+             {/* صف نقري كـ div (لا button) حتى لا يتداخل زر النسخ بداخله مع زر — HTML صالح. */}
              <div role="button" tabIndex={0} className="mlk-list-row is-button" onClick={() => onOpenDetail?.(s)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDetail?.(s) } }}>
                <div className="mlk-list-body">
@@ -383,17 +383,17 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
                      {s.plan === 'paid' ? 'مدفوعة' : 'تجريبية'}
                    </span>
                    <code className="ltr" style={{ fontSize: 11, color: 'var(--cr-300)' }}>/{s.slug}</code>
-                   <button type="button" title="نَسخ رابط الحجز"
+                   <button type="button" title="نسخ رابط الحجز"
                            onClick={async (e) => {
                              e.stopPropagation()
                              const url = `${window.location.origin}/${s.slug}`
-                             try { await navigator.clipboard.writeText(url); toast('نُسخ رابطُ الحجز ✓', { type: 'success' }) }
+                             try { await navigator.clipboard.writeText(url); toast('نسخ رابط الحجز ✓', { type: 'success' }) }
                              catch { toast(url, { type: 'info' }) }
                            }}
                            style={{ marginInlineStart: 'auto', background: 'transparent', border: 0,
                                     color: 'var(--cr-300)', cursor: 'pointer', padding: 0,
                                     display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11 }}>
-                     <Icon name="copy" size={11} /> نَسخ الرابط
+                     <Icon name="copy" size={11} /> نسخ الرابط
                    </button>
                  </div>
                  <div className="mlk-list-title">{s.org_name}</div>
@@ -418,7 +418,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
 }
 
 /* ============================================================
-   لوحة المشترك — تجربةٌ موبايل أوّلًا
+   لوحة المشترك — تجربة موبايل أولا
    ============================================================ */
 export function SubscriberHome() {
   const { user, profile, refreshProfile } = useAuth()
@@ -438,7 +438,7 @@ export function SubscriberHome() {
   const [filter, setFilter] = useState('all')   // all | upcoming | active | done
   const [search, setSearch] = useState('')
   const [managing, setManaging] = useState(null) // الرحلة قيد الإدارة (شاشة كاملة)
-  const [manageInitial, setManageInitial] = useState(null) // نموذجٌ يُفتح مباشرةً عند دخول الإدارة
+  const [manageInitial, setManageInitial] = useState(null) // نموذج يفتح مباشرة عند دخول الإدارة
   const [paxStats, setPaxStats] = useState({ byTrip: new Map(), totals: { count: 0, paid: 0, boarded: 0, checked_in: 0 } })
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -459,7 +459,7 @@ export function SubscriberHome() {
     const hadPax   = (cached?.paxStats?.byTripEntries?.length ?? 0) > 0
     const hadSub   = !!cached?.sub
 
-    // SWR: snapshot سابق يُعرض فورًا (لا skeleton)
+    // SWR: snapshot سابق يعرض فورا (لا skeleton)
     if (firstLoadRef.current && cached) {
       if (cached.sub) setSub(cached.sub)
       if (cached.trips) setTrips(cached.trips)
@@ -470,10 +470,10 @@ export function SubscriberHome() {
     }
     setErr('')
 
-    // الحملة التي يديرها المستخدم: يملكها أو عضوُ فريقٍ فيها (RPC موثوق).
+    // الحملة التي يديرها المستخدم: يملكها أو عضو فريق فيها (RPC موثوق).
     const { data: managedId } = await supabase.rpc('my_managed_subscriber_id')
-    // ★ حارسُ empty الزائف: لو كان عندنا حملةٌ مخزّنةٌ ثمّ رجع managedId=null،
-    //    قد يكون التوكِنُ لم يَنشر بعد. نُعيد المحاولة قبل المسح.
+    // ★ حارس empty الزائف: لو كان عندنا حملة مخزنة ثم رجع managedId=null،
+    //    قد يكون التوكن لم ينشر بعد. نعيد المحاولة قبل المسح.
     if (!managedId && hadSub && retryRef.current < 2) {
       retryRef.current += 1
       inFlightRef.current = false   // اسمح للـretry بالدخول
@@ -484,15 +484,15 @@ export function SubscriberHome() {
     if (managedId) {
       const { data: row, error: sErr } = await supabase
         .from('subscribers').select(SUBSCRIBER_COLS).eq('id', managedId).maybeSingle()
-      if (sErr) { setErr('تعذّر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
+      if (sErr) { setErr('تعذر تحميل بيانات الحملة: ' + sErr.message); setLoading(false); return }
       s = row
     }
 
-    // لا حملةَ مُدارة ⇒ مالكٌ جديدٌ بلا حملة ⇒ ننشئ له واحدةً تلقائيًّا.
-    // نشترط !managedId (لا !s) كي لا يُنشئ عضوُ فريقٍ حملةً ثانيةً لو تعثّرت قراءة صفّه لحظيًّا.
+    // لا حملة مدارة ⇒ مالك جديد بلا حملة ⇒ ننشئ له واحدة تلقائيا.
+    // نشترط !managedId (لا !s) كي لا ينشئ عضو فريق حملة ثانية لو تعثرت قراءة صفه لحظيا.
     if (!managedId && !creatingRef.current) {
       creatingRef.current = true
-      // اشتقاقُ slug مقروءٍ من اسم المالك بدل سلسلةٍ عشوائيّةٍ بحتة.
+      // اشتقاق slug مقروء من اسم المالك بدل سلسلة عشوائية بحتة.
       const orgName = profile?.full_name ? `حملة ${profile.full_name}` : 'حملتي'
       const slug = suggestSlug(orgName)
       const { data: created, error: insErr } = await supabase
@@ -508,7 +508,7 @@ export function SubscriberHome() {
           s = again ?? null
         } else {
           creatingRef.current = false
-          setErr('تعذّر إنشاء حملتك تلقائيًّا: ' + insErr.message); setLoading(false); return
+          setErr('تعذر إنشاء حملتك تلقائيا: ' + insErr.message); setLoading(false); return
         }
       } else {
         s = created
@@ -521,7 +521,7 @@ export function SubscriberHome() {
     setSub(s ?? null)
 
     if (s?.id) {
-      // الرحلات والركّاب مستقلّتان (لا تعتمد إحداهما على الأخرى) → تشغيلٌ متوازٍ
+      // الرحلات والركاب مستقلتان (لا تعتمد إحداهما على الأخرى) → تشغيل متواز
       const [tripsRes, paxRes] = await Promise.all([
         supabase
           .from('trips')
@@ -532,12 +532,12 @@ export function SubscriberHome() {
           .from('passengers').select('trip_id, status').eq('subscriber_id', s.id),
       ])
       if (tripsRes.error) {
-        setErr('تعذّر تحميل الرحلات: ' + tripsRes.error.message)
-        // لا تَمسح الواجهةَ على خطأ — أبقِ المخزَّن
+        setErr('تعذر تحميل الرحلات: ' + tripsRes.error.message)
+        // لا تمسح الواجهة على خطأ — أبق المخزن
       } else {
         const newTrips = tripsRes.data ?? []
         const newPaxRows = paxRes.data ?? []
-        // ★ حارسُ empty الزائف: لو كانت ٢ نتائج فارغةً ومخزَّنُنا فيه بياناتٌ، أعِد المحاولة
+        // ★ حارس empty الزائف: لو كانت ٢ نتائج فارغة ومخزننا فيه بيانات، أعد المحاولة
         if (newTrips.length === 0 && newPaxRows.length === 0 && (hadTrips || hadPax) && retryRef.current < 2) {
           retryRef.current += 1
           inFlightRef.current = false
@@ -549,12 +549,12 @@ export function SubscriberHome() {
         setTrips(newTrips)
         const paxStats = buildPaxStats(newPaxRows)
         setPaxStats(paxStats)
-        // خزِّن snapshot — فقط لو كانت النتيجةُ ذاتَ معنًى (لا نَكتب فارغًا فوقَ مَملوء)
+        // خزن snapshot — فقط لو كانت النتيجة ذات معنى (لا نكتب فارغا فوق مملوء)
         const safeToWrite = (newTrips.length > 0 || !hadTrips) && (newPaxRows.length > 0 || !hadPax)
         if (safeToWrite) {
           setCached(cacheKey, { sub: s, trips: newTrips, paxStats })
         } else {
-          // اكتب المُحدَّث للحملة فقط مع الإبقاء على المخزَّن الباقي
+          // اكتب المحدث للحملة فقط مع الإبقاء على المخزن الباقي
           setCached(cacheKey, { sub: s, trips: cached?.trips ?? [], paxStats: cached?.paxStats ?? buildPaxStats([]) })
         }
       }
@@ -572,12 +572,12 @@ export function SubscriberHome() {
 
   useEffect(() => { load() }, [load])
 
-  // Prefetch لحزمة TripManage فور تحميل الرحلات — أوّلُ نقرةٍ تكون فوريّةً.
+  // Prefetch لحزمة TripManage فور تحميل الرحلات — أول نقرة تكون فورية.
   useEffect(() => {
     if (trips.length > 0) { import('./TripManage').catch(() => {}) }
   }, [trips.length])
 
-  // Realtime للمشترك: رحلات/ركّاب/حملةٌ معدَّلة (ترقية الباقة، ردّ الإدارة على ملاحظاتي)
+  // Realtime للمشترك: رحلات/ركاب/حملة معدلة (ترقية الباقة، رد الإدارة على ملاحظاتي)
   useRealtime('subscriber-home', sub?.id ? [
     { table: 'passengers', filter: `subscriber_id=eq.${sub.id}` },
     { table: 'trips',      filter: `subscriber_id=eq.${sub.id}` },
@@ -593,7 +593,7 @@ export function SubscriberHome() {
     if (!t?.id) return
     if (!(await confirm({ title: 'حذف رحلة', message: `هل تريد حذف رحلة «${t.title}»؟ لا يمكن التراجع.`, confirmText: 'حذف', danger: true }))) return
     const { error } = await supabase.from('trips').delete().eq('id', t.id)
-    if (error) { setErr(translateRpcError(error, 'تعذّر حذف الرحلة.')); return }
+    if (error) { setErr(translateRpcError(error, 'تعذر حذف الرحلة.')); return }
     toast('تم حذف الرحلة', { type: 'success' })
     load()
   }
@@ -604,7 +604,7 @@ export function SubscriberHome() {
     navigator.clipboard?.writeText(shareUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800) })
   }
 
-  /* تصفيةٌ سريعة + بحث */
+  /* تصفية سريعة + بحث */
   const filteredTrips = useMemo(() => {
     const q = search.trim().toLowerCase()
     return trips.filter((t) => {
@@ -622,33 +622,33 @@ export function SubscriberHome() {
   const totalSeats = trips.reduce((s, t) => s + (Number(t.capacity) || 0), 0)
   const planLabel = sub?.plan === 'paid' ? 'باقة ملبّيك' : 'الباقة التجريبية'
 
-  /* الشريط السفلي للجوال — ٥ عناصر مع زرّ مركزيٍّ بارز */
-  // العناصر الخمسة الأولى تظهر في الشريط السفليّ على الجوال.
-  // البقيّة (بعد section: 'اختصارات') تظهر في الدرج الجانبيّ فقط.
+  /* الشريط السفلي للجوال — ٥ عناصر مع زر مركزي بارز */
+  // العناصر الخمسة الأولى تظهر في الشريط السفلي على الجوال.
+  // البقية (بعد section: 'اختصارات') تظهر في الدرج الجانبي فقط.
   const tabs = [
     { section: 'حملتي' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
-    { key: 'ops', label: 'العمليّات', icon: 'manifest' },
+    { key: 'ops', label: 'العمليات', icon: 'manifest' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
     { key: 'add', label: 'إضافة', icon: 'plus', fab: true },
     { key: 'analytics', label: 'التحليلات', icon: 'chart' },
-    { key: 'marketing', label: 'تَسويق', icon: 'message' },
+    { key: 'marketing', label: 'تسويق', icon: 'message' },
     { key: 'feedback', label: 'الدعم', icon: 'message' },
     { section: 'اختصارات' },
     { key: 'scan', label: 'مسح تذكرة', icon: 'qr', disabled: !trips.length },
     { key: 'search', label: 'بحث عن معتمر', icon: 'search', disabled: !trips.length },
     { key: 'share', label: 'مشاركة رابط الحجز', icon: 'share', disabled: !sub?.slug },
-    ...(sub?.owner_id === user?.id ? [{ key: 'team', label: 'الفريق والصلاحيّات', icon: 'customers' }] : []),
+    ...(sub?.owner_id === user?.id ? [{ key: 'team', label: 'الفريق والصلاحيات', icon: 'customers' }] : []),
     { section: 'الحساب' },
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
   ]
 
-  // فتح إدارة أوّل رحلة (لخطوات التهيئة)؛ أو إنشاء رحلةٍ إن لم توجد
+  // فتح إدارة أول رحلة (لخطوات التهيئة)؛ أو إنشاء رحلة إن لم توجد
   function manageFirst() {
     if (trips[0]) { setManaging(trips[0]); setView('trips') }
     else openCreate()
   }
-  // فتحٌ مباشرٌ لنموذج بيانات المؤسسة/الباص (الكشف) عند الضغط على خطوة «بيانات المؤسسة»
+  // فتح مباشر لنموذج بيانات المؤسسة/الباص (الكشف) عند الضغط على خطوة «بيانات المؤسسة»
   function manageFirstCrew() {
     if (trips[0]) { setManageInitial('crew'); setManaging(trips[0]); setView('trips') }
     else openCreate()
@@ -669,8 +669,8 @@ export function SubscriberHome() {
   return (
     <>
       <AppShell
-        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'ops' ? 'لوحة العمليّات' : view === 'trips' ? 'رحلات العمرة' : view === 'analytics' ? 'التحليلات' : 'حملتي'}
-        subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
+        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'ops' ? 'لوحة العمليات' : view === 'trips' ? 'رحلات العمرة' : view === 'analytics' ? 'التحليلات' : 'حملتي'}
+        subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلات غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
         tabs={tabs}
         active={view}
         onTab={onTab}
@@ -698,10 +698,10 @@ export function SubscriberHome() {
               <>
                 <PendingInviteBanner />
                 <TrialBanner sub={sub} tripsCount={trips.length} />
-                {/* ★ لا نَرسم Overview قبل وصول sub فعلًا — يَمنع ومضةَ ٠/٠
-                    قبل ظهور الأرقام الحقيقيّة. SWR cache يَحلّ هذا للزائر
-                    العائد، لكنّ الزائر الجديد (بلا cache) كان يَرى أصفارًا
-                    ثوانٍ قبل الأرقام الفعليّة. */}
+                {/* ★ لا نرسم Overview قبل وصول sub فعلا — يمنع ومضة ٠/٠
+                    قبل ظهور الأرقام الحقيقية. SWR cache يحل هذا للزائر
+                    العائد، لكن الزائر الجديد (بلا cache) كان يرى أصفارا
+                    ثوان قبل الأرقام الفعلية. */}
                 {(!loading || sub) ? (
                   <Overview
                     sub={sub}
@@ -812,7 +812,7 @@ export function SubscriberHome() {
       <FeedbackSheet open={feedbackOpen} audience="subscriber" onClose={() => setFeedbackOpen(false)} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} sub={sub} onSubChanged={load} />
 
-      {/* اختيارُ نوع المسح */}
+      {/* اختيار نوع المسح */}
       <BottomSheet
         open={scanMode === 'pick'}
         onClose={() => setScanMode(null)}
@@ -832,7 +832,7 @@ export function SubscriberHome() {
         </div>
       </BottomSheet>
 
-      {/* الماسح الحيّ — يفحص أيّ تذكرةٍ في حملتك */}
+      {/* الماسح الحي — يفحص أي تذكرة في حملتك */}
       {(scanMode === 'board' || scanMode === 'checkin') && (
         <Suspense fallback={<div className="muted" style={{ padding: 16 }}>تحميل الماسح…</div>}>
           <LazyScanner
@@ -849,24 +849,24 @@ export function SubscriberHome() {
   )
 }
 
-/* تسميةُ العدّ التنازليّ لموعد الرحلة */
+/* تسمية العد التنازلي لموعد الرحلة */
 function daysLabel(depart) {
   const d = Math.ceil((new Date(depart).getTime() - Date.now()) / 86400000)
   if (d <= 0) return 'اليوم'
-  if (d === 1) return 'غدًا'
+  if (d === 1) return 'غدا'
   if (d === 2) return 'بعد يومين'
-  if (d <= 10) return `بعد ${d} أيّام`
-  return `بعد ${d} يومًا`
+  if (d <= 10) return `بعد ${d} أيام`
+  return `بعد ${d} يوما`
 }
 
-/* ---------- هيكلٌ عظميٌّ للنظرة العامّة قبل وصول البيانات ----------
-   يَمنع وميضَ «٠ معتمر · ٠٪» قبل ظهور القيم الحقيقيّة. النَّسجُ بسيطٌ
-   لا يَستهلك طاقةً — مجرّدُ صناديقَ رماديّةٍ بنبضةٍ خفيفة. */
+/* ---------- هيكل عظمي للنظرة العامة قبل وصول البيانات ----------
+   يمنع وميض «٠ معتمر · ٠٪» قبل ظهور القيم الحقيقية. النسج بسيط
+   لا يستهلك طاقة — مجرد صناديق رمادية بنبضة خفيفة. */
 function OverviewSkeleton() {
   return (
     <>
       <section className="hero" style={{ opacity: .6 }}>
-        <span className="tag" style={{ background: 'rgba(255,255,255,.06)', color: 'transparent' }}>منصّة عُمرة</span>
+        <span className="tag" style={{ background: 'rgba(255,255,255,.06)', color: 'transparent' }}>منصة عمرة</span>
         <h2 style={{ background: 'rgba(255,255,255,.05)', color: 'transparent', borderRadius: 6, width: '60%' }}>—</h2>
         <p style={{ background: 'rgba(255,255,255,.04)', color: 'transparent', borderRadius: 6, width: '85%' }}>—</p>
       </section>
@@ -886,7 +886,7 @@ function OverviewSkeleton() {
 function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTrip, onCreate, onShare, onAnalytics, onScan, onManage, onSearch }) {
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   const upcoming = trips.filter((t) => t.status === 'open' || t.status === 'draft').length
-  // الرحلة القادمة: أقرب رحلةٍ مفتوحةٍ/نشطةٍ لم يفت موعدها بعد
+  // الرحلة القادمة: أقرب رحلة مفتوحة/نشطة لم يفت موعدها بعد
   const now = Date.now()
   const nextTrip = trips
     .filter((t) => t.depart_at && new Date(t.depart_at).getTime() > now && t.status !== 'done' && t.status !== 'draft')
@@ -903,9 +903,9 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
   return (
     <>
       <section className="hero">
-        <span className="tag">منصّة عُمرة</span>
-        <h2>أهلًا{firstName ? ` · ${firstName}` : ''}</h2>
-        <p>{showOrgInHero ? `${orgName} — ` : ''}مركز قيادتك المركزيّ: كلّ رحلاتك والمعتمرون والإشعارات في مكانٍ واحد.</p>
+        <span className="tag">منصة عمرة</span>
+        <h2>أهلا{firstName ? ` · ${firstName}` : ''}</h2>
+        <p>{showOrgInHero ? `${orgName} — ` : ''}مركز قيادتك المركزي: كل رحلاتك والمعتمرون والإشعارات في مكان واحد.</p>
       </section>
 
       {nextTrip && (
@@ -959,7 +959,7 @@ function TripsView({ trips, allCount, sub, loading, paxByTrip, filter, setFilter
       <section className="hero" style={{ paddingBottom: 16 }}>
         <span className="tag">مركز الرحلات</span>
         <h2 style={{ marginTop: 6, fontSize: 22 }}>إدارة ومتابعة جميع رحلاتك</h2>
-        <p>في مكانٍ واحد — <strong style={{ color: 'var(--gd-300)' }}>{allCount}</strong> {allCount === 1 ? 'رحلة مسجّلة' : 'رحلة'}.</p>
+        <p>في مكان واحد — <strong style={{ color: 'var(--gd-300)' }}>{allCount}</strong> {allCount === 1 ? 'رحلة مسجلة' : 'رحلة'}.</p>
         <div style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
           <button className="btn btn-em" onClick={onCreate} disabled={!sub}>
             <Icon name="plus" size={17} /> رحلة جديدة
@@ -992,9 +992,9 @@ function TripsView({ trips, allCount, sub, loading, paxByTrip, filter, setFilter
         {loading ? (
           <SkeletonList count={4} />
         ) : !sub ? (
-          <Empty title="لم يتم العثور على حملتك" hint="حدّث الصفحة، أو تواصل مع الدعم إن استمرّ." />
+          <Empty title="لم يتم العثور على حملتك" hint="حدث الصفحة، أو تواصل مع الدعم إن استمر." />
         ) : trips.length === 0 ? (
-          <Empty title="لا توجد رحلاتٌ تطابق التصفية" hint="جرّب تغيير التصفية أو ابحث بكلمةٍ أخرى." />
+          <Empty title="لا توجد رحلات تطابق التصفية" hint="جرب تغيير التصفية أو ابحث بكلمة أخرى." />
         ) : (
           trips.map((t) => (
             <TripCard key={t.id} trip={t} booked={paxByTrip?.get(t.id)?.count || 0} stats={paxByTrip?.get(t.id)}
@@ -1075,11 +1075,11 @@ export function CustomerHome() {
   const [orgName, setOrgName] = useState('')
   const [sub, setSub] = useState(null)
   const [trips, setTrips] = useState([])
-  const [myBookings, setMyBookings] = useState([])   // ركّابي (passengers بـ profile_id = أنا)
+  const [myBookings, setMyBookings] = useState([])   // ركابي (passengers بـ profile_id = أنا)
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(null)        // الرحلة قيد الحجز (شاشة كاملة)
-  const [ticketFor, setTicketFor] = useState(null)    // حجزٌ لعرض تذكرته
-  const [ratingFor, setRatingFor] = useState(null)    // رحلةٌ منتهيةٌ لتقييم حملتها { trip }
+  const [ticketFor, setTicketFor] = useState(null)    // حجز لعرض تذكرته
+  const [ratingFor, setRatingFor] = useState(null)    // رحلة منتهية لتقييم حملتها { trip }
   const [myRatings, setMyRatings] = useState(new Map())// trip_id → { stars, comment } (تقييماتي للحملة)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -1098,7 +1098,7 @@ export function CustomerHome() {
     const hadBookings = (cached?.bookings?.length ?? 0) > 0
     const hadSub      = !!cached?.sub
 
-    // SWR: snapshot سابق يُعرض فورًا
+    // SWR: snapshot سابق يعرض فورا
     if (firstLoadRef.current && cached) {
       if (cached.sub) { setSub(cached.sub); setOrgName(cached.sub.org_name) }
       if (cached.trips) setTrips(cached.trips)
@@ -1108,7 +1108,7 @@ export function CustomerHome() {
       setLoading(true)
     }
 
-    // قراءةٌ آمنةُ الأعمدة عبر الـVIEW (تستثني الحقول الإداريّة الداخليّة)
+    // قراءة آمنة الأعمدة عبر الـVIEW (تستثني الحقول الإدارية الداخلية)
     let sq = supabase.from('v_subscriber_public').select('id, org_name, store_url, logo_url, bank_account_name, bank_name, bank_iban')
     sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
     let tq = supabase
@@ -1128,7 +1128,7 @@ export function CustomerHome() {
     const newTrips    = tripsRes.data ?? []
     const newBookings = bRes.data ?? []
 
-    // ★ حارسُ empty الزائف
+    // ★ حارس empty الزائف
     const everythingEmpty = !s && newTrips.length === 0 && newBookings.length === 0
     if (everythingEmpty && (hadSub || hadTrips || hadBookings) && retryCustRef.current < 2) {
       retryCustRef.current += 1
@@ -1139,7 +1139,7 @@ export function CustomerHome() {
     retryCustRef.current = 0
 
     if (s) { setSub(s); setOrgName(s.org_name) }
-    // لا تَكتب فارغًا فوق مَملوء
+    // لا تكتب فارغا فوق مملوء
     if (newTrips.length > 0 || !hadTrips)       setTrips(newTrips)
     if (newBookings.length > 0 || !hadBookings) setMyBookings(newBookings)
 
@@ -1158,8 +1158,8 @@ export function CustomerHome() {
 
   useEffect(() => { load() }, [load])
 
-  // Realtime للعميل: تغيّر حالة حجزه (تأكيد الدفع/الصعود)، رحلاتٌ جديدة في حملته،
-  // وردّ الإدارة على ملاحظاته (يلتقطه FeedbackSheet عند الفتح أيضًا).
+  // Realtime للعميل: تغير حالة حجزه (تأكيد الدفع/الصعود)، رحلات جديدة في حملته،
+  // ورد الإدارة على ملاحظاته (يلتقطه FeedbackSheet عند الفتح أيضا).
   useRealtime('customer-home', user?.id ? [
     { table: 'passengers', filter: `profile_id=eq.${user.id}` },
     ...(subscriberId ? [{ table: 'trips', filter: `subscriber_id=eq.${subscriberId}` }] : []),
@@ -1171,7 +1171,7 @@ export function CustomerHome() {
     return m
   }, [myBookings])
 
-  // تقييماتي للحملة (اتّجاه customer_to_subscriber) — لإظهار النجوم/زرّ التعديل.
+  // تقييماتي للحملة (اتجاه customer_to_subscriber) — لإظهار النجوم/زر التعديل.
   useEffect(() => {
     if (!user?.id) { setMyRatings(new Map()); return }
     let cancel = false
@@ -1229,7 +1229,7 @@ export function CustomerHome() {
   return (
     <>
       <AppShell
-        title="أهلًا بك"
+        title="أهلا بك"
         subtitle={orgName ? `رحلات حملة ${orgName}` : 'رحلاتك المتاحة'}
         tabs={tabs}
         active={view}
@@ -1243,14 +1243,14 @@ export function CustomerHome() {
             <section className="hero">
               <span className="tag">حملتي</span>
               <h2>{orgName || 'رحلاتي المتاحة'}</h2>
-              <p>اختر رحلتك المناسبة، أكمل بياناتك، واحجز مقعدك مباشرةً — تُعرض لك رحلات حملتك فقط.</p>
+              <p>اختر رحلتك المناسبة، أكمل بياناتك، واحجز مقعدك مباشرة — تعرض لك رحلات حملتك فقط.</p>
             </section>
 
             <div style={{ marginTop: 14 }}>
               {loading ? (
                 <SkeletonList count={4} />
               ) : trips.length === 0 ? (
-                <Empty title="لا توجد رحلاتٌ متاحةٌ حاليًا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
+                <Empty title="لا توجد رحلات متاحة حاليا" hint="ستظهر رحلات حملتك هنا فور إتاحتها." />
               ) : (
                 trips.map((t) => (
                   <CustomerTripCard
@@ -1289,7 +1289,7 @@ export function CustomerHome() {
                       <div className="tags">
                         <span className="tag gold">عمرة</span>
                         <span className={`tag ${b.status === 'paid' || b.status === 'boarded' || b.status === 'checked_in' ? 'ok' : 'muted'}`}>
-                          {b.status === 'paid' ? 'مدفوع' : b.status === 'boarded' ? 'صعد' : b.status === 'checked_in' ? 'مُسكّن' : 'محجوز'}
+                          {b.status === 'paid' ? 'مدفوع' : b.status === 'boarded' ? 'صعد' : b.status === 'checked_in' ? 'مسكن' : 'محجوز'}
                         </span>
                       </div>
                       <h3>{t?.title || 'رحلة'}</h3>
@@ -1314,18 +1314,18 @@ export function CustomerHome() {
                             const ok = await confirm({
                               title: 'إلغاء الحجز',
                               message: paid
-                                ? `سيُلغى حجزك في «${t?.title || 'هذه الرحلة'}» ويُسجَّل طلبُ استردادٍ لمبلغك يعالجه صاحب الحملة. متابعة؟`
+                                ? `سيلغى حجزك في «${t?.title || 'هذه الرحلة'}» ويسجل طلب استرداد لمبلغك يعالجه صاحب الحملة. متابعة؟`
                                 : `إلغاء حجزك في «${t?.title || 'هذه الرحلة'}»؟`,
                               confirmText: 'إلغاء الحجز', cancelText: 'تراجع', danger: true,
                             })
                             if (!ok) return
                             const { data, error } = await supabase.rpc('cancel_booking', { p_passenger: b.id })
-                            if (error) toast(translateRpcError(error, 'تعذّر إلغاء الحجز.'), { type: 'error' })
+                            if (error) toast(translateRpcError(error, 'تعذر إلغاء الحجز.'), { type: 'error' })
                             else {
-                              // ★ تنظيفُ cache المرتبط بالحجز فورًا — لا أَثر PII بائد
+                              // ★ تنظيف cache المرتبط بالحجز فورا — لا أثر PII بائد
                               try { invalidate(`cust-booking:${b.trip_id}:${user.id}`) } catch { /* ignore */ }
                               try { invalidate(`cust-dash:${user.id}`) } catch { /* ignore */ }
-                              toast(data?.refund_requested ? 'أُلغي الحجز وسُجّل طلب الاسترداد ✓' : 'تم إلغاء الحجز', { type: 'info' })
+                              toast(data?.refund_requested ? 'ألغي الحجز وسجل طلب الاسترداد ✓' : 'تم إلغاء الحجز', { type: 'info' })
                               load()
                             }
                           }}><Icon name="trash" size={15} /> إلغاء</button>
@@ -1337,7 +1337,7 @@ export function CustomerHome() {
                         <div className="rating-cta">
                           {myRating ? (
                             <>
-                              <span className="rating-cta-lb"><Icon name="check" size={14} /> تقييمُك للحملة</span>
+                              <span className="rating-cta-lb"><Icon name="check" size={14} /> تقييمك للحملة</span>
                               <RatingStars value={myRating.stars} size={18} />
                               <span style={{ flex: 1 }} />
                               <button className="icon-btn" onClick={() => setRatingFor({ trip: t })}>
@@ -1349,7 +1349,7 @@ export function CustomerHome() {
                               <span className="rating-cta-lb">انتهت الرحلة — شاركنا تجربتك</span>
                               <span style={{ flex: 1 }} />
                               <button className="btn btn-gold btn-sm" onClick={() => setRatingFor({ trip: t })}>
-                                <Icon name="sparkle" size={14} /> قيّم الحملة
+                                <Icon name="sparkle" size={14} /> قيم الحملة
                               </button>
                             </>
                           )}
@@ -1368,7 +1368,7 @@ export function CustomerHome() {
             <section className="hero">
               <span className="tag">هدية لك</span>
               <h2>بوصلة القبلة</h2>
-              <p>اتجاه القبلة بالدرجات والمسافة إلى الكعبة، مباشرة من جوّالك — هدية من ملبّيك لكل معتمر.</p>
+              <p>اتجاه القبلة بالدرجات والمسافة إلى الكعبة، مباشرة من جوالك — هدية من ملبّيك لكل معتمر.</p>
             </section>
             <div style={{ marginTop: 14, display: 'grid', placeItems: 'center' }}>
               <QiblaCompass />
@@ -1399,10 +1399,10 @@ export function CustomerHome() {
   )
 }
 
-/* تذكرة العميل — غلافٌ كسولٌ لمكوّن Ticket */
+/* تذكرة العميل — غلاف كسول لمكون Ticket */
 const CustomerTicket = lazy(() => import('../../components/Ticket'))
 
-/* بطاقة رحلةٍ للعميل: تعرض زرّ الحجز أو التذكرة حسب حالته ودورة حياة الرحلة */
+/* بطاقة رحلة للعميل: تعرض زر الحجز أو التذكرة حسب حالته ودورة حياة الرحلة */
 function CustomerTripCard({ trip, booking, onBook, onTicket }) {
   const lc = tripLifecycle(trip)
   return (
@@ -1410,7 +1410,7 @@ function CustomerTripCard({ trip, booking, onBook, onTicket }) {
       <div className="tags">
         <span className="tag gold">عمرة</span>
         <span className={`tag ${lc.cls}`}>{lc.label}</span>
-        {lc.soon && <span className="tag warn">قريبًا</span>}
+        {lc.soon && <span className="tag warn">قريبا</span>}
         {booking && <span className="tag ok">محجوز · مقعد {booking.seat_no || '—'}</span>}
       </div>
       <h3>{trip.title || 'رحلة'}</h3>

@@ -26,15 +26,15 @@ function fmt(v) {
 }
 
 /**
- * جرس الإشعارات — زرٌّ في الرأس + قائمةٌ منسدلةٌ (Popover) أسفله.
- * يحلّ محلّ NotificationsCenter (BottomSheet) ليطابق نمط AccountMenu —
- * تجربةٌ موحّدةٌ سلسةٌ على iPhone/Android/سطح المكتب.
+ * جرس الإشعارات — زر في الرأس + قائمة منسدلة (Popover) أسفله.
+ * يحل محل NotificationsCenter (BottomSheet) ليطابق نمط AccountMenu —
+ * تجربة موحدة سلسة على iPhone/Android/سطح المكتب.
  */
 export default function NotificationsBell({ onNavigate }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  // ★ لا cache هنا — الإشعارات حالةٌ ديناميكيّة (read_at يَتغيّر بالضغطة).
-  //   كلُّ فتحٍ للقائمة = تحميلٌ طازجٌ من DB. التحميلُ خاطفٌ (٢٠٠ms).
+  // ★ لا cache هنا — الإشعارات حالة ديناميكية (read_at يتغير بالضغطة).
+  //   كل فتح للقائمة = تحميل طازج من DB. التحميل خاطف (٢٠٠ms).
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -44,9 +44,9 @@ export default function NotificationsBell({ onNavigate }) {
   const load = useCallback(async () => {
     if (!user?.id || !open) return
     setLoading(true); setErr('')
-    // ★ فلترةٌ ذكيّة: نَجلب فقط الإشعاراتِ غير المقروءة (read_at IS NULL).
-    //   بمجرّد ضَغطها، تُعلَّم مقروءةً فتَختفي من القائمة لاحقًا.
-    //   لا cache لا تَراكُم لا إعادة ظهور.
+    // ★ فلترة ذكية: نجلب فقط الإشعارات غير المقروءة (read_at IS NULL).
+    //   بمجرد ضغطها، تعلم مقروءة فتختفي من القائمة لاحقا.
+    //   لا cache لا تراكم لا إعادة ظهور.
     const { data, error } = await supabase
       .from('notifications')
       .select('id, kind, title, body, ref_trip, ref_passenger, ref_feedback, read_at, created_at')
@@ -54,7 +54,7 @@ export default function NotificationsBell({ onNavigate }) {
       .order('created_at', { ascending: false })
       .limit(50)
     if (error) {
-      setErr('تعذّر التحميل — تحقّق من اتصالك ثمّ حدّث.')
+      setErr('تعذر التحميل — تحقق من اتصالك ثم حدث.')
       setLoading(false)
       return
     }
@@ -65,7 +65,7 @@ export default function NotificationsBell({ onNavigate }) {
   useEffect(() => { load() }, [load])
   useRealtime('notif-list', open && user?.id ? [{ table: 'notifications' }] : [], load, 200, [open, user?.id, load])
 
-  // أغلق بنقرةٍ خارجها أو Escape
+  // أغلق بنقرة خارجها أو Escape
   useEffect(() => {
     if (!open) return
     const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
@@ -78,8 +78,8 @@ export default function NotificationsBell({ onNavigate }) {
     }
   }, [open])
 
-  // ★ تَعليم مقروء + إزالةٌ تَفاؤليّةٌ من القائمة (لا تَعود لأنّ الـGET
-  //   يَستثني read_at IS NOT NULL). تَجنّب DELETE لأنّ RLS لا يَدعمه.
+  // ★ تعليم مقروء + إزالة تفاؤلية من القائمة (لا تعود لأن الـGET
+  //   يستثني read_at IS NOT NULL). تجنب DELETE لأن RLS لا يدعمه.
   async function dismiss(id) {
     const now = new Date().toISOString()
     setItems((prev) => prev.filter((n) => n.id !== id))
@@ -113,7 +113,7 @@ export default function NotificationsBell({ onNavigate }) {
             {unread > 0 && <span className="notif-pop-count">{unread} جديد</span>}
             <span style={{ flex: 1 }} />
             {items.length > 0 && (
-              <button className="notif-pop-action" onClick={dismissAll}>مَسحُ الكلّ</button>
+              <button className="notif-pop-action" onClick={dismissAll}>مسح الكل</button>
             )}
           </div>
 
@@ -141,9 +141,9 @@ export default function NotificationsBell({ onNavigate }) {
                     className={`notif-row ${n.read_at ? '' : 'unread'}`}
                     key={n.id}
                     onClick={() => {
-                      // أوّلًا: تَنقّل لو مَتاحٌ، ثمّ احذف الإشعار
+                      // أولا: تنقل لو متاح، ثم احذف الإشعار
                       if (n.ref_trip && onNavigate) { onNavigate(n); setOpen(false) }
-                      // احذف الإشعارَ بعد القراءة دائمًا — لا تَراكم
+                      // احذف الإشعار بعد القراءة دائما — لا تراكم
                       dismiss(n.id)
                     }}
                   >

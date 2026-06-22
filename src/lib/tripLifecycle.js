@@ -1,6 +1,6 @@
-// دورة حياة الرحلة — تُشتقّ من الحالة + التواريخ.
-// مصدرٌ واحدٌ للواجهة (شارات + قفل الحجز) يطابق حارس قاعدة البيانات
-// (guard_passenger_columns): العميل لا يحجز إلّا رحلةً status='open' لم يفت موعدها.
+// دورة حياة الرحلة — تشتق من الحالة + التواريخ.
+// مصدر واحد للواجهة (شارات + قفل الحجز) يطابق حارس قاعدة البيانات
+// (guard_passenger_columns): العميل لا يحجز إلا رحلة status='open' لم يفت موعدها.
 
 export function tripLifecycle(trip) {
   const now = Date.now()
@@ -10,7 +10,7 @@ export function tripLifecycle(trip) {
 
   const departed = depart != null && depart < now
   const returned = ret != null ? ret < now : (depart != null && depart < now - 7 * 86400000)
-  // قابلةٌ لحجز العميل: مفتوحةٌ ولم ينطلق موعدها (يطابق التريغر تمامًا)
+  // قابلة لحجز العميل: مفتوحة ولم ينطلق موعدها (يطابق التريغر تماما)
   const bookable = status === 'open' && !departed
 
   let phase, label, cls
@@ -24,10 +24,10 @@ export function tripLifecycle(trip) {
 
   const reason = bookable ? '' :
     (status === 'done' || returned) ? 'انتهت هذه الرحلة.' :
-    departed ? 'انطلقت هذه الرحلة — لم يعد الحجز متاحًا.' :
-    status === 'closed' ? 'أُغلق الحجز على هذه الرحلة.' :
-    status === 'draft' ? 'الرحلة لم تُفتح للحجز بعد.' :
-    'الحجز غير متاحٍ حاليًّا.'
+    departed ? 'انطلقت هذه الرحلة — لم يعد الحجز متاحا.' :
+    status === 'closed' ? 'أغلق الحجز على هذه الرحلة.' :
+    status === 'draft' ? 'الرحلة لم تفتح للحجز بعد.' :
+    'الحجز غير متاح حاليا.'
 
   return { phase, label, cls, bookable, departed, returned, soon, reason }
 }

@@ -3,15 +3,15 @@ import { supabase } from './supabaseClient'
 import { onWake } from './wake'
 
 /**
- * خطّافٌ موحّدٌ لاشتراكات Supabase Realtime — مدمجٌ مع منسِّق الإيقاظ
- * المركزيِّ (lib/wake.js). عند رجوع التطبيق من الخلفيّة، يَعِدُ ضمَّ القناة
- * ويستدعي onChange فتُحدَّث البياناتُ تلقائيًّا.
+ * خطاف موحد لاشتراكات Supabase Realtime — مدمج مع منسق الإيقاظ
+ * المركزي (lib/wake.js). عند رجوع التطبيق من الخلفية، يعد ضم القناة
+ * ويستدعي onChange فتحدث البيانات تلقائيا.
  *
- *  @param {string}    key         اسمُ القناة
+ *  @param {string}    key         اسم القناة
  *  @param {Array}     filters     [{ table, filter? }]
- *  @param {Function}  onChange    تُستدعى عند تغييرٍ أو إيقاظ
- *  @param {number}    debounceMs  افتراضيًّا 200ms
- *  @param {Array}     deps        تبعيّاتُ إعادة الاشتراك
+ *  @param {Function}  onChange    تستدعى عند تغيير أو إيقاظ
+ *  @param {number}    debounceMs  افتراضيا 200ms
+ *  @param {Array}     deps        تبعيات إعادة الاشتراك
  */
 export function useRealtime(key, filters, onChange, debounceMs = 200, deps = []) {
   const cbRef = useRef(onChange)
@@ -30,7 +30,7 @@ export function useRealtime(key, filters, onChange, debounceMs = 200, deps = [])
 
     let ch = null
     function subscribe() {
-      // ★ نظّفِ المؤقّتَ الذي قد يُطلق fire قديمًا قبل أو بعد إعادة الضمّ
+      // ★ نظف المؤقت الذي قد يطلق fire قديما قبل أو بعد إعادة الضم
       if (timer) { clearTimeout(timer); timer = null }
       if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
       ch = supabase.channel(`rt:${key}`)
@@ -43,7 +43,7 @@ export function useRealtime(key, filters, onChange, debounceMs = 200, deps = [])
     }
     subscribe()
 
-    // عند الإيقاظ المركزيّ: إعادةُ ضمِّ القناة (الـ WS قد يكون مات) + تحديثُ البيانات
+    // عند الإيقاظ المركزي: إعادة ضم القناة (الـ WS قد يكون مات) + تحديث البيانات
     const unsubscribeWake = onWake(() => {
       if (cancelled) return
       subscribe()

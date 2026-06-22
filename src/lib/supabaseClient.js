@@ -2,13 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import { logEvent, instrumentSupabaseAuth, instrumentRealtime } from './debugLog'
 
 /* ============================================================
-   عميل Supabase — مهيّأٌ لمصادقةٍ فوريةٍ لا تعلق
+   عميل Supabase — مهيأ لمصادقة فورية لا تعلق
    ============================================================ */
 
 const rawUrl = import.meta.env.VITE_SUPABASE_URL
 const anon   = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-/* ---------- تشخيصٌ مبكرٌ لأخطاء التكوين الشائعة ---------- */
+/* ---------- تشخيص مبكر لأخطاء التكوين الشائعة ---------- */
 if (!rawUrl || !anon) {
   // eslint-disable-next-line no-console
   console.error('⚠️ متغيرات Supabase ناقصة: تأكد من VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY في ملف .env')
@@ -25,39 +25,39 @@ if (rawUrl && rawUrl.includes('YOUR-PROJECT-REF')) {
   console.error('⚠️ VITE_SUPABASE_URL لا يزال على القيمة النموذجية. ضع رابط مشروعك من Supabase ▸ Project Settings ▸ API')
 }
 
-// نُزيل أي مسارٍ بعد .co احتياطًا
+// نزيل أي مسار بعد .co احتياطا
 const url = (rawUrl || '').replace(/\/(rest|auth)\/v1\/?$/, '').replace(/\/+$/, '')
 
 /**
- * قفلٌ صوريّ (no-op) لعمليات المصادقة.
+ * قفل صوري (no-op) لعمليات المصادقة.
  *
- * تستخدم Supabase قفل Web Locks لتزامن تجديد التوكِن بين تبويبات المتصفّح،
- * وتطلبه بانتظارٍ لا نهائي. المشكلة: لو احتُجِز القفل (تبويبٌ قديم لم يُغلق،
- * أو StrictMode/HMR في التطوير يترك ماسكًا معلّقًا) تتجمّد كل عمليات المصادقة
- * — وتبقى الشاشة على "جارٍ التحميل…" أو يعلق زرّ الدخول.
+ * تستخدم Supabase قفل Web Locks لتزامن تجديد التوكن بين تبويبات المتصفح،
+ * وتطلبه بانتظار لا نهائي. المشكلة: لو احتجز القفل (تبويب قديم لم يغلق،
+ * أو StrictMode/HMR في التطوير يترك ماسكا معلقا) تتجمد كل عمليات المصادقة
+ * — وتبقى الشاشة على "جار التحميل…" أو يعلق زر الدخول.
  *
- * منصّةٌ أحادية التبويب لا تحتاج هذا التزامن، فننفّذ العملية مباشرةً بلا قفل
- * ⇒ مصادقةٌ فوريةٌ لا تعلق أبدًا.
+ * منصة أحادية التبويب لا تحتاج هذا التزامن، فننفذ العملية مباشرة بلا قفل
+ * ⇒ مصادقة فورية لا تعلق أبدا.
  */
 const noopLock = async (_name, _acquireTimeout, fn) => fn()
 
 /**
- * fetch مخصَّصٌ لـSupabase حصرًا — يَضمن مهلةً قصوى لكلّ طلب.
+ * fetch مخصص لـSupabase حصرا — يضمن مهلة قصوى لكل طلب.
  *
- * المشكلةُ التي يَحلّها (مكشوفةٌ بـ debugLog):
- *   iOS WebView يُجمِّد fetch promises قيدَ الانتظار حتّى لخروجٍ < ١ث،
- *   فتَبقى معلَّقةً إلى الأبد — لا تَنجح ولا تَفشل. النتيجة: زرٌّ يَدور
- *   بلا نهاية، شاشةٌ متجمّدةٌ، console نظيف.
+ * المشكلة التي يحلها (مكشوفة بـ debugLog):
+ *   iOS WebView يجمد fetch promises قيد الانتظار حتى لخروج < ١ث،
+ *   فتبقى معلقة إلى الأبد — لا تنجح ولا تفشل. النتيجة: زر يدور
+ *   بلا نهاية، شاشة متجمدة، console نظيف.
  *
- * يُغطّي فقط طلبات Supabase (مرَّ عبر العميل) — لا يَلمس window.fetch
- * العامّ ولا يَعترض رفعَ الصور أو أيَّ شبكةٍ خارجيّةٍ.
+ * يغطي فقط طلبات Supabase (مر عبر العميل) — لا يلمس window.fetch
+ * العام ولا يعترض رفع الصور أو أي شبكة خارجية.
  *
- * عند انتهاء المهلة: AbortError يُرمى → catch المكوّن يَفتح →
- * يُعرَض خطأٌ قابلٌ لإعادة المحاولة. لا reload، لا حالةٌ عالميّة.
+ * عند انتهاء المهلة: AbortError يرمى → catch المكون يفتح →
+ * يعرض خطأ قابل لإعادة المحاولة. لا reload، لا حالة عالمية.
  */
-const REQUEST_TIMEOUT_MS = 10_000   // ١٠ث — تَجمّدٌ مَحدودٌ خيرٌ من أبديّ
+const REQUEST_TIMEOUT_MS = 10_000   // ١٠ث — تجمد محدود خير من أبدي
 
-/** يَستخرج وصفًا مختصرًا لـURL يُمكن قراءته في السجلّ. */
+/** يستخرج وصفا مختصرا لـURL يمكن قراءته في السجل. */
 function shortenUrl(input) {
   const raw = typeof input === 'string' ? input : (input?.url || '')
   try {
@@ -136,6 +136,6 @@ export const supabase = createClient(url, anon, {
   },
 })
 
-// تتبّعٌ تلقائيٌّ لأحداث المصادقة والـrealtime (يَظهر في DebugPanel)
+// تتبع تلقائي لأحداث المصادقة والـrealtime (يظهر في DebugPanel)
 instrumentSupabaseAuth(supabase)
 instrumentRealtime(supabase)

@@ -8,28 +8,28 @@ import RatingStars from './RatingStars'
 
 const COPY = {
   customer_to_subscriber: {
-    title: 'قيّم الحملة',
-    lead: 'كيف كانت تجربتُك مع الحملة في هذه الرحلة؟ تقييمُك يساعد بقيّةَ المعتمرين.',
-    placeholder: 'اكتب رأيك في التنظيم، والخدمة، والالتزام بالمواعيد… (اختياريّ)',
-    saved: 'شكرًا — سُجّل تقييمُك ✓',
+    title: 'قيم الحملة',
+    lead: 'كيف كانت تجربتك مع الحملة في هذه الرحلة؟ تقييمك يساعد بقية المعتمرين.',
+    placeholder: 'اكتب رأيك في التنظيم، والخدمة، والالتزام بالمواعيد… (اختياري)',
+    saved: 'شكرا — سجل تقييمك ✓',
   },
   subscriber_to_customer: {
     title: 'تقييم المعتمر',
-    lead: 'قيّمُ التزامَ المعتمر وتعاملَه في هذه الرحلة. هذا التقييمُ خاصٌّ بحملتك — لا يراه المعتمر.',
-    placeholder: 'ملاحظةٌ داخليّة: الالتزام بالمواعيد، التعاون، الدفع… (اختياريّ)',
-    saved: 'حُفِظ تقييمُ المعتمر ✓',
+    lead: 'قيم التزام المعتمر وتعامله في هذه الرحلة. هذا التقييم خاص بحملتك — لا يراه المعتمر.',
+    placeholder: 'ملاحظة داخلية: الالتزام بالمواعيد، التعاون، الدفع… (اختياري)',
+    saved: 'حفظ تقييم المعتمر ✓',
   },
 }
 
 /**
- * ورقةُ التقاطِ تقييمٍ باتّجاهٍ واحد (يصلح للطرفين).
+ * ورقة التقاط تقييم باتجاه واحد (يصلح للطرفين).
  * @param {boolean}  open
  * @param {'customer_to_subscriber'|'subscriber_to_customer'} direction
  * @param {string}   subscriberId
  * @param {string}   tripId
- * @param {string}   profileId     حسابُ المعتمر (المُقيِّم أو المُقيَّم)
- * @param {string}  [passengerId]  سجلُّ الراكب (للاتّجاه subscriber_to_customer)
- * @param {string}  [contextName]  اسمُ الحملة أو المعتمر (يُعرَض كسياق)
+ * @param {string}   profileId     حساب المعتمر (المقيم أو المقيم)
+ * @param {string}  [passengerId]  سجل الراكب (للاتجاه subscriber_to_customer)
+ * @param {string}  [contextName]  اسم الحملة أو المعتمر (يعرض كسياق)
  * @param {Function} onClose
  * @param {Function} [onSaved]
  */
@@ -43,7 +43,7 @@ export default function RatingSheet({ open, direction, subscriberId, tripId, pro
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
-  // حمّل تقييمًا سابقًا (إن وُجد) للتعديل
+  // حمل تقييما سابقا (إن وجد) للتعديل
   useEffect(() => {
     if (!open || !tripId || !profileId) return
     let cancel = false
@@ -55,7 +55,7 @@ export default function RatingSheet({ open, direction, subscriberId, tripId, pro
         .eq('trip_id', tripId).eq('profile_id', profileId).eq('direction', direction)
         .maybeSingle()
       if (cancel) return
-      if (error) { setErr(translateRpcError(error, 'تعذّر تحميل التقييم.')) }
+      if (error) { setErr(translateRpcError(error, 'تعذر تحميل التقييم.')) }
       else if (data) { setExistingId(data.id); setStars(data.stars || 0); setComment(data.comment || '') }
       else { setExistingId(null); setStars(0); setComment('') }
       setLoading(false)
@@ -65,7 +65,7 @@ export default function RatingSheet({ open, direction, subscriberId, tripId, pro
 
   async function save() {
     if (busy) return
-    if (!stars) { setErr('اختر عددَ النجوم أوّلًا.'); return }
+    if (!stars) { setErr('اختر عدد النجوم أولا.'); return }
     setErr(''); setBusy(true)
     const payload = {
       subscriber_id: subscriberId,
@@ -86,7 +86,7 @@ export default function RatingSheet({ open, direction, subscriberId, tripId, pro
         result = await supabase.from('ratings').insert(payload)
       }
       if (result.error) {
-        // سباقٌ نادر: أُدرِج تقييمٌ بالتوازي — أعِد المحاولة كتحديث
+        // سباق نادر: أدرج تقييم بالتوازي — أعد المحاولة كتحديث
         if (result.error.code === '23505') {
           const { data: ex } = await supabase.from('ratings').select('id')
             .eq('trip_id', tripId).eq('profile_id', profileId).eq('direction', direction).maybeSingle()
@@ -99,7 +99,7 @@ export default function RatingSheet({ open, direction, subscriberId, tripId, pro
       onSaved?.({ stars, comment: payload.comment })
       onClose?.()
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر حفظ التقييم — حاول مجدّدًا.'))
+      setErr(translateRpcError(e, 'تعذر حفظ التقييم — حاول مجددا.'))
     } finally {
       setBusy(false)
     }
@@ -132,11 +132,11 @@ export default function RatingSheet({ open, direction, subscriberId, tripId, pro
 
         <div className="rating-pick">
           <RatingStars value={stars} onChange={setStars} size={38} />
-          <span className="rating-pick-label">{stars ? `${stars} من ٥` : 'لم تُقيّم بعد'}</span>
+          <span className="rating-pick-label">{stars ? `${stars} من ٥` : 'لم تقيم بعد'}</span>
         </div>
 
         <div className="field">
-          <label>تعليقٌ <span className="muted" style={{ fontSize: 12 }}>(اختياريّ)</span></label>
+          <label>تعليق <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
           <textarea
             placeholder={copy.placeholder}
             value={comment}

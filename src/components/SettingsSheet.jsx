@@ -8,8 +8,8 @@ import ImageUpload from './ImageUpload'
 import { slugify, isValidSlug } from '../lib/slug'
 
 /**
- * إعدادات الحساب — ٣ تبويباتٍ: الملف الشخصيّ، حملتك (للمشتركين)، الهويّة البصريّة.
- * يستخدم BottomSheet (آمنٌ بعد إصلاح iOS) ليكون كثيرَ المحتوى لكن مُنظَّمًا.
+ * إعدادات الحساب — ٣ تبويبات: الملف الشخصي، حملتك (للمشتركين)، الهوية البصرية.
+ * يستخدم BottomSheet (آمن بعد إصلاح iOS) ليكون كثير المحتوى لكن منظما.
  */
 export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
   const { profile, user, refreshProfile, role } = useAuth()
@@ -17,7 +17,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
   const [tab, setTab] = useState('profile')   // profile | org | brand
   const [busy, setBusy] = useState(false)
 
-  // الملف الشخصيّ
+  // الملف الشخصي
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
 
@@ -33,7 +33,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
   const [bankName, setBankName] = useState('')
   const [bankIban, setBankIban] = useState('')
 
-  // الهويّة
+  // الهوية
   const [logoUrl, setLogoUrl] = useState('')
   const [stampUrl, setStampUrl] = useState('')
 
@@ -63,8 +63,8 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
       .update({ full_name: fullName.trim() || null, phone: phone.trim() || null })
       .eq('id', user.id)
     setBusy(false)
-    if (error) toast('تعذّر الحفظ: ' + error.message, { type: 'error' })
-    else { toast('حُفظ الملف الشخصيّ ✓', { type: 'success' }); refreshProfile?.() }
+    if (error) toast('تعذر الحفظ: ' + error.message, { type: 'error' })
+    else { toast('حفظ الملف الشخصي ✓', { type: 'success' }); refreshProfile?.() }
   }
 
   async function saveOrg() {
@@ -72,7 +72,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
     setSlugErr('')
     const safeSlug = (slug || '').trim().toLowerCase()
     if (safeSlug && !isValidSlug(safeSlug)) {
-      setSlugErr('الرابط يجب أن يكون ٤–٤٠ حرفًا — حروف لاتينيّة صغيرة وأرقام وشُرَط، ولا يبدأ/ينتهي بشُرطة.')
+      setSlugErr('الرابط يجب أن يكون ٤–٤٠ حرفا — حروف لاتينية صغيرة وأرقام وشرط، ولا يبدأ/ينتهي بشرطة.')
       return
     }
     setBusy(true)
@@ -84,19 +84,19 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
       carrier_company: carrierCompany.trim() || null,
       bank_account_name: bankAccountName.trim() || null,
       bank_name: bankName.trim() || null,
-      // الآيبان: تطهيرٌ خفيفٌ (إزالةُ الفراغات + كبير) — التحقّقُ الكاملُ في الواجهة
+      // الآيبان: تطهير خفيف (إزالة الفراغات + كبير) — التحقق الكامل في الواجهة
       bank_iban: bankIban.replace(/\s+/g, '').toUpperCase() || null,
     }
-    // نُحدِّث الـ slug فقط إن تغيّر — لتجنّب توليد خطأٍ بسبب الفريديّة (unique).
+    // نحدث الـ slug فقط إن تغير — لتجنب توليد خطأ بسبب الفريدية (unique).
     if (safeSlug && safeSlug !== sub.slug) payload.slug = safeSlug
     const { error } = await supabase.from('subscribers').update(payload).eq('id', sub.id)
     setBusy(false)
     if (error) {
-      if (error.code === '23505') setSlugErr('هذا الرابط محجوزٌ لحملةٍ أخرى — جرّب اسمًا مختلفًا.')
-      else toast('تعذّر الحفظ: ' + error.message, { type: 'error' })
+      if (error.code === '23505') setSlugErr('هذا الرابط محجوز لحملة أخرى — جرب اسما مختلفا.')
+      else toast('تعذر الحفظ: ' + error.message, { type: 'error' })
       return
     }
-    toast('حُفظت بيانات الحملة ✓', { type: 'success' })
+    toast('حفظت بيانات الحملة ✓', { type: 'success' })
     onSubChanged?.()
   }
 
@@ -107,8 +107,8 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
       .update({ logo_url: logoUrl.trim() || null, stamp_url: stampUrl.trim() || null })
       .eq('id', sub.id)
     setBusy(false)
-    if (error) toast('تعذّر الحفظ: ' + error.message, { type: 'error' })
-    else { toast('حُفظت الهويّة البصريّة ✓', { type: 'success' }); onSubChanged?.() }
+    if (error) toast('تعذر الحفظ: ' + error.message, { type: 'error' })
+    else { toast('حفظت الهوية البصرية ✓', { type: 'success' }); onSubChanged?.() }
   }
 
   const showOrg = role === 'subscriber' && sub?.id
@@ -118,7 +118,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
       {/* شريط التبويب */}
       <div className="bus-tabs" style={{ marginBottom: 16 }}>
         <button className={`bus-tab ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>
-          <Icon name="customers" size={14} /> الملف الشخصيّ
+          <Icon name="customers" size={14} /> الملف الشخصي
         </button>
         {showOrg && (
           <>
@@ -126,13 +126,13 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
               <Icon name="building" size={14} /> الحملة
             </button>
             <button className={`bus-tab ${tab === 'brand' ? 'active' : ''}`} onClick={() => setTab('brand')}>
-              <Icon name="sparkle" size={14} /> الهويّة
+              <Icon name="sparkle" size={14} /> الهوية
             </button>
           </>
         )}
       </div>
 
-      {/* الملف الشخصيّ */}
+      {/* الملف الشخصي */}
       {tab === 'profile' && (
         <div className="form">
           <div className="field">
@@ -147,7 +147,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <label>البريد الإلكتروني</label>
             <input type="email" className="ltr" value={user?.email || ''} disabled
               style={{ opacity: 0.7, cursor: 'not-allowed' }} />
-            <span className="muted" style={{ fontSize: 11, marginTop: 4 }}>لا يمكن تغيير البريد من هنا حاليًّا.</span>
+            <span className="muted" style={{ fontSize: 11, marginTop: 4 }}>لا يمكن تغيير البريد من هنا حاليا.</span>
           </div>
           <button className="btn btn-gold btn-block" onClick={saveProfile} disabled={busy}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={15} /> حفظ التغييرات</>}
@@ -163,7 +163,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <input type="text" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="اسم حملتك" />
           </div>
 
-          {/* اختصارُ الرابط — مشتقٌّ من اسم الحملة بترجمةٍ ذكيّة. لا /j/ — رابطٌ مباشر. */}
+          {/* اختصار الرابط — مشتق من اسم الحملة بترجمة ذكية. لا /j/ — رابط مباشر. */}
           <div className="field">
             <label>رابط الحجز المختصر</label>
             <div className="slug-input">
@@ -178,7 +178,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
               <p style={{ fontSize: 11.5, marginTop: 6, color: 'var(--danger-ink)' }}>{slugErr}</p>
             ) : (
               <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-                مشتقٌّ ذكيًّا من اسم حملتك (مثلًا «صفوة الرحمن» ← <code className="ltr link-chip">safwa-rahman</code>) — مشاركةٌ أسهل وتذكُّرٌ أسرع.
+                مشتق ذكيا من اسم حملتك (مثلا «صفوة الرحمن» ← <code className="ltr link-chip">safwa-rahman</code>) — مشاركة أسهل وتذكر أسرع.
               </p>
             )}
           </div>
@@ -188,18 +188,18 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <input type="tel" inputMode="tel" className="ltr" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="05XXXXXXXX" />
           </div>
           <div className="field">
-            <label>رابط متجر الدفع (زِد / سلّة)</label>
+            <label>رابط متجر الدفع (زد / سلة)</label>
             <input type="url" className="ltr" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} placeholder="https://store.example.com/..." />
           </div>
 
-          <div className="sec-label" style={{ marginTop: 4 }}>التحويل البنكيّ <span className="muted" style={{ fontSize: 11.5 }}>(اختياريّ — يظهر للمعتمر كوسيلةِ دفع)</span></div>
+          <div className="sec-label" style={{ marginTop: 4 }}>التحويل البنكي <span className="muted" style={{ fontSize: 11.5 }}>(اختياري — يظهر للمعتمر كوسيلة دفع)</span></div>
           <div className="field">
-            <label>اسمُ صاحب الحساب</label>
+            <label>اسم صاحب الحساب</label>
             <input type="text" value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} placeholder="كما يظهر في البنك" />
           </div>
           <div className="grid-2">
             <div className="field">
-              <label>اسمُ البنك</label>
+              <label>اسم البنك</label>
               <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="مثال: الراجحي" />
             </div>
             <div className="field ltr">
@@ -209,7 +209,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
           </div>
           {bankIban.replace(/\s+/g, '') && !/^SA[0-9]{22}$/i.test(bankIban.replace(/\s+/g, '')) && (
             <p className="muted" style={{ fontSize: 11.5, marginTop: -4, color: 'var(--danger-ink, #b4503a)' }}>
-              تنبيه: الآيبان السعوديّ يبدأ بـ SA ويتبعه ٢٢ رقمًا. تأكّد منه قبل الحفظ.
+              تنبيه: الآيبان السعودي يبدأ بـ SA ويتبعه ٢٢ رقما. تأكد منه قبل الحفظ.
             </p>
           )}
           <div className="field">
@@ -220,7 +220,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             <label>الشركة الناقلة</label>
             <input type="text" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} placeholder="مثال: أبو سرحد للنقل" />
             <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
-              يظهرُ في رأس الكشف الرسميّ. إن تُرك فارغًا يُستخدم اسمُ الحملة.
+              يظهر في رأس الكشف الرسمي. إن ترك فارغا يستخدم اسم الحملة.
             </p>
           </div>
           <button className="btn btn-em btn-block" onClick={saveOrg} disabled={busy || !orgName.trim()}>
@@ -229,7 +229,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
         </div>
       )}
 
-      {/* الهويّة البصريّة — رفعٌ مباشرٌ من مكتبة الجوال/الكمبيوتر */}
+      {/* الهوية البصرية — رفع مباشر من مكتبة الجوال/الكمبيوتر */}
       {tab === 'brand' && showOrg && (
         <div className="form">
           <ImageUpload
@@ -238,18 +238,18 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
             onChange={setLogoUrl}
             label="شعار الحملة"
             slot="logo"
-            hint="PNG / JPG / WebP — يظهر في الكشف الرسميّ والتذكرة."
+            hint="PNG / JPG / WebP — يظهر في الكشف الرسمي والتذكرة."
           />
           <ImageUpload
             subscriberId={sub.id}
             value={stampUrl}
             onChange={setStampUrl}
-            label="الختم الإلكترونيّ (PNG شفّاف يُفضَّل)"
+            label="الختم الإلكتروني (PNG شفاف يفضل)"
             slot="stamp"
-            hint="أفضل صيغة PNG شفّافٍ للحصول على أفضل مظهر في الكشف."
+            hint="أفضل صيغة PNG شفاف للحصول على أفضل مظهر في الكشف."
           />
           <div className="alert info">
-            تُستخدم الهويّة البصريّة في الكشف الرسميّ والتذكرة بدل علامة ملبّيك — حملتك تظهر بهويّتها الخاصّة.
+            تستخدم الهوية البصرية في الكشف الرسمي والتذكرة بدل علامة ملبّيك — حملتك تظهر بهويتها الخاصة.
           </div>
           <button className="btn btn-gold btn-block" onClick={saveBrand} disabled={busy}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={15} /> حفظ التغييرات</>}

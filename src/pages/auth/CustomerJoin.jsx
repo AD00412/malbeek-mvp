@@ -9,26 +9,26 @@ import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaP
 
 function arError(msg = '') {
   const m = msg.toLowerCase()
-  if (m.includes('already registered') || m.includes('already been registered')) return 'هذا البريد مُسجّل مسبقًا. سجّل الدخول من صفحة الدخول.'
-  if (m.includes('duplicate key') || msg.includes('uniq_customer')) return 'أنت مسجّلٌ بالفعل في هذه الحملة. ادخل حسابك.'
+  if (m.includes('already registered') || m.includes('already been registered')) return 'هذا البريد مسجل مسبقا. سجل الدخول من صفحة الدخول.'
+  if (m.includes('duplicate key') || msg.includes('uniq_customer')) return 'أنت مسجل بالفعل في هذه الحملة. ادخل حسابك.'
   if (m.includes('password')) return 'كلمة المرور ضعيفة (٦ أحرف على الأقل).'
-  if (m.includes('network')) return 'تعذّر الاتصال بالخادم. حاول مرة أخرى.'
-  // رسائل التحقّق العربية من تريغرات القاعدة تظهر كما هي
+  if (m.includes('network')) return 'تعذر الاتصال بالخادم. حاول مرة أخرى.'
+  // رسائل التحقق العربية من تريغرات القاعدة تظهر كما هي
   if (/[؀-ۿ]/.test(msg)) return msg
-  return 'تعذّر إنشاء الحساب. حاول مرة أخرى.'
+  return 'تعذر إنشاء الحساب. حاول مرة أخرى.'
 }
 
-// ——— قواعد التحقّق الحيّ (تطابق تريغرات القاعدة: دفاعٌ متعدّد الطبقات) ———
+// ——— قواعد التحقق الحي (تطابق تريغرات القاعدة: دفاع متعدد الطبقات) ———
 function btrimWords(v = '') {
   const t = v.trim()
   return t ? t.split(/\s+/).length : 0
 }
 function validators() {
   return {
-    fullName: (v) => btrimWords(v) >= 2 || 'اكتب الاسم الرباعي كاملًا.',
+    fullName: (v) => btrimWords(v) >= 2 || 'اكتب الاسم الرباعي كاملا.',
     nationalId: (v) => isValidNationalId(v) || '١٠ أرقام تبدأ بـ ١ أو ٢.',
     phone: (v) => isValidSaPhone(v) || 'مثال: 05XXXXXXXX.',
-    email: (v) => isValidEmail(v) || 'بريدٌ إلكترونيٌّ غير صحيح.',
+    email: (v) => isValidEmail(v) || 'بريد إلكتروني غير صحيح.',
     password: (v) => v.length >= 6 || '٦ أحرف على الأقل.',
   }
 }
@@ -94,14 +94,14 @@ export default function CustomerJoin() {
     e.preventDefault()
     if (busy || !org) return
     setTouched({ fullName: 1, nationalId: 1, phone: 1, email: 1, password: 1 })
-    if (!allValid) { setErr('يُرجى تصحيح الحقول المظلّلة.'); return }
+    if (!allValid) { setErr('يرجى تصحيح الحقول المظللة.'); return }
     setErr(''); setInfo(''); setBusy(true)
 
     const cleanFullName = cleanName(fullName)
     const cleanId = toLatinDigits(nationalId).trim()
     const cleanPhone = normalizePhone(phone)
 
-    // 1) إنشاء حساب العميل مربوطًا بحملة هذا الرابط فقط
+    // 1) إنشاء حساب العميل مربوطا بحملة هذا الرابط فقط
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -117,17 +117,17 @@ export default function CustomerJoin() {
 
     if (error) { setBusy(false); setErr(arError(error.message)); return }
 
-    // 2) تأكيد البريد مفعّل؟ أبلغ العميل
+    // 2) تأكيد البريد مفعل؟ أبلغ العميل
     if (!data.session) {
       setBusy(false)
-      setInfo('تم تسجيل بياناتك. فعّل بريدك الإلكتروني ثم سجّل الدخول لعرض رحلاتك.')
+      setInfo('تم تسجيل بياناتك. فعل بريدك الإلكتروني ثم سجل الدخول لعرض رحلاتك.')
       return
     }
 
     try {
-      // 3) احفظ سجلّ المعتمر (ضمن حملته فقط — تتحقق منه سياسة RLS).
-      //    قد لا يكون تريغر إنشاء الملف الشخصي قد اكتمل بعد، فتُرجع
-      //    my_subscriber_id() قيمة null ويُرفض الإدراج؛ نُعيد المحاولة قليلًا.
+      // 3) احفظ سجل المعتمر (ضمن حملته فقط — تتحقق منه سياسة RLS).
+      //    قد لا يكون تريغر إنشاء الملف الشخصي قد اكتمل بعد، فترجع
+      //    my_subscriber_id() قيمة null ويرفض الإدراج؛ نعيد المحاولة قليلا.
       const insertCustomer = () => supabase.from('customers').insert({
         subscriber_id: org.id,
         profile_id: data.user.id,
@@ -139,11 +139,11 @@ export default function CustomerJoin() {
 
       let insErr = (await insertCustomer()).error
       for (let i = 0; insErr && insErr.code !== '23505' && i < 4; i++) {
-        await refreshProfile()                              // يحدّث profiles.subscriber_id محليًّا وفي القاعدة
+        await refreshProfile()                              // يحدث profiles.subscriber_id محليا وفي القاعدة
         await new Promise((r) => setTimeout(r, 350 * (i + 1)))
         insErr = (await insertCustomer()).error
       }
-      // 23505 = العميل مسجّلٌ مسبقًا في الحملة؛ نكمل للوحته بدل الفشل
+      // 23505 = العميل مسجل مسبقا في الحملة؛ نكمل للوحته بدل الفشل
       if (insErr && insErr.code !== '23505') throw insErr
 
       await refreshProfile()
@@ -155,29 +155,29 @@ export default function CustomerJoin() {
     }
   }
 
-  if (resolving) return <ScreenLoader label="جارٍ فتح صفحة التسجيل…" />
+  if (resolving) return <ScreenLoader label="جار فتح صفحة التسجيل…" />
 
-  // مسجَّلٌ الدخول بالفعل؟ لا نعرض نموذج التسجيل ولا نتركه يُوجَّه للوحةٍ ليست له.
-  // نُظهر حدود الدور بوضوحٍ: كلٌّ إلى لوحته، ولا يُسجَّل كمعتمرٍ إلّا بعد خروجٍ صريح.
+  // مسجل الدخول بالفعل؟ لا نعرض نموذج التسجيل ولا نتركه يوجه للوحة ليست له.
+  // نظهر حدود الدور بوضوح: كل إلى لوحته، ولا يسجل كمعتمر إلا بعد خروج صريح.
   if (!authLoading && session && profile && !busy && org) {
     const sameCampaign = role === 'customer' && subscriberId === org.id
     return (
       <AuthShell>
         <div className="join-state">
           <span className="join-state-ic ok"><Icon name="user" size={30} /></span>
-          <h2 className="ttl">أنت مسجّلٌ الدخول بالفعل</h2>
+          <h2 className="ttl">أنت مسجل الدخول بالفعل</h2>
           {sameCampaign ? (
-            <p className="desc">أنت منضمٌّ إلى «{org.org_name}». تابع حجوزاتك وتذاكرك من لوحتك.</p>
+            <p className="desc">أنت منضم إلى «{org.org_name}». تابع حجوزاتك وتذاكرك من لوحتك.</p>
           ) : role === 'customer' ? (
-            <p className="desc">حسابك معتمرٌ مرتبطٌ بحملةٍ أخرى. للانضمام إلى «{org.org_name}» سجّل خروجًا ثمّ أنشئ حسابًا جديدًا، أو ادخل لوحتك الحاليّة.</p>
+            <p className="desc">حسابك معتمر مرتبط بحملة أخرى. للانضمام إلى «{org.org_name}» سجل خروجا ثم أنشئ حسابا جديدا، أو ادخل لوحتك الحالية.</p>
           ) : (
-            <p className="desc">أنت مسجّلٌ بحساب «{ROLE_AR[role] || 'مستخدم'}». هذه الصفحة لتسجيل المعتمرين الجدد — للتسجيل كمعتمرٍ، سجّل خروجًا أوّلًا.</p>
+            <p className="desc">أنت مسجل بحساب «{ROLE_AR[role] || 'مستخدم'}». هذه الصفحة لتسجيل المعتمرين الجدد — للتسجيل كمعتمر، سجل خروجا أولا.</p>
           )}
           <button className="btn btn-em btn-block" style={{ marginTop: 18 }} onClick={() => navigate(homeForRole(role), { replace: true })}>
             <Icon name="dashboard" size={16} /> الذهاب إلى لوحتي
           </button>
           <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => signOut()}>
-            <Icon name="logout" size={16} /> تسجيل الخروج للتسجيل كمعتمرٍ جديد
+            <Icon name="logout" size={16} /> تسجيل الخروج للتسجيل كمعتمر جديد
           </button>
         </div>
       </AuthShell>
@@ -186,23 +186,23 @@ export default function CustomerJoin() {
 
   if (notFound) {
     return (
-      <AuthShell footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}>
+      <AuthShell footer={<>لديك حساب بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}>
         <div className="join-state">
           <span className="join-state-ic warn"><Icon name="location" size={30} /></span>
-          <h2 className="ttl">تعذّر العثور على الحملة</h2>
-          <p className="desc">تأكّد من الرابط الذي وصلك من جهة الحملة، أو تواصل معهم لإعادة إرساله.</p>
+          <h2 className="ttl">تعذر العثور على الحملة</h2>
+          <p className="desc">تأكد من الرابط الذي وصلك من جهة الحملة، أو تواصل معهم لإعادة إرساله.</p>
         </div>
       </AuthShell>
     )
   }
 
-  // حالة "تأكيد البريد" — عرضٌ مخصّص بدل التنبيه النحيف
+  // حالة "تأكيد البريد" — عرض مخصص بدل التنبيه النحيف
   if (info) {
     return (
       <AuthShell>
         <div className="join-success">
           <span className="join-success-ic"><Icon name="mail" size={34} /></span>
-          <h2 className="ttl">تحقّق من بريدك</h2>
+          <h2 className="ttl">تحقق من بريدك</h2>
           <p className="desc">{info}</p>
           <Link to="/login" className="btn btn-em btn-block" style={{ marginTop: 22 }}>
             <Icon name="check" size={16} /> الذهاب لتسجيل الدخول
@@ -214,24 +214,24 @@ export default function CustomerJoin() {
 
   return (
     <AuthShell
-      title="تسجيل معتمرٍ جديد"
-      sub="أدخل بياناتك مرّةً واحدة، وادخل لوحتك في أيّ وقتٍ لاحقًا."
-      footer={<>سجّلت سابقًا؟ <Link to="/login">ادخل حسابك</Link></>}
+      title="تسجيل معتمر جديد"
+      sub="أدخل بياناتك مرة واحدة، وادخل لوحتك في أي وقت لاحقا."
+      footer={<>سجلت سابقا؟ <Link to="/login">ادخل حسابك</Link></>}
     >
 
       {/* بطاقة الحملة */}
       <div className="join-org">
         <span className="join-org-ic"><Icon name="building" size={20} /></span>
         <div>
-          <div className="join-org-lbl">أنت تنضمّ إلى حملة</div>
+          <div className="join-org-lbl">أنت تنضم إلى حملة</div>
           <div className="join-org-nm">{org.org_name}</div>
         </div>
       </div>
 
-      {/* شريط المزايا — يظهر على الجوال حيث تختفي لوحة الفنّ */}
+      {/* شريط المزايا — يظهر على الجوال حيث تختفي لوحة الفن */}
       <div className="join-benefits">
-        <div className="li"><Icon name="barcode" size={16} /> تذكرة صعودٍ بالباركود</div>
-        <div className="li"><Icon name="seat" size={16} /> حجزٌ سريعٌ دون إعادة تعبئة</div>
+        <div className="li"><Icon name="barcode" size={16} /> تذكرة صعود بالباركود</div>
+        <div className="li"><Icon name="seat" size={16} /> حجز سريع دون إعادة تعبئة</div>
         <div className="li"><Icon name="building" size={16} /> ترى رحلات حملتك فقط</div>
       </div>
 
@@ -263,10 +263,10 @@ export default function CustomerJoin() {
         <div className="field with-ic">
           <label>مكان الركوب <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
           <span className="f-ic"><Icon name="location" size={17} /></span>
-          <input type="text" placeholder="مثال: محطّة جازان المركزيّة"
+          <input type="text" placeholder="مثال: محطة جازان المركزية"
             value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} />
           <span className="hint" style={{ color: 'var(--cr-300)' }}>
-            يُملأ تلقائيًّا في حجوزاتك القادمة — تستطيع تغييره عند الحجز.
+            يملأ تلقائيا في حجوزاتك القادمة — تستطيع تغييره عند الحجز.
           </span>
         </div>
 

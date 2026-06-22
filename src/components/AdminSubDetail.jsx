@@ -11,11 +11,11 @@ import { translateRpcError } from '../lib/rpcErrors'
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
 
 /**
- * تفاصيل حملةٍ للإدارة — مَركزُ تحكّمٍ كاملٌ:
+ * تفاصيل حملة للإدارة — مركز تحكم كامل:
  *  - بيانات + إحصاءات + صاحب الحملة + آخر الرحلات
- *  - ٦ إجراءاتٍ حقيقيّة (ترقية/إرجاع، تَمديد تَجربة، تَعليق/تَفعيل، ملاحظات)
- *  - سجلّ نشاطٍ لكلّ ما فُعل في هذه الحملة
- *  - الدعم (support) يَرى لكن لا يُعدّل
+ *  - ٦ إجراءات حقيقية (ترقية/إرجاع، تمديد تجربة، تعليق/تفعيل، ملاحظات)
+ *  - سجل نشاط لكل ما فعل في هذه الحملة
+ *  - الدعم (support) يرى لكن لا يعدل
  */
 export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const { profile, role } = useAuth()
@@ -23,7 +23,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const [trips, setTrips] = useState([])
   const [owner, setOwner] = useState(null)
   const [auditLog, setAuditLog] = useState([])
-  const [fullSub, setFullSub] = useState(null)         // ★ subscriber كاملٌ (مع الحقول الجديدة)
+  const [fullSub, setFullSub] = useState(null)         // ★ subscriber كامل (مع الحقول الجديدة)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [actionPanel, setActionPanel] = useState(null)  // 'extend' | 'suspend' | 'note' | null
@@ -31,7 +31,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const [tripLimit, setTripLimit] = useState(1)
   const [suspendReason, setSuspendReason] = useState('')
   const [adminNote, setAdminNote] = useState('')
-  // وصولُ الدعم المؤقّت (JIT)
+  // وصول الدعم المؤقت (JIT)
   const [supportGrants, setSupportGrants] = useState([])
   const [supportUsers, setSupportUsers] = useState([])
   const [grantUserId, setGrantUserId] = useState('')
@@ -39,14 +39,14 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   const [grantReason, setGrantReason] = useState('')
   const { toast, confirm } = useUI()
 
-  // دمجٌ: props.sub (إحصاءات من RPC) + fullSub (الحقول الجديدة)
+  // دمج: props.sub (إحصاءات من RPC) + fullSub (الحقول الجديدة)
   const subData = fullSub ? { ...sub, ...fullSub } : sub
 
   const refresh = useCallback(async () => {
     if (!sub?.id) return
     setLoading(true)
-    // مَلاحظة: profiles يَتجنّبُ الطلبَ حين owner_id فارغ
-    // (وإلّا يُعيد PostgREST 400 على eq(null)).
+    // ملاحظة: profiles يتجنب الطلب حين owner_id فارغ
+    // (وإلا يعيد PostgREST 400 على eq(null)).
     const ownerPromise = sub.owner_id
       ? supabase.from('profiles').select('full_name, phone, id').eq('id', sub.owner_id).maybeSingle()
       : Promise.resolve({ data: null })
@@ -66,7 +66,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     setFullSub(srow || null)
     setAdminNote(srow?.admin_notes || '')
     setTripLimit(srow?.trial_trip_limit || 1)
-    // وصولُ الدعم: المنحُ النشطة + قائمةُ موظّفي الدعم (أدمن فقط)
+    // وصول الدعم: المنح النشطة + قائمة موظفي الدعم (أدمن فقط)
     if (isAdmin) {
       const [{ data: grants }, { data: sUsers }] = await Promise.all([
         supabase.from('support_access_grants')
@@ -94,7 +94,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
     const { error } = await supabase.rpc(name, args)
     setBusy(false)
     if (error) {
-      toast(translateRpcError(error, 'تعذّر التنفيذ.'), { type: 'error' })
+      toast(translateRpcError(error, 'تعذر التنفيذ.'), { type: 'error' })
       return false
     }
     toast(successMsg, { type: 'success' })
@@ -106,88 +106,88 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   // ── الإجراءات ──
   async function doSetPlan(nextPlan, reasonLabel) {
     if (nextPlan === 'paid') {
-      // ترقيةٌ يدويّة — تَستعمل الـRPC الجديد الذي يُغلق الطلبات المُعلَّقة كذلك
+      // ترقية يدوية — تستعمل الـRPC الجديد الذي يغلق الطلبات المعلقة كذلك
       const ok = await confirm({
-        title: 'ترقيةٌ يدويّةٌ لمدفوعة',
-        message: `${sub.org_name}: استلام دفعةٍ خارج المنصّة؟ سيُرقّى فورًا.`,
-        confirmText: 'رقّ يدويًّا', cancelText: 'إلغاء',
+        title: 'ترقية يدوية لمدفوعة',
+        message: `${sub.org_name}: استلام دفعة خارج المنصة؟ سيرقى فورا.`,
+        confirmText: 'رق يدويا', cancelText: 'إلغاء',
       })
       if (!ok) return
       await rpcAction('admin_upgrade_subscriber',
         { p_sub: sub.id, p_reason: reasonLabel },
-        'رُقّي للباقة المدفوعة ✓'
+        'رقي للباقة المدفوعة ✓'
       )
       return
     }
     const ok = await confirm({
-      title: 'إرجاعٌ لباقةٍ تجريبيّة',
-      message: `هل تَأكّدت من ${reasonLabel}؟`,
-      confirmText: 'تَنفيذ', cancelText: 'إلغاء',
+      title: 'إرجاع لباقة تجريبية',
+      message: `هل تأكدت من ${reasonLabel}؟`,
+      confirmText: 'تنفيذ', cancelText: 'إلغاء',
     })
     if (!ok) return
     await rpcAction('set_subscriber_plan',
       { p_sub: sub.id, p_plan: nextPlan, p_reason: reasonLabel },
-      'أُعيدت لتجريبيّة ✓'
+      'أعيدت لتجريبية ✓'
     )
   }
 
   async function doExtendTrial() {
-    if (extendDays <= 0 || extendDays > 365) { toast('عدد الأيّام بين ١ و٣٦٥', { type: 'error' }); return }
+    if (extendDays <= 0 || extendDays > 365) { toast('عدد الأيام بين ١ و٣٦٥', { type: 'error' }); return }
     const success = await rpcAction('extend_subscriber_trial',
       { p_sub: sub.id, p_days: extendDays, p_reason: null },
-      `مُدِّدت التَّجربة ${extendDays} يومًا ✓`
+      `مددت التجربة ${extendDays} يوما ✓`
     )
     if (success) setActionPanel(null)
   }
 
   async function doSetTripLimit() {
-    if (tripLimit < 1 || tripLimit > 100) { toast('الحدّ بين ١ و١٠٠', { type: 'error' }); return }
+    if (tripLimit < 1 || tripLimit > 100) { toast('الحد بين ١ و١٠٠', { type: 'error' }); return }
     const success = await rpcAction('set_trial_trip_limit',
       { p_sub: sub.id, p_limit: tripLimit, p_reason: null },
-      `حُدّد حدُّ الرحلات التجريبيّة بـ ${tripLimit} ✓`
+      `حدد حد الرحلات التجريبية بـ ${tripLimit} ✓`
     )
     if (success) setActionPanel(null)
   }
 
   async function doGrantSupport() {
-    if (!grantUserId) { toast('اختر موظّفَ دعمٍ أوّلًا.', { type: 'error' }); return }
-    if (grantHours < 1 || grantHours > 168) { toast('المدّة بين ١ و١٦٨ ساعة.', { type: 'error' }); return }
+    if (!grantUserId) { toast('اختر موظف دعم أولا.', { type: 'error' }); return }
+    if (grantHours < 1 || grantHours > 168) { toast('المدة بين ١ و١٦٨ ساعة.', { type: 'error' }); return }
     const success = await rpcAction('grant_support_access',
       { p_support: grantUserId, p_sub: sub.id, p_hours: grantHours, p_reason: grantReason.trim() || null },
-      `مُنِح وصولُ الدعم (${grantHours} ساعة) ✓`
+      `منح وصول الدعم (${grantHours} ساعة) ✓`
     )
     if (success) { setGrantUserId(''); setGrantReason(''); setActionPanel(null) }
   }
 
   async function doRevokeSupport(id, name) {
-    const ok = await confirm({ title: 'سحبُ وصول الدعم', message: `سحبُ وصول «${name || 'موظّف الدعم'}» لبيانات هذه الحملة فورًا؟`, confirmText: 'سحب', danger: true })
+    const ok = await confirm({ title: 'سحب وصول الدعم', message: `سحب وصول «${name || 'موظف الدعم'}» لبيانات هذه الحملة فورا؟`, confirmText: 'سحب', danger: true })
     if (!ok) return
-    await rpcAction('revoke_support_access', { p_grant: id }, 'سُحب الوصول ✓')
+    await rpcAction('revoke_support_access', { p_grant: id }, 'سحب الوصول ✓')
   }
 
   async function doSuspend() {
-    if (suspendReason.trim().length < 5) { toast('اكتب سببًا واضحًا (٥+ أحرف)', { type: 'error' }); return }
+    if (suspendReason.trim().length < 5) { toast('اكتب سببا واضحا (٥+ أحرف)', { type: 'error' }); return }
     const success = await rpcAction('suspend_subscriber',
       { p_sub: sub.id, p_reason: suspendReason },
-      'تَمّ تَعليقُ الحساب ✓'
+      'تم تعليق الحساب ✓'
     )
     if (success) { setActionPanel(null); setSuspendReason('') }
   }
 
   async function doRestore() {
     const ok = await confirm({
-      title: 'إعادة تَفعيل الحساب',
-      message: `إعادةُ تَفعيل «${sub.org_name}»؟ سيَستطيع المشترك استخدامَ المنصّة فورًا.`,
-      confirmText: 'إعادة تَفعيل', cancelText: 'إلغاء',
+      title: 'إعادة تفعيل الحساب',
+      message: `إعادة تفعيل «${sub.org_name}»؟ سيستطيع المشترك استخدام المنصة فورا.`,
+      confirmText: 'إعادة تفعيل', cancelText: 'إلغاء',
     })
     if (!ok) return
-    await rpcAction('restore_subscriber', { p_sub: sub.id }, 'أُعيد تَفعيلُ الحساب ✓')
+    await rpcAction('restore_subscriber', { p_sub: sub.id }, 'أعيد تفعيل الحساب ✓')
   }
 
   async function doSaveNote() {
     const success = await rpcAction('set_subscriber_admin_note',
       { p_sub: sub.id, p_note: adminNote },
-      'حُفظت الملاحظة ✓'
+      'حفظت الملاحظة ✓'
     )
     if (success) setActionPanel(null)
   }
@@ -205,21 +205,21 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
   return (
     <BottomSheet open={open} onClose={onClose} title={sub.org_name || 'تفاصيل الحملة'}>
       <div className="mlk-tab">
-        {/* بطاقةُ المشترك */}
+        {/* بطاقة المشترك */}
         <div className="mlk-card is-feature">
           <div className="mlk-list-meta" style={{ marginBottom: 6 }}>
             <span className={`mlk-pill ${sub.plan === 'paid' ? 'ok' : 'warn'}`}>
               {sub.plan === 'paid' ? 'باقة مدفوعة' : 'تجريبية'}
             </span>
-            {isSuspended && <span className="mlk-pill danger">مُعلَّق</span>}
-            {trialExtended && !isSuspended && <span className="mlk-pill em">تَجربةٌ مُمدَّدة</span>}
+            {isSuspended && <span className="mlk-pill danger">معلق</span>}
+            {trialExtended && !isSuspended && <span className="mlk-pill em">تجربة ممددة</span>}
             {sub.plan !== 'paid' && subData.trial_trip_limit > 1 && (
-              <span className="mlk-pill em">حدُّ الرحلات: {subData.trial_trip_limit}</span>
+              <span className="mlk-pill em">حد الرحلات: {subData.trial_trip_limit}</span>
             )}
           </div>
           <div className="mlk-list-title" style={{ fontSize: 18 }}>{sub.org_name}</div>
           <button type="button" className="ltr"
-                  onClick={() => copy(joinUrl, 'نُسخ رابط الحجز')}
+                  onClick={() => copy(joinUrl, 'نسخ رابط الحجز')}
                   style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4,
                            background: 'transparent', border: 0, color: 'var(--em-500)',
                            fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
@@ -227,16 +227,16 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
           </button>
         </div>
 
-        {/* إنذاراتٌ تَفصيليّة */}
+        {/* إنذارات تفصيلية */}
         {isSuspended && (
           <div className="alert err">
-            <strong>سببُ التَّعليق:</strong> {subData.suspended_reason}
+            <strong>سبب التعليق:</strong> {subData.suspended_reason}
             <div style={{ fontSize: 11.5, marginTop: 4, opacity: .8 }}>منذ: {fmtDateTime(subData.suspended_at)}</div>
           </div>
         )}
         {trialExtended && !isSuspended && (
           <div className="mlk-card is-feature" style={{ fontSize: 13 }}>
-            <strong>تَجربةٌ مُمدَّدة حتّى</strong> {fmtDateTime(subData.trial_extended_until)}
+            <strong>تجربة ممددة حتى</strong> {fmtDateTime(subData.trial_extended_until)}
           </div>
         )}
 
@@ -256,55 +256,55 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
           </div>
           <div className="mlk-kpi">
             <div className="mlk-kpi-num">{Number(sub.collected || 0).toLocaleString('en-US')}</div>
-            <div className="mlk-kpi-lb">﷼ المُحصَّل</div>
+            <div className="mlk-kpi-lb">﷼ المحصل</div>
           </div>
         </div>
 
         {/* الإجراءات — Admin فقط */}
         {isAdmin && !actionPanel && (
           <section>
-            <h2 className="mlk-h2">إجراءاتٌ على الحساب</h2>
+            <h2 className="mlk-h2">إجراءات على الحساب</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {sub.plan !== 'paid' ? (
                 <button className="mlk-action primary" onClick={() => doSetPlan('paid', 'استلام دفعة الترقية')}>
                   ترقية لمدفوعة
                 </button>
               ) : (
-                <button className="mlk-action" onClick={() => doSetPlan('trial', 'إعادة لتجريبيّة')}>
-                  إرجاع لتجريبيّة
+                <button className="mlk-action" onClick={() => doSetPlan('trial', 'إعادة لتجريبية')}>
+                  إرجاع لتجريبية
                 </button>
               )}
-              <button className="mlk-action" onClick={() => setActionPanel('extend')}>تَمديد التَّجربة</button>
+              <button className="mlk-action" onClick={() => setActionPanel('extend')}>تمديد التجربة</button>
               {sub.plan !== 'paid' && (
-                <button className="mlk-action" onClick={() => setActionPanel('triplimit')}>حدُّ الرحلات</button>
+                <button className="mlk-action" onClick={() => setActionPanel('triplimit')}>حد الرحلات</button>
               )}
               <button className="mlk-action" onClick={() => setActionPanel('support')}>
                 وصول الدعم {supportGrants.length > 0 && `(${supportGrants.length})`}
               </button>
               {!isSuspended ? (
-                <button className="mlk-action danger" onClick={() => setActionPanel('suspend')}>تَعليق الحساب</button>
+                <button className="mlk-action danger" onClick={() => setActionPanel('suspend')}>تعليق الحساب</button>
               ) : (
-                <button className="mlk-action primary" onClick={doRestore}>إعادة تَفعيل</button>
+                <button className="mlk-action primary" onClick={doRestore}>إعادة تفعيل</button>
               )}
-              <button className="mlk-action" onClick={() => setActionPanel('note')}>ملاحظةٌ إداريّة</button>
+              <button className="mlk-action" onClick={() => setActionPanel('note')}>ملاحظة إدارية</button>
             </div>
           </section>
         )}
 
-        {/* لوحةُ تَمديد التَّجربة */}
+        {/* لوحة تمديد التجربة */}
         {actionPanel === 'extend' && (
           <div className="mlk-card">
-            <h2 className="mlk-h2">تَمديدُ التَّجربة</h2>
+            <h2 className="mlk-h2">تمديد التجربة</h2>
             <div className="form">
               <div className="field">
-                <label>كم يومًا تُريد إضافتَها؟</label>
+                <label>كم يوما تريد إضافتها؟</label>
                 <input type="number" min="1" max="365" value={extendDays}
                        onChange={(e) => setExtendDays(Number(e.target.value) || 0)} />
-                <span className="hint">من اليوم — لا يُعدّل تاريخَ إنشاء التَّجربة</span>
+                <span className="hint">من اليوم — لا يعدل تاريخ إنشاء التجربة</span>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="mlk-action primary" onClick={doExtendTrial} disabled={busy}>
-                  {busy ? <span className="spinner" /> : 'تَمديد'}
+                  {busy ? <span className="spinner" /> : 'تمديد'}
                 </button>
                 <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
               </div>
@@ -314,17 +314,17 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
 
         {actionPanel === 'triplimit' && (
           <div className="mlk-card">
-            <h2 className="mlk-h2">حدُّ الرحلات التجريبيّة</h2>
+            <h2 className="mlk-h2">حد الرحلات التجريبية</h2>
             <div className="form">
               <div className="field">
-                <label>كم رحلةً تُتاح للباقة التجريبيّة؟</label>
+                <label>كم رحلة تتاح للباقة التجريبية؟</label>
                 <input type="number" min="1" max="100" value={tripLimit}
                        onChange={(e) => setTripLimit(Number(e.target.value) || 0)} />
-                <span className="hint">الافتراضيّ ١. يُطبَّق على إنشاء الرحلات للمشترك على الباقة التجريبيّة فقط.</span>
+                <span className="hint">الافتراضي ١. يطبق على إنشاء الرحلات للمشترك على الباقة التجريبية فقط.</span>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="mlk-action primary" onClick={doSetTripLimit} disabled={busy}>
-                  {busy ? <span className="spinner" /> : 'حفظ الحدّ'}
+                  {busy ? <span className="spinner" /> : 'حفظ الحد'}
                 </button>
                 <button className="mlk-action" onClick={() => { setActionPanel(null); setTripLimit(subData.trial_trip_limit || 1) }} disabled={busy}>إلغاء</button>
               </div>
@@ -334,19 +334,19 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
 
         {actionPanel === 'support' && (
           <div className="mlk-card">
-            <h2 className="mlk-h2">وصولُ الدعم المؤقّت</h2>
+            <h2 className="mlk-h2">وصول الدعم المؤقت</h2>
             <p className="muted" style={{ fontSize: 12.5, marginTop: -4 }}>
-              الدعمُ لا يرى بياناتِ المعتمرين الحسّاسةَ افتراضيًّا. امنحه وصولًا مؤقّتًا لهذه الحملة عند الحاجة — يُسحب تلقائيًّا بانتهاء المدّة، ويُوثَّق.
+              الدعم لا يرى بيانات المعتمرين الحساسة افتراضيا. امنحه وصولا مؤقتا لهذه الحملة عند الحاجة — يسحب تلقائيا بانتهاء المدة، ويوثق.
             </p>
-            {/* المنحُ النشطة */}
+            {/* المنح النشطة */}
             {supportGrants.length > 0 ? (
               <ul className="mlk-list" style={{ marginTop: 8 }}>
                 {supportGrants.map((g) => (
                   <li key={g.id} className="mlk-list-row">
                     <div className="mlk-list-body">
-                      <div className="mlk-list-title">{g.profiles?.full_name || 'موظّف دعم'}</div>
+                      <div className="mlk-list-title">{g.profiles?.full_name || 'موظف دعم'}</div>
                       <div className="mlk-list-meta">
-                        <span className="mlk-pill ok">نشِط</span>
+                        <span className="mlk-pill ok">نشط</span>
                         <span>ينتهي {fmtDateTime(g.expires_at)}</span>
                         {g.reason && <span>· {g.reason}</span>}
                       </div>
@@ -356,31 +356,31 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
                 ))}
               </ul>
             ) : (
-              <div className="mlk-empty" style={{ marginTop: 8 }}>لا منحَ نشطةً — الدعمُ يرى الإحصاءاتِ المجمّعةَ فقط.</div>
+              <div className="mlk-empty" style={{ marginTop: 8 }}>لا منح نشطة — الدعم يرى الإحصاءات المجمعة فقط.</div>
             )}
-            {/* منحٌ جديد */}
+            {/* منح جديد */}
             <div className="form" style={{ marginTop: 10 }}>
               <div className="field">
-                <label>منحُ موظّفِ دعم</label>
+                <label>منح موظف دعم</label>
                 <select value={grantUserId} onChange={(e) => setGrantUserId(e.target.value)}>
-                  <option value="">— اختر موظّفَ الدعم —</option>
+                  <option value="">— اختر موظف الدعم —</option>
                   {supportUsers.map((u) => <option key={u.id} value={u.id}>{u.full_name || u.id.slice(0, 8)}</option>)}
                 </select>
-                {supportUsers.length === 0 && <span className="hint">لا يوجد مستخدمو دعمٍ بعد.</span>}
+                {supportUsers.length === 0 && <span className="hint">لا يوجد مستخدمو دعم بعد.</span>}
               </div>
               <div className="grid-2">
                 <div className="field">
-                  <label>المدّة (ساعات)</label>
+                  <label>المدة (ساعات)</label>
                   <input type="number" min="1" max="168" value={grantHours} onChange={(e) => setGrantHours(Number(e.target.value) || 0)} />
                 </div>
                 <div className="field">
-                  <label>السبب (اختياريّ)</label>
-                  <input type="text" value={grantReason} onChange={(e) => setGrantReason(e.target.value)} placeholder="مثلًا: تذكرةُ دعمٍ #…" />
+                  <label>السبب (اختياري)</label>
+                  <input type="text" value={grantReason} onChange={(e) => setGrantReason(e.target.value)} placeholder="مثلا: تذكرة دعم #…" />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="mlk-action primary" onClick={doGrantSupport} disabled={busy || !grantUserId}>
-                  {busy ? <span className="spinner" /> : 'منحُ الوصول'}
+                  {busy ? <span className="spinner" /> : 'منح الوصول'}
                 </button>
                 <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إغلاق</button>
               </div>
@@ -390,18 +390,18 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
 
         {actionPanel === 'suspend' && (
           <div className="mlk-card">
-            <h2 className="mlk-h2">تَعليقُ الحساب</h2>
+            <h2 className="mlk-h2">تعليق الحساب</h2>
             <div className="form">
               <div className="field">
-                <label>السبب (يُعرض للمشترك)</label>
+                <label>السبب (يعرض للمشترك)</label>
                 <textarea rows={3} value={suspendReason}
                           onChange={(e) => setSuspendReason(e.target.value)}
-                          placeholder="مثلًا: مخالفةٌ لشروط الخدمة — التواصل: hello@mulabeek.com" />
-                <span className="hint">٥+ أحرف، لغةً واضحةً ومحترمة</span>
+                          placeholder="مثلا: مخالفة لشروط الخدمة — التواصل: hello@mulabeek.com" />
+                <span className="hint">٥+ أحرف، لغة واضحة ومحترمة</span>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="mlk-action danger" onClick={doSuspend} disabled={busy}>
-                  {busy ? <span className="spinner" /> : 'تَعليق'}
+                  {busy ? <span className="spinner" /> : 'تعليق'}
                 </button>
                 <button className="mlk-action" onClick={() => setActionPanel(null)} disabled={busy}>إلغاء</button>
               </div>
@@ -411,13 +411,13 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
 
         {actionPanel === 'note' && (
           <div className="mlk-card">
-            <h2 className="mlk-h2">ملاحظةٌ إداريّة</h2>
+            <h2 className="mlk-h2">ملاحظة إدارية</h2>
             <div className="form">
               <div className="field">
-                <label>ملاحظةٌ خاصّةٌ بفريق ملبّيك</label>
+                <label>ملاحظة خاصة بفريق ملبّيك</label>
                 <textarea rows={4} value={adminNote}
                           onChange={(e) => setAdminNote(e.target.value)}
-                          placeholder="لا يَراها المشترك — للإدارة والدعم فقط…" />
+                          placeholder="لا يراها المشترك — للإدارة والدعم فقط…" />
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <button className="mlk-action primary" onClick={doSaveNote} disabled={busy}>
@@ -431,27 +431,27 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
           </div>
         )}
 
-        {/* ملاحظةٌ إداريّةٌ ظاهرة */}
+        {/* ملاحظة إدارية ظاهرة */}
         {subData.admin_notes && actionPanel !== 'note' && (
           <section>
-            <h2 className="mlk-h2">ملاحظةٌ إداريّة</h2>
+            <h2 className="mlk-h2">ملاحظة إدارية</h2>
             <div className="mlk-card is-feature" style={{ fontSize: 13.5, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
               {subData.admin_notes}
             </div>
           </section>
         )}
 
-        {/* صاحبُ الحملة */}
+        {/* صاحب الحملة */}
         <section>
-          <h2 className="mlk-h2">صاحبُ الحملة</h2>
+          <h2 className="mlk-h2">صاحب الحملة</h2>
           <div className="mlk-card">
             <div className="mlk-list-title">{owner?.full_name || '—'}</div>
             {owner?.phone && (
               <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <a className="mlk-action" href={`tel:${owner.phone}`}>اتّصال</a>
+                <a className="mlk-action" href={`tel:${owner.phone}`}>اتصال</a>
                 <a className="mlk-action" href={`https://wa.me/${String(owner.phone).replace(/\D/g, '')}`}
                    target="_blank" rel="noopener noreferrer">واتساب</a>
-                <button className="mlk-action" onClick={() => copy(owner.phone, 'نُسخ الرقم')}>نَسخ</button>
+                <button className="mlk-action" onClick={() => copy(owner.phone, 'نسخ الرقم')}>نسخ</button>
                 <span className="ltr" style={{ fontSize: 12, color: 'var(--cr-300)',
                                                 flex: 1, textAlign: 'left' }}>{owner.phone}</span>
               </div>
@@ -486,15 +486,15 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
              ))}
            </ul>}
           {trips.length > 5 && (
-            <div className="mlk-list-meta" style={{ marginTop: 6 }}>+ {trips.length - 5} رحلةٍ أخرى</div>
+            <div className="mlk-list-meta" style={{ marginTop: 6 }}>+ {trips.length - 5} رحلة أخرى</div>
           )}
         </section>
 
-        {/* سجلّ النَّشاط على هذه الحملة */}
+        {/* سجل النشاط على هذه الحملة */}
         <section>
-          <h2 className="mlk-h2">سجلّ النَّشاط</h2>
+          <h2 className="mlk-h2">سجل النشاط</h2>
           {loading ? <SkeletonList count={2} /> :
-           auditLog.length === 0 ? <div className="mlk-empty">لا نَشاطَ مُسجّل</div> :
+           auditLog.length === 0 ? <div className="mlk-empty">لا نشاط مسجل</div> :
            <ul className="mlk-list">
              {auditLog.map((a) => (
                <li key={a.id} className="mlk-list-row">
@@ -514,7 +514,7 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
            </ul>}
         </section>
 
-        <div className="mlk-list-meta" style={{ marginTop: 8 }}>أُنشئت: {fmtDateTime(sub.created_at)}</div>
+        <div className="mlk-list-meta" style={{ marginTop: 8 }}>أنشئت: {fmtDateTime(sub.created_at)}</div>
       </div>
     </BottomSheet>
   )
@@ -522,14 +522,14 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
 
 function labelAction(a) {
   switch (a) {
-    case 'plan_change':  return 'تَغيير باقة'
-    case 'extend_trial': return 'تَمديد تَجربة'
-    case 'suspend':      return 'تَعليق الحساب'
-    case 'restore':      return 'إعادة تَفعيل'
-    case 'set_note':     return 'تَحديث ملاحظة'
-    case 'set_trip_limit': return 'حدُّ الرحلات'
-    case 'grant_support_access':  return 'منحُ وصول دعم'
-    case 'revoke_support_access': return 'سحبُ وصول دعم'
+    case 'plan_change':  return 'تغيير باقة'
+    case 'extend_trial': return 'تمديد تجربة'
+    case 'suspend':      return 'تعليق الحساب'
+    case 'restore':      return 'إعادة تفعيل'
+    case 'set_note':     return 'تحديث ملاحظة'
+    case 'set_trip_limit': return 'حد الرحلات'
+    case 'grant_support_access':  return 'منح وصول دعم'
+    case 'revoke_support_access': return 'سحب وصول دعم'
     default: return a
   }
 }
@@ -537,7 +537,7 @@ function labelAction(a) {
 function formatDetails(d) {
   if (d.from && d.to) return `${d.from} → ${d.to}`
   if (d.action === 'set_trip_limit' || (d.old != null && d.new != null)) return `${d.old} → ${d.new} رحلة`
-  if (d.days) return `${d.days} يومًا`
+  if (d.days) return `${d.days} يوما`
   if (d.reason) return d.reason
   return null
 }

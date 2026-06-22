@@ -3,17 +3,17 @@ import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 
 /**
- * يعرض صورةً مخزَّنةً في bucket خاصٍّ عبر signed URL مؤقّتٍ، مع تنظيفٍ على
- * إلغاء التحميل وحالة "جارٍ التحميل…" قبل وصول الرابط.
+ * يعرض صورة مخزنة في bucket خاص عبر signed URL مؤقت، مع تنظيف على
+ * إلغاء التحميل وحالة "جار التحميل…" قبل وصول الرابط.
  *
- * يُفضَّل تمرير `presignedUrl` مسبقًا (من تجميعٍ Batch بالأب) لتجنّب N+1.
+ * يفضل تمرير `presignedUrl` مسبقا (من تجميع Batch بالأب) لتجنب N+1.
  *
  * @param {string} bucket
  * @param {string} path                 المسار داخل الـ bucket
- * @param {string} [presignedUrl]       رابطٌ موقّعٌ جاهزٌ — يُلغي الجلب من هنا
- * @param {number} [maxHeight=240]      أقصى ارتفاعٍ للعرض
- * @param {number} [ttlSeconds=3600]    عمر الرابط حين يُجلب محلّيًّا
- * @param {boolean} [showOpenFull]      يُظهر "فتح بحجم كامل" في الأسفل
+ * @param {string} [presignedUrl]       رابط موقع جاهز — يلغي الجلب من هنا
+ * @param {number} [maxHeight=240]      أقصى ارتفاع للعرض
+ * @param {number} [ttlSeconds=3600]    عمر الرابط حين يجلب محليا
+ * @param {boolean} [showOpenFull]      يظهر "فتح بحجم كامل" في الأسفل
  */
 export default function SignedImage({
   bucket, path, presignedUrl, maxHeight = 240, ttlSeconds = 3600, showOpenFull = false,
@@ -35,17 +35,17 @@ export default function SignedImage({
   }, [bucket, path, presignedUrl, ttlSeconds])
 
   if (failed) return (
-    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>تعذّر تحميل المرفق — تأكّد من الصلاحيّة أو أعد المحاولة.</div>
+    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>تعذر تحميل المرفق — تأكد من الصلاحية أو أعد المحاولة.</div>
   )
   if (!url) return (
-    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>جارٍ تحميل المرفق…</div>
+    <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>جار تحميل المرفق…</div>
   )
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8 }}>
       <img src={url} alt="مرفق" style={{ maxWidth: '100%', maxHeight, borderRadius: 10, border: '1px solid var(--line)' }} />
       {showOpenFull && (
         <div style={{ fontSize: 11, color: 'var(--gd-300)', marginTop: 4 }}>
-          <Icon name="external" size={11} /> فتح بحجمٍ كامل
+          <Icon name="external" size={11} /> فتح بحجم كامل
         </div>
       )}
     </a>

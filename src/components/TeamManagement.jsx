@@ -10,20 +10,20 @@ import InvitationReview from './InvitationReview'
 
 const ROLE_LABEL = { admin: 'أدمن', support: 'دعم' }
 const ROLE_HINT = {
-  admin:   'صلاحيّةٌ كاملةٌ — كلُّ إجراءٍ متاح',
-  support: 'قراءةٌ فقط + الردُّ على الرسائل',
+  admin:   'صلاحية كاملة — كل إجراء متاح',
+  support: 'قراءة فقط + الرد على الرسائل',
 }
 
 const STATUS_LABEL = {
   pending:            'بانتظار التسجيل',
-  submitted:          'مراجعةُ الوَثائق',
-  prelim_approved:    'مَوافقةٌ مَبدئيّة — مقابلة',
+  submitted:          'مراجعة الوثائق',
+  prelim_approved:    'موافقة مبدئية — مقابلة',
   interview_done:     'انتهت المقابلة',
-  final_approved:     'بانتظار نموذج التَّوظيف',
-  onboarded:          'بانتظار التَّفعيل',
-  active:             'مُفعَّل',
-  rejected_documents: 'رُفض (وَثائق)',
-  rejected_interview: 'رُفض (مقابلة)',
+  final_approved:     'بانتظار نموذج التوظيف',
+  onboarded:          'بانتظار التفعيل',
+  active:             'مفعل',
+  rejected_documents: 'رفض (وثائق)',
+  rejected_interview: 'رفض (مقابلة)',
   expired:            'منتهية',
   cancelled:          'ملغاة',
 }
@@ -36,10 +36,10 @@ const STATUS_TONE = {
 const REVIEW_STATES = new Set(['submitted','prelim_approved','interview_done','final_approved','onboarded'])
 
 /**
- * إدارةُ فريق ملبّيك:
- *  ١) قائمةُ الفريق الحاليّ (admin + support).
- *  ٢) دعواتٌ معلَّقةٌ — submitted: راجعها الأدمن.
- *  ٣) دعوةٌ جديدة: إيميل + دور → يُرسل بريدٌ بآليّة دعوةٍ كاملةٍ.
+ * إدارة فريق ملبّيك:
+ *  ١) قائمة الفريق الحالي (admin + support).
+ *  ٢) دعوات معلقة — submitted: راجعها الأدمن.
+ *  ٣) دعوة جديدة: إيميل + دور → يرسل بريد بآلية دعوة كاملة.
  */
 export default function TeamManagement() {
   const { profile, role } = useAuth()
@@ -68,7 +68,7 @@ export default function TeamManagement() {
   const loadStaff = useCallback(async () => {
     setLoadingStaff(true)
     const { data, error } = await supabase.rpc('platform_list_staff')
-    if (error) setErr('تعذّر تحميلُ الفريق: ' + (error.message || ''))
+    if (error) setErr('تعذر تحميل الفريق: ' + (error.message || ''))
     else setStaff(data ?? [])
     setLoadingStaff(false)
   }, [])
@@ -76,7 +76,7 @@ export default function TeamManagement() {
   const loadInvites = useCallback(async () => {
     setLoadingInv(true)
     const { data, error } = await supabase.rpc('list_staff_invitations', { p_filter: 'all' })
-    if (error) setErr('تعذّر تحميلُ الدعوات: ' + (error.message || ''))
+    if (error) setErr('تعذر تحميل الدعوات: ' + (error.message || ''))
     else setInvites(data ?? [])
     setLoadingInv(false)
   }, [])
@@ -91,7 +91,7 @@ export default function TeamManagement() {
   async function sendInvitation(e) {
     e?.preventDefault?.()
     setErr(''); setOk('')
-    if (!isValidEmail(addEmail)) { setErr('بريدٌ غير صحيح'); return }
+    if (!isValidEmail(addEmail)) { setErr('بريد غير صحيح'); return }
     setSending(true)
     const { data, error } = await supabase.rpc('create_staff_invitation', {
       p_email: addEmail.trim().toLowerCase(),
@@ -99,7 +99,7 @@ export default function TeamManagement() {
     })
     if (error) {
       setSending(false)
-      setErr(translateRpcError(error, 'تعذّر إنشاءُ الدعوة.'))
+      setErr(translateRpcError(error, 'تعذر إنشاء الدعوة.'))
       return
     }
     const row = Array.isArray(data) ? data[0] : data
@@ -111,10 +111,10 @@ export default function TeamManagement() {
       })
       if (sErr) throw sErr
       if (!send?.ok) throw new Error(send?.error || 'unknown')
-      flash(setOk, `أُرسلت الدعوةُ إلى ${addEmail} ✓`)
+      flash(setOk, `أرسلت الدعوة إلى ${addEmail} ✓`)
       setAddEmail('')
     } catch (e2) {
-      setErr('أُنشئت الدعوة لكن تعذّر إرسالُ البريد: ' + (e2?.message || e2))
+      setErr('أنشئت الدعوة لكن تعذر إرسال البريد: ' + (e2?.message || e2))
     }
     setSending(false)
     loadInvites()
@@ -122,35 +122,35 @@ export default function TeamManagement() {
 
   async function cancelInv(inv) {
     const ok2 = await confirm({
-      title: 'إلغاءُ دعوة',
-      message: `إلغاءُ الدعوةِ المُرسَلة لـ ${inv.email}؟`,
+      title: 'إلغاء دعوة',
+      message: `إلغاء الدعوة المرسلة لـ ${inv.email}؟`,
       confirmText: 'إلغاء الدعوة', cancelText: 'احتفظ', danger: true,
     })
     if (!ok2) return
     setBusyId(inv.id)
     const { error } = await supabase.rpc('cancel_staff_invitation', { p_invitation: inv.id })
     setBusyId('')
-    if (error) { setErr(translateRpcError(error, 'تعذّر الإلغاء.')); return }
-    flash(setOk, 'أُلغيت الدعوة')
+    if (error) { setErr(translateRpcError(error, 'تعذر الإلغاء.')); return }
+    flash(setOk, 'ألغيت الدعوة')
     loadInvites()
   }
 
   async function removeMember(s) {
     if (s.profile_id === profile?.id) {
-      setErr('لا يَجوز نَزعُ صلاحيّاتِك بنفسك — اطلب من أدمنٍ آخرَ ذلك.')
+      setErr('لا يجوز نزع صلاحياتك بنفسك — اطلب من أدمن آخر ذلك.')
       return
     }
     const ok2 = await confirm({
-      title: 'نَزعُ صلاحيّاتٍ',
-      message: `إزالةُ ${s.full_name || s.email} من فريق ملبّيك؟ سيَعود مستخدمًا عاديًّا.`,
-      confirmText: 'نَزع', cancelText: 'إلغاء', danger: true,
+      title: 'نزع صلاحيات',
+      message: `إزالة ${s.full_name || s.email} من فريق ملبّيك؟ سيعود مستخدما عاديا.`,
+      confirmText: 'نزع', cancelText: 'إلغاء', danger: true,
     })
     if (!ok2) return
     setBusyId(s.profile_id)
     const { error } = await supabase.rpc('platform_revoke_role', { p_profile: s.profile_id })
     setBusyId('')
-    if (error) { setErr(translateRpcError(error, 'تعذّر النَّزع.')); return }
-    flash(setOk, 'تمّ النَّزع ✓')
+    if (error) { setErr(translateRpcError(error, 'تعذر النزع.')); return }
+    flash(setOk, 'تم النزع ✓')
     loadStaff()
   }
 
@@ -174,7 +174,7 @@ export default function TeamManagement() {
           الفريق ({staff.length})
         </button>
         <button className={`mlk-fchip ${tab === 'submitted' ? 'active' : ''}`} onClick={() => { setTab('submitted'); setReviewing(null) }}>
-          طلباتُ التَّوظيف{pendingReview.length > 0 ? ` (${pendingReview.length})` : ''}
+          طلبات التوظيف{pendingReview.length > 0 ? ` (${pendingReview.length})` : ''}
         </button>
         <button className={`mlk-fchip ${tab === 'sent' ? 'active' : ''}`} onClick={() => setTab('sent')}>
           الدعوات ({sent.length})
@@ -184,10 +184,10 @@ export default function TeamManagement() {
       {err && <div className="alert err">{err}</div>}
       {ok  && <div className="alert ok">{ok}</div>}
 
-      {/* نموذجُ إرسال دعوةٍ جديدة — Admin فقط */}
+      {/* نموذج إرسال دعوة جديدة — Admin فقط */}
       {isAdmin && tab !== 'staff' && (
         <form onSubmit={sendInvitation} className="mlk-card is-feature">
-          <h2 className="mlk-h2">إرسالُ دعوةٍ جديدة</h2>
+          <h2 className="mlk-h2">إرسال دعوة جديدة</h2>
           <div className="form">
             <div className="grid-2">
               <div className="field ltr">
@@ -198,8 +198,8 @@ export default function TeamManagement() {
               <div className="field">
                 <label>الدور المقترح</label>
                 <select value={addRole} onChange={(e) => setAddRole(e.target.value)}>
-                  <option value="support">دعم — قراءةٌ والردُّ على الرسائل</option>
-                  <option value="admin">أدمن — صلاحيّةٌ كاملة</option>
+                  <option value="support">دعم — قراءة والرد على الرسائل</option>
+                  <option value="admin">أدمن — صلاحية كاملة</option>
                 </select>
               </div>
             </div>
@@ -214,7 +214,7 @@ export default function TeamManagement() {
       {/* تبويب: الفريق */}
       {tab === 'staff' && (
         loadingStaff ? <SkeletonList count={3} /> :
-        staff.length === 0 ? <div className="mlk-empty">لا يَوجد فريقٌ بعد</div> :
+        staff.length === 0 ? <div className="mlk-empty">لا يوجد فريق بعد</div> :
         <ul className="mlk-list">
           {staff.map((s) => {
             const isMe = s.profile_id === profile?.id
@@ -231,7 +231,7 @@ export default function TeamManagement() {
                 {isAdmin && !isMe && (
                   <button className="mlk-action danger" onClick={() => removeMember(s)}
                           disabled={busyId === s.profile_id}>
-                    نَزع
+                    نزع
                   </button>
                 )}
               </li>
@@ -243,7 +243,7 @@ export default function TeamManagement() {
       {/* تبويب: للمراجعة */}
       {tab === 'submitted' && !reviewing && (
         loadingInv ? <SkeletonList count={2} /> :
-        pendingReview.length === 0 ? <div className="mlk-empty">لا توجد طلباتُ توظيفٍ نَشِطة</div> :
+        pendingReview.length === 0 ? <div className="mlk-empty">لا توجد طلبات توظيف نشطة</div> :
         <ul className="mlk-list">
           {pendingReview.map(inv => (
             <li key={inv.id}>
@@ -268,16 +268,16 @@ export default function TeamManagement() {
         </ul>
       )}
 
-      {/* لوحةُ المراجعة التَّفصيليّة */}
+      {/* لوحة المراجعة التفصيلية */}
       {tab === 'submitted' && reviewing && (
         <InvitationReview
           invitation={reviewing}
           onClose={() => setReviewing(null)}
-          onUpdate={() => { setReviewing(null); loadInvites(); loadStaff(); flash(setOk, 'تمّ التَّحديث ✓') }}
+          onUpdate={() => { setReviewing(null); loadInvites(); loadStaff(); flash(setOk, 'تم التحديث ✓') }}
         />
       )}
 
-      {/* تبويب: كلّ الدعوات المُرسَلة */}
+      {/* تبويب: كل الدعوات المرسلة */}
       {tab === 'sent' && (
         loadingInv ? <SkeletonList count={2} /> :
         sent.length === 0 ? <div className="mlk-empty">لا توجد دعوات</div> :
@@ -293,7 +293,7 @@ export default function TeamManagement() {
                 </div>
                 <div className="mlk-list-title ltr">{inv.email}</div>
                 {inv.reject_reason && (
-                  <div className="mlk-list-meta">سببُ الرفض: {inv.reject_reason}</div>
+                  <div className="mlk-list-meta">سبب الرفض: {inv.reject_reason}</div>
                 )}
               </div>
               {isAdmin && inv.status === 'pending' && (

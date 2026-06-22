@@ -17,23 +17,23 @@ function fmtTime(v) {
   catch { return '' }
 }
 
-const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد الحافلة', checked_in: 'استلم الغرفة' }
+const STATUS_AR = { registered: 'مسجل', paid: 'مدفوع', boarded: 'صعد الحافلة', checked_in: 'استلم الغرفة' }
 
 /**
- * تذكرة صعود المعتمر — بطاقةٌ بالباركود (QR) قابلةٌ للتنزيل والطباعة.
- * تُحمّل مكتبة qrcode ديناميكيًّا؛ إن غابت تعرض الرمز نصيًّا (تدهورٌ لطيف).
+ * تذكرة صعود المعتمر — بطاقة بالباركود (QR) قابلة للتنزيل والطباعة.
+ * تحمل مكتبة qrcode ديناميكيا؛ إن غابت تعرض الرمز نصيا (تدهور لطيف).
  */
 export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
   const { toast } = useUI()
   const ticketRef = useRef(null)
   const [qrUrl, setQrUrl] = useState('')
-  const [barUrl, setBarUrl] = useState('')   // باركود Code128 (للماسحات الخطّيّة)
+  const [barUrl, setBarUrl] = useState('')   // باركود Code128 (للماسحات الخطية)
   const [qrFailed, setQrFailed] = useState(false)
   const [busy, setBusy] = useState('')   // '' | 'save' | 'share'
   const canShare = typeof navigator !== 'undefined' && !!navigator.share
   const code = passenger?.ticket_code || passenger?.id || ''
   const fileBase = `تذكرة-${(passenger?.full_name || 'معتمر').replace(/\s+/g, '_')}`
-  // اسم باص المعتمر عند تعدّد الباصات؛ وإلّا اسم باص الرحلة (السلوك السابق)
+  // اسم باص المعتمر عند تعدد الباصات؛ وإلا اسم باص الرحلة (السلوك السابق)
   const ticketBus = buses.find((b) => b.id === passenger?.bus_id)
   const busLabel = (ticketBus && busName(ticketBus)) || trip?.bus_label || '—'
 
@@ -48,24 +48,24 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
       } catch (_) {
         if (!cancelled) setQrFailed(true)
       }
-      // باركود Code128 الخطّيّ (يقرؤه ماسحُ التذاكر + الماسحاتُ الخطّيّة المطبوعة)
+      // باركود Code128 الخطي (يقرؤه ماسح التذاكر + الماسحات الخطية المطبوعة)
       try {
         const JsBarcode = (await import('jsbarcode')).default
         const canvas = document.createElement('canvas')
         JsBarcode(canvas, code, { format: 'CODE128', displayValue: false, height: 48, margin: 0, background: '#ffffff', lineColor: '#063d2c' })
         if (!cancelled) setBarUrl(canvas.toDataURL('image/png'))
-      } catch (_) { /* اختياريٌّ — الـQR يكفي */ }
+      } catch (_) { /* اختياري — الـQR يكفي */ }
     })()
     return () => { cancelled = true }
   }, [code])
 
-  // يلتقط بطاقة التذكرة كاملةً (لا الباركود وحده) صورةً عالية الدقّة.
+  // يلتقط بطاقة التذكرة كاملة (لا الباركود وحده) صورة عالية الدقة.
   async function captureBlob() {
     if (!ticketRef.current) throw new Error('no_ticket')
     return await elementToPngBlob(ticketRef.current, { backgroundColor: '#ffffff', scale: 2.5 })
   }
 
-  // حفظ التذكرة كاملةً كصورة (تذهب لمعرض الصور/الملفّات).
+  // حفظ التذكرة كاملة كصورة (تذهب لمعرض الصور/الملفات).
   async function saveImage() {
     if (busy) return
     setBusy('save')
@@ -78,16 +78,16 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
       setTimeout(() => URL.revokeObjectURL(url), 2000)
       toast('تم حفظ التذكرة كصورة ✓', { type: 'success' })
     } catch (e) {
-      // تدهورٌ لطيف: نزّل الباركود على الأقلّ إن تعذّر التقاط البطاقة
-      // (نُلحق العنصر بالـ DOM ثمّ نزيله — Safari على iOS يتجاهل النقر على عنصرٍ غير مُلحَق)
+      // تدهور لطيف: نزل الباركود على الأقل إن تعذر التقاط البطاقة
+      // (نلحق العنصر بالـ DOM ثم نزيله — Safari على iOS يتجاهل النقر على عنصر غير ملحق)
       if (qrUrl) {
         const a = document.createElement('a'); a.href = qrUrl; a.download = fileBase + '.png'
         document.body.appendChild(a); a.click(); a.remove()
-      } else toast('تعذّر حفظ الصورة — جرّب «طباعة» أو لقطة شاشة.', { type: 'error' })
+      } else toast('تعذر حفظ الصورة — جرب «طباعة» أو لقطة شاشة.', { type: 'error' })
     } finally { setBusy('') }
   }
 
-  // مشا_ركة عبر قائمة الجوال: حفظ بالصور/الملفّات/تطبيقات المحفظة الرقميّة.
+  // مشا_ركة عبر قائمة الجوال: حفظ بالصور/الملفات/تطبيقات المحفظة الرقمية.
   async function shareTicket() {
     if (busy) return
     setBusy('share')
@@ -103,7 +103,7 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
         await saveImage(); return
       }
     } catch (e) {
-      if (e?.name !== 'AbortError') toast('تعذّرت المشاركة — استخدم «حفظ كصورة».', { type: 'error' })
+      if (e?.name !== 'AbortError') toast('تعذرت المشاركة — استخدم «حفظ كصورة».', { type: 'error' })
     } finally { setBusy('') }
   }
 
@@ -117,8 +117,8 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
       location: passenger?.boarding_point || trip?.boarding_point || trip?.route_from || '',
       description: `مقعد ${passenger?.seat_no || '—'} · ${busLabel} · ${sub?.org_name || 'الحملة'} · رمز التذكرة ${code}`,
     }, fileBase)
-    if (ok) toast('أُضيف موعد الرحلة — افتحه في التقويم', { type: 'success' })
-    else toast('تعذّرت إضافة الموعد (تاريخ الرحلة غير محدّد).', { type: 'info' })
+    if (ok) toast('أضيف موعد الرحلة — افتحه في التقويم', { type: 'success' })
+    else toast('تعذرت إضافة الموعد (تاريخ الرحلة غير محدد).', { type: 'info' })
   }
 
   const boarded = passenger?.status === 'boarded' || passenger?.status === 'checked_in'
@@ -155,10 +155,10 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
                 : null}
               <div>
                 <div className="tk-org">{sub?.org_name || 'الحملة'}</div>
-                <div className="tk-kind">تذكرة صعود · عُمرة</div>
+                <div className="tk-kind">تذكرة صعود · عمرة</div>
               </div>
             </div>
-            <span className={`st ${boarded ? 'ok' : 'muted'}`}>{STATUS_AR[passenger?.status] || 'مسجّل'}</span>
+            <span className={`st ${boarded ? 'ok' : 'muted'}`}>{STATUS_AR[passenger?.status] || 'مسجل'}</span>
           </div>
 
           <div className="tk-name">{passenger?.full_name || '—'}</div>
@@ -185,7 +185,7 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
               <div className="tk-qr-fallback">…</div>
             )}
             {barUrl && (
-              <img className="tk-barcode" src={barUrl} alt="باركود خطّيّ Code128" style={{ width: '85%', maxWidth: 280, height: 46, marginTop: 8, objectFit: 'contain' }} />
+              <img className="tk-barcode" src={barUrl} alt="باركود خطي Code128" style={{ width: '85%', maxWidth: 280, height: 46, marginTop: 8, objectFit: 'contain' }} />
             )}
             <div className="tk-code">{code}</div>
           </div>
@@ -193,7 +193,7 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
           <div className="tk-foot">
             {passenger?.boarded_at
               ? `تم الصعود ${fmt(passenger.boarded_at)} ${fmtTime(passenger.boarded_at)}`
-              : 'يُرجى إظهار هذه التذكرة عند الصعود — تُمسح بالباركود.'}
+              : 'يرجى إظهار هذه التذكرة عند الصعود — تمسح بالباركود.'}
           </div>
         </div>
       </div>

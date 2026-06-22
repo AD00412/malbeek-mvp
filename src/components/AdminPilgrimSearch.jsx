@@ -5,12 +5,12 @@ import BottomSheet from './BottomSheet'
 import { useUI } from '../lib/useUI'
 import { fmtDateTime } from '../lib/format'
 
-const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
+const STATUS_AR = { registered: 'مسجل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
 const STATUS_TONE = { registered: 'muted', paid: 'ok', boarded: 'info', checked_in: 'warn' }
 
 /**
- * بحثٌ عبر المنصّة كلّها — للإدارة فقط (RLS يمنح الأدمن قراءة كلّ المعتمرين).
- * يُظهر اسم الحملة لكلّ معتمرٍ، والنَّقرُ يَفتح ورقةَ تَفاصيلَ كاملة.
+ * بحث عبر المنصة كلها — للإدارة فقط (RLS يمنح الأدمن قراءة كل المعتمرين).
+ * يظهر اسم الحملة لكل معتمر، والنقر يفتح ورقة تفاصيل كاملة.
  */
 export default function AdminPilgrimSearch() {
   const [q, setQ] = useState('')
@@ -58,13 +58,13 @@ export default function AdminPilgrimSearch() {
       <div className="field search" style={{ margin: 0 }}>
         <span className="ic"><Icon name="search" size={17} /></span>
         <input type="search" autoComplete="off" autoCorrect="off" spellCheck="false"
-               placeholder="الاسم / رقم الهوية / الجوال — في كلّ الحملات"
+               placeholder="الاسم / رقم الهوية / الجوال — في كل الحملات"
                value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
-      {loading ? <div className="mlk-empty">جارٍ البحث…</div> :
-       safeQ.length < 2 ? <div className="mlk-empty">اكتب حرفين على الأقلّ — يَبحث في كلّ المعتمرين عبر كلّ الحملات</div> :
-       rows.length === 0 && searched ? <div className="mlk-empty">لا معتمرَ يُطابق بحثك في أيّ حملة</div> :
+      {loading ? <div className="mlk-empty">جار البحث…</div> :
+       safeQ.length < 2 ? <div className="mlk-empty">اكتب حرفين على الأقل — يبحث في كل المعتمرين عبر كل الحملات</div> :
+       rows.length === 0 && searched ? <div className="mlk-empty">لا معتمر يطابق بحثك في أي حملة</div> :
        <ul className="mlk-list">
          {rows.map((p) => (
            <li key={p.id}>
@@ -92,7 +92,7 @@ export default function AdminPilgrimSearch() {
          ))}
        </ul>}
 
-      {/* ورقةُ تَفاصيل المعتمر */}
+      {/* ورقة تفاصيل المعتمر */}
       <BottomSheet open={!!detail} onClose={() => setDetail(null)} title={detail?.full_name || 'معتمر'}>
         {detail && (
           <div className="mlk-tab">
@@ -105,9 +105,9 @@ export default function AdminPilgrimSearch() {
               <div className="mlk-list-title" style={{ fontSize: 18 }}>{detail.full_name || '—'}</div>
               {detail.national_id && (
                 <button type="button" className="mlk-list-meta ltr"
-                        onClick={() => copyText(detail.national_id, 'نُسخت الهويّة')}
+                        onClick={() => copyText(detail.national_id, 'نسخت الهوية')}
                         style={{ background: 'transparent', border: 0, color: 'var(--cr-300)', cursor: 'pointer', padding: 0 }}>
-                  هويّة: {detail.national_id} <Icon name="copy" size={11} />
+                  هوية: {detail.national_id} <Icon name="copy" size={11} />
                 </button>
               )}
               {detail.phone && (
@@ -116,7 +116,7 @@ export default function AdminPilgrimSearch() {
                   <a href={`https://wa.me/${String(detail.phone).replace(/\D/g, '')}`}
                      target="_blank" rel="noopener"
                      style={{ color: 'var(--em-500)' }}>· واتساب</a>
-                  <button type="button" onClick={() => copyText(detail.phone, 'نُسخ الرقم')}
+                  <button type="button" onClick={() => copyText(detail.phone, 'نسخ الرقم')}
                           style={{ background: 'transparent', border: 0, color: 'var(--cr-300)', cursor: 'pointer' }}>
                     <Icon name="copy" size={11} />
                   </button>
@@ -150,17 +150,17 @@ export default function AdminPilgrimSearch() {
             </section>
 
             <section>
-              <h2 className="mlk-h2">الزَّمن</h2>
+              <h2 className="mlk-h2">الزمن</h2>
               <ul className="mlk-list">
                 {detail.created_at && (
                   <li className="mlk-list-row">
-                    <span className="mlk-list-body"><span className="mlk-list-meta">سُجِّل</span></span>
+                    <span className="mlk-list-body"><span className="mlk-list-meta">سجل</span></span>
                     <span className="mlk-list-time">{fmtDateTime(detail.created_at)}</span>
                   </li>
                 )}
                 {detail.paid_at && (
                   <li className="mlk-list-row">
-                    <span className="mlk-list-body"><span className="mlk-list-meta">دَفع</span></span>
+                    <span className="mlk-list-body"><span className="mlk-list-meta">دفع</span></span>
                     <span className="mlk-list-time">{fmtDateTime(detail.paid_at)}</span>
                   </li>
                 )}

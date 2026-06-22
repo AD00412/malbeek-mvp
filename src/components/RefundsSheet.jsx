@@ -7,7 +7,7 @@ import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
-const STATUS_AR = { requested: 'بانتظار الاسترداد', refunded: 'تمّ الاسترداد', rejected: 'مرفوض' }
+const STATUS_AR = { requested: 'بانتظار الاسترداد', refunded: 'تم الاسترداد', rejected: 'مرفوض' }
 const STATUS_CLS = { requested: 'warn', refunded: 'ok', rejected: 'danger' }
 
 function fmt(v) {
@@ -17,7 +17,7 @@ function fmt(v) {
 }
 
 /**
- * طلبات استرداد رحلةٍ معيّنة — يعالجها صاحب الحملة بعد ردّ المبلغ عبر متجره.
+ * طلبات استرداد رحلة معينة — يعالجها صاحب الحملة بعد رد المبلغ عبر متجره.
  * @param {boolean} open
  * @param {string}  tripId
  * @param {Function} onClose
@@ -46,14 +46,14 @@ export default function RefundsSheet({ open, tripId, onClose }) {
 
   async function resolve(row, status) {
     if (status === 'refunded') {
-      const ok = await confirm({ title: 'تأكيد الاسترداد', message: `هل أتممتَ ردّ مبلغ ${row.amount ?? '—'} ﷼ لـ«${row.passenger_name || 'المعتمر'}» عبر متجرك؟`, confirmText: 'تمّ الاسترداد' })
+      const ok = await confirm({ title: 'تأكيد الاسترداد', message: `هل أتممت رد مبلغ ${row.amount ?? '—'} ﷼ لـ«${row.passenger_name || 'المعتمر'}» عبر متجرك؟`, confirmText: 'تم الاسترداد' })
       if (!ok) return
     }
     setBusyId(row.id)
     const { error } = await supabase.from('refunds').update({ status }).eq('id', row.id)
     setBusyId(null)
-    if (error) toast(translateRpcError(error, 'تعذّر تحديث الطلب.'), { type: 'error' })
-    else { toast(status === 'refunded' ? 'سُجّل الاسترداد ✓ وأُبلغ المعتمر' : 'حُدّث الطلب', { type: 'success' }); load() }
+    if (error) toast(translateRpcError(error, 'تعذر تحديث الطلب.'), { type: 'error' })
+    else { toast(status === 'refunded' ? 'سجل الاسترداد ✓ وأبلغ المعتمر' : 'حدث الطلب', { type: 'success' }); load() }
   }
 
   return (
@@ -67,8 +67,8 @@ export default function RefundsSheet({ open, tripId, onClose }) {
       {loading ? (
         <SkeletonList count={3} />
       ) : rows.length === 0 ? (
-        <div className="empty"><div className="em-ttl">لا طلبات استردادٍ في هذه التصفية</div>
-          <div>تظهر هنا حين يُلغي معتمرٌ حجزًا مدفوعًا.</div></div>
+        <div className="empty"><div className="em-ttl">لا طلبات استرداد في هذه التصفية</div>
+          <div>تظهر هنا حين يلغي معتمر حجزا مدفوعا.</div></div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {rows.map((r) => (
@@ -84,7 +84,7 @@ export default function RefundsSheet({ open, tripId, onClose }) {
               {r.status === 'requested' && (
                 <div className="actions-row" style={{ marginTop: 10 }}>
                   <button className="btn btn-gold btn-sm" onClick={() => resolve(r, 'refunded')} disabled={busyId === r.id}>
-                    {busyId === r.id ? <span className="spinner" /> : <><Icon name="check" size={15} /> تمّ الاسترداد</>}
+                    {busyId === r.id ? <span className="spinner" /> : <><Icon name="check" size={15} /> تم الاسترداد</>}
                   </button>
                   <button className="icon-btn" onClick={() => resolve(r, 'rejected')} disabled={busyId === r.id}>رفض</button>
                 </div>

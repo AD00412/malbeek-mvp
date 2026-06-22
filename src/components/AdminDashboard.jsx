@@ -27,13 +27,13 @@ function relTime(iso) {
 }
 
 /**
- * «الرئيسيّة» — هويّةُ ملبّيك v4
- *   مَنهجٌ: لا تَكرار · لا زَخرفة · لا حركات لافتة
+ * «الرئيسية» — هوية ملبّيك v4
+ *   منهج: لا تكرار · لا زخرفة · لا حركات لافتة
  *
- *   ١) شريطُ تَرحيبٍ هادئ — اسمٌ + تاريخ + سَطرٌ تَنفيذيٌّ واحد
- *   ٢) شَريطُ KPIs — للقراءة فقط، لا روابط (الـsidebar للتنقّل)
- *   ٣) «تَحتاج انتباهك» — يَظهر فقط لو فيه عدّاد > 0
- *   ٤) النشاطُ الحيّ — قائمةٌ بسيطة
+ *   ١) شريط ترحيب هادئ — اسم + تاريخ + سطر تنفيذي واحد
+ *   ٢) شريط KPIs — للقراءة فقط، لا روابط (الـsidebar للتنقل)
+ *   ٣) «تحتاج انتباهك» — يظهر فقط لو فيه عداد > 0
+ *   ٤) النشاط الحي — قائمة بسيطة
  */
 export default function AdminDashboard({ subs, paid, trips, pax, collected, recent7, onTab, openFb = 0, openMsg = 0 }) {
   const { profile } = useAuth()
@@ -41,10 +41,10 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
   const [pendingHiring, setPendingHiring] = useState(0)
   const [rolesOpen, setRolesOpen] = useState(false)
 
-  // مَلاحظة: openFb و openMsg تَأتيان من AdminHome — لا نَعيد جَلبَهما هنا.
-  // كذلك آخر المشتركين من prop `subs` مباشرةً — لا طلب إضافيّ.
-  // التَّبعيّةُ على عدد المشتركين فقط — لا على مَرجع المصفوفة، لتَجنُّب
-  // إطلاق list_staff_invitations مع كلّ refresh لـadmin_campaign_stats.
+  // ملاحظة: openFb و openMsg تأتيان من AdminHome — لا نعيد جلبهما هنا.
+  // كذلك آخر المشتركين من prop `subs` مباشرة — لا طلب إضافي.
+  // التبعية على عدد المشتركين فقط — لا على مرجع المصفوفة، لتجنب
+  // إطلاق list_staff_invitations مع كل refresh لـadmin_campaign_stats.
   const subsCount = subs.length
   useEffect(() => {
     let active = true
@@ -73,20 +73,20 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
 
   const greeting = useMemo(() => {
     const h = new Date().getHours()
-    if (h < 12) return 'صباحَ الخير'
-    if (h < 17) return 'مساءَ الخير'
-    return 'مساءَ النور'
+    if (h < 12) return 'صباح الخير'
+    if (h < 17) return 'مساء الخير'
+    return 'مساء النور'
   }, [])
 
   const attention = [
-    openMsg > 0     && { count: openMsg,        label: 'رسالةٌ عامّةٌ مفتوحة',   tab: 'messages' },
-    openFb > 0      && { count: openFb,         label: 'تَغذيةٌ راجعةٌ مفتوحة',   tab: 'feedback' },
-    pendingHiring > 0 && { count: pendingHiring, label: 'طلبُ توظيفٍ للمراجعة', tab: 'team'     },
+    openMsg > 0     && { count: openMsg,        label: 'رسالة عامة مفتوحة',   tab: 'messages' },
+    openFb > 0      && { count: openFb,         label: 'تغذية راجعة مفتوحة',   tab: 'feedback' },
+    pendingHiring > 0 && { count: pendingHiring, label: 'طلب توظيف للمراجعة', tab: 'team'     },
   ].filter(Boolean)
 
   return (
     <div className="mlk-dash">
-      {/* ─── ١) شريطُ التَّرحيب ─── */}
+      {/* ─── ١) شريط الترحيب ─── */}
       <header className="mlk-hello">
         <div className="mlk-hello-date">{arabicDate()}</div>
         <h1 className="mlk-hello-title">
@@ -104,7 +104,7 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
         </div>
         <div className="mlk-kpi">
           <div className="mlk-kpi-num">{paid}</div>
-          <div className="mlk-kpi-lb">باقاتٌ مدفوعة</div>
+          <div className="mlk-kpi-lb">باقات مدفوعة</div>
         </div>
         <div className="mlk-kpi">
           <div className="mlk-kpi-num">{trips}</div>
@@ -116,23 +116,23 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
         </div>
       </section>
 
-      {/* ─── ٣) الإيرادات — كَسطرٍ مَيَّز ─── */}
+      {/* ─── ٣) الإيرادات — كسطر ميز ─── */}
       <section className="mlk-revenue">
-        <div className="mlk-revenue-lb">إجمالي المحصَّل عبر المنصّة</div>
+        <div className="mlk-revenue-lb">إجمالي المحصل عبر المنصة</div>
         <div className="mlk-revenue-num">
           {money(collected)} <span className="mlk-revenue-cur">﷼</span>
         </div>
         {subs.length > 0 && (
           <div className="mlk-revenue-avg">
-            متوسّط <strong>{money(Math.round(collected / subs.length))}</strong> ﷼ لكلّ مشترك
+            متوسط <strong>{money(Math.round(collected / subs.length))}</strong> ﷼ لكل مشترك
           </div>
         )}
       </section>
 
-      {/* ─── ٤) تَحتاج انتباهك — يَظهر فقط لو هناك ما يَستحقّ ─── */}
+      {/* ─── ٤) تحتاج انتباهك — يظهر فقط لو هناك ما يستحق ─── */}
       {attention.length > 0 && (
         <section className="mlk-attn">
-          <h2 className="mlk-h">تَحتاج انتباهك</h2>
+          <h2 className="mlk-h">تحتاج انتباهك</h2>
           <ul className="mlk-attn-list">
             {attention.map((a, i) => (
               <li key={i}>
@@ -147,11 +147,11 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
         </section>
       )}
 
-      {/* ─── ٥) النشاطُ الأخير ─── */}
+      {/* ─── ٥) النشاط الأخير ─── */}
       <section className="mlk-recent">
-        <h2 className="mlk-h">النشاطُ الأخير</h2>
+        <h2 className="mlk-h">النشاط الأخير</h2>
         {activity.length === 0 ? (
-          <div className="mlk-recent-empty">لا نَشاطَ جديد.</div>
+          <div className="mlk-recent-empty">لا نشاط جديد.</div>
         ) : (
           <ul className="mlk-recent-list">
             {activity.map(e => (

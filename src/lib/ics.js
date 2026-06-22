@@ -1,5 +1,5 @@
 // توليد حدث تقويم (.ics) لموعد رحلة العمرة — ليضيفه المعتمر إلى تقويم جواله.
-// لا يعتمد على أيّ مكتبةٍ خارجيّة؛ نصٌّ قياسيٌّ متوافقٌ مع iOS/Android/Outlook.
+// لا يعتمد على أي مكتبة خارجية؛ نص قياسي متوافق مع iOS/Android/Outlook.
 
 function pad(n) { return String(n).padStart(2, '0') }
 
@@ -17,13 +17,13 @@ function toICSDate(v) {
   )
 }
 
-/** يهرّب الفواصل/الأسطر حسب RFC 5545 */
+/** يهرب الفواصل/الأسطر حسب RFC 5545 */
 function esc(s) {
   return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
 }
 
 /**
- * يبني نصّ ملفّ .ics لحدثٍ واحد.
+ * يبني نص ملف .ics لحدث واحد.
  * @param {{uid?:string, start:string|Date, durationMin?:number, title:string, location?:string, description?:string}} ev
  */
 export function buildICS(ev) {
@@ -56,7 +56,7 @@ export function buildICS(ev) {
   return lines.join('\r\n')
 }
 
-/** ينزّل حدث التقويم كملفّ .ics (يفتحه الجوال في تطبيق التقويم). */
+/** ينزل حدث التقويم كملف .ics (يفتحه الجوال في تطبيق التقويم). */
 export function downloadICS(ev, filename = 'رحلة') {
   const ics = buildICS(ev)
   if (!ics) return false

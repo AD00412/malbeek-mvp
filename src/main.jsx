@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 
-import './styles/malbeek-theme.css'   // خط ثمانية + متغيّرات ألوان ملبّيك
+import './styles/malbeek-theme.css'   // خط ثمانية + متغيرات ألوان ملبّيك
 import './styles/app.css'             // أنماط الشاشات واللوحات
 
 import { installDebug } from './lib/debugLog'

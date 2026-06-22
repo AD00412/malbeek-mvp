@@ -8,7 +8,7 @@ import { translateRpcError } from '../lib/rpcErrors'
 
 /**
  * تحرير بيانات الباص والطاقم (تظهر في ترويسة الكشف الرسمي) + بيانات المؤسسة.
- * يحفظ في جدولَي trips و subscribers.
+ * يحفظ في جدولي trips و subscribers.
  */
 export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
   // بيانات الرحلة/الباص
@@ -32,7 +32,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // تحقّقٌ حيّ لأرقام الجوال (اختياريّة — يُتحقّق منها عند الإدخال فقط، يطابق القاعدة)
+  // تحقق حي لأرقام الجوال (اختيارية — يتحقق منها عند الإدخال فقط، يطابق القاعدة)
   const phErr = (v) => (v.trim() && !isValidSaPhone(v) ? 'مثال: 05XXXXXXXX.' : '')
   const driverErr = phErr(driverPhone)
   const assistErr = phErr(assistantPhone)
@@ -42,8 +42,8 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
 
   async function save() {
     if (busy) return
-    if (!trip?.id || !sub?.id) { setErr('تعذّر تحديد الرحلة أو المؤسسة. حدّث الصفحة.'); return }
-    if (anyPhoneErr) { setErr('صحّح أرقام الجوال المظلّلة.'); return }
+    if (!trip?.id || !sub?.id) { setErr('تعذر تحديد الرحلة أو المؤسسة. حدث الصفحة.'); return }
+    if (anyPhoneErr) { setErr('صحح أرقام الجوال المظللة.'); return }
     setErr(''); setBusy(true)
     try {
       const tripPayload = {
@@ -67,7 +67,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         stamp_url: stampUrl || null,
         logo_url: logoUrl || null,
         store_url: storeUrl.trim() || null,
-        // إن وُجدت صورة ختمٍ، امسح النصّ القديم حتّى لا يعود لو حُذفت الصورة لاحقًا
+        // إن وجدت صورة ختم، امسح النص القديم حتى لا يعود لو حذفت الصورة لاحقا
         ...(stampUrl ? { stamp_text: null } : {}),
       }
       const r2 = await supabase.from('subscribers').update(orgPayload).eq('id', sub.id)
@@ -75,7 +75,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
 
       onSaved?.()
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر حفظ البيانات.'))
+      setErr(translateRpcError(e, 'تعذر حفظ البيانات.'))
     } finally {
       setBusy(false)
     }
@@ -105,7 +105,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         <div className="field">
           <label>الشركة الناقلة</label>
           <input type="text" placeholder="مثال: أبو سرحد للنقل" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} />
-          <span className="hint">تظهرُ في رأس الكشف الرسميّ. إن تُركت فارغةً يُستخدم اسمُ الحملة.</span>
+          <span className="hint">تظهر في رأس الكشف الرسمي. إن تركت فارغة يستخدم اسم الحملة.</span>
         </div>
         <div className="grid-2">
           <div className="field ltr">
@@ -124,7 +124,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
           onChange={setStampUrl}
           label="الختم الإلكتروني (يظهر في الكشف الرسمي)"
           slot="stamp"
-          hint="ارفع صورة الختم بصيغة PNG شفّاف للحصول على أفضل مظهرٍ على الكشف."
+          hint="ارفع صورة الختم بصيغة PNG شفاف للحصول على أفضل مظهر على الكشف."
         />
         <ImageUpload
           subscriberId={sub?.id}
@@ -150,14 +150,14 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
           </div>
         </div>
 
-        <div className="sec-label">السائق الأوّل والثاني</div>
+        <div className="sec-label">السائق الأول والثاني</div>
         <div className="grid-2">
           <div className="field">
-            <label>اسم السائق الأوّل</label>
+            <label>اسم السائق الأول</label>
             <input type="text" value={driverName} onChange={(e) => setDriverName(e.target.value)} />
           </div>
           <div className={`field ltr ${driverErr ? 'invalid' : ''}`}>
-            <label>جوال السائق الأوّل</label>
+            <label>جوال السائق الأول</label>
             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} />
             {driverErr && <span className="hint">{driverErr}</span>}
           </div>

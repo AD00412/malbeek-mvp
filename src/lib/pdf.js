@@ -1,7 +1,7 @@
-// تصدير PDF عبر html2canvas + jsPDF — يلتقط المظهر العربيّ كاملًا (الخطوط، الاتجاه، الختم).
-// المكتبتان تُحمَّلان كسولًا عند أوّل تصديرٍ ليبقى البندل الأوّليّ خفيفًا.
+// تصدير PDF عبر html2canvas + jsPDF — يلتقط المظهر العربي كاملا (الخطوط، الاتجاه، الختم).
+// المكتبتان تحملان كسولا عند أول تصدير ليبقى البندل الأولي خفيفا.
 
-/** يُرجع class jsPDF بصرف النظر عن شكل التصدير (default / named / namespace). */
+/** يرجع class jsPDF بصرف النظر عن شكل التصدير (default / named / namespace). */
 async function loadJsPDF() {
   let mod
   try { mod = await import('jspdf') }
@@ -9,7 +9,7 @@ async function loadJsPDF() {
   return mod.jsPDF || mod.default || (mod.default && mod.default.jsPDF) || mod
 }
 
-/** يُرجع دالّة html2canvas بصرف النظر عن شكل التصدير. */
+/** يرجع دالة html2canvas بصرف النظر عن شكل التصدير. */
 async function loadHtml2Canvas() {
   let mod
   try { mod = await import('html2canvas') }
@@ -17,8 +17,8 @@ async function loadHtml2Canvas() {
   return mod.default || mod.html2canvas || mod
 }
 
-// حدّ مساحة الـ canvas في Safari/iOS ≈ ١٦.٧ مليون بكسل — نُقيّد الدقّة (scale)
-// لئلّا يخرج كشفٌ طويلٌ بصورةٍ بيضاء صامتة. نحسب أعلى scale آمنٍ من حجم العنصر.
+// حد مساحة الـ canvas في Safari/iOS ≈ ١٦.٧ مليون بكسل — نقيد الدقة (scale)
+// لئلا يخرج كشف طويل بصورة بيضاء صامتة. نحسب أعلى scale آمن من حجم العنصر.
 const CANVAS_MAX_PX = 16000000
 function safeScale(element, desired = 2) {
   const w = element?.offsetWidth || element?.scrollWidth || 800
@@ -28,7 +28,7 @@ function safeScale(element, desired = 2) {
   return Math.max(1, Math.min(desired, maxScale))
 }
 
-/** يلتقط عنصرًا واحدًا ويضيفه إلى pdf (مع تقسيمٍ متعدّد الصفحات للجداول الطويلة). */
+/** يلتقط عنصرا واحدا ويضيفه إلى pdf (مع تقسيم متعدد الصفحات للجداول الطويلة). */
 async function captureToPdf(element, pdf, html2canvas) {
   const canvas = await html2canvas(element, {
     scale: safeScale(element, 2), useCORS: true, backgroundColor: '#ffffff', logging: false,
@@ -53,7 +53,7 @@ function saveAs(pdf, filename) {
   pdf.save(filename.endsWith('.pdf') ? filename : filename + '.pdf')
 }
 
-/** يحوّل عنصر DOM إلى PDF (A4 رأسيّ) مع تقسيمٍ تلقائيٍّ للصفحات الطويلة. */
+/** يحول عنصر DOM إلى PDF (A4 رأسي) مع تقسيم تلقائي للصفحات الطويلة. */
 export async function htmlToPdf(element, filename) {
   if (!element) throw new Error('no_element')
   try {
@@ -67,8 +67,8 @@ export async function htmlToPdf(element, filename) {
 }
 
 /**
- * يحوّل عدّة عناصرٍ إلى PDF واحدٍ — كلّ عنصرٍ يبدأ في صفحةٍ جديدة (مثاليٌّ
- * لكشفٍ متعدّد الباصات: ورقةٌ لكلّ سائق).
+ * يحول عدة عناصر إلى PDF واحد — كل عنصر يبدأ في صفحة جديدة (مثالي
+ * لكشف متعدد الباصات: ورقة لكل سائق).
  */
 export async function htmlsToPdf(elements, filename) {
   const list = (elements || []).filter(Boolean)
@@ -86,11 +86,11 @@ export async function htmlsToPdf(elements, filename) {
   }
 }
 
-/** يحوّل أخطاء التحميل/الـ Bundler إلى رسالةٍ عربيّةٍ واضحة. */
+/** يحول أخطاء التحميل/الـ Bundler إلى رسالة عربية واضحة. */
 function friendly(e) {
   const msg = String(e?.message || e || '')
   if (msg.startsWith('install_missing:') || /failed to resolve|cannot find module|jspdf|html2canvas/i.test(msg)) {
-    return new Error('مكتبات التصدير غير مثبّتة. أوقف الـ dev server وشغّل: npm install ثم npm run dev')
+    return new Error('مكتبات التصدير غير مثبتة. أوقف الـ dev server وشغل: npm install ثم npm run dev')
   }
   return e instanceof Error ? e : new Error(msg)
 }

@@ -4,9 +4,9 @@ import { useAuth } from '../app/useAuth'
 import { useRealtime } from './useRealtime'
 
 /**
- * عدّاد الإشعارات غير المقروءة — للشارة في الرأس.
- * ★ لا cache هنا — البياناتُ تَتغيّر بفعل المستخدم (markRead) ولا يَجوز
- *   أن يَرى رقمًا قديمًا بعد قراءته للإشعارات. realtime يَكفل التحديثَ السريع.
+ * عداد الإشعارات غير المقروءة — للشارة في الرأس.
+ * ★ لا cache هنا — البيانات تتغير بفعل المستخدم (markRead) ولا يجوز
+ *   أن يرى رقما قديما بعد قراءته للإشعارات. realtime يكفل التحديث السريع.
  * @returns {[number, () => Promise<void>]} [العدد, إعادة التحميل]
  */
 export function useUnreadCount() {
@@ -16,7 +16,7 @@ export function useUnreadCount() {
   const load = useCallback(async () => {
     if (!user?.id) return
     const { data, error } = await supabase.rpc('unread_notifications_count')
-    if (error) return // أبقِ القيمة الحاليّة
+    if (error) return // أبق القيمة الحالية
     let next = null
     if (typeof data === 'number') next = data
     else if (Array.isArray(data) && typeof data[0] === 'number') next = data[0]

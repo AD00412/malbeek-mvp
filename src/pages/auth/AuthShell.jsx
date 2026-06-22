@@ -3,13 +3,13 @@ import CompassMark from '../../components/CompassMark'
 import ThemeToggle from '../../components/ThemeToggle'
 
 /**
- * هيكلٌ موحّدٌ لشاشات الدخول/التسجيل: شريطٌ علويٌّ بزرّ «العودة للرئيسية»
- * + مبدّل الوضع، ثمّ بطاقةٌ مركزيّةٌ نظيفةٌ بشعار ملبّيك وسطرِ التذييل.
+ * هيكل موحد لشاشات الدخول/التسجيل: شريط علوي بزر «العودة للرئيسية»
+ * + مبدل الوضع، ثم بطاقة مركزية نظيفة بشعار ملبّيك وسطر التذييل.
  *
- * @param {string}    title    عنوان البطاقة (مثلًا: «تسجيل الدخول»)
- * @param {string}    sub      سطرٌ تحت العنوان
+ * @param {string}    title    عنوان البطاقة (مثلا: «تسجيل الدخول»)
+ * @param {string}    sub      سطر تحت العنوان
  * @param {ReactNode} children النموذج
- * @param {ReactNode} footer   سطرُ التذييل (روابطٌ بين الدخول/التسجيل)
+ * @param {ReactNode} footer   سطر التذييل (روابط بين الدخول/التسجيل)
  */
 export default function AuthShell({ title, sub, children, footer }) {
   return (

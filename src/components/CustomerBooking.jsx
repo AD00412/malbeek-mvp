@@ -25,8 +25,8 @@ function fmt(v) {
 }
 
 /**
- * تدفّق حجز العميل لرحلةٍ واحدة:
- * بياناته → اختيار المقعد من الخريطة الحيّة → (الدفع إن وُجد) → تذكرته.
+ * تدفق حجز العميل لرحلة واحدة:
+ * بياناته → اختيار المقعد من الخريطة الحية → (الدفع إن وجد) → تذكرته.
  *
  * @param {object} trip
  * @param {object} sub        { id, org_name, store_url, ... }
@@ -36,7 +36,7 @@ function fmt(v) {
 export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const { user, profile } = useAuth()
   const { toast } = useUI()
-  const [booking, setBooking] = useState(null)     // سجلّ الراكب الحالي (إن حجز سابقًا)
+  const [booking, setBooking] = useState(null)     // سجل الراكب الحالي (إن حجز سابقا)
   const [occupancy, setOccupancy] = useState([])   // [{seat_no, gender, is_family}]
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
@@ -50,8 +50,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const [email, setEmail] = useState('')
   const [gender, setGender] = useState('male')
   const [isFamily, setIsFamily] = useState(false)
-  // أفراد العائلة (يُضافون فقط لو is_family=true ومَوضوعون كركّابٍ
-  // مَربوطين بـfamily_group_id مُشتركٍ بعد إتمام الحجز الرئيس)
+  // أفراد العائلة (يضافون فقط لو is_family=true وموضوعون كركاب
+  // مربوطين بـfamily_group_id مشترك بعد إتمام الحجز الرئيس)
   const [familyMembers, setFamilyMembers] = useState([])  // [{name, relation, national_id, phone, gender}]
   const [seatNo, setSeatNo] = useState('')
   const [paymentRef, setPaymentRef] = useState('')
@@ -69,7 +69,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     if (!file || !booking?.id) return
     const subId = sub?.id ?? trip?.subscriber_id
     if (!PROOF_TYPES.includes(file.type)) { toast('الصيغة غير مدعومة — استخدم PNG/JPG/WebP.', { type: 'error' }); return }
-    if (file.size > PROOF_MAX) { toast('حجم الصورة كبير (٥ ميغابايت كحدٍّ أقصى).', { type: 'error' }); return }
+    if (file.size > PROOF_MAX) { toast('حجم الصورة كبير (٥ ميغابايت كحد أقصى).', { type: 'error' }); return }
     if (!subId || !user?.id) return
     setProofBusy(true)
     try {
@@ -83,14 +83,14 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       setBooking((b) => ({ ...b, payment_proof_url: path }))
       toast('تم إرفاق إيصال الدفع ✓ بانتظار تأكيد الحملة', { type: 'success' })
     } catch (e2) {
-      toast(translateRpcError(e2, 'تعذّر رفع الإيصال — حاول مجدّدًا.'), { type: 'error' })
+      toast(translateRpcError(e2, 'تعذر رفع الإيصال — حاول مجددا.'), { type: 'error' })
     } finally {
       setProofBusy(false)
     }
   }
 
   const lc = tripLifecycle(trip)
-  const blockedNew = !booking?.id && !lc.bookable   // محاولة حجزٍ جديدٍ في رحلةٍ غير متاحة
+  const blockedNew = !booking?.id && !lc.bookable   // محاولة حجز جديد في رحلة غير متاحة
   const multiBus = buses.length > 1
   const activeBus = buses.find((b) => b.id === busId) || buses[0] || null
   const layout = multiBus && activeBus ? busLayout(activeBus)
@@ -104,7 +104,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     const hadBuses = (cached?.buses?.length ?? 0) > 0
     const hadOcc   = (cached?.occupancy?.length ?? 0) > 0
 
-    // SWR: نَعرض المخزَّن فورًا (لا skeleton)
+    // SWR: نعرض المخزن فورا (لا skeleton)
     if (retry === 0 && cached) {
       if (cached.buses) setBuses(cached.buses)
       if (cached.busId) setBusId(cached.busId)
@@ -129,7 +129,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
         : Promise.resolve({ data: null }),
     ])
 
-    // ★ حارسُ empty الزائف: لو الباصات فارغةٌ ومخزَّنُنا فيه باصات → إعادة محاولة
+    // ★ حارس empty الزائف: لو الباصات فارغة ومخزننا فيه باصات → إعادة محاولة
     const busArr = bs || []
     if (busArr.length === 0 && hadBuses && retryLoadRef.current < 2) {
       retryLoadRef.current += 1
@@ -155,13 +155,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       setBoardingPoint(mine.boarding_point ?? '')
       setEmail(myCustomer?.email ?? user?.email ?? '')
     } else if (!cached?.booking) {
-      // لا تَكتب فوق نموذجٍ مَملوءٍ من المخزَّن لو الشبكة رجعت null زائفًا
+      // لا تكتب فوق نموذج مملوء من المخزن لو الشبكة رجعت null زائفا
       setFullName(profile?.full_name ?? ''); setPhone(profile?.phone ?? '')
       setEmail(myCustomer?.email ?? user?.email ?? '')
       setBoardingPoint(myCustomer?.pickup_location || trip?.boarding_point || '')
     }
 
-    // احفظ snapshot — لا نَكتب فارغًا فوق مَملوء
+    // احفظ snapshot — لا نكتب فارغا فوق مملوء
     const safeBuses = (busArr.length > 0 || !hadBuses) ? busArr : (cached?.buses ?? [])
     const safeOcc   = (occArr.length > 0 || !hadOcc)   ? occArr : (cached?.occupancy ?? [])
     setCached(cacheKey, { buses: safeBuses, busId: activeId, occupancy: safeOcc, booking: mine ?? cached?.booking ?? null })
@@ -170,33 +170,33 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   }
   useEffect(() => { load() }, [trip?.id, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // عودةٌ من بوّابة الدفع: ?paid=<id> → أظهر رسالة شكرٍ ونظّف الـ URL
+  // عودة من بوابة الدفع: ?paid=<id> → أظهر رسالة شكر ونظف الـ URL
   useEffect(() => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
     if (url.searchParams.get('paid')) {
       url.searchParams.delete('paid')
       window.history.replaceState({}, '', url)
-      setTimeout(() => load(), 500)  // الـ webhook ربّما لم يصل بعد — حدّث بعد لحظة
+      setTimeout(() => load(), 500)  // الـ webhook ربما لم يصل بعد — حدث بعد لحظة
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // تحديثٌ حيٌّ للمقاعد بلا PII:
-  // - اشتراك Realtime يلتقط تغيّر سجلّ العميل نفسه (يعمل ضمن RLS الخاصّة به).
-  // - استطلاعٌ احتياطيٌّ كل ١٢ ثانية يلتقط حجوزات الآخرين (RLS الخاصة بـ passengers
-  //   تمنع البثّ التلقائي للعميل، لكن الدالة trip_seat_occupancy آمنةٌ ومسموحٌ بها).
-  // - يتوقّف الاستطلاع تلقائيًّا عند إخفاء التبويب (visibilitychange) — توفيرٌ
-  //   للطاقة وحصّة الـ API بلا أيّ خسارةٍ للتجربة (focus يستدعي refresh عند العودة).
+  // تحديث حي للمقاعد بلا PII:
+  // - اشتراك Realtime يلتقط تغير سجل العميل نفسه (يعمل ضمن RLS الخاصة به).
+  // - استطلاع احتياطي كل ١٢ ثانية يلتقط حجوزات الآخرين (RLS الخاصة بـ passengers
+  //   تمنع البث التلقائي للعميل، لكن الدالة trip_seat_occupancy آمنة ومسموح بها).
+  // - يتوقف الاستطلاع تلقائيا عند إخفاء التبويب (visibilitychange) — توفير
+  //   للطاقة وحصة الـ API بلا أي خسارة للتجربة (focus يستدعي refresh عند العودة).
   useEffect(() => {
     if (!trip?.id) return
     let cancelled = false
     const refresh = async () => {
-      if (cancelled) return  // لا نُطلق طلبًا إن أُلغي قبل بدء التشغيل
+      if (cancelled) return  // لا نطلق طلبا إن ألغي قبل بدء التشغيل
       const args = multiBus && busId ? { p_trip: trip.id, p_bus: busId } : { p_trip: trip.id }
       const { data: occ } = await supabase.rpc('trip_seat_occupancy', args)
       if (!cancelled) setOccupancy(occ ?? [])
     }
-    refresh()  // التقاط فوريٌّ عند تبديل الباص
+    refresh()  // التقاط فوري عند تبديل الباص
     let ch = null
     function subscribe() {
       if (ch) { try { supabase.removeChannel(ch) } catch { /* ignore */ } }
@@ -206,12 +206,12 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
         .subscribe()
     }
     subscribe()
-    // استطلاعٌ ١٢ ثانيةً، يتوقّف عند إخفاء التبويب (يعود عند الـ focus).
+    // استطلاع ١٢ ثانية، يتوقف عند إخفاء التبويب (يعود عند الـ focus).
     let poll = null
     const startPoll = () => { if (!poll && !cancelled) poll = setInterval(refresh, 12000) }
     const stopPoll  = () => { if (poll) { clearInterval(poll); poll = null } }
     startPoll()
-    // الإيقاظُ المركزيُّ (lib/wake.js): إعادةُ ضمِّ القناة + تحديثٌ فوريٌّ + إعادةُ تشغيل الاستطلاع.
+    // الإيقاظ المركزي (lib/wake.js): إعادة ضم القناة + تحديث فوري + إعادة تشغيل الاستطلاع.
     const unsubscribeWake = onWake(() => {
       if (cancelled) return
       subscribe()
@@ -229,7 +229,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     }
   }, [trip?.id, busId, multiBus])
 
-  // مصفوفة "ركّاب" للخريطة: إشغالٌ بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
+  // مصفوفة "ركاب" للخريطة: إشغال بلا أسماء، مع تمييز مقعدي الحالي كـ "لي"
   const seatPassengers = useMemo(() => {
     return (occupancy ?? []).map((o) => ({
       id: booking && String(o.seat_no) === String(booking.seat_no) ? booking.id : 'occ-' + o.seat_no,
@@ -241,7 +241,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
   const isFull = totalSeats > 0 && occupancy.length >= totalSeats && !booking
   const [waitlistJoined, setWaitlistJoined] = useState(false)
 
-  /** ادفع الآن — ينشئ جلسة دفعٍ مُستضافةً عبر Edge Function ويُحوّل العميل إلى البوّابة. */
+  /** ادفع الآن — ينشئ جلسة دفع مستضافة عبر Edge Function ويحول العميل إلى البوابة. */
   async function payNow() {
     if (payBusy || !booking?.id) return
     setPayBusy(true); setErr('')
@@ -251,11 +251,11 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
     if (error || !data?.url) {
       setPayBusy(false)
       const code = data?.error || error?.message || ''
-      const msg = code === 'no_price' ? 'لا يوجد سعرٌ مضبوطٌ لهذه الرحلة. تواصل مع الحملة.'
-        : code === 'already_paid' ? 'هذا الحجز مدفوعٌ مسبقًا.'
+      const msg = code === 'no_price' ? 'لا يوجد سعر مضبوط لهذه الرحلة. تواصل مع الحملة.'
+        : code === 'already_paid' ? 'هذا الحجز مدفوع مسبقا.'
         : code === 'not_authorized' ? 'لا تملك هذا الحجز.'
-        : code === 'unauthenticated' ? 'انتهت جلستك. سجّل دخولك مجدّدًا.'
-        : 'تعذّر فتح صفحة الدفع.'
+        : code === 'unauthenticated' ? 'انتهت جلستك. سجل دخولك مجددا.'
+        : 'تعذر فتح صفحة الدفع.'
       setErr(msg); return
     }
     window.location.href = data.url
@@ -267,7 +267,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       profile_id: user.id, trip_id: trip.id, subscriber_id: sub.id,
       full_name: fullName.trim() || null, phone: phone.trim() || null,
     })
-    if (error && error.code !== '23505') { setErr('تعذّر الانضمام: ' + error.message); return }
+    if (error && error.code !== '23505') { setErr('تعذر الانضمام: ' + error.message); return }
     setWaitlistJoined(true); setErr('')
   }
 
@@ -275,33 +275,33 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
 
   async function confirm() {
     if (busy) return
-    // قفل دورة الحياة: لا حجزَ جديدٌ في رحلةٍ مغلقةٍ/منتهيةٍ أو فات موعدها (القاعدة تحرس أيضًا).
+    // قفل دورة الحياة: لا حجز جديد في رحلة مغلقة/منتهية أو فات موعدها (القاعدة تحرس أيضا).
     if (!booking?.id && !lc.bookable) { setErr(lc.reason); return }
     if (!fullName.trim()) { setErr('الاسم الرباعي مطلوب.'); return }
     if (!phone.trim() || !isValidSaPhone(phone)) { setErr('رقم الجوال مطلوب (مثال: 05XXXXXXXX).'); return }
-    if (!email.trim() || !isValidEmail(email)) { setErr('البريد الإلكترونيّ مطلوب.'); return }
-    if (!nationalId.trim() || !isValidNationalId(nationalId)) { setErr('رقم الهويّة الوطنيّة / الإقامة مَطلوبٌ (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
-    if (!boardingPoint.trim()) { setErr('مكان الركوب مَطلوبٌ (نَستهدف به المناطق).'); return }
+    if (!email.trim() || !isValidEmail(email)) { setErr('البريد الإلكتروني مطلوب.'); return }
+    if (!nationalId.trim() || !isValidNationalId(nationalId)) { setErr('رقم الهوية الوطنية / الإقامة مطلوب (١٠ أرقام تبدأ بـ ١ أو ٢).'); return }
+    if (!boardingPoint.trim()) { setErr('مكان الركوب مطلوب (نستهدف به المناطق).'); return }
     if (!seatNo) { setErr('اختر مقعدك من الخريطة.'); return }
-    // التحقّقُ من أفراد العائلة (إن وُجدوا)
+    // التحقق من أفراد العائلة (إن وجدوا)
     if (isFamily) {
       if (familyMembers.length === 0) {
-        setErr('اخترت «ضمن عائلة» — أَضف أفراد العائلة أو ألغِ الاختيار.'); return
+        setErr('اخترت «ضمن عائلة» — أضف أفراد العائلة أو ألغ الاختيار.'); return
       }
       for (let i = 0; i < familyMembers.length; i++) {
         const m = familyMembers[i]
         const n = (m.name || '').trim()
         const nid = (m.national_id || '').trim()
-        if (!n) { setErr(`الفرد ${i + 1}: الاسم مَطلوب.`); return }
-        if (n.split(/\s+/).filter(Boolean).length < 2) { setErr(`الفرد ${i + 1}: اكتب اسمًا ثُنائيًّا فأكثر.`); return }
-        if (!m.relation) { setErr(`الفرد ${i + 1}: صِلةُ القرابة مَطلوبة.`); return }
-        if (!nid || !isValidNationalId(nid)) { setErr(`الفرد ${i + 1}: رقم الهويّة مَطلوبٌ وصحيح.`); return }
-        if (m.phone && !isValidSaPhone(m.phone)) { setErr(`الفرد ${i + 1}: رقمُ جوّالٍ غير صحيح.`); return }
+        if (!n) { setErr(`الفرد ${i + 1}: الاسم مطلوب.`); return }
+        if (n.split(/\s+/).filter(Boolean).length < 2) { setErr(`الفرد ${i + 1}: اكتب اسما ثنائيا فأكثر.`); return }
+        if (!m.relation) { setErr(`الفرد ${i + 1}: صلة القرابة مطلوبة.`); return }
+        if (!nid || !isValidNationalId(nid)) { setErr(`الفرد ${i + 1}: رقم الهوية مطلوب وصحيح.`); return }
+        if (m.phone && !isValidSaPhone(m.phone)) { setErr(`الفرد ${i + 1}: رقم جوال غير صحيح.`); return }
       }
-      // مَنعُ تَكرارِ رقمَي هويّاتٍ بين الأفراد + مع الحاجز الرئيس
+      // منع تكرار رقمي هويات بين الأفراد + مع الحاجز الرئيس
       const allIds = [toLatinDigits(nationalId).trim(), ...familyMembers.map(m => toLatinDigits(m.national_id).trim())]
       const dupe = allIds.find((v, idx) => allIds.indexOf(v) !== idx)
-      if (dupe) { setErr(`رقمُ الهويّة ${dupe} مُكرَّرٌ — تَحقّق من الأسماء.`); return }
+      if (dupe) { setErr(`رقم الهوية ${dupe} مكرر — تحقق من الأسماء.`); return }
     }
     setErr(''); setBusy(true)
     const payload = {
@@ -312,46 +312,46 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
       seat_no: seatNo,
       boarding_point: boardingPoint.trim() || trip?.boarding_point || null,
       payment_ref: paymentRef.trim() || null,
-      // الحالة تبقى "مسجّل"؛ تأكيد الدفع يتمّ من الحملة بعد مراجعة المرجع.
+      // الحالة تبقى "مسجل"؛ تأكيد الدفع يتم من الحملة بعد مراجعة المرجع.
       status: 'registered',
     }
-    // عند تعدّد الباصات نُسند الباص المختار صراحةً (وإلّا يُسنده الحارس لباص ١)
+    // عند تعدد الباصات نسند الباص المختار صراحة (وإلا يسنده الحارس لباص ١)
     if (multiBus && busId) payload.bus_id = busId
     try {
       let result, row
       if (booking?.id) {
-        // ★ defense-in-depth: لا تُرسل status في update — guard في DB يَتولّاه.
-        //   لو سُرّب صلاحيّةٌ ما يومًا، عدم إرسال status يَمنع العميلَ من
-        //   إعادة paid → registered (downgrade) كَتراجعٍ خبيث.
+        // ★ defense-in-depth: لا ترسل status في update — guard في DB يتولاه.
+        //   لو سرب صلاحية ما يوما، عدم إرسال status يمنع العميل من
+        //   إعادة paid → registered (downgrade) كتراجع خبيث.
         const { status: _omitStatus, ...updatePayload } = payload
         result = await supabase.from('passengers').update(updatePayload).eq('id', booking.id)
           .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, payment_proof_url, bus_id').maybeSingle()
       } else {
-        // الإدراج: status يَنطلق من default 'registered' في الـDB
+        // الإدراج: status ينطلق من default 'registered' في الـDB
         const { status: _omitStatus, ...insertPayload } = payload
         result = await supabase.from('passengers')
           .insert({ ...insertPayload, trip_id: trip.id, subscriber_id: sub.id, profile_id: user.id })
           .select('id, full_name, seat_no, status, ticket_code, boarded_at, boarding_point, national_id, phone, gender, is_family, payment_ref, payment_proof_url, bus_id').maybeSingle()
       }
       if (result.error) {
-        if (result.error.code === '23505') { setErr('عذرًا، هذا المقعد حُجز للتوّ — اختر مقعدًا آخر.'); await load(); return }
+        if (result.error.code === '23505') { setErr('عذرا، هذا المقعد حجز للتو — اختر مقعدا آخر.'); await load(); return }
         throw result.error
       }
       row = result.data
       setBooking(row)
 
-      // ★ إنشاءُ أفراد العائلة (ركّابٌ منفصلون بـfamily_group_id مُشترك)
-      //   ملاحظة: المقاعدُ تُترك null للأدمن لتَخصيصها أو يَحجزها كلُّ
-      //   فردٍ لاحقًا (مَرحلة ٢). نَسجّل العائلةَ بالكامل تَحت الحاجز
+      // ★ إنشاء أفراد العائلة (ركاب منفصلون بـfamily_group_id مشترك)
+      //   ملاحظة: المقاعد تترك null للأدمن لتخصيصها أو يحجزها كل
+      //   فرد لاحقا (مرحلة ٢). نسجل العائلة بالكامل تحت الحاجز
       //   الرئيس مع علاقاتهم.
       if (isFamily && familyMembers.length > 0 && row?.id) {
         const familyGroupId = row.family_group_id || crypto.randomUUID()
-        // تَعليمُ الرئيس بنفس family_group_id + family_relation='self'
+        // تعليم الرئيس بنفس family_group_id + family_relation='self'
         await supabase.from('passengers').update({
           family_group_id: familyGroupId,
           family_relation: 'self',
         }).eq('id', row.id)
-        // إدراجُ كلّ فردٍ كَركّابٍ مَربوطٍ
+        // إدراج كل فرد كركاب مربوط
         const membersPayload = familyMembers.map(m => ({
           trip_id: trip.id,
           subscriber_id: sub.id,
@@ -363,19 +363,19 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
           family_group_id: familyGroupId,
           family_relation: m.relation,
           boarding_point: boardingPoint.trim(),
-          // seat_no يَبقى null — تُخصَّص من قِبل الحملة لاحقًا
+          // seat_no يبقى null — تخصص من قبل الحملة لاحقا
         }))
         const { error: famErr } = await supabase.from('passengers').insert(membersPayload)
         if (famErr) {
-          // فشلٌ في إدراج العائلة — الحجزُ الرئيسُ نجح، لكن نُخبر المستخدم
-          toast('تَمّ حَجزُك، لكن تَعذّر تَسجيلُ بعض أفراد العائلة. تَواصل مع الحملة.', { type: 'error' })
+          // فشل في إدراج العائلة — الحجز الرئيس نجح، لكن نخبر المستخدم
+          toast('تم حجزك، لكن تعذر تسجيل بعض أفراد العائلة. تواصل مع الحملة.', { type: 'error' })
         } else {
-          toast(`تَمّ تَسجيلُ ${familyMembers.length} فرد عائلة ✓`, { type: 'success' })
+          toast(`تم تسجيل ${familyMembers.length} فرد عائلة ✓`, { type: 'success' })
         }
       }
 
-      // ★ مُزامنةُ customers (بريد + مكان ركوب + اسم/جوّال/هويّة)
-      //   لِيَستفيد التَّسويقُ الجماعيّ وتَسهيلُ الحجوزات القادمة.
+      // ★ مزامنة customers (بريد + مكان ركوب + اسم/جوال/هوية)
+      //   ليستفيد التسويق الجماعي وتسهيل الحجوزات القادمة.
       try {
         const subId = sub?.id ?? trip?.subscriber_id
         if (subId && user?.id) {
@@ -388,8 +388,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
             email: email.trim().toLowerCase(),
             pickup_location: boardingPoint.trim(),
           }
-          // upsert على (profile_id, subscriber_id) — يَتطلّب unique index
-          // (موجودٌ ضمنيًّا عبر RLS، لكن نَستعمل select-then-update/insert)
+          // upsert على (profile_id, subscriber_id) — يتطلب unique index
+          // (موجود ضمنيا عبر RLS، لكن نستعمل select-then-update/insert)
           const { data: existing } = await supabase.from('customers')
             .select('id').eq('profile_id', user.id).eq('subscriber_id', subId).maybeSingle()
           if (existing?.id) {
@@ -398,12 +398,12 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
             await supabase.from('customers').insert(customerPayload)
           }
         }
-      } catch { /* مُزامنةُ CRM best-effort — لا تَكسر الحجز */ }
+      } catch { /* مزامنة CRM best-effort — لا تكسر الحجز */ }
       onBooked?.()
       toast(booking?.id ? 'تم تحديث حجزك ✓' : 'تم تأكيد حجزك بنجاح ✓', { type: 'success' })
       setShowTicket(true)
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر إتمام الحجز.'))
+      setErr(translateRpcError(e, 'تعذر إتمام الحجز.'))
     } finally {
       setBusy(false)
     }
@@ -432,7 +432,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
         <div className="bus-editor">
           <section className="hero" style={{ marginTop: 0 }}>
             <span className="tag">{sub?.org_name || 'حملتي'}</span>
-            <h2 style={{ fontSize: 22 }}>{trip?.title || 'رحلة عُمرة'}</h2>
+            <h2 style={{ fontSize: 22 }}>{trip?.title || 'رحلة عمرة'}</h2>
             <p>{(trip?.route_from || '—') + ' ← ' + (trip?.route_to || '—')} · {fmt(trip?.depart_at)}</p>
           </section>
 
@@ -447,7 +447,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
           )}
 
           {loading ? (
-            <div className="empty"><div className="em-mark"><CompassMark size={48} /></div>جارٍ التحميل…</div>
+            <div className="empty"><div className="em-mark"><CompassMark size={48} /></div>جار التحميل…</div>
           ) : (
             <>
               <div className="form" style={{ marginTop: 14 }}>
@@ -462,7 +462,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                     <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} required />
                   </div>
                   <div className="field ltr">
-                    <label>البريد الإلكترونيّ <span className="req">*</span></label>
+                    <label>البريد الإلكتروني <span className="req">*</span></label>
                     <input type="email" inputMode="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
@@ -488,17 +488,17 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                   </label>
                 </div>
 
-                {/* أفراد العائلة — يَظهر فقط لو الخيار مُفعَّل */}
+                {/* أفراد العائلة — يظهر فقط لو الخيار مفعل */}
                 {isFamily && (
                   <div style={{ marginTop: 8, padding: 14, border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface-2)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-                      <strong style={{ fontSize: 14, color: 'var(--cr-50)' }}>أفرادُ العائلة</strong>
+                      <strong style={{ fontSize: 14, color: 'var(--cr-50)' }}>أفراد العائلة</strong>
                       <span style={{ flex: 1 }} />
                       <span className="muted" style={{ fontSize: 11.5 }}>{familyMembers.length} فرد</span>
                     </div>
                     <div className="hint" style={{ marginBottom: 10, display: 'block' }}>
-                      مكانُ الركوب مُوحَّدٌ معك. كلُّ فردٍ يَحتاج اسمَه ورقمَ هويّته وصِلةَ القرابة.
-                      المقاعدُ تُخصّصها الحملة بَعدَ الحجز.
+                      مكان الركوب موحد معك. كل فرد يحتاج اسمه ورقم هويته وصلة القرابة.
+                      المقاعد تخصصها الحملة بعد الحجز.
                     </div>
                     {familyMembers.map((m, i) => (
                       <div key={i} style={{ padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 8 }}>
@@ -517,7 +517,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                         </div>
                         <div className="grid-2">
                           <div className="field">
-                            <label style={{ fontSize: 12 }}>صِلةُ القرابة *</label>
+                            <label style={{ fontSize: 12 }}>صلة القرابة *</label>
                             <select value={m.relation}
                                     onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, relation: e.target.value } : x))}>
                               <option value="">— اختر —</option>
@@ -528,15 +528,15 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                               <option value="mother">أم</option>
                               <option value="brother">أخ</option>
                               <option value="sister">أخت</option>
-                              <option value="grandfather">جدّ</option>
-                              <option value="grandmother">جدّة</option>
+                              <option value="grandfather">جد</option>
+                              <option value="grandmother">جدة</option>
                               <option value="grandson">حفيد</option>
                               <option value="granddaughter">حفيدة</option>
-                              <option value="uncle">عمّ/خال</option>
-                              <option value="aunt">عمّة/خالة</option>
+                              <option value="uncle">عم/خال</option>
+                              <option value="aunt">عمة/خالة</option>
                               <option value="nephew">ابن أخ/أخت</option>
                               <option value="niece">ابنة أخ/أخت</option>
-                              <option value="other">قريبٌ آخر</option>
+                              <option value="other">قريب آخر</option>
                             </select>
                           </div>
                           <div className="field">
@@ -550,12 +550,12 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                         </div>
                         <div className="grid-2">
                           <div className="field ltr">
-                            <label style={{ fontSize: 12 }}>رقم الهويّة / الإقامة *</label>
+                            <label style={{ fontSize: 12 }}>رقم الهوية / الإقامة *</label>
                             <input type="text" inputMode="numeric" placeholder="1xxxxxxxxx" value={m.national_id}
                                    onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, national_id: e.target.value } : x))} />
                           </div>
                           <div className="field ltr">
-                            <label style={{ fontSize: 12 }}>رقم الجوال <span className="muted">(اختياريّ)</span></label>
+                            <label style={{ fontSize: 12 }}>رقم الجوال <span className="muted">(اختياري)</span></label>
                             <input type="tel" inputMode="tel" placeholder="05xxxxxxxx" value={m.phone}
                                    onChange={e => setFamilyMembers(prev => prev.map((x, idx) => idx === i ? { ...x, phone: e.target.value } : x))} />
                           </div>
@@ -567,7 +567,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px',
                                      background: 'transparent', border: '1px dashed var(--em-500)', color: 'var(--em-500)',
                                      borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                      <Icon name="plus" size={14} /> إضافةُ فردٍ آخر
+                      <Icon name="plus" size={14} /> إضافة فرد آخر
                     </button>
                   </div>
                 )}
@@ -577,7 +577,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 <div className="alert info" style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Icon name="bell" size={16} />
                   <div style={{ flex: 1 }}>
-                    <strong>الرحلة ممتلئة.</strong> انضمّ لقائمة الانتظار — سنُبلّغك فور تفريغ مقعد.
+                    <strong>الرحلة ممتلئة.</strong> انضم لقائمة الانتظار — سنبلغك فور تفريغ مقعد.
                   </div>
                   {waitlistJoined ? (
                     <span className="tag ok"><Icon name="check" size={14} /> أنت في القائمة</span>
@@ -609,15 +609,15 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
               />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: -4 }}>
                 <span className="muted" style={{ fontSize: 13 }}>مقعدك:</span>
-                <strong style={{ color: 'var(--gd-300)', fontFamily: 'var(--font-display)' }}>{seatNo || '— لم يُختر —'}</strong>
+                <strong style={{ color: 'var(--gd-300)', fontFamily: 'var(--font-display)' }}>{seatNo || '— لم يختر —'}</strong>
               </div>
 
               <div className="field" style={{ marginTop: 12 }}>
                 <label>مكان الركوب <span className="req">*</span></label>
                 <input type="text" required
-                  placeholder={trip?.boarding_point || 'مثال: محطّة جازان المركزيّة'}
+                  placeholder={trip?.boarding_point || 'مثال: محطة جازان المركزية'}
                   value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
-                <span className="hint">يَستهدف به صاحبُ الحملة عُروضَه المُستقبليّة لمنطقتك.</span>
+                <span className="hint">يستهدف به صاحب الحملة عروضه المستقبلية لمنطقتك.</span>
               </div>
 
               {trip?.price != null && (
@@ -631,40 +631,40 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 <div className="form" style={{ marginTop: 14 }}>
                   <div className="sec-label">الدفع</div>
                   <button type="button" className="btn btn-gold btn-block" onClick={payNow} disabled={payBusy}>
-                    {payBusy ? <span className="spinner" /> : (<><Icon name="payments" size={16} /> ادفع الآن — تأكيدٌ آليّ</>)}
+                    {payBusy ? <span className="spinner" /> : (<><Icon name="payments" size={16} /> ادفع الآن — تأكيد آلي</>)}
                   </button>
                   <p className="muted" style={{ fontSize: 12, marginTop: 6, textAlign: 'center' }}>
-                    دفعٌ آمنٌ مباشرٌ عبر بوّابة الحملة. سيُؤكَّد حجزك تلقائيًّا بعد إتمام الدفع.
+                    دفع آمن مباشر عبر بوابة الحملة. سيؤكد حجزك تلقائيا بعد إتمام الدفع.
                   </p>
                 </div>
               )}
 
               {(sub?.store_url || sub?.bank_iban) && (
                 <div className="form" style={{ marginTop: 14 }}>
-                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع بطريقةٍ أخرى' : 'طرق الدفع'}</div>
+                  <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع بطريقة أخرى' : 'طرق الدفع'}</div>
 
                   {isFamily && (
                     <p className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>
-                      💳 <strong>دفعةُ العائلة الجماعيّة:</strong> ادفع مرّةً واحدةً عن عائلتك بالكامل،
-                      وأرفِق إيصالاً واحداً ورقمَ طلبٍ واحداً يشمل الجميع — يؤكّدها صاحبُ الحملة دفعةً واحدة.
+                      💳 <strong>دفعة العائلة الجماعية:</strong> ادفع مرة واحدة عن عائلتك بالكامل،
+                      وأرفق إيصالا واحدا ورقم طلب واحدا يشمل الجميع — يؤكدها صاحب الحملة دفعة واحدة.
                     </p>
                   )}
 
                   {sub?.bank_iban && (
                     <div className="alert info" style={{ display: 'block', marginBottom: 8 }}>
                       <div style={{ fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Icon name="payments" size={16} /> تحويلٌ بنكيّ
+                        <Icon name="payments" size={16} /> تحويل بنكي
                       </div>
                       {sub.bank_account_name && <div style={{ fontSize: 13 }}>الاسم: <strong>{sub.bank_account_name}</strong></div>}
                       {sub.bank_name && <div style={{ fontSize: 13 }}>البنك: <strong>{sub.bank_name}</strong></div>}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                         <span className="ltr" style={{ fontFamily: 'monospace', fontSize: 13, letterSpacing: '.5px' }}>{sub.bank_iban}</span>
                         <button type="button" className="icon-btn" onClick={async () => {
-                          try { await navigator.clipboard.writeText(sub.bank_iban); toast('نُسخ الآيبان ✓', { type: 'success' }) }
+                          try { await navigator.clipboard.writeText(sub.bank_iban); toast('نسخ الآيبان ✓', { type: 'success' }) }
                           catch { toast(sub.bank_iban, { type: 'info' }) }
                         }}><Icon name="copy" size={14} /> نسخ</button>
                       </div>
-                      <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>حوّل المبلغ ثمّ أرفِق صورة الإيصال أدناه — يؤكّده صاحب الحملة.</p>
+                      <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>حول المبلغ ثم أرفق صورة الإيصال أدناه — يؤكده صاحب الحملة.</p>
                     </div>
                   )}
 
@@ -674,15 +674,15 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                     </a>
                   )}
 
-                  {/* إثبات الدفع: لقطة إتمام الطلب (متاحٌ بعد تأكيد الحجز) */}
+                  {/* إثبات الدفع: لقطة إتمام الطلب (متاح بعد تأكيد الحجز) */}
                   {booking?.id ? (
                     <div className="field" style={{ marginTop: 6 }}>
-                      <label>{isFamily ? 'إيصالُ دفعة العائلة الجماعيّة' : 'أرفِق صورة إتمام الطلب'} <span className="muted" style={{ fontSize: 12 }}>(لقطة شاشة من المتجر)</span></label>
+                      <label>{isFamily ? 'إيصال دفعة العائلة الجماعية' : 'أرفق صورة إتمام الطلب'} <span className="muted" style={{ fontSize: 12 }}>(لقطة شاشة من المتجر)</span></label>
                       <input ref={proofRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }} onChange={uploadProof} />
                       {booking.payment_proof_url ? (
                         <div className="img-upload preview" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ok-ink)', fontSize: 13, fontWeight: 700 }}>
-                            <Icon name="check" size={15} /> تمّ إرفاق الإيصال — بانتظار تأكيد الحملة
+                            <Icon name="check" size={15} /> تم إرفاق الإيصال — بانتظار تأكيد الحملة
                           </div>
                           <SignedImage bucket="payment-proofs" path={booking.payment_proof_url} maxHeight={200} />
                           <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 6 }} onClick={() => proofRef.current?.click()} disabled={proofBusy}>
@@ -692,20 +692,20 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                       ) : (
                         <button type="button" className="img-upload dropzone" onClick={() => proofRef.current?.click()} disabled={proofBusy}>
                           {proofBusy ? <span className="spinner" /> : <Icon name="download" size={22} style={{ transform: 'rotate(180deg)' }} />}
-                          <strong>{proofBusy ? 'جارٍ رفع الإيصال…' : 'إرفاق صورة الدفع'}</strong>
+                          <strong>{proofBusy ? 'جار رفع الإيصال…' : 'إرفاق صورة الدفع'}</strong>
                           <span className="muted" style={{ fontSize: 12 }}>PNG/JPG/WebP · يراها صاحب الحملة فقط</span>
                         </button>
                       )}
                     </div>
                   ) : (
-                    <p className="muted" style={{ fontSize: 12.5 }}>أكّد حجزك أوّلًا، ثمّ ادفع عبر المتجر وأرفِق صورة إتمام الطلب من تذكرتك في حسابك.</p>
+                    <p className="muted" style={{ fontSize: 12.5 }}>أكد حجزك أولا، ثم ادفع عبر المتجر وأرفق صورة إتمام الطلب من تذكرتك في حسابك.</p>
                   )}
 
                   <div className="field">
-                    <label>{isFamily ? 'رقمُ طلب المتجر (زد/سلة) — لدفعة العائلة' : 'أو الصق رقم العملية'} <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
-                    <input type="text" placeholder={isFamily ? 'رقمُ الطلب الواحد الذي يشمل العائلة' : 'رقم عملية الدفع لإثباتٍ إضافيّ'} value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
+                    <label>{isFamily ? 'رقم طلب المتجر (زد/سلة) — لدفعة العائلة' : 'أو الصق رقم العملية'} <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
+                    <input type="text" placeholder={isFamily ? 'رقم الطلب الواحد الذي يشمل العائلة' : 'رقم عملية الدفع لإثبات إضافي'} value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
                   </div>
-                  <p className="muted" style={{ fontSize: 12.5 }}>يراجع صاحب الحملة الإيصال ويؤكّد الدفع — يبقى حجزك «مسجّلًا» حتى التأكيد.</p>
+                  <p className="muted" style={{ fontSize: 12.5 }}>يراجع صاحب الحملة الإيصال ويؤكد الدفع — يبقى حجزك «مسجلا» حتى التأكيد.</p>
                 </div>
               )}
 

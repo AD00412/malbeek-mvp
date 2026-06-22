@@ -1,10 +1,10 @@
 /**
- * هياكل تحميلٍ (skeletons) موحَّدةٌ تحلّ محلّ «جارٍ التحميل…» — إحساسٌ أرقى
- * وأقلّ ارتباكًا (يرى المستخدم شكل المحتوى القادم بدل علامة فراغ).
- * تحترم prefers-reduced-motion عبر القاعدة العامّة في app.css.
+ * هياكل تحميل (skeletons) موحدة تحل محل «جار التحميل…» — إحساس أرقى
+ * وأقل ارتباكا (يرى المستخدم شكل المحتوى القادم بدل علامة فراغ).
+ * تحترم prefers-reduced-motion عبر القاعدة العامة في app.css.
  */
 
-/** صفوفُ بطاقاتٍ وهميّة (لقوائم الرحلات/المعتمرين/الإشعارات). */
+/** صفوف بطاقات وهمية (لقوائم الرحلات/المعتمرين/الإشعارات). */
 export function SkeletonList({ count = 2, lines = 2 }) {
   return (
     <div className="sk-list" aria-busy="true" aria-live="polite">
@@ -20,7 +20,7 @@ export function SkeletonList({ count = 2, lines = 2 }) {
   )
 }
 
-/** صفّ إحصاءاتٍ وهميّ (لبطاقات المؤشّرات). */
+/** صف إحصاءات وهمي (لبطاقات المؤشرات). */
 export function SkeletonStats({ count = 4 }) {
   return (
     <div className="sk-stats" aria-busy="true">

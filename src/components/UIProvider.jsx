@@ -6,9 +6,9 @@ import Icon from './Icon'
 const TOAST_ICON = { success: 'check', error: 'bell', info: 'sparkle' }
 
 /**
- * مزوِّدُ واجهة ملبّيك: تنبيهاتٌ (toast) على الهويّة الزمرّديّة-الذهبيّة
- * + نافذة تأكيدٍ موحَّدةٌ (confirm) بديلةٌ عن alert/window.confirm الخام.
- * يُلفّ حول التطبيق في main.jsx.
+ * مزود واجهة ملبّيك: تنبيهات (toast) على الهوية الزمردية-الذهبية
+ * + نافذة تأكيد موحدة (confirm) بديلة عن alert/window.confirm الخام.
+ * يلف حول التطبيق في main.jsx.
  */
 export default function UIProvider({ children }) {
   const [toasts, setToasts] = useState([])
@@ -32,7 +32,7 @@ export default function UIProvider({ children }) {
     return new Promise((resolve) => {
       setConfirmState({
         title: opts.title || 'تأكيد',
-        message: opts.message || 'هل أنت متأكّد؟',
+        message: opts.message || 'هل أنت متأكد؟',
         confirmText: opts.confirmText || 'تأكيد',
         cancelText: opts.cancelText || 'إلغاء',
         danger: !!opts.danger,
