@@ -158,14 +158,15 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
           <table className="mf-table fr-table">
             <colgroup>
               <col style={{ width: '4%' }} />
-              <col style={{ width: '22%' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '7%' }} />
+              <col style={{ width: '9%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '10%' }} />
               <col style={{ width: '12%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '13%' }} />
+              <col style={{ width: '14%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -174,6 +175,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
                 <th>تاريخ الذهاب</th>
                 <th>السعة</th>
                 <th>مُسجَّل</th>
+                <th>مدفوع</th>
                 <th>السعر (﷼)</th>
                 <th>المتوقَّع (﷼)</th>
                 <th>المُحصَّل (﷼)</th>
@@ -182,7 +184,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
             </thead>
             <tbody>
               {tripRows.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: '8mm', color: '#7a8a82', fontStyle: 'italic' }}>لا رحلاتٌ بعد</td></tr>
+                <tr><td colSpan={10} style={{ padding: '8mm', color: '#7a8a82', fontStyle: 'italic' }}>لا رحلاتٌ بعد</td></tr>
               ) : tripRows.map((r, i) => (
                 <tr key={r.id}>
                   <td className="mf-num">{i + 1}</td>
@@ -190,6 +192,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
                   <td className="ltr">{fmtGreg(r.depart_at)}</td>
                   <td className="mf-num">{r.capacity || '—'}</td>
                   <td className="mf-num">{r.registered}</td>
+                  <td className="mf-num">{r.paid}</td>
                   <td className="mf-num">{r.price ? money(r.price) : '—'}</td>
                   <td className="mf-num">{money(r.expected)}</td>
                   <td className="mf-num" style={{ color: '#0b5c43', fontWeight: 700 }}>{money(r.collected)}</td>
@@ -198,7 +201,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
               ))}
               {tripRows.length > 0 && (
                 <tr className="fr-totals">
-                  <td colSpan={6} style={{ textAlign: 'end', fontWeight: 700 }}>الإجماليّ</td>
+                  <td colSpan={7} style={{ textAlign: 'end', fontWeight: 700 }}>الإجماليّ</td>
                   <td className="mf-num" style={{ fontWeight: 700 }}>{money(totals.expected)}</td>
                   <td className="mf-num" style={{ fontWeight: 700, color: '#0b5c43' }}>{money(totals.collected)}</td>
                   <td className="mf-num" style={{ fontWeight: 700 }}>{totals.expected > 0 ? pct(totals.collected, totals.expected) + '٪' : '—'}</td>
