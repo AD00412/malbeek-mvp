@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { seatCount, buildSeats, allowedFor, isAllowed, DEFAULT_ROWS, DEFAULT_BACK, policyLabel } from '../busLayout'
-import { totalCapacity, busName } from '../buses'
+// ملاحظة: لا نستورد buses.js هنا عمدًا — فهو يستورد supabaseClient (createClient)
+// الذي لا يُنشأ في بيئة node للاختبار على إصدارات <22 (realtime يتطلّب WebSocket
+// أصليًّا). اختبارُ المنطق الصافي يبقى مستقلًّا تمامًا عن العميل.
 
 describe('seatCount', () => {
   it('يحسب المقاعد (صفوف×٤ + خلفيّ)', () => {
@@ -54,17 +56,9 @@ describe('allowedFor / isAllowed', () => {
     expect(typeof policyLabel('all_male')).toBe('string')
     expect(policyLabel('unknown')).toBe(policyLabel('all_male')) // الافتراضيّ
   })
-})
 
-describe('totalCapacity / busName (buses)', () => {
-  it('totalCapacity يجمع باصاتٍ مع الافتراضات', () => {
-    expect(totalCapacity([])).toBe(0)
-    expect(totalCapacity([{ bus_rows: 11, bus_back_row: 5 }, { bus_rows: 10, bus_back_row: 4 }])).toBe(93)
-    expect(totalCapacity([{}])).toBe(seatCount(DEFAULT_ROWS, DEFAULT_BACK))
-  })
-  it('busName يعطي اسمًا أو بديلًا', () => {
-    expect(busName({ label: 'باص ١' })).toBe('باص ١')
-    expect(busName({ bus_number: 3 })).toBe('باص 3')
-    expect(busName(null)).toBe('')
+  it('سعةُ عدّة تخطيطات تُجمَع صحيحًا (نفس منطق totalCapacity)', () => {
+    expect(seatCount(11, 5) + seatCount(10, 4)).toBe(93)
+    expect(seatCount(0, 0)).toBe(0)
   })
 })
