@@ -894,8 +894,10 @@
   /* ★ التوقيع يَلتصق بالجدول — لا يَفيض لصفحةٍ ثانية */
   .mf-foot{padding-top:1.5mm;gap:6px;page-break-before:avoid;break-before:avoid;page-break-inside:avoid;break-inside:avoid}
   .mf-table{page-break-inside:avoid;break-inside:avoid}
-  .mf-sheet{page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
-  .mf-sheet:last-of-type{page-break-after:auto;break-after:auto}
+  /* فواصلُ الصفحاتِ للكشفِ تُدارُ حصرًا في كتلةِ الطباعةِ المرجعيّةِ أدناه
+     (نموذج page-break-before على كلِّ ورقةٍ عدا الأولى). لا نَضَعُ هنا
+     page-break-after:always — اجتماعُهما كان يُنتِجُ فاصلًا مزدوجًا ⟵ صفحةً فارغةً. */
+  .mf-sheet{page-break-inside:avoid;break-inside:avoid}
   .mf-note{font-size:7pt}
   .mf-stamp-img{max-width:22mm;max-height:12mm}
   .fr-kpis{gap:2.5mm;margin:1.5mm 0 2.5mm}
