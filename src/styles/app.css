@@ -1218,6 +1218,15 @@
   background:var(--surface-3);cursor:pointer;font-family:inherit;text-align:start;transition:.15s;color:var(--cr-100)}
 .notif-row:hover{border-color:var(--line-strong);background:rgba(255,255,255,.04)}
 .notif-row.unread{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3)}
+/* تجميعٌ زمنيّ + إبرازُ العاجل */
+.notif-group{display:flex;flex-direction:column;gap:6px}
+.notif-group + .notif-group{margin-top:8px}
+.notif-group-label{font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--cr-300);
+  padding:2px 2px 4px;letter-spacing:.02em}
+.notif-row.urgent{border-inline-start:3px solid var(--warn)}
+.notif-row.urgent .notif-ic{background:rgba(245,158,11,.16);color:var(--warn-ink)}
+.notif-urgent-tag{font-size:9.5px;font-weight:800;color:var(--warn-ink);background:rgba(245,158,11,.16);
+  border-radius:5px;padding:1px 6px;letter-spacing:.02em}
 .notif-ic{width:32px;height:32px;border-radius:9px;background:rgba(16,185,129,.14);color:var(--gd-300);
   display:grid;place-items:center;flex:none}
 .notif-main{flex:1;min-width:0}
