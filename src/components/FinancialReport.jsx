@@ -25,6 +25,7 @@ function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
  */
 export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
   const [paymentsByTrip, setPaymentsByTrip] = useState(new Map()) // trip_id → collected amount
+  const [expectedByTrip, setExpectedByTrip] = useState(new Map()) // trip_id → مجموع السعر المثبّت وقت الحجز
   const [refunds, setRefunds] = useState({ refunded: 0, pending: 0, count: 0 })
   const [loading, setLoading] = useState(true)
 
@@ -32,19 +33,26 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
     if (!sub?.id) { setLoading(false); return }
     let cancel = false
     ;(async () => {
-      // المُحصَّل الفعليّ لكلّ رحلةٍ — مَجموعُ amount للمدفوعين/الصاعدين/المُسكَّنين
+      // سعرُ الرحلة الحاليُّ (احتياطٌ للصفوف بلا price_at_booking مثبّت)
+      const tripPrice = new Map((trips || []).map((t) => [t.id, t.price != null ? Number(t.price) : 0]))
+      // كلُّ معتمري الحملة: المُحصَّل (amount للمدفوعين) + المتوقَّع (السعر المثبّت وقت الحجز)
       const { data: rows } = await supabase
         .from('passengers')
-        .select('trip_id, amount')
+        .select('trip_id, amount, price_at_booking, status')
         .eq('subscriber_id', sub.id)
-        .in('status', ['paid','boarded','checked_in'])
       if (cancel) return
-      const m = new Map()
+      const m = new Map()        // collected
+      const exp = new Map()      // expected (مجموع السعر المثبّت لكلّ معتمر)
       for (const r of rows || []) {
-        const cur = m.get(r.trip_id) || 0
-        m.set(r.trip_id, cur + (Number(r.amount) || 0))
+        if (['paid','boarded','checked_in'].includes(r.status)) {
+          m.set(r.trip_id, (m.get(r.trip_id) || 0) + (Number(r.amount) || 0))
+        }
+        // المتوقَّع = ما يلتزم به كلُّ معتمرٍ بسعره المثبّت (أو سعر الرحلة الحاليّ احتياطًا)
+        const seat = r.price_at_booking != null ? Number(r.price_at_booking) : (tripPrice.get(r.trip_id) || 0)
+        exp.set(r.trip_id, (exp.get(r.trip_id) || 0) + seat)
       }
       setPaymentsByTrip(m)
+      setExpectedByTrip(exp)
 
       // الاستردادات
       const { data: refs } = await supabase
@@ -64,7 +72,10 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
   const tripRows = useMemo(() => trips.map(t => {
     const e = byTrip?.get(t.id) || { count: 0, paid: 0 }
     const price = t.price != null ? Number(t.price) : 0
-    const expected = price * e.count
+    // المتوقَّع من السعر المثبّت وقت الحجز (دقّةٌ تاريخيّة)؛ وإن لم يُحمَّل بعدُ
+    // فاحتياطٌ بالسعر الحاليّ × المسجّلين (سلوكٌ سابق).
+    const expSum = expectedByTrip.get(t.id)
+    const expected = expSum != null ? expSum : price * e.count
     const collected = paymentsByTrip.get(t.id) || 0
     const outstanding = Math.max(0, expected - collected)
     return {
@@ -74,7 +85,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
       expected, collected, outstanding,
       collectRate: pct(collected, expected),
     }
-  }), [trips, byTrip, paymentsByTrip])
+  }), [trips, byTrip, paymentsByTrip, expectedByTrip])
 
   const totals = useMemo(() => {
     const expected = tripRows.reduce((s, r) => s + r.expected, 0)
