@@ -73,10 +73,10 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
     return () => { active = false }
   }, [target, tripId, extraEmails])
 
-  // ★★ الإرسالُ الفعليُّ موقوفٌ عمدًا (حدٌّ صارم من أحمد): لا استدعاءَ لـ
+  // ★★ الإرسالُ الفعليُّ موقوفٌ عمدًا (حدٌّ صارم من الإدارة): لا استدعاءَ لـ
   //    send-marketing-broadcast. هذا الإجراء يُجهّز الحملةَ ويحفظها «جاهزةً»
   //    مع قائمة المتلقّين فقط — لا تُغادر أيُّ رسالةٍ النظامَ. تفعيلُ الإرسال
-  //    يحتاج إذنَ أحمد + ربطَ مزوّد واتساب/بريد.
+  //    يحتاج إذنَ إدارة ملبّيك + ربطَ مزوّد واتساب/بريد.
   async function handleSaveReady() {
     setErr('')
     if (subject.trim().length < 3) return setErr('الموضوع قصيرٌ جدًّا.')
@@ -188,6 +188,13 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
                 <Icon name="customers" size={16} />
                 <span>سيَستلم <strong style={{ color: 'var(--em-500)' }}>{audience}</strong> {audience === 1 ? 'مُتلقّي' : 'مُتلقّيًا'}</span>
               </div>
+              {audience === 0 && (
+                <p className="hint" style={{ color: 'var(--cr-300)' }}>
+                  {target === 'specific_emails'
+                    ? 'أدخل إيميلاتٍ صحيحةً (سطرٌ لكلّ واحد).'
+                    : 'لا معتمرين بإيميلٍ وموافقةٍ تسويقيّة في هذه الفئة. أضف إيميلاتِ معتمريك، أو شاركهم رابطَ الحجز ليُسجّلوا بأنفسهم بإيميلاتهم.'}
+                </p>
+              )}
             </div>
           </div>
 
@@ -196,7 +203,7 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
           {/* ★ إيقافُ الإرسال الفعليّ — حدٌّ صارم */}
           <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
             <Icon name="info" size={16} />
-            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى يأذن أحمد ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع الآن تجهيزَ الحملة وحفظَها «جاهزةً» مع قائمة المتلقّين.</span>
+            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى تأذن إدارةُ ملبّيك ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع الآن تجهيزَ الحملة وحفظَها «جاهزةً» مع قائمة المتلقّين.</span>
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -208,7 +215,7 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
               {showPreview ? 'إخفاء المعاينة' : 'معاينة'}
             </button>
             <button className="mlk-action" disabled aria-disabled="true"
-                    title="موقوف: يحتاج إذن أحمد + ربط مزوّد واتساب/بريد"
+                    title="موقوف: يحتاج إذن إدارة ملبّيك + ربط مزوّد واتساب/بريد"
                     style={{ opacity: .5, cursor: 'not-allowed' }}>
               إرسال فعليّ (موقوف)
             </button>

@@ -106,7 +106,7 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
           <label>الصق البيانات هنا</label>
           <textarea
             style={{ minHeight: 140, fontFamily: 'var(--font-text)', direction: 'ltr', textAlign: 'right' }}
-            placeholder={'محمد أحمد علي,1012345678,0501234567,سعودي,ذكر,محطة جازان\nسارة خالد محمد,2098765432,0559876543,سعودي,أنثى'}
+            placeholder={'فهد عبدالله العتيبي,1012345678,0501234567,سعودي,ذكر,محطة جازان\nنورة سعد القحطاني,2098765432,0559876543,سعودي,أنثى'}
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
