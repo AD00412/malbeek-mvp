@@ -30,8 +30,11 @@ where profile_id = auth.uid();
 
 grant select on public.v_my_feedback to authenticated;
 
--- ٣) تضييقُ قراءة الجدول: المُبلِّغ يقرأ عبر الـVIEW؛ الجدولُ للأدمن فقط.
-drop policy if exists "feedback self read"  on public.feedback;
-drop policy if exists "feedback admin read" on public.feedback;
-create policy "feedback admin read" on public.feedback for select
-  using (public.my_role() = 'admin');
+-- ٣) [مُصحَّح ٢٢ يونيو ليطابق السكيمة الفعليّة وقت التطبيق]
+--    سياسةُ قراءة المُبلِّغ الفعليّة اسمها «feedback select» (كانت:
+--    profile_id=auth.uid() OR admin) — نضيّقها للأدمن فقط (نزيل فرعَ المُبلِّغ)،
+--    فيقرأ المُبلِّغ عبر v_my_feedback. وسياسةُ «feedback admin read» (is_staff)
+--    تبقى كما هي → الفريق يستمرّ في القراءة. (لا توجد «feedback self read».)
+drop policy if exists "feedback select" on public.feedback;
+create policy "feedback select" on public.feedback for select to authenticated
+  using (my_role() = 'admin'::user_role);
