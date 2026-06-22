@@ -9,6 +9,7 @@ import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
 import AdminBusTower from '../../components/AdminBusTower'
 import AdminMarketing from '../../components/AdminMarketing'
+import QiblaCompass from '../../components/QiblaCompass'
 import OpsOverview from '../../components/OpsOverview'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
@@ -1190,6 +1191,7 @@ export function CustomerHome() {
     { section: 'رحلاتي' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
     { key: 'tickets', label: 'تذاكري', icon: 'barcode', badge: myBookings.length || undefined },
+    { key: 'qibla', label: 'القبلة', icon: 'location' },
     { section: 'الحساب' },
     { key: 'feedback', label: 'تواصل مع الإدارة', icon: 'message' },
     { key: 'settings', label: 'الإعدادات', icon: 'settings' },
@@ -1357,6 +1359,19 @@ export function CustomerHome() {
                   )
                 })
               )}
+            </div>
+          </>
+        )}
+
+        {view === 'qibla' && (
+          <>
+            <section className="hero">
+              <span className="tag">هدية لك</span>
+              <h2>بوصلة القبلة</h2>
+              <p>اتجاه القبلة بالدرجات والمسافة إلى الكعبة، مباشرة من جوّالك — هدية من ملبّيك لكل معتمر.</p>
+            </section>
+            <div style={{ marginTop: 14, display: 'grid', placeItems: 'center' }}>
+              <QiblaCompass />
             </div>
           </>
         )}
