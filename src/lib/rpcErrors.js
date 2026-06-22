@@ -1,106 +1,106 @@
-// ترجمةُ رموز أخطاء RPC الموحَّدة إلى رسائل عربيّة.
-// قاعدة ملبّيك تستخدم نمط "stable code + Arabic hint" — هذا الملفّ هو الجانب المقابل في الواجهة.
+// ترجمة رموز أخطاء RPC الموحدة إلى رسائل عربية.
+// قاعدة ملبّيك تستخدم نمط "stable code + Arabic hint" — هذا الملف هو الجانب المقابل في الواجهة.
 
-// رموزٌ محدَّدةٌ من قاعدتنا (مطابقات نصّيّة دقيقة).
+// رموز محددة من قاعدتنا (مطابقات نصية دقيقة).
 const MAP = {
-  TRIAL_TRIP_LIMIT: 'باقتك التجريبية تسمح برحلةٍ واحدة فقط. رقِّ إلى باقة ملبّيك (٩٩ ﷼/شهر) لإضافة رحلاتٍ غير محدودة.',
+  TRIAL_TRIP_LIMIT: 'باقتك التجريبية تسمح برحلة واحدة فقط. رق إلى باقة ملبّيك (٩٩ ﷼/شهر) لإضافة رحلات غير محدودة.',
   TRIP_NOT_FOUND: 'الرحلة غير موجودة.',
-  NOT_AUTHORIZED: 'غير مصرّحٍ لك بهذه العمليّة.',
+  NOT_AUTHORIZED: 'غير مصرح لك بهذه العملية.',
   SEAT_OUT_OF_RANGE: 'رقم المقعد خارج تخطيط الباص.',
-  ROOM_FULL: 'الغرفة مكتملة. اختر غرفةً أخرى.',
+  ROOM_FULL: 'الغرفة مكتملة. اختر غرفة أخرى.',
   ROOM_GENDER_MISMATCH: 'الغرفة لا تتوافق مع جنس المعتمر.',
   ROOM_TRIP_MISMATCH: 'الغرفة لا تنتمي لهذه الرحلة.',
-  TRIP_NOT_BOOKABLE: 'الحجز مغلقٌ على هذه الرحلة حاليًّا.',
-  TRIP_DEPARTED: 'انطلقت هذه الرحلة — تعذّر الحجز.',
+  TRIP_NOT_BOOKABLE: 'الحجز مغلق على هذه الرحلة حاليا.',
+  TRIP_DEPARTED: 'انطلقت هذه الرحلة — تعذر الحجز.',
 
-  // رموزٌ مختصرةٌ يَرفعها الـRPC مباشرةً (للوحة الإدارة + التَّوظيف)
-  'admin-only': 'هذا الإجراءُ للمدير فقط.',
+  // رموز مختصرة يرفعها الـRPC مباشرة (للوحة الإدارة + التوظيف)
+  'admin-only': 'هذا الإجراء للمدير فقط.',
   'admin-or-support-only': 'هذا للمدير أو الدعم.',
-  'reason-required': 'اكتب سببًا واضحًا (٥ أحرفٍ فأكثر).',
-  'invalid-days': 'عددُ الأيّام بين ١ و٣٦٥.',
-  'invalid-role': 'دورٌ غير صحيح.',
-  'invalid-email': 'بريدٌ غير صحيح.',
-  'not-found': 'السجلّ غير موجود.',
-  'name-required': 'الاسمُ مطلوب.',
-  'phone-required': 'رقمُ الجوّال مطلوب.',
-  'national-id-required': 'رقمُ الهويّة الوطنيّة مطلوب.',
-  'id-card-required': 'صورةُ الهويّة الوطنيّة مطلوبة.',
-  'cv-required': 'السيرةُ الذاتيّة مطلوبة.',
-  'emergency-contact-required': 'جهةُ اتّصالٍ للطوارئ مطلوبة.',
-  'email-mismatch': 'الإيميلُ لا يَتطابق مع الدعوة.',
+  'reason-required': 'اكتب سببا واضحا (٥ أحرف فأكثر).',
+  'invalid-days': 'عدد الأيام بين ١ و٣٦٥.',
+  'invalid-role': 'دور غير صحيح.',
+  'invalid-email': 'بريد غير صحيح.',
+  'not-found': 'السجل غير موجود.',
+  'name-required': 'الاسم مطلوب.',
+  'phone-required': 'رقم الجوال مطلوب.',
+  'national-id-required': 'رقم الهوية الوطنية مطلوب.',
+  'id-card-required': 'صورة الهوية الوطنية مطلوبة.',
+  'cv-required': 'السيرة الذاتية مطلوبة.',
+  'emergency-contact-required': 'جهة اتصال للطوارئ مطلوبة.',
+  'email-mismatch': 'الإيميل لا يتطابق مع الدعوة.',
   'invitation-not-found': 'الدعوة غير موجودة.',
-  'invitation-not-pending': 'الدعوةُ ليست في مرحلة التَّسجيل.',
-  'invitation-expired': 'انتهت صلاحيّةُ الدعوة.',
-  'interview-time-invalid': 'حدّد وقتًا مُستقبليًّا للمقابلة.',
-  'wrong-stage': 'لا يَصلح هذا الإجراءُ في المرحلة الحاليّة.',
-  'cannot-reject': 'لا يَصلح الرفضُ في الحالة الحاليّة.',
-  'cannot-cancel': 'لا يُمكن إلغاءُ هذه الدعوة.',
-  'no-applicant-profile': 'لم يَكتمل تَسجيلُ المتقدّم بعد.',
-  'cannot-revoke-self': 'لا تَنزع صلاحيّاتِك بنفسك.',
-  'must-login': 'يَجب تَسجيل الدخول أوّلًا.',
-  'user-not-found': 'لم يُعثر على هذا المستخدم.',
-  'not-staff': 'هذا الشخصُ ليس عضوًا في الفريق.',
-  'not-applicant': 'هذا الإجراءُ للمتقدّم نفسه فقط.',
-  'not-submitted': 'الطلبُ ليس في مرحلة المراجعة.',
-  'id-card-path-invalid': 'مَسارُ صورة الهويّة غير صالح.',
-  'cv-path-invalid': 'مَسارُ السيرة الذاتيّة غير صالح.',
-  'qual-path-invalid': 'مَسارُ شهادةٍ غير صالح.',
+  'invitation-not-pending': 'الدعوة ليست في مرحلة التسجيل.',
+  'invitation-expired': 'انتهت صلاحية الدعوة.',
+  'interview-time-invalid': 'حدد وقتا مستقبليا للمقابلة.',
+  'wrong-stage': 'لا يصلح هذا الإجراء في المرحلة الحالية.',
+  'cannot-reject': 'لا يصلح الرفض في الحالة الحالية.',
+  'cannot-cancel': 'لا يمكن إلغاء هذه الدعوة.',
+  'no-applicant-profile': 'لم يكتمل تسجيل المتقدم بعد.',
+  'cannot-revoke-self': 'لا تنزع صلاحياتك بنفسك.',
+  'must-login': 'يجب تسجيل الدخول أولا.',
+  'user-not-found': 'لم يعثر على هذا المستخدم.',
+  'not-staff': 'هذا الشخص ليس عضوا في الفريق.',
+  'not-applicant': 'هذا الإجراء للمتقدم نفسه فقط.',
+  'not-submitted': 'الطلب ليس في مرحلة المراجعة.',
+  'id-card-path-invalid': 'مسار صورة الهوية غير صالح.',
+  'cv-path-invalid': 'مسار السيرة الذاتية غير صالح.',
+  'qual-path-invalid': 'مسار شهادة غير صالح.',
 }
 
-// أنماطٌ عامّةٌ من Supabase/Postgres/Auth — تنقذنا من الرسائل الإنجليزيّة.
-// مأخوذةٌ من MUTAMIR_MASTER_PROMPT.md (الجزء هـ-٢) وموسَّعةٌ بحالاتٍ شائعةٍ في تجربتنا.
+// أنماط عامة من Supabase/Postgres/Auth — تنقذنا من الرسائل الإنجليزية.
+// مأخوذة من MUTAMIR_MASTER_PROMPT.md (الجزء هـ-٢) وموسعة بحالات شائعة في تجربتنا.
 const PATTERNS = [
   // Auth
   [/invalid login credentials/i,                    'بيانات الدخول غير صحيحة.'],
-  [/email not confirmed/i,                          'البريد لم يُؤكَّد بعد — تحقّق من صندوقك.'],
-  [/user already registered|already exists/i,       'هذا البريد مسجّلٌ مسبقًا.'],
-  [/email rate limit exceeded|over_email_send_rate/i, 'تم تجاوز الحدّ المسموح به. حاول بعد دقيقة.'],
-  [/password should be at least|weak password/i,    'كلمة المرور قصيرةٌ جدًّا.'],
-  [/signup .* disabled|signups not allowed/i,       'التسجيل مغلقٌ مؤقّتًا.'],
+  [/email not confirmed/i,                          'البريد لم يؤكد بعد — تحقق من صندوقك.'],
+  [/user already registered|already exists/i,       'هذا البريد مسجل مسبقا.'],
+  [/email rate limit exceeded|over_email_send_rate/i, 'تم تجاوز الحد المسموح به. حاول بعد دقيقة.'],
+  [/password should be at least|weak password/i,    'كلمة المرور قصيرة جدا.'],
+  [/signup .* disabled|signups not allowed/i,       'التسجيل مغلق مؤقتا.'],
 
   // RLS / Session
-  [/permission denied|row-level/i,                  'غير مصرّحٍ لك بهذه العمليّة.'],
-  [/jwt expired|invalid jwt|token has expired/i,    'انتهت الجلسة. سجّل دخولك من جديد.'],
+  [/permission denied|row-level/i,                  'غير مصرح لك بهذه العملية.'],
+  [/jwt expired|invalid jwt|token has expired/i,    'انتهت الجلسة. سجل دخولك من جديد.'],
 
-  // Schema drift (مهمّ — يكشف اختلالًا بين الواجهة والقاعدة)
-  [/could not find the .* column/i,                 'حقلٌ مطلوبٌ غير موجودٍ في القاعدة. تواصل مع الدعم.'],
-  [/column .* does not exist/i,                     'حقلٌ مطلوبٌ غير موجودٍ في القاعدة. تواصل مع الدعم.'],
-  [/could not find the table .* in the schema/i,    'بنيةُ القاعدة غير محدَّثة. تواصل مع الدعم.'],
-  [/schema .* does not exist/i,                     'بنيةُ القاعدة غير محدَّثة. تواصل مع الدعم.'],
+  // Schema drift (مهم — يكشف اختلالا بين الواجهة والقاعدة)
+  [/could not find the .* column/i,                 'حقل مطلوب غير موجود في القاعدة. تواصل مع الدعم.'],
+  [/column .* does not exist/i,                     'حقل مطلوب غير موجود في القاعدة. تواصل مع الدعم.'],
+  [/could not find the table .* in the schema/i,    'بنية القاعدة غير محدثة. تواصل مع الدعم.'],
+  [/schema .* does not exist/i,                     'بنية القاعدة غير محدثة. تواصل مع الدعم.'],
 
   // Data integrity
-  [/duplicate key value/i,                          'هذا السجلّ موجودٌ مسبقًا.'],
-  [/violates foreign key/i,                         'لا يمكن إتمام العمليّة — السجلّ مرتبطٌ بسجلٍّ آخر.'],
-  [/violates check constraint/i,                    'قيمةٌ غير مقبولة.'],
-  [/violates not-null constraint/i,                 'حقلٌ مطلوبٌ لم يُعبَّأ.'],
-  [/invalid input syntax for type date/i,           'تاريخٌ غير صالح.'],
-  [/invalid input syntax for type uuid/i,           'معرّفٌ غير صالح.'],
-  [/invalid input syntax/i,                         'صيغةٌ غير صالحة لأحد الحقول.'],
+  [/duplicate key value/i,                          'هذا السجل موجود مسبقا.'],
+  [/violates foreign key/i,                         'لا يمكن إتمام العملية — السجل مرتبط بسجل آخر.'],
+  [/violates check constraint/i,                    'قيمة غير مقبولة.'],
+  [/violates not-null constraint/i,                 'حقل مطلوب لم يعبأ.'],
+  [/invalid input syntax for type date/i,           'تاريخ غير صالح.'],
+  [/invalid input syntax for type uuid/i,           'معرف غير صالح.'],
+  [/invalid input syntax/i,                         'صيغة غير صالحة لأحد الحقول.'],
 
   // Network
-  [/failed to fetch|network ?error|net::err/i,      'تعذّر الاتصال. تحقّق من شبكتك ثمّ حاول.'],
+  [/failed to fetch|network ?error|net::err/i,      'تعذر الاتصال. تحقق من شبكتك ثم حاول.'],
   [/timeout|timed out/i,                            'انتهت مهلة الاتصال. أعد المحاولة.'],
-  [/abort/i,                                        'تمّ إلغاء الطلب.'],
+  [/abort/i,                                        'تم إلغاء الطلب.'],
 
   // Storage
-  [/file size .* exceeds|payload too large/i,       'حجم الملفّ كبير. خفّضه ثمّ أعد المحاولة.'],
-  [/mime type .* not allowed|unsupported file type/i, 'نوع الملفّ غير مدعوم.'],
-  [/object not found|the resource was not found/i,  'الملفّ غير موجود.'],
+  [/file size .* exceeds|payload too large/i,       'حجم الملف كبير. خفضه ثم أعد المحاولة.'],
+  [/mime type .* not allowed|unsupported file type/i, 'نوع الملف غير مدعوم.'],
+  [/object not found|the resource was not found/i,  'الملف غير موجود.'],
 ]
 
 const isArabic = (s) => /[؀-ۿ]/.test(s)
 
 /**
- * يقبل error من supabase أو رسالةً نصّيّة. يُرجع نصًّا عربيًّا للعرض.
+ * يقبل error من supabase أو رسالة نصية. يرجع نصا عربيا للعرض.
  *
  * مصدر الحقيقة بالترتيب:
- *  1. رمزٌ ثابتٌ معروف في MAP (سواء عبر match تامٍّ أو substring).
- *  2. `err.hint` العربيّ من القاعدة (من `using hint = '...'`) — قاعدة البيانات هي المصدر.
- *  3. رسالةٌ عربيّةٌ من القاعدة (من `raise exception 'نصٌّ عربيّ'`).
- *  4. مطابقةُ نمطٍ عامٍّ من PATTERNS (Supabase/Postgres/Auth/Network/Storage).
- *  5. fallback مع تفاصيل تقنيّةٍ بين قوسين عند توفّر رسالةٍ تشخيصيّة.
+ *  1. رمز ثابت معروف في MAP (سواء عبر match تام أو substring).
+ *  2. `err.hint` العربي من القاعدة (من `using hint = '...'`) — قاعدة البيانات هي المصدر.
+ *  3. رسالة عربية من القاعدة (من `raise exception 'نص عربي'`).
+ *  4. مطابقة نمط عام من PATTERNS (Supabase/Postgres/Auth/Network/Storage).
+ *  5. fallback مع تفاصيل تقنية بين قوسين عند توفر رسالة تشخيصية.
  */
-export function translateRpcError(err, fallback = 'تعذّر إتمام العمليّة.') {
+export function translateRpcError(err, fallback = 'تعذر إتمام العملية.') {
   if (!err) return ''
   const msg = String(err.message || err || '')
 

@@ -3,11 +3,11 @@ import { supabase } from '../lib/supabaseClient'
 import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 
-const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
+const STATUS_AR = { registered: 'مسجل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
 const STATUS_CLS = { registered: 'muted', paid: 'ok', boarded: 'info', checked_in: 'warn' }
 
 /**
- * بحثٌ عن معتمرٍ عبر كلّ رحلات الحملة (RLS تحرس النطاق).
+ * بحث عن معتمر عبر كل رحلات الحملة (RLS تحرس النطاق).
  * @param {boolean} open
  * @param {string}  subscriberId
  * @param {Function} onClose
@@ -23,7 +23,7 @@ export default function PilgrimSearch({ open, subscriberId, onClose, onOpenPasse
 
   useEffect(() => {
     if (!open || !subscriberId) return
-    // تطهيرٌ من رموز فلاتر PostgREST لتفادي كسر الاستعلام (الـ RLS تحرس النطاق أصلًا)
+    // تطهير من رموز فلاتر PostgREST لتفادي كسر الاستعلام (الـ RLS تحرس النطاق أصلا)
     const safe = q.replace(/[,()%*:]/g, '').trim()
     if (safe.length < 2) { setRows([]); setSearched(false); return }
     let alive = true
@@ -45,27 +45,27 @@ export default function PilgrimSearch({ open, subscriberId, onClose, onOpenPasse
   }, [q, open, subscriberId])
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="بحثٌ عن معتمر">
+    <BottomSheet open={open} onClose={onClose} title="بحث عن معتمر">
       <div className="field search" style={{ marginBottom: 10 }}>
         <span className="ic"><Icon name="search" size={17} /></span>
         <input type="search" autoComplete="off" autoCorrect="off" spellCheck="false"
-          placeholder="الاسم / رقم الهوية / الجوال — عبر كلّ الرحلات"
+          placeholder="الاسم / رقم الهوية / الجوال — عبر كل الرحلات"
           value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       {loading ? (
-        <div className="empty">جارٍ البحث…</div>
+        <div className="empty">جار البحث…</div>
       ) : q.replace(/[,()%*:]/g, '').trim().length < 2 ? (
-        <div className="muted" style={{ fontSize: 13, textAlign: 'center', padding: 12 }}>اكتب حرفين على الأقلّ للبحث.</div>
+        <div className="muted" style={{ fontSize: 13, textAlign: 'center', padding: 12 }}>اكتب حرفين على الأقل للبحث.</div>
       ) : rows.length === 0 && searched ? (
-        <div className="empty"><div className="em-ttl">لا نتائج</div><div>لا معتمرَ يطابق بحثك في أيّ رحلة.</div></div>
+        <div className="empty"><div className="em-ttl">لا نتائج</div><div>لا معتمر يطابق بحثك في أي رحلة.</div></div>
       ) : (
         <div className="pax-list">
           {rows.map((p) => (
             <button key={p.id} type="button" className="pax-row" style={{ cursor: 'pointer', textAlign: 'start' }}
               onClick={() => {
                 if (!p.trip_id) return
-                // أوّلًا: استعمال onOpenPassenger إن كان متاحًا (يَفتح الرحلة + ورقة المعتمر مباشرةً)
+                // أولا: استعمال onOpenPassenger إن كان متاحا (يفتح الرحلة + ورقة المعتمر مباشرة)
                 if (onOpenPassenger) onOpenPassenger(p.trip_id, p)
                 else if (onOpenTrip) onOpenTrip(p.trip_id)
                 onClose?.()

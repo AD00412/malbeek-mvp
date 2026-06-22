@@ -8,7 +8,7 @@ function readSavedTheme() {
     const v = localStorage.getItem(KEY)
     if (v === 'light' || v === 'dark') return v
   } catch (_) {}
-  // مبدئيًّا: تفضيل النظام، وإلّا الغامق (هويّة ملبّيك).
+  // مبدئيا: تفضيل النظام، وإلا الغامق (هوية ملبّيك).
   if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)')?.matches) return 'light'
   return 'dark'
 }
@@ -20,9 +20,9 @@ function applyTheme(theme) {
 }
 
 /**
- * زرٌّ يبدّل بين الوضع الفاتح والغامق — يُحفظ في localStorage.
- * يُطبّق التبديل بإضافة data-theme="light" على <html>،
- * فيكفي الـ CSS لتلوينٍ متّسقٍ بلا تعديلٍ على المكوّنات.
+ * زر يبدل بين الوضع الفاتح والغامق — يحفظ في localStorage.
+ * يطبق التبديل بإضافة data-theme="light" على <html>،
+ * فيكفي الـ CSS لتلوين متسق بلا تعديل على المكونات.
  */
 export default function ThemeToggle() {
   const [theme, setTheme] = useState(() => {
@@ -30,7 +30,7 @@ export default function ThemeToggle() {
     return readSavedTheme()
   })
 
-  // طبّق الوضع المحفوظ عند أوّل تحميل
+  // طبق الوضع المحفوظ عند أول تحميل
   useEffect(() => { applyTheme(theme) }, [theme])
 
   function toggle() {
@@ -42,7 +42,7 @@ export default function ThemeToggle() {
   const isLight = theme === 'light'
   return (
     <button type="button" className="icon-bubble theme-toggle"
-      onClick={toggle} aria-label={isLight ? 'وضعٌ غامق' : 'وضعٌ فاتح'}
+      onClick={toggle} aria-label={isLight ? 'وضع غامق' : 'وضع فاتح'}
       title={isLight ? 'تبديل إلى الوضع الغامق' : 'تبديل إلى الوضع الفاتح'}>
       <Icon name={isLight ? 'moon' : 'sun'} size={17} />
     </button>

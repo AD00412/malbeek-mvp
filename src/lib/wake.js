@@ -5,30 +5,30 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 /* ============================================================
- *  مُنسِّقُ الإيقاظ — إحياءُ التطبيق بعد عودته من الخلفيّة
+ *  منسق الإيقاظ — إحياء التطبيق بعد عودته من الخلفية
  * ============================================================
  *
- *  فلسفةُ التصميم (بعد دروسٍ مكلفة):
- *    - لا نَعترض fetch العامّ إطلاقًا — اعتراضُه كان يُسبّب reload
- *      كاذبًا أثناء التنقّل الطبيعيّ بين الصفحات (عدّةُ استعلاماتٍ
- *      متزامنةٍ بطيئةٍ تُحسَب «تعليقًا» خطأً).
- *    - لا reload إلّا بعد إخفاءٍ طويلٍ حقيقيٍّ (> دقيقتَين) حيث يَكون
- *      iOS قد أتلفَ الحالةَ فعلًا.
- *    - التنقّلُ داخل التطبيق لا يُشغّل أيَّ منطقِ إيقاظٍ (لا يوجد
+ *  فلسفة التصميم (بعد دروس مكلفة):
+ *    - لا نعترض fetch العام إطلاقا — اعتراضه كان يسبب reload
+ *      كاذبا أثناء التنقل الطبيعي بين الصفحات (عدة استعلامات
+ *      متزامنة بطيئة تحسب «تعليقا» خطأ).
+ *    - لا reload إلا بعد إخفاء طويل حقيقي (> دقيقتين) حيث يكون
+ *      iOS قد أتلف الحالة فعلا.
+ *    - التنقل داخل التطبيق لا يشغل أي منطق إيقاظ (لا يوجد
  *      visibilitychange عند تبديل التبويبات).
- *    - عند العودة من الخلفيّة: تحديثٌ ناعمٌ (token لو قارَب الانتهاء +
- *      realtime.connect) ثمّ بثُّ wake ليُحدّث المشتركون بياناتهم.
+ *    - عند العودة من الخلفية: تحديث ناعم (token لو قارب الانتهاء +
+ *      realtime.connect) ثم بث wake ليحدث المشتركون بياناتهم.
  *
- *  واجهةٌ:
- *    - installWakeListeners() — مرّةً من AuthProvider.
- *    - onWake(cb) — يُستدعى عند كلِّ عودةٍ من الخلفيّة.
- *    - triggerWake(reason) — إيقاظٌ يدويّ.
+ *  واجهة:
+ *    - installWakeListeners() — مرة من AuthProvider.
+ *    - onWake(cb) — يستدعى عند كل عودة من الخلفية.
+ *    - triggerWake(reason) — إيقاظ يدوي.
  * ============================================================ */
 
 const WAKE_EVENT = 'malbeek:wake'
 const THROTTLE_MS = 3000
-const BRIEF_GAP_MS = 8_000        // < ٨ث: عودةٌ خاطفةٌ — لا تَلمس شيئًا
-const LONG_SUSPEND_MS = 120_000   // > دقيقتَين: reload نظيفٌ (الحالة تالفةٌ يقينًا)
+const BRIEF_GAP_MS = 8_000        // < ٨ث: عودة خاطفة — لا تلمس شيئا
+const LONG_SUSPEND_MS = 120_000   // > دقيقتين: reload نظيف (الحالة تالفة يقينا)
 const REFRESH_TIMEOUT_MS = 5000
 
 let lastWakeAt = 0
@@ -41,22 +41,22 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(t))
 }
 
-/* ★ قراءةُ الجلسة من localStorage بدعمِ أشكالٍ متعدّدةٍ من supabase-js.
-   النسخُ القديمة (v1) تَستخدم ‎{ currentSession }‎، النسخ الحديثة (v2/auth-js)
-   تَكتب الـsession مباشرةً. نَفحص ٤ مَواقعَ محتملةٍ ثمّ نَتأكّد من
-   ‎access_token‎ — حتّى لو expires_at مرَّ، نَرجعها (الخادمُ يُعالج 401). */
+/* ★ قراءة الجلسة من localStorage بدعم أشكال متعددة من supabase-js.
+   النسخ القديمة (v1) تستخدم ‎{ currentSession }‎، النسخ الحديثة (v2/auth-js)
+   تكتب الـsession مباشرة. نفحص ٤ مواقع محتملة ثم نتأكد من
+   ‎access_token‎ — حتى لو expires_at مر، نرجعها (الخادم يعالج 401). */
 function readStoredSession() {
   try {
     const stored = localStorage.getItem('malbeek.auth')
     if (!stored) return null
     const parsed = JSON.parse(stored)
     if (!parsed || typeof parsed !== 'object') return null
-    // نَتفقّد أشكالًا معروفةً بترتيبِ الأكثرِ احتمالًا
+    // نتفقد أشكالا معروفة بترتيب الأكثر احتمالا
     const candidates = [
       parsed,                            // v2/auth-js: parsed IS the session
       parsed.currentSession,             // v1: { currentSession: {...} }
-      parsed.session,                    // أحيانًا: { session: {...} }
-      parsed.data?.session,              // شكلُ Response: { data: { session } }
+      parsed.session,                    // أحيانا: { session: {...} }
+      parsed.data?.session,              // شكل Response: { data: { session } }
     ]
     for (const c of candidates) {
       if (c && typeof c === 'object' && typeof c.access_token === 'string' && c.access_token) {
@@ -68,10 +68,10 @@ function readStoredSession() {
 }
 
 /* ★ Monkey-patch لـsupabase.auth.getSession مع مهلة ١.٥ث + fallback من localStorage.
-   اكتشفنا من سجلّ المستخدم أنّ getSession() يَعلِق إلى الأبد بعد عودة iOS
-   (لأنّ supabase-js v2 يَنتظر promise refresh معلَّقًا داخليًّا).
-   الحلُّ: race مع ٣ث؛ لو هَنغت نَرجع الجلسة المُخزَّنة محلّيًّا — التوكِنُ
-   صالحٌ عادةً لـ٦٠ دقيقة فلا حاجة لـ refresh. */
+   اكتشفنا من سجل المستخدم أن getSession() يعلق إلى الأبد بعد عودة iOS
+   (لأن supabase-js v2 ينتظر promise refresh معلقا داخليا).
+   الحل: race مع ٣ث؛ لو هنغت نرجع الجلسة المخزنة محليا — التوكن
+   صالح عادة لـ٦٠ دقيقة فلا حاجة لـ refresh. */
 function patchAuthGetSession() {
   if (typeof window === 'undefined' || window.__malbeekAuthPatched) return
   window.__malbeekAuthPatched = true
@@ -89,10 +89,10 @@ function patchAuthGetSession() {
       } catch (e) {
         logEvent('AUTH', 'getSession hung 1.5s — using cached', { message: e?.message })
         const session = readStoredSession()
-        // ★ مهمٌّ: نَرجع ‎error: null‎ حتّى لو لم نَجد session — تَجنّبًا
-        //   لإطلاقِ منطقِ تسجيل الخروج التلقائيِّ في supabase-js (الذي قد
-        //   يَحدث لو فسّر الخطأَ كـ«فشلِ مصادقةٍ»). الـUI يَتعامل مع
-        //   ‎session=null‎ بنفسِ مَا يَفعل عند مستخدمٍ مَجهول.
+        // ★ مهم: نرجع ‎error: null‎ حتى لو لم نجد session — تجنبا
+        //   لإطلاق منطق تسجيل الخروج التلقائي في supabase-js (الذي قد
+        //   يحدث لو فسر الخطأ كـ«فشل مصادقة»). الـUI يتعامل مع
+        //   ‎session=null‎ بنفس ما يفعل عند مستخدم مجهول.
         return { data: { session }, error: null }
       }
     }
@@ -102,11 +102,11 @@ function patchAuthGetSession() {
   }
 }
 
-/* ★ تَدفئةُ الاتّصال (warmup): فورَ عودةِ التطبيق من الخلفيّة، نُطلق
-   طلبًا قصيرًا (HEAD) عبر window.fetch الخامّ — لا عبر supabase-js.
-   لو الـTCP socket كان زومبيًّا (iOS أوقفه أثناء الإخفاء)، AbortController
-   بعد ١.٥ث يُجبر المتصفّحَ على إغلاقه. الطلبُ التالي يَفتح socket جديدًا.
-   لو كان سليمًا: ينجح في < ٣٠٠ms، لا أثرَ للمستخدم. */
+/* ★ تدفئة الاتصال (warmup): فور عودة التطبيق من الخلفية، نطلق
+   طلبا قصيرا (HEAD) عبر window.fetch الخام — لا عبر supabase-js.
+   لو الـTCP socket كان زومبيا (iOS أوقفه أثناء الإخفاء)، AbortController
+   بعد ١.٥ث يجبر المتصفح على إغلاقه. الطلب التالي يفتح socket جديدا.
+   لو كان سليما: ينجح في < ٣٠٠ms، لا أثر للمستخدم. */
 let warmupInFlight = false
 async function warmupConnection() {
   if (!SUPABASE_URL || warmupInFlight) return
@@ -116,7 +116,7 @@ async function warmupConnection() {
   const ctrl = new AbortController()
   const timer = setTimeout(() => { try { ctrl.abort() } catch { /* ignore */ } }, 1500)
   try {
-    // window.fetch مباشرٌ — لا يَمرّ عبر supabaseClient (ولا مهلته ١٠ث).
+    // window.fetch مباشر — لا يمر عبر supabaseClient (ولا مهلته ١٠ث).
     await window.fetch(`${SUPABASE_URL}/auth/v1/health`, {
       method: 'GET',
       signal: ctrl.signal,
@@ -128,7 +128,7 @@ async function warmupConnection() {
     logEvent('WARMUP', `ok (${ms}ms)`)
   } catch (e) {
     const ms = Math.round(performance.now() - start)
-    // الإلغاءُ مقصودٌ — socket المعطوبُ أُغلق الآن قسرًا.
+    // الإلغاء مقصود — socket المعطوب أغلق الآن قسرا.
     logEvent('WARMUP', `aborted/failed (${ms}ms)`, { message: e?.message })
   } finally {
     clearTimeout(timer)
@@ -141,15 +141,15 @@ async function performWake(reason, gap = 0) {
   if (now - lastWakeAt < THROTTLE_MS) return
   lastWakeAt = now
 
-  // عودةٌ خاطفةٌ (< ٨ث): التطبيقُ لم يُعلَّق فعلًا — لا تحديثَ توكِنٍ ولا
-  // إعادةَ اتّصالٍ (قد تَكسر WS سليمًا). فقط بثٌّ خفيفٌ ليُنعش المشتركون
-  // بياناتهم إن أرادوا — بلا أيِّ تدخّلٍ في الشبكة.
+  // عودة خاطفة (< ٨ث): التطبيق لم يعلق فعلا — لا تحديث توكن ولا
+  // إعادة اتصال (قد تكسر WS سليما). فقط بث خفيف لينعش المشتركون
+  // بياناتهم إن أرادوا — بلا أي تدخل في الشبكة.
   if (gap > 0 && gap < BRIEF_GAP_MS) {
     dispatchWake(reason, true)
     return
   }
 
-  // عودةٌ بعد إخفاءٍ متوسّط: جدّد التوكِنَ لو قارَب الانتهاء + أعِد ربط Realtime.
+  // عودة بعد إخفاء متوسط: جدد التوكن لو قارب الانتهاء + أعد ربط Realtime.
   try {
     const { data } = await withTimeout(supabase.auth.getSession(), REFRESH_TIMEOUT_MS)
     const exp = data?.session?.expires_at
@@ -159,11 +159,11 @@ async function performWake(reason, gap = 0) {
         await withTimeout(supabase.auth.refreshSession(), REFRESH_TIMEOUT_MS)
       }
     }
-  } catch { /* مهلةٌ أو خطأٌ مؤقّت — الاستعلامُ التالي سيُعالجه */ }
+  } catch { /* مهلة أو خطأ مؤقت — الاستعلام التالي سيعالجه */ }
 
   try {
     const rt = supabase?.realtime
-    if (rt?.connect) rt.connect()   // idempotent — لا نَكسر اتّصالًا سليمًا
+    if (rt?.connect) rt.connect()   // idempotent — لا نكسر اتصالا سليما
   } catch { /* ignore */ }
 
   dispatchWake(reason, false)
@@ -177,20 +177,20 @@ function dispatchWake(reason, brief) {
 }
 
 /**
- * تثبيتُ مستمعي النظام (يُستدعى مرّةً من AuthProvider).
- * يرجع دالّةَ تنظيفٍ.
+ * تثبيت مستمعي النظام (يستدعى مرة من AuthProvider).
+ * يرجع دالة تنظيف.
  */
 export function installWakeListeners() {
   if (typeof window === 'undefined' || installed) return () => {}
   installed = true
 
-  // ثبّت patch المصادقة فورًا — يَحمي كلَّ استعلامٍ مستقبليّ
+  // ثبت patch المصادقة فورا — يحمي كل استعلام مستقبلي
   patchAuthGetSession()
 
   const onReturn = (reason) => {
     const gap = hiddenAt ? Date.now() - hiddenAt : 0
     hiddenAt = 0
-    // إخفاءٌ طويلٌ حقيقيٌّ (> دقيقتَين): الحالةُ تالفةٌ يقينًا → reload نظيف.
+    // إخفاء طويل حقيقي (> دقيقتين): الحالة تالفة يقينا → reload نظيف.
     if (gap > LONG_SUSPEND_MS) {
       try { sessionStorage.setItem('malbeek:reloaded-at', String(Date.now())) } catch { /* ignore */ }
       try { window.location.reload() } catch { /* ignore */ }
@@ -202,8 +202,8 @@ export function installWakeListeners() {
   const onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') hiddenAt = Date.now()
     else if (document.visibilityState === 'visible') {
-      // ★ تَدفئةُ TCP socket — تُجهض الزومبي قبل أن يُمسَّ.
-      //   patchAuthGetSession سبقَ تثبيتُه ويَحمي getSession من الهَنغ تلقائيًّا.
+      // ★ تدفئة TCP socket — تجهض الزومبي قبل أن يمس.
+      //   patchAuthGetSession سبق تثبيته ويحمي getSession من الهنغ تلقائيا.
       if (hiddenAt > 0) warmupConnection()
       onReturn('visible')
     }
@@ -223,7 +223,7 @@ export function installWakeListeners() {
   }
 }
 
-/** يُسجّل callback يُستدعى عند كلِّ عودةٍ من الخلفيّة. يرجع دالّةَ unsubscribe. */
+/** يسجل callback يستدعى عند كل عودة من الخلفية. يرجع دالة unsubscribe. */
 export function onWake(callback) {
   if (typeof window === 'undefined' || typeof callback !== 'function') return () => {}
   function handler(e) { callback(e?.detail || { reason: 'unknown', at: Date.now() }) }
@@ -231,7 +231,7 @@ export function onWake(callback) {
   return () => window.removeEventListener(WAKE_EVENT, handler)
 }
 
-/** إطلاقُ إيقاظٍ يدويّ. */
+/** إطلاق إيقاظ يدوي. */
 export function triggerWake(reason = 'manual') {
   performWake(reason, BRIEF_GAP_MS + 1)
 }

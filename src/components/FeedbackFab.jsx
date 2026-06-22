@@ -2,21 +2,21 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Icon from './Icon'
 
 /**
- * زرٌّ عائمٌ للتغذية الراجعة — ذكيٌّ وقابلٌ للسحب وللحذف بشكلٍ طبيعيّ.
+ * زر عائم للتغذية الراجعة — ذكي وقابل للسحب وللحذف بشكل طبيعي.
  *
- * تجربةُ المستخدم:
- *  - نقرةٌ: يفتح ورقة التواصل.
- *  - سحبٌ بإصبعٍ: يتحرّك ويلتصق بأقرب حافّةٍ عند الإفلات. الموضعُ يُحفظ.
- *  - ضغطةٌ مطوّلةٌ (٤٠٠ms): يدخل «وضع الحذف» — تظهر سلّةٌ حمراءُ في الأسفل
- *    مع اهتزازٍ خفيفٍ، ويهتزّ الزرّ بهدوءٍ. يكفي أن تسحبه إلى السلّة لحذفه.
- *  - عند الإفلات داخل السلّة: ينطوي الزرّ بحركةٍ ناعمةٍ ويختفي لهذه الجلسة.
- *  - عند فتح التطبيق من جديدٍ: يعود الزرّ في **آخر موضعٍ** كان فيه.
- *  - ذكاءٌ مضادٌّ للإزعاج: إن حذفه المستخدمُ ٣ مرّاتٍ متتاليةٍ دون استخدامه،
- *    يتوقّف عن الظهور (يُستعاد عند فتح «الدعم» من القائمة).
- *  - أيُّ تفاعلٍ مع ورقة التواصل (من أيّ مكان) يصفّر العدّاد.
+ * تجربة المستخدم:
+ *  - نقرة: يفتح ورقة التواصل.
+ *  - سحب بإصبع: يتحرك ويلتصق بأقرب حافة عند الإفلات. الموضع يحفظ.
+ *  - ضغطة مطولة (٤٠٠ms): يدخل «وضع الحذف» — تظهر سلة حمراء في الأسفل
+ *    مع اهتزاز خفيف، ويهتز الزر بهدوء. يكفي أن تسحبه إلى السلة لحذفه.
+ *  - عند الإفلات داخل السلة: ينطوي الزر بحركة ناعمة ويختفي لهذه الجلسة.
+ *  - عند فتح التطبيق من جديد: يعود الزر في **آخر موضع** كان فيه.
+ *  - ذكاء مضاد للإزعاج: إن حذفه المستخدم ٣ مرات متتالية دون استخدامه،
+ *    يتوقف عن الظهور (يستعاد عند فتح «الدعم» من القائمة).
+ *  - أي تفاعل مع ورقة التواصل (من أي مكان) يصفر العداد.
  *
- * @param {() => void} onOpen   فتحُ ورقة التغذية الراجعة
- * @param {number}     badge    عددُ الردود غير المقروءة (اختياريّ)
+ * @param {() => void} onOpen   فتح ورقة التغذية الراجعة
+ * @param {number}     badge    عدد الردود غير المقروءة (اختياري)
  */
 const POS_KEY      = 'malbeek.fab.pos'
 const SESSION_HIDE = 'malbeek.fab.sessionHidden'
@@ -32,7 +32,7 @@ const MAX_DISMISSES = 3
 
 export default function FeedbackFab({ onOpen, badge = 0 }) {
   const [pos, setPos] = useState(null)
-  const [hidden, setHidden] = useState(true)      // مبدئيًّا مخفيٌّ حتّى يُحلّ
+  const [hidden, setHidden] = useState(true)      // مبدئيا مخفي حتى يحل
   const [mode, setMode] = useState('idle')        // idle | dragging | delete | destroying
   const [overTrash, setOverTrash] = useState(false)
   const ref = useRef(null)
@@ -44,7 +44,7 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     const maxY = window.innerHeight - FAB - MARGIN
     return {
       x: Math.max(MARGIN, Math.min(x, maxX)),
-      y: Math.max(MARGIN + 40, Math.min(y, maxY)),  // +40 لتجنّب الرأس
+      y: Math.max(MARGIN + 40, Math.min(y, maxY)),  // +40 لتجنب الرأس
     }
   }, [])
 
@@ -68,16 +68,16 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     setHidden(false)
   }, [clamp, defaultPos])
 
-  // التحقّقُ من الرؤية عند التحميل
+  // التحقق من الرؤية عند التحميل
   useEffect(() => { resolveVisibility() }, [resolveVisibility])
 
-  // الاستماعُ لطلبِ الإظهار الخارجيِّ (من «الدعم» في الدرج مثلًا)
+  // الاستماع لطلب الإظهار الخارجي (من «الدعم» في الدرج مثلا)
   useEffect(() => {
     function onShow() {
       try {
         sessionStorage.removeItem(SESSION_HIDE)
         localStorage.removeItem(PERMA_HIDE)
-        localStorage.setItem(DISMISS_CNT, '0')   // إعادةُ ضبط ذكاء مضادّ الإزعاج
+        localStorage.setItem(DISMISS_CNT, '0')   // إعادة ضبط ذكاء مضاد الإزعاج
       } catch { /* ignore */ }
       resolveVisibility()
     }
@@ -85,14 +85,14 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     return () => window.removeEventListener('malbeek:fab:show', onShow)
   }, [resolveVisibility])
 
-  // إعادةُ التثبيت عند تغيّر حجم النافذة/الدوران
+  // إعادة التثبيت عند تغير حجم النافذة/الدوران
   useEffect(() => {
     function onResize() { setPos((p) => (p ? clamp(p.x, p.y) : p)) }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [clamp])
 
-  // نظافةٌ: إن فُكِّك المكوّنُ أثناء التفاعل، نرفع القفل عن الـ body
+  // نظافة: إن فكك المكون أثناء التفاعل، نرفع القفل عن الـ body
   useEffect(() => () => { document.body.classList.remove('fab-interacting') }, [])
 
   function getTrashRect() {
@@ -112,11 +112,11 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
 
   function onPointerDown(e) {
     if (e.button === 2) return
-    // نمنع iOS Safari من تشغيلِ تحديدِ النصِّ/قائمةِ السياق التلقائيّةِ
-    // عند الضغطة المطوّلة على الصفحة، فيبقى الزرّ معزولًا تمامًا.
+    // نمنع iOS Safari من تشغيل تحديد النص/قائمة السياق التلقائية
+    // عند الضغطة المطولة على الصفحة، فيبقى الزر معزولا تماما.
     e.preventDefault()
-    // قفلٌ شاملٌ: نمنع التحديدَ والتمييزَ في الصفحة كلّها أثناء التفاعل،
-    // فلا تظهر مستطيلاتٌ زرقاءُ على البطاقات/الأزرار خلف الزرّ.
+    // قفل شامل: نمنع التحديد والتمييز في الصفحة كلها أثناء التفاعل،
+    // فلا تظهر مستطيلات زرقاء على البطاقات/الأزرار خلف الزر.
     document.body.classList.add('fab-interacting')
     const rect = ref.current.getBoundingClientRect()
     drag.current = {
@@ -127,7 +127,7 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     }
     ref.current.setPointerCapture?.(e.pointerId)
 
-    // مؤقّتُ الضغطة المطوّلة — يدخل وضع الحذف إن بقي الإصبعُ ثابتًا
+    // مؤقت الضغطة المطولة — يدخل وضع الحذف إن بقي الإصبع ثابتا
     drag.current.longTimer = setTimeout(() => {
       if (drag.current.active && !drag.current.moved) {
         setMode('delete')
@@ -142,8 +142,8 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
 
     if (dist > DRAG_THRESHOLD && !drag.current.moved) {
       drag.current.moved = true
-      // إن لم نكن قد دخلنا وضع الحذف بعد، فالحركةُ السريعةُ تُلغي الضغطة المطوّلة
-      // وتبدأ سحبًا عاديًّا. أمّا إن كنّا في وضع الحذف فالسحبُ نحو السلّة.
+      // إن لم نكن قد دخلنا وضع الحذف بعد، فالحركة السريعة تلغي الضغطة المطولة
+      // وتبدأ سحبا عاديا. أما إن كنا في وضع الحذف فالسحب نحو السلة.
       if (drag.current.longTimer && mode === 'idle') {
         clearTimeout(drag.current.longTimer)
         drag.current.longTimer = null
@@ -172,28 +172,28 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     if (drag.current.longTimer) { clearTimeout(drag.current.longTimer); drag.current.longTimer = null }
     drag.current.active = false
     ref.current?.releasePointerCapture?.(e.pointerId)
-    // ارفع قفلَ التحديد عن الصفحة بمجرّد انتهاء التفاعل
+    // ارفع قفل التحديد عن الصفحة بمجرد انتهاء التفاعل
     document.body.classList.remove('fab-interacting')
 
-    // الحالةُ ١: في وضع الحذف وفوق السلّة → احذف
+    // الحالة ١: في وضع الحذف وفوق السلة → احذف
     if (wasMode === 'delete' && wasOver) {
       dismiss()
       return
     }
-    // الحالةُ ٢: في وضع الحذف لكن خارج السلّة → خروجٌ من وضع الحذف + التصاقٌ بالحافّة
+    // الحالة ٢: في وضع الحذف لكن خارج السلة → خروج من وضع الحذف + التصاق بالحافة
     if (wasMode === 'delete') {
       setMode('idle')
       setOverTrash(false)
       snapToEdge()
       return
     }
-    // الحالةُ ٣: نقرةٌ بسيطةٌ (دون حركةٍ) → افتح ورقةَ التواصل + صفّر العدّاد
+    // الحالة ٣: نقرة بسيطة (دون حركة) → افتح ورقة التواصل + صفر العداد
     if (!wasMoved) {
       try { localStorage.setItem(DISMISS_CNT, '0') } catch { /* ignore */ }
       onOpen?.()
       return
     }
-    // الحالةُ ٤: سحبٌ عاديٌّ → التصاقٌ بالحافّة وحفظُ الموضع
+    // الحالة ٤: سحب عادي → التصاق بالحافة وحفظ الموضع
     setMode('idle')
     snapToEdge()
   }
@@ -214,7 +214,7 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
     setMode('destroying')
     setOverTrash(false)
     if (navigator.vibrate) navigator.vibrate([20, 40, 60])
-    // أبقِ الحركةَ مرئيّةً لحظةً قبل الإخفاء النهائيّ
+    // أبق الحركة مرئية لحظة قبل الإخفاء النهائي
     setTimeout(() => {
       try {
         sessionStorage.setItem(SESSION_HIDE, '1')
@@ -239,12 +239,12 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onContextMenu={(e) => e.preventDefault()}    // يلغي قائمة iOS/الويب التلقائيّةَ
-        onDragStart={(e) => e.preventDefault()}      // يلغي drag-image التلقائيَّ للصورة
+        onContextMenu={(e) => e.preventDefault()}    // يلغي قائمة iOS/الويب التلقائية
+        onDragStart={(e) => e.preventDefault()}      // يلغي drag-image التلقائي للصورة
         role="button"
         tabIndex={0}
         aria-label="تواصل مع إدارة ملبّيك"
-        title="انقر للتواصل · اضغط مطوّلًا للحذف"
+        title="انقر للتواصل · اضغط مطولا للحذف"
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.() } }}
       >
         <Icon name="message" size={20} />
@@ -261,7 +261,7 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
               <path d="M10 11v6M14 11v6"/>
             </svg>
           </div>
-          <div className="fab-trash-label">{overTrash ? 'أفلِت للحذف' : 'اسحبه هنا للحذف'}</div>
+          <div className="fab-trash-label">{overTrash ? 'أفلت للحذف' : 'اسحبه هنا للحذف'}</div>
         </div>
       )}
     </>
@@ -269,8 +269,8 @@ export default function FeedbackFab({ onOpen, badge = 0 }) {
 }
 
 /**
- * مساعدٌ لإعادة إظهار الزرّ من أيّ مكانٍ (مثلًا عند فتح «الدعم» من الدرج).
- * يصفّر عدّاد الحذف وعلامةَ الإخفاء الدائم.
+ * مساعد لإعادة إظهار الزر من أي مكان (مثلا عند فتح «الدعم» من الدرج).
+ * يصفر عداد الحذف وعلامة الإخفاء الدائم.
  */
 export function showFeedbackFab() {
   if (typeof window === 'undefined') return

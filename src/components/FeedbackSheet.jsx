@@ -16,7 +16,7 @@ const KINDS = [
   { v: 'question',   t: 'سؤال' },
   { v: 'feature',    t: 'ميزة جديدة' },
 ]
-const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمّت' }
+const STATUS_AR = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تمت' }
 const STATUS_CLS = { open: 'warn', in_progress: 'info', resolved: 'ok' }
 
 function fmt(v) {
@@ -26,7 +26,7 @@ function fmt(v) {
 }
 
 /**
- * ورقةٌ سفليّةٌ لإرسال تغذيةٍ راجعة + قائمة ملاحظاتي السابقة وردود الإدارة.
+ * ورقة سفلية لإرسال تغذية راجعة + قائمة ملاحظاتي السابقة وردود الإدارة.
  * @param {string} audience 'subscriber' | 'customer'
  */
 export default function FeedbackSheet({ open, audience, onClose }) {
@@ -39,29 +39,29 @@ export default function FeedbackSheet({ open, audience, onClose }) {
   const [ok, setOk] = useState('')
   const [err, setErr] = useState('')
   const [mine, setMine] = useState([])
-  const [attachUrls, setAttachUrls] = useState({})    // {path: signedUrl} مُجمَّعٌ مسبقًا
+  const [attachUrls, setAttachUrls] = useState({})    // {path: signedUrl} مجمع مسبقا
   const [loading, setLoading] = useState(false)
   const [file, setFile] = useState(null)            // الصورة قبل الرفع (للمعاينة)
-  const [previewUrl, setPreviewUrl] = useState('')  // object URL محلّيٌّ للمعاينة
+  const [previewUrl, setPreviewUrl] = useState('')  // object URL محلي للمعاينة
   const [uploading, setUploading] = useState(false) // أثناء رفع المرفق فقط
   const fileRef = useRef(null)
-  const previewRef = useRef('')                     // مرآةٌ للتنظيف عند التفكيك
+  const previewRef = useRef('')                     // مرآة للتنظيف عند التفكيك
 
-  // نظافةٌ مضمونة: ألغِ آخر object URL حين يُفكَّك المكوّن (ولو بقي open=true).
+  // نظافة مضمونة: ألغ آخر object URL حين يفكك المكون (ولو بقي open=true).
   useEffect(() => { previewRef.current = previewUrl }, [previewUrl])
   useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current) }, [])
 
   const loadMine = useCallback(async () => {
     if (!user?.id) return
     setLoading(true)
-    // قراءةٌ عبر الـVIEW الآمنة (تستثني resolution_internal — لا يراه المُبلِّغ)
+    // قراءة عبر الـVIEW الآمنة (تستثني resolution_internal — لا يراه المبلغ)
     const { data } = await supabase
       .from('v_my_feedback')
       .select('id, kind, subject, body, reply, status, replied_at, created_at, attachment_url')
       .eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50)
     const rows = data ?? []
     setMine(rows)
-    // جلبٌ مجمَّعٌ لروابط المرفقات (يُلغي طلب signed URL لكلّ صفٍّ على حدة)
+    // جلب مجمع لروابط المرفقات (يلغي طلب signed URL لكل صف على حدة)
     const paths = rows.map((r) => r.attachment_url).filter(Boolean)
     if (paths.length) {
       const { data: signed } = await supabase.storage
@@ -91,7 +91,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
     const f = e.target.files?.[0]
     if (!f) return
     if (!OK_TYPES.includes(f.type)) { setErr('الصيغة غير مدعومة. استخدم PNG / JPG / WebP.'); return }
-    if (f.size > MAX_BYTES)        { setErr('حجم الصورة كبير (٥ ميغابايت كحدٍّ أقصى).'); return }
+    if (f.size > MAX_BYTES)        { setErr('حجم الصورة كبير (٥ ميغابايت كحد أقصى).'); return }
     setErr('')
     setFile(f)
     setPreviewUrl((u) => { if (u) URL.revokeObjectURL(u); return URL.createObjectURL(f) })
@@ -99,14 +99,14 @@ export default function FeedbackSheet({ open, audience, onClose }) {
 
   async function send() {
     if (busy) return
-    if (!body.trim()) { setErr('اكتب نصّ الملاحظة.'); return }
+    if (!body.trim()) { setErr('اكتب نص الملاحظة.'); return }
     setErr(''); setOk(''); setBusy(true)
     try {
-      // ١) ارفع المرفق أوّلًا (إن وُجد) — تحت مجلّد profile_id الخاصّ بك (RLS تحرس)
+      // ١) ارفع المرفق أولا (إن وجد) — تحت مجلد profile_id الخاص بك (RLS تحرس)
       let attachment_url = null
       if (file && user?.id) {
         setUploading(true)
-        // مزجٌ بين الزمن ومُعرّفٍ عشوائيٍّ يمنع التصادم عند تكرار النقرة في الـ ms ذاتها
+        // مزج بين الزمن ومعرف عشوائي يمنع التصادم عند تكرار النقرة في الـ ms ذاتها
         const ext = safeExt(file)
         const rand = Math.random().toString(36).slice(2, 6)
         const path = `${user.id}/${Date.now()}-${rand}.${ext}`
@@ -115,14 +115,14 @@ export default function FeedbackSheet({ open, audience, onClose }) {
             .from('feedback-attachments')
             .upload(path, file, { upsert: false, cacheControl: '3600', contentType: file.type }),
           30000,
-          'تعذّر رفع الصورة — استغرق وقتًا طويلًا. تحقّق من اتصالك وأعد المحاولة.'
+          'تعذر رفع الصورة — استغرق وقتا طويلا. تحقق من اتصالك وأعد المحاولة.'
         )
         setUploading(false)
         if (upErr) throw upErr
-        attachment_url = path   // نخزّن المسار، الإدارة تجلب signed URL وقت العرض
+        attachment_url = path   // نخزن المسار، الإدارة تجلب signed URL وقت العرض
       }
 
-      // ٢) أدرج الملاحظة (بمهلةٍ صريحةٍ كي لا يَدور الزرُّ بلا نهايةٍ عند تجمّد الاتّصال)
+      // ٢) أدرج الملاحظة (بمهلة صريحة كي لا يدور الزر بلا نهاية عند تجمد الاتصال)
       const { error } = await withTimeout(
         supabase.from('feedback').insert({
           profile_id: user.id,
@@ -134,14 +134,14 @@ export default function FeedbackSheet({ open, audience, onClose }) {
           attachment_url,
         }),
         15000,
-        'تعذّر إرسال الملاحظة — تحقّق من اتصالك وأعد المحاولة.'
+        'تعذر إرسال الملاحظة — تحقق من اتصالك وأعد المحاولة.'
       )
       if (error) throw error
       setOk('وصلت ملاحظتك ✓ سنرجع لك بأقرب وقت.')
       setBody(''); setSubject(''); clearFile()
       if (view === 'mine') loadMine()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الإرسال: ' + e.message : 'تعذّر الإرسال.')
+      setErr(e?.message ? 'تعذر الإرسال: ' + e.message : 'تعذر الإرسال.')
     } finally {
       setBusy(false); setUploading(false)
     }
@@ -172,7 +172,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
           </div>
           <div className="field">
             <label>التفاصيل <span className="req">*</span></label>
-            <textarea rows={5} placeholder="اكتب لنا بصراحة — كل ملاحظةٍ تساعدنا على تحسين تجربتك." value={body} onChange={(e) => setBody(e.target.value)} />
+            <textarea rows={5} placeholder="اكتب لنا بصراحة — كل ملاحظة تساعدنا على تحسين تجربتك." value={body} onChange={(e) => setBody(e.target.value)} />
           </div>
 
           <div className="field">
@@ -198,8 +198,8 @@ export default function FeedbackSheet({ open, audience, onClose }) {
             ) : (
               <button type="button" className="img-upload dropzone" onClick={pickFile} disabled={busy}>
                 <Icon name="download" size={22} style={{ transform: 'rotate(180deg)' }} />
-                <strong>أرفِق لقطة شاشة للخطأ</strong>
-                <span className="muted" style={{ fontSize: 12 }}>PNG/JPG/WebP · ٥ ميغابايت كحدٍّ أقصى · ترى الإدارة فقط</span>
+                <strong>أرفق لقطة شاشة للخطأ</strong>
+                <span className="muted" style={{ fontSize: 12 }}>PNG/JPG/WebP · ٥ ميغابايت كحد أقصى · ترى الإدارة فقط</span>
               </button>
             )}
           </div>
@@ -208,7 +208,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
           {err && <div className="alert err">{err}</div>}
           <button className="btn btn-gold btn-block" onClick={send} disabled={busy}>
             {busy
-              ? <><span className="spinner" /> {uploading ? 'جارٍ رفع الصورة…' : 'جارٍ الإرسال…'}</>
+              ? <><span className="spinner" /> {uploading ? 'جار رفع الصورة…' : 'جار الإرسال…'}</>
               : <><Icon name="message" size={16} /> إرسال</>}
           </button>
         </div>
@@ -218,8 +218,8 @@ export default function FeedbackSheet({ open, audience, onClose }) {
             <SkeletonList count={3} />
           ) : mine.length === 0 ? (
             <div className="empty">
-              <div className="em-ttl">لم ترسل ملاحظاتٍ بعد</div>
-              <div>كلّ ملاحظةٍ ترسلها تصل لإدارة ملبّيك فورًا.</div>
+              <div className="em-ttl">لم ترسل ملاحظات بعد</div>
+              <div>كل ملاحظة ترسلها تصل لإدارة ملبّيك فورا.</div>
             </div>
           ) : mine.map((f) => (
             <div key={f.id} className="trip-card" style={{ padding: 14 }}>
@@ -239,7 +239,7 @@ export default function FeedbackSheet({ open, audience, onClose }) {
               )}
               {f.reply && (
                 <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(43,182,140,.1)', border: '1px solid rgba(43,182,140,.3)' }}>
-                  <div style={{ fontSize: 12, color: 'var(--ok-ink)', fontWeight: 700, marginBottom: 4 }}>ردّ إدارة ملبّيك · {fmt(f.replied_at)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ok-ink)', fontWeight: 700, marginBottom: 4 }}>رد إدارة ملبّيك · {fmt(f.replied_at)}</div>
                   <div style={{ fontSize: 13.5, color: 'var(--cr-100)', whiteSpace: 'pre-wrap' }}>{f.reply}</div>
                 </div>
               )}

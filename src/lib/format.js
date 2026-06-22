@@ -1,9 +1,9 @@
-// أدوات تطبيع/تحقّق مشتركة — تطابق تريغرات القاعدة (دفاعٌ متعدّد الطبقات).
-// تُستخدم في CustomerJoin و PassengerFormModal و CustomerBooking.
+// أدوات تطبيع/تحقق مشتركة — تطابق تريغرات القاعدة (دفاع متعدد الطبقات).
+// تستخدم في CustomerJoin و PassengerFormModal و CustomerBooking.
 
 const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩'
 
-/** تحويل الأرقام العربية-الهنديّة إلى لاتينيّة */
+/** تحويل الأرقام العربية-الهندية إلى لاتينية */
 export function toLatinDigits(s = '') {
   return String(s ?? '').replace(/[٠-٩]/g, (d) => String(AR_DIGITS.indexOf(d)))
 }
@@ -16,7 +16,7 @@ export function normalizePhone(raw = '') {
   return p
 }
 
-/** قصّ الاسم وتوحيد المسافات */
+/** قص الاسم وتوحيد المسافات */
 export function cleanName(v = '') {
   return v.trim().replace(/\s+/g, ' ')
 }
@@ -31,23 +31,23 @@ export function isValidEmail(v = '') {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
 }
 
-/** صيغة wa.me: 9665XXXXXXXX (السعوديّة) — يُرجع '' إن الرقم غير صالح. */
+/** صيغة wa.me: 9665XXXXXXXX (السعودية) — يرجع '' إن الرقم غير صالح. */
 export function toWaPhone(raw = '') {
   const p = normalizePhone(raw)            // 05XXXXXXXX
   return /^05[0-9]{8}$/.test(p) ? '966' + p.slice(1) : ''
 }
 
-/** يستخرج امتداد ملفٍّ آمنًا (٤ أحرف لاتينيّةٍ أو رقميّةٍ حصرًا)، مع fallback. */
+/** يستخرج امتداد ملف آمنا (٤ أحرف لاتينية أو رقمية حصرا)، مع fallback. */
 /**
- * يَلفُّ وعدًا بمهلةٍ قصوى — لو لم يَكتمل خلالها يُرمى خطأٌ واضحٌ بدل
- * التجمّد الأبديّ. يُستعمل في عمليّات الإرسال/الرفع كي لا يَدور الزرُّ بلا نهاية
- * عندما يَكون الاتّصالُ زومبي (بعد تعليق iOS أو شبكةٍ متقطّعة).
+ * يلف وعدا بمهلة قصوى — لو لم يكتمل خلالها يرمى خطأ واضح بدل
+ * التجمد الأبدي. يستعمل في عمليات الإرسال/الرفع كي لا يدور الزر بلا نهاية
+ * عندما يكون الاتصال زومبي (بعد تعليق iOS أو شبكة متقطعة).
  *
  * @param {Promise} promise
  * @param {number} ms
- * @param {string} label رسالةُ الخطأ عند انتهاء المهلة
+ * @param {string} label رسالة الخطأ عند انتهاء المهلة
  */
-export function withTimeout(promise, ms, label = 'انتهت المهلة — تحقّق من اتصالك وأعد المحاولة.') {
+export function withTimeout(promise, ms, label = 'انتهت المهلة — تحقق من اتصالك وأعد المحاولة.') {
   let timer
   const timeout = new Promise((_, reject) => {
     timer = setTimeout(() => reject(new Error(label)), ms)
@@ -63,7 +63,7 @@ export function safeExt(file, fallback = 'png') {
   return raw || fallback
 }
 
-/** تنسيق تاريخ/وقت ميلاديٍّ مختصر للعرض/التصدير */
+/** تنسيق تاريخ/وقت ميلادي مختصر للعرض/التصدير */
 export function fmtDateTime(v) {
   if (!v) return ''
   try {
@@ -73,14 +73,14 @@ export function fmtDateTime(v) {
   } catch { return '' }
 }
 
-/** يبني رابط wa.me آمنًا. إن غاب الرقم يفتح WhatsApp بخيار اختيار جهة الاتصال. */
+/** يبني رابط wa.me آمنا. إن غاب الرقم يفتح WhatsApp بخيار اختيار جهة الاتصال. */
 export function waMeLink(phone, text = '') {
   const p = toWaPhone(phone)
   const q = text ? `?text=${encodeURIComponent(text)}` : ''
   return `https://wa.me/${p}${q}`
 }
 
-/** قوّة كلمة المرور: 0..3 */
+/** قوة كلمة المرور: 0..3 */
 export function pwStrength(v = '') {
   let s = 0
   if (v.length >= 6) s++
@@ -89,4 +89,4 @@ export function pwStrength(v = '') {
   if (/[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) s++
   return Math.min(s, 3)
 }
-export const PW_LABEL = ['', 'ضعيفة', 'متوسّطة', 'قويّة']
+export const PW_LABEL = ['', 'ضعيفة', 'متوسطة', 'قوية']

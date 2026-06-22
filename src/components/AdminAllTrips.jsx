@@ -13,8 +13,8 @@ function fmtDate(v) {
 }
 
 /**
- * كلّ الرحلات في المنصّة — للإدارة فقط (RLS يحرس).
- * فيها بحثٌ بالعنوان/الحملة + فلتر حالة + فرز.
+ * كل الرحلات في المنصة — للإدارة فقط (RLS يحرس).
+ * فيها بحث بالعنوان/الحملة + فلتر حالة + فرز.
  */
 export default function AdminAllTrips() {
   const [rows, setRows] = useState([])
@@ -50,7 +50,7 @@ export default function AdminAllTrips() {
   return (
     <div className="mlk-tab">
       <header className="mlk-tab-head">
-        <h1 className="mlk-tab-title">كلّ الرحلات</h1>
+        <h1 className="mlk-tab-title">كل الرحلات</h1>
         <span className="mlk-tab-count">{rows.length} رحلة</span>
       </header>
 
@@ -74,7 +74,7 @@ export default function AdminAllTrips() {
       </div>
 
       {loading ? <SkeletonList count={4} /> :
-       filtered.length === 0 ? <div className="mlk-empty">لا رحلات تُطابق هذا البحث/الفلتر</div> :
+       filtered.length === 0 ? <div className="mlk-empty">لا رحلات تطابق هذا البحث/الفلتر</div> :
        <ul className="mlk-list">
          {filtered.map((t) => (
            <li key={t.id} className="mlk-list-row">

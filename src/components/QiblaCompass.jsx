@@ -1,15 +1,15 @@
 import { useEffect, useState, useRef } from 'react'
 
 /**
- * بوصلةُ القبلة الحيّة — بمستوى تطبيق iOS الأصليّ.
+ * بوصلة القبلة الحية — بمستوى تطبيق iOS الأصلي.
  * تعرض:
- *  - اتجاه الجوّال بالدرجات مع الجهة (شمال/جنوب/شرق/غرب)
- *  - زاوية القبلة مع رمز الكعبة المتحرّك
- *  - إحداثيّات المستخدم (مع اسم الموقع التقريبيّ)
- *  - المسافة الفعليّة إلى المسجد الحرام
- *  - توهّج زمرّديّ + اهتزاز خفيف عند المحاذاة (±٥°)
- *  - زرٌّ واحدٌ يطلب إذن الحركة (DeviceOrientationEvent.requestPermission) ضمن
- *    إيماءة المستخدم — بلا أيّ تعليمات سفاري. تدوير بـwebkitCompassHeading/alpha.
+ *  - اتجاه الجوال بالدرجات مع الجهة (شمال/جنوب/شرق/غرب)
+ *  - زاوية القبلة مع رمز الكعبة المتحرك
+ *  - إحداثيات المستخدم (مع اسم الموقع التقريبي)
+ *  - المسافة الفعلية إلى المسجد الحرام
+ *  - توهج زمردي + اهتزاز خفيف عند المحاذاة (±٥°)
+ *  - زر واحد يطلب إذن الحركة (DeviceOrientationEvent.requestPermission) ضمن
+ *    إيماءة المستخدم — بلا أي تعليمات سفاري. تدوير بـwebkitCompassHeading/alpha.
  */
 export default function QiblaCompass() {
   const [heading, setHeading] = useState(null)
@@ -33,7 +33,7 @@ export default function QiblaCompass() {
     return (toDeg(Math.atan2(y, x)) + 360) % 360
   }
 
-  // Haversine — المسافة الفعليّة بين نقطتين على الكرة الأرضيّة
+  // Haversine — المسافة الفعلية بين نقطتين على الكرة الأرضية
   function calcDistance(lat, lon) {
     const R = 6371   // نصف قطر الأرض بالكيلومتر
     const toRad = (d) => (d * Math.PI) / 180
@@ -57,9 +57,9 @@ export default function QiblaCompass() {
   async function activate() {
     setStage('asking')
 
-    // ① إذنُ الحركة/الاتجاه أوّلًا — يجب أن يُطلَب داخل إيماءة المستخدم مباشرةً
-    //    (iOS 13+). أيُّ await قبله (كالموقع) يُبطِل الإيماءة فيفشل الإذن. زرٌّ
-    //    واحدٌ يستدعي requestPermission() — بلا أيّ تعليمات سفاري.
+    // ① إذن الحركة/الاتجاه أولا — يجب أن يطلب داخل إيماءة المستخدم مباشرة
+    //    (iOS 13+). أي await قبله (كالموقع) يبطل الإيماءة فيفشل الإذن. زر
+    //    واحد يستدعي requestPermission() — بلا أي تعليمات سفاري.
     const DOE = typeof DeviceOrientationEvent !== 'undefined' ? DeviceOrientationEvent : null
     if (DOE && typeof DOE.requestPermission === 'function') {
       try {
@@ -68,13 +68,13 @@ export default function QiblaCompass() {
       } catch { setStage('denied'); return }
     }
 
-    // ② فعّل مستمعَ الاتجاه فورًا (القرص يبدأ الدوران)
+    // ② فعل مستمع الاتجاه فورا (القرص يبدأ الدوران)
     const evtName = 'ondeviceorientationabsolute' in window
       ? 'deviceorientationabsolute' : 'deviceorientation'
     window.addEventListener(evtName, onOrientation, true)
     setStage('active')
 
-    // ③ ثمّ الموقع (لا يؤثّر على إذن الحركة) — يحسب زاوية القبلة والمسافة
+    // ③ ثم الموقع (لا يؤثر على إذن الحركة) — يحسب زاوية القبلة والمسافة
     try {
       const pos = await new Promise((resolve, reject) => {
         if (!navigator.geolocation) return reject(new Error('no-geo'))
@@ -87,7 +87,7 @@ export default function QiblaCompass() {
       setQiblaDeg(calcQiblaBearing(latitude, longitude))
       setDistance(calcDistance(latitude, longitude))
     } catch {
-      // فولباك: الرياض كمركزٍ افتراضيٍّ للسعوديّة (القبلة تقريبيّة حتى يُتاح الموقع)
+      // فولباك: الرياض كمركز افتراضي للسعودية (القبلة تقريبية حتى يتاح الموقع)
       setCoords({ lat: 24.7136, lon: 46.6753, accuracy: null })
       setQiblaDeg(calcQiblaBearing(24.7136, 46.6753))
       setDistance(calcDistance(24.7136, 46.6753))
@@ -106,7 +106,7 @@ export default function QiblaCompass() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // اهتزازٌ خفيفٌ عند المحاذاة (vibration API)
+  // اهتزاز خفيف عند المحاذاة (vibration API)
   useEffect(() => {
     if (heading === null || qiblaDeg === null) return
     const delta = Math.abs(((qiblaDeg - heading + 540) % 360) - 180)
@@ -121,14 +121,14 @@ export default function QiblaCompass() {
     : null
   const aligned = delta !== null && Math.abs(delta) < 5
 
-  // اسمُ الاتّجاه العربيُّ من درجة الجوّال
+  // اسم الاتجاه العربي من درجة الجوال
   function cardinalAr(deg) {
     if (deg === null) return ''
     const dirs = ['شمال', 'شمال شرق', 'شرق', 'جنوب شرق', 'جنوب', 'جنوب غرب', 'غرب', 'شمال غرب']
     return dirs[Math.round(deg / 45) % 8]
   }
 
-  // إحداثيّاتٌ بصيغة DMS مثل تطبيق iOS الأصليّ
+  // إحداثيات بصيغة DMS مثل تطبيق iOS الأصلي
   function formatDMS(d, isLat) {
     const dir = isLat ? (d >= 0 ? 'ش' : 'ج') : (d >= 0 ? 'شرق' : 'غرب')
     const abs = Math.abs(d)
@@ -143,7 +143,7 @@ export default function QiblaCompass() {
   return (
     <div className={`qibla ${aligned ? 'aligned' : ''}`}>
 
-      {/* رقمُ الاتجاه فوق القرص — كبيرٌ وواضحٌ مثل iOS */}
+      {/* رقم الاتجاه فوق القرص — كبير وواضح مثل iOS */}
       {heading !== null && (
         <div className="qibla-readout">
           <span className="qibla-deg">{Math.round(heading)}°</span>
@@ -169,14 +169,14 @@ export default function QiblaCompass() {
             </radialGradient>
           </defs>
 
-          {/* القرصُ الدوّار */}
+          {/* القرص الدوار */}
           <g transform={heading !== null ? `rotate(${-heading} ${CX} ${CY})` : ''}
              style={{ transition: 'transform .15s cubic-bezier(.4,1.4,.6,1)' }}>
-            {/* تدرّجاتُ ٣٦٠° — كلّ ١٠° (٣٦ تدرّجًا) */}
+            {/* تدرجات ٣٦٠° — كل ١٠° (٣٦ تدرجا) */}
             {[...Array(72)].map((_, i) => {
               const angle = i * 5
-              const isMajor = i % 6 === 0    // كلّ ٣٠° (١٢ تدرّجًا كبيرًا)
-              const isMid = i % 2 === 0       // كلّ ١٠°
+              const isMajor = i % 6 === 0    // كل ٣٠° (١٢ تدرجا كبيرا)
+              const isMid = i % 2 === 0       // كل ١٠°
               const inner = RADIUS - (isMajor ? 12 : isMid ? 7 : 4)
               const outer = RADIUS - 1
               const a = (angle - 90) * Math.PI / 180
@@ -188,7 +188,7 @@ export default function QiblaCompass() {
                   strokeWidth={isMajor ? 2 : 1} />
               )
             })}
-            {/* أرقامُ الدرجات الرئيسيّة (٣٠/٦٠/...) */}
+            {/* أرقام الدرجات الرئيسية (٣٠/٦٠/...) */}
             {[30, 60, 120, 150, 210, 240, 300, 330].map((angle) => {
               const a = (angle - 90) * Math.PI / 180
               const r = RADIUS - 22
@@ -200,7 +200,7 @@ export default function QiblaCompass() {
                   fontSize="9" fill="rgba(255,255,255,.45)">{angle}</text>
               )
             })}
-            {/* علاماتُ الجهات الأربع — بأحجامٍ مختلفةٍ كتطبيق iOS */}
+            {/* علامات الجهات الأربع — بأحجام مختلفة كتطبيق iOS */}
             <text x={CX} y="20" textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
                   fontSize="16" fill="#ef4444">ش</text>
             <text x={CX} y={VB - 7} textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
@@ -210,7 +210,7 @@ export default function QiblaCompass() {
             <text x="10" y={CY + 5} textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
                   fontSize="14" fill="rgba(255,255,255,.85)">غ</text>
 
-            {/* رمزُ الكعبة */}
+            {/* رمز الكعبة */}
             {qiblaDeg !== null && (() => {
               const a = (qiblaDeg - 90) * Math.PI / 180
               const r = RADIUS - 30
@@ -227,7 +227,7 @@ export default function QiblaCompass() {
             })()}
           </g>
 
-          {/* إبرةُ الاتجاه الثابتة — تُشير لأعلى دائمًا */}
+          {/* إبرة الاتجاه الثابتة — تشير لأعلى دائما */}
           <g filter={aligned ? 'drop-shadow(0 0 9px rgba(52,211,153,.85))' : 'drop-shadow(0 2px 4px rgba(16,185,129,.5))'}>
             <polygon points={`${CX},20 ${CX - 8},${CY - 6} ${CX + 8},${CY - 6}`}
               fill={aligned ? '#34d399' : 'url(#qb-needle)'}
@@ -236,12 +236,12 @@ export default function QiblaCompass() {
               fill="rgba(241,245,243,.4)" />
           </g>
 
-          {/* المسمار المركزيّ */}
+          {/* المسمار المركزي */}
           <circle cx={CX} cy={CY} r="8" fill="url(#qb-pin)" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" />
         </svg>
       </div>
 
-      {/* بياناتٌ تحت القرص — مثل iOS Native Compass */}
+      {/* بيانات تحت القرص — مثل iOS Native Compass */}
       {stage === 'active' && coords && (
         <div className="qibla-info">
           {distance !== null && (
@@ -252,7 +252,7 @@ export default function QiblaCompass() {
           )}
           {qiblaDeg !== null && (
             <div className="qibla-info-row">
-              <span className="qibla-info-lbl">اتّجاه القبلة</span>
+              <span className="qibla-info-lbl">اتجاه القبلة</span>
               <span className="qibla-info-val">{Math.round(qiblaDeg)}° · {cardinalAr(qiblaDeg)}</span>
             </div>
           )}
@@ -281,22 +281,22 @@ export default function QiblaCompass() {
         )}
         {stage === 'denied' && (
           <div className="qibla-denied">
-            <strong>نحتاج إذن الحركة والاتّجاه</strong>
+            <strong>نحتاج إذن الحركة والاتجاه</strong>
             <span>اضغط «إعادة المحاولة» وامنح الإذن ليبدأ القرص بالدوران.</span>
             <button type="button" className="btn btn-em btn-sm" onClick={activate}>إعادة المحاولة</button>
           </div>
         )}
         {stage === 'unsupported' && (
-          <span className="qibla-hint">افتح ملبّيك على جوّالك للتجربة الكاملة</span>
+          <span className="qibla-hint">افتح ملبّيك على جوالك للتجربة الكاملة</span>
         )}
         {stage === 'active' && delta !== null && (
           <div className={`qibla-guide ${aligned ? 'ok' : ''}`}>
             {aligned ? (
-              <><span className="qibla-tick-ic">✓</span> محاذٍ للقبلة</>
+              <><span className="qibla-tick-ic">✓</span> محاذ للقبلة</>
             ) : delta > 0 ? (
-              <>لُف {Math.round(delta)}° يمينًا <span aria-hidden="true">←</span></>
+              <>لف {Math.round(delta)}° يمينا <span aria-hidden="true">←</span></>
             ) : (
-              <><span aria-hidden="true">→</span> لُف {Math.round(-delta)}° يسارًا</>
+              <><span aria-hidden="true">→</span> لف {Math.round(-delta)}° يسارا</>
             )}
           </div>
         )}

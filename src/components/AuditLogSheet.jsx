@@ -5,8 +5,8 @@ import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
-const STATUS_AR = { registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
-const TRIP_STATUS_AR = { draft: 'مسودّة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
+const STATUS_AR = { registered: 'مسجل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
+const TRIP_STATUS_AR = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
 
 const ACTION_AR = {
   create: { t: 'إنشاء', icon: 'plus', cls: 'ok' },
@@ -23,9 +23,9 @@ const ACTION_AR = {
   role_change: { t: 'تغيير دور عضو', icon: 'customers', cls: 'info' },
 }
 
-const MEMBER_ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظّف' }
+const MEMBER_ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظف' }
 
-const ROLE_AR = { admin: 'إدارة المنصّة', subscriber: 'المالك', customer: 'العميل', system: 'بوّابة الدفع', unknown: '—' }
+const ROLE_AR = { admin: 'إدارة المنصة', subscriber: 'المالك', customer: 'العميل', system: 'بوابة الدفع', unknown: '—' }
 
 function relTime(v) {
   if (!v) return ''
@@ -38,7 +38,7 @@ function relTime(v) {
     + ' ' + d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
 }
 
-/** يصف تغيير حقلٍ واحد في رسالةٍ عربيّة */
+/** يصف تغيير حقل واحد في رسالة عربية */
 function describeField(field, change) {
   const { old: ov, new: nv } = change || {}
   switch (field) {
@@ -51,7 +51,7 @@ function describeField(field, change) {
     case 'price':   return `سعر المقعد: ${ov ?? '—'} → ${nv ?? '—'}`
     case 'capacity':return `السعة: ${ov ?? '—'} → ${nv ?? '—'}`
     case 'role':    return `الدور: ${MEMBER_ROLE_AR[ov] || ov || '—'} → ${MEMBER_ROLE_AR[nv] || nv || '—'}`
-    case 'payment_proof_url': return nv ? 'أُرفق إيصال الدفع' : 'أُزيل إيصال الدفع'
+    case 'payment_proof_url': return nv ? 'أرفق إيصال الدفع' : 'أزيل إيصال الدفع'
     default: return field
   }
 }
@@ -67,7 +67,7 @@ function describeAction(log) {
 }
 
 /**
- * سجلّ نشاط الرحلة — يقرأ audit_logs مفلترةً بـ trip_id (RLS تحرس الملكيّة).
+ * سجل نشاط الرحلة — يقرأ audit_logs مفلترة بـ trip_id (RLS تحرس الملكية).
  */
 export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
   const [logs, setLogs] = useState([])
@@ -77,7 +77,7 @@ export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
   const load = useCallback(async () => {
     if (!open || !tripId) return
     setLoading(true)
-    // أحداث الرحلة + أحداث الفريق (subscriber-scope بلا trip_id) معًا
+    // أحداث الرحلة + أحداث الفريق (subscriber-scope بلا trip_id) معا
     const tripQ = supabase
       .from('audit_logs')
       .select('id, actor_email, actor_role, entity, entity_id, entity_label, action, changes, created_at')
@@ -100,7 +100,7 @@ export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
 
   useEffect(() => { load() }, [load])
 
-  // تحديثٌ حيٌّ — أحداثٌ جديدةٌ تظهر فورًا
+  // تحديث حي — أحداث جديدة تظهر فورا
   useRealtime('audit-log', open && tripId ? [{ table: 'audit_logs', filter: `trip_id=eq.${tripId}` }] : [],
     load, 300, [open, tripId, load])
 
@@ -110,12 +110,12 @@ export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
     <BottomSheet
       open={open}
       onClose={onClose}
-      title="سجلّ نشاط الرحلة"
+      title="سجل نشاط الرحلة"
       actions={<button className="btn btn-gold btn-block" onClick={onClose}>تم</button>}
     >
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
         {[
-          { v: 'all', t: 'الكلّ' },
+          { v: 'all', t: 'الكل' },
           { v: 'passenger', t: 'المعتمرون' },
           { v: 'trip', t: 'الرحلة' },
           { v: 'member', t: 'الفريق' },
@@ -131,7 +131,7 @@ export default function AuditLogSheet({ open, tripId, subscriberId, onClose }) {
       ) : filtered.length === 0 ? (
         <div className="empty">
           <div className="em-ttl">لا نشاط بعد</div>
-          <div>سيُسجَّل هنا كلّ تغييرٍ على المعتمرين والرحلة تلقائيًّا.</div>
+          <div>سيسجل هنا كل تغيير على المعتمرين والرحلة تلقائيا.</div>
         </div>
       ) : (
         <div className="audit-list">

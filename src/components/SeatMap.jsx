@@ -6,12 +6,12 @@ import { useUI } from '../lib/useUI'
 const AREA_AR = { male: 'الرجال', female: 'النساء', family: 'العوائل' }
 
 /**
- * مخطّط الباص التفاعلي — واقعيّ، الأبواب يمينًا والسائق/المساعد أعلى اليسار.
+ * مخطط الباص التفاعلي — واقعي، الأبواب يمينا والسائق/المساعد أعلى اليسار.
  *
  * @param {string} policy          سياسة المقاعد
  * @param {number} rows            عدد صفوف الأربع مقاعد
- * @param {number} back            عدد مقاعد الصفّ الخلفي
- * @param {Array}  passengers      المعتمرون الحاليّون (لإظهار المحجوز)
+ * @param {number} back            عدد مقاعد الصف الخلفي
+ * @param {Array}  passengers      المعتمرون الحاليون (لإظهار المحجوز)
  * @param {string} selected        رقم المقعد المختار
  * @param {Function} onSelect
  * @param {object} forPassenger    { id?, gender, is_family }
@@ -52,14 +52,14 @@ export default function SeatMap({
   function pick(seat) {
     if (readOnly) return
     const s = seatState(seat)
-    // اشرح سبب تعذّر الاختيار بدل صمتٍ على اللمس (لا يظهر title على الجوال).
+    // اشرح سبب تعذر الاختيار بدل صمت على اللمس (لا يظهر title على الجوال).
     if (s.kind === 'taken') {
       const nm = s.holder?.full_name ? ` (${s.holder.full_name})` : ''
-      toast(`المقعد ${seat.no} محجوزٌ${nm}`, { type: 'info' })
+      toast(`المقعد ${seat.no} محجوز${nm}`, { type: 'info' })
       return
     }
     if (s.kind === 'locked') {
-      toast(s.a ? `المقعد ${seat.no} مخصّصٌ لمنطقة ${AREA_AR[s.a] || ''}` : `المقعد ${seat.no} غير متاحٍ لهذا الاختيار`, { type: 'info' })
+      toast(s.a ? `المقعد ${seat.no} مخصص لمنطقة ${AREA_AR[s.a] || ''}` : `المقعد ${seat.no} غير متاح لهذا الاختيار`, { type: 'info' })
       return
     }
     onSelect?.(String(seat.no))
@@ -71,11 +71,11 @@ export default function SeatMap({
   return (
     <div className="bus3d">
       <div className="bus3d-body">
-        {/* هوائيّان عند المقدّمة */}
+        {/* هوائيان عند المقدمة */}
         <span className="bus-antenna left" aria-hidden="true" />
         <span className="bus-antenna right" aria-hidden="true" />
 
-        {/* بابان على يمين الشاشة: دخولٌ أماميّ · خروجٌ أوسط (أسهمٌ توضيحيّة) */}
+        {/* بابان على يمين الشاشة: دخول أمامي · خروج أوسط (أسهم توضيحية) */}
         <span className="bus-door bus-door-front" aria-hidden="true">
           <Icon name="arrowLeft" size={11} />
           <b>مدخل</b>
@@ -85,7 +85,7 @@ export default function SeatMap({
           <b>مخرج</b>
         </span>
 
-        {/* المقدّمة: زجاجٌ أماميٌّ مقوّس + السائق ثمّ المساعد بجانبه */}
+        {/* المقدمة: زجاج أمامي مقوس + السائق ثم المساعد بجانبه */}
         <div className="bus3d-cab">
           <div className="cab-windshield" aria-hidden="true" />
           <div className="cab-driver">
@@ -102,7 +102,7 @@ export default function SeatMap({
         <div className="bus3d-cabin">
           {rowList.map((_, row) => {
             const rowSeats = seats.filter((s) => s.row === row)
-            // الترقيم يمين←يسار: النافذة اليمنى أوّلًا (الأصغر) ثمّ الممرّ
+            // الترقيم يمين←يسار: النافذة اليمنى أولا (الأصغر) ثم الممر
             const right = rowSeats.filter((s) => s.col <= 1).sort((a, b) => a.col - b.col)
             const left = rowSeats.filter((s) => s.col >= 3).sort((a, b) => a.col - b.col)
             return (
@@ -118,7 +118,7 @@ export default function SeatMap({
             )
           })}
 
-          {/* الصفّ الخلفي المتراصّ */}
+          {/* الصف الخلفي المتراص */}
           {B > 0 && (
             <div className="cabin-back" style={{ gridTemplateColumns: `repeat(${B}, 1fr)` }}>
               {backSeats.map((s) => <SeatBtn key={s.no} seat={s} state={seatState(s)} onPick={pick} />)}
@@ -126,7 +126,7 @@ export default function SeatMap({
           )}
         </div>
 
-        {/* الصادم الخلفيّ */}
+        {/* الصادم الخلفي */}
         <div className="bus-rear" aria-hidden="true" />
       </div>
 
@@ -135,7 +135,7 @@ export default function SeatMap({
   )
 }
 
-const KIND_AR = { available: 'متاح', selected: 'مختار', taken: 'محجوز', locked: 'مقيّد' }
+const KIND_AR = { available: 'متاح', selected: 'مختار', taken: 'محجوز', locked: 'مقيد' }
 
 function SeatBtn({ seat, state, onPick }) {
   const cls = `seat3d seat-${state.kind} ${state.a ? 'a-' + state.a : ''}`
@@ -145,7 +145,7 @@ function SeatBtn({ seat, state, onPick }) {
   const title = hasName ? `${holder.full_name} · مقعد ${seat.no}`
     : holder ? `محجوز · مقعد ${seat.no}` : `مقعد ${seat.no}`
   const blocked = state.kind === 'taken' || state.kind === 'locked'
-  // لا نستخدم disabled كي تعمل اللمسة فتشرح سبب المنع عبر toast؛ نُعلِم الوصوليّة بـ aria.
+  // لا نستخدم disabled كي تعمل اللمسة فتشرح سبب المنع عبر toast؛ نعلم الوصولية بـ aria.
   return (
     <button
       type="button"
@@ -173,7 +173,7 @@ function Legend({ policy }) {
         <span className="lg-chip"><i className="dot avail" /> متاح</span>
         <span className="lg-chip"><i className="dot mine" /> مختار</span>
         <span className="lg-chip"><i className="dot taken" /> محجوز</span>
-        <span className="lg-chip"><i className="dot locked" /> مقيّد</span>
+        <span className="lg-chip"><i className="dot locked" /> مقيد</span>
       </div>
       <div className="lg-row">
         <span className="lg-chip"><i className="dot a-male" /> ذكور</span>

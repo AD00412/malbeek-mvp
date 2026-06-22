@@ -1,16 +1,16 @@
 import Icon from './Icon'
 
 const STEPS = [
-  { k: 'registered', t: 'مسجّل',        ic: 'check' },
+  { k: 'registered', t: 'مسجل',        ic: 'check' },
   { k: 'paid',       t: 'مدفوع',        ic: 'payments' },
   { k: 'boarded',    t: 'صعد الحافلة',  ic: 'bus' },
   { k: 'checked_in', t: 'استلم الغرفة', ic: 'bed' },
 ]
 
 /**
- * شريطُ تتبّعٍ لحالة المعتمر — يُبرز الخطوة الحاليّة وما اكتمل منها.
+ * شريط تتبع لحالة المعتمر — يبرز الخطوة الحالية وما اكتمل منها.
  * @param {string} status  registered | paid | boarded | checked_in
- * @param {boolean} [light]  نسخةٌ لخلفيّةٍ فاتحة (بطاقة التذكرة)
+ * @param {boolean} [light]  نسخة لخلفية فاتحة (بطاقة التذكرة)
  */
 export default function StatusTimeline({ status, light }) {
   const idx = Math.max(0, STEPS.findIndex((s) => s.k === status))

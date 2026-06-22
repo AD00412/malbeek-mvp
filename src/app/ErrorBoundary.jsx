@@ -4,10 +4,10 @@ import CompassMark from '../components/CompassMark'
 /**
  * حد أمان أعلى التطبيق: يلتقط أي خطأ عرض غير متوقع فيعرض شاشة لطيفة بدل
  * شاشة بيضاء. مقاوم للقفل + أداة تشخيص:
- *  • «جرّب مرة ثانية» تعيد الضبط بلا reload (تتعافى الأخطاء العابرة).
- *  • إعادة ضبط تلقائية عند تغيّر المسار فلا يقفل مسار واحد التطبيق كله.
- *  • يحفظ تفاصيل آخر خطأ في localStorage (يبقى بعد التحديث) ويعرضها قابلةً
- *    للنسخ — حتى يصوّرها المستخدم ونعرف السبب الجذري بدقة.
+ *  • «جرب مرة ثانية» تعيد الضبط بلا reload (تتعافى الأخطاء العابرة).
+ *  • إعادة ضبط تلقائية عند تغير المسار فلا يقفل مسار واحد التطبيق كله.
+ *  • يحفظ تفاصيل آخر خطأ في localStorage (يبقى بعد التحديث) ويعرضها قابلة
+ *    للنسخ — حتى يصورها المستخدم ونعرف السبب الجذري بدقة.
  */
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -55,7 +55,7 @@ export default class ErrorBoundary extends Component {
 
   copy() {
     const d = this.state.info || {}
-    const text = `ملبّيك — تفاصيل الخطأ\nالرسالة: ${d.msg}\nالمسار: ${d.url}\nالمكوّن: ${d.componentStack}\nالوقت: ${d.at}\nالجهاز: ${d.ua}`
+    const text = `ملبّيك — تفاصيل الخطأ\nالرسالة: ${d.msg}\nالمسار: ${d.url}\nالمكون: ${d.componentStack}\nالوقت: ${d.at}\nالجهاز: ${d.ua}`
     try {
       navigator.clipboard.writeText(text)
       this.setState({ copied: true })
@@ -73,21 +73,21 @@ export default class ErrorBoundary extends Component {
           صار خطأ غير متوقع
         </div>
         <div className="sl-text" style={{ marginTop: 4, fontSize: 13.5 }}>
-          آسفين على هذا — جرّب مرة ثانية، وإذا استمر أعد تحميل الصفحة. بياناتك محفوظة بأمان.
+          آسفين على هذا — جرب مرة ثانية، وإذا استمر أعد تحميل الصفحة. بياناتك محفوظة بأمان.
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button className="btn btn-gold" onClick={this.reset}>جرّب مرة ثانية</button>
+          <button className="btn btn-gold" onClick={this.reset}>جرب مرة ثانية</button>
           <button className="btn btn-ghost" onClick={() => window.location.reload()}>إعادة التحميل</button>
           <button className="btn btn-ghost" onClick={() => { window.location.href = '/' }}>الرئيسية</button>
         </div>
 
-        {/* تفاصيل تقنية — صوّرها وأرسلها للدعم لنصلح السبب بدقة */}
+        {/* تفاصيل تقنية — صورها وأرسلها للدعم لنصلح السبب بدقة */}
         <button
           type="button"
           onClick={() => this.setState((s) => ({ showDetails: !s.showDetails }))}
           style={{ marginTop: 22, background: 'transparent', border: 0, color: 'var(--cr-300)',
                    fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline' }}>
-          {this.state.showDetails ? 'إخفاء التفاصيل التقنية' : 'تفاصيل تقنية (صوّرها وأرسلها للدعم)'}
+          {this.state.showDetails ? 'إخفاء التفاصيل التقنية' : 'تفاصيل تقنية (صورها وأرسلها للدعم)'}
         </button>
         {this.state.showDetails && (
           <div style={{ marginTop: 12, width: 'min(560px, 92vw)', textAlign: 'right' }}>
@@ -102,7 +102,7 @@ export default class ErrorBoundary extends Component {
                           color: 'var(--cr-200)' }}>
 {`الرسالة: ${d.msg || '—'}
 المسار: ${d.url || '—'}
-المكوّن:${d.componentStack || ' —'}`}
+المكون:${d.componentStack || ' —'}`}
             </pre>
           </div>
         )}

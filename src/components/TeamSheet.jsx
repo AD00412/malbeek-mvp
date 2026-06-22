@@ -7,11 +7,11 @@ import BottomSheet from './BottomSheet'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
-const ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظّف' }
+const ROLE_AR = { owner: 'المالك', manager: 'مشرف', staff: 'موظف' }
 
 /**
- * إدارة فريق الحملة وصلاحيّاته — للمالك فقط.
- * يضيف أعضاءً بالبريد (لحساباتٍ قائمة)، يغيّر أدوارهم، ويزيلهم.
+ * إدارة فريق الحملة وصلاحياته — للمالك فقط.
+ * يضيف أعضاء بالبريد (لحسابات قائمة)، يغير أدوارهم، ويزيلهم.
  * @param {boolean} open
  * @param {string}  subscriberId
  * @param {Function} onClose
@@ -42,40 +42,40 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
 
   async function inviteMember() {
     if (busy) return
-    if (!isValidEmail(email.trim())) { toast('أدخل بريدًا إلكترونيًّا صحيحًا.', { type: 'error' }); return }
+    if (!isValidEmail(email.trim())) { toast('أدخل بريدا إلكترونيا صحيحا.', { type: 'error' }); return }
     setBusy(true)
     const { error } = await supabase.rpc('invite_member', { p_sub: subscriberId, p_email: email.trim(), p_role: role })
     setBusy(false)
-    if (error) toast(translateRpcError(error, 'تعذّرت الدعوة.'), { type: 'error' })
-    else { toast('تمت الدعوة ✓ انسخ رابطها أدناه وأرسله للموظّف', { type: 'success' }); setEmail(''); load() }
+    if (error) toast(translateRpcError(error, 'تعذرت الدعوة.'), { type: 'error' })
+    else { toast('تمت الدعوة ✓ انسخ رابطها أدناه وأرسله للموظف', { type: 'success' }); setEmail(''); load() }
   }
 
   async function revokeInvite(id) {
     if (acting) return
-    const ok = await confirm({ title: 'إلغاء الدعوة', message: 'إلغاء هذه الدعوة المعلّقة؟ لن يَستطيع العضو القبولَ برابطها بعد الإلغاء.', confirmText: 'إلغاء الدعوة', cancelText: 'تراجع', danger: true })
+    const ok = await confirm({ title: 'إلغاء الدعوة', message: 'إلغاء هذه الدعوة المعلقة؟ لن يستطيع العضو القبول برابطها بعد الإلغاء.', confirmText: 'إلغاء الدعوة', cancelText: 'تراجع', danger: true })
     if (!ok) return
     setActing(true)
     const { error } = await supabase.from('subscriber_invites').delete().eq('id', id)
     setActing(false)
-    if (error) toast(translateRpcError(error, 'تعذّر الإلغاء.'), { type: 'error' })
-    else { toast('أُلغيت الدعوة', { type: 'info' }); load() }
+    if (error) toast(translateRpcError(error, 'تعذر الإلغاء.'), { type: 'error' })
+    else { toast('ألغيت الدعوة', { type: 'info' }); load() }
   }
 
   async function copyInviteLink(id) {
     const link = `${window.location.origin}/join-team/${id}`
-    try { await navigator.clipboard.writeText(link); toast('نُسخ رابط الدعوة ✓ أرسله للموظّف عبر البريد/واتساب', { type: 'success' }) }
+    try { await navigator.clipboard.writeText(link); toast('نسخ رابط الدعوة ✓ أرسله للموظف عبر البريد/واتساب', { type: 'success' }) }
     catch { toast(link, { type: 'info' }) }
   }
 
   async function removeMember(m) {
     if (acting) return
-    const ok = await confirm({ title: 'إزالة عضو', message: `إزالة «${m.full_name || 'العضو'}» من فريق الحملة؟ سيفقد الوصول فورًا.`, confirmText: 'إزالة', danger: true })
+    const ok = await confirm({ title: 'إزالة عضو', message: `إزالة «${m.full_name || 'العضو'}» من فريق الحملة؟ سيفقد الوصول فورا.`, confirmText: 'إزالة', danger: true })
     if (!ok) return
     setActing(true)
     const { error } = await supabase.rpc('remove_team_member', { p_sub: subscriberId, p_profile: m.profile_id })
     setActing(false)
-    if (error) toast(translateRpcError(error, 'تعذّرت الإزالة.'), { type: 'error' })
-    else { toast('أُزيل العضو', { type: 'info' }); load() }
+    if (error) toast(translateRpcError(error, 'تعذرت الإزالة.'), { type: 'error' })
+    else { toast('أزيل العضو', { type: 'info' }); load() }
   }
 
   async function changeRole(m, newRole) {
@@ -83,27 +83,27 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
     setActing(true)
     const { error } = await supabase.rpc('set_member_role', { p_sub: subscriberId, p_profile: m.profile_id, p_role: newRole })
     setActing(false)
-    if (error) toast(translateRpcError(error, 'تعذّر تغيير الدور.'), { type: 'error' })
-    else { toast('حُدّث الدور', { type: 'success' }); load() }
+    if (error) toast(translateRpcError(error, 'تعذر تغيير الدور.'), { type: 'error' })
+    else { toast('حدث الدور', { type: 'success' }); load() }
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="الفريق والصلاحيّات">
+    <BottomSheet open={open} onClose={onClose} title="الفريق والصلاحيات">
       <p className="muted" style={{ fontSize: 13, marginTop: -6 }}>
-        ادعُ مشرفين/موظّفين لمساعدتك في إدارة الحملة. يصلون لكلّ العمليّات (الرحلات، المعتمرون، التسكين، الكشوفات) —
-        لكنّ إدارة الفريق والباقة تبقى لك وحدك. تظهر الدعوة للعضو ليقبلها بنفسه (بلا تحويلٍ تلقائيّ).
+        ادع مشرفين/موظفين لمساعدتك في إدارة الحملة. يصلون لكل العمليات (الرحلات، المعتمرون، التسكين، الكشوفات) —
+        لكن إدارة الفريق والباقة تبقى لك وحدك. تظهر الدعوة للعضو ليقبلها بنفسه (بلا تحويل تلقائي).
       </p>
 
       <div className="form" style={{ marginTop: 8 }}>
         <div className="field ltr">
-          <label>بريد العضو (لحسابٍ مسجّلٍ في ملبّيك)</label>
+          <label>بريد العضو (لحساب مسجل في ملبّيك)</label>
           <input type="email" inputMode="email" placeholder="member@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div className="grid-2">
           <div className="field">
             <label>الدور</label>
             <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="staff">موظّف</option>
+              <option value="staff">موظف</option>
               <option value="manager">مشرف</option>
             </select>
           </div>
@@ -115,7 +115,7 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
 
       {invites.length > 0 && (
         <>
-          <div className="sec-label" style={{ marginTop: 12 }}>دعواتٌ معلّقة ({invites.length})</div>
+          <div className="sec-label" style={{ marginTop: 12 }}>دعوات معلقة ({invites.length})</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {invites.map((iv) => (
               <div key={iv.invite_id} className="trip-card" style={{ padding: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -145,7 +145,7 @@ export default function TeamSheet({ open, subscriberId, onClose }) {
               {!m.is_owner && (
                 <>
                   <select value={m.role} onChange={(e) => changeRole(m, e.target.value)} disabled={acting} style={{ width: 'auto', padding: '6px 10px' }}>
-                    <option value="staff">موظّف</option>
+                    <option value="staff">موظف</option>
                     <option value="manager">مشرف</option>
                   </select>
                   <button className="icon-btn danger" onClick={() => removeMember(m)} disabled={acting} aria-label="إزالة"><Icon name="trash" size={15} /></button>

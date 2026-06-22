@@ -1,11 +1,11 @@
 import { useState } from 'react'
 
 /**
- * نجومُ التَّقييم — عرضٌ أو إدخال.
- *   value     القيمةُ الحاليّة (0..5)
- *   onChange  لو مُرِّر صار قابلًا للنقر (وضعُ الإدخال)
- *   size      حجمُ النجمة بالبكسل
- *   count     عددُ التقييمات (للعرض المُجمَّع، اختياريّ)
+ * نجوم التقييم — عرض أو إدخال.
+ *   value     القيمة الحالية (0..5)
+ *   onChange  لو مرر صار قابلا للنقر (وضع الإدخال)
+ *   size      حجم النجمة بالبكسل
+ *   count     عدد التقييمات (للعرض المجمع، اختياري)
  */
 export default function RatingStars({ value = 0, onChange, size = 22, count, readOnly = false }) {
   const editable = typeof onChange === 'function' && !readOnly

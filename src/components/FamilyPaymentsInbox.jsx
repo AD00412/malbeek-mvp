@@ -6,16 +6,16 @@ import Icon from './Icon'
 import SignedImage from './SignedImage'
 
 /**
- * واجهةُ تحقّق صاحب الحملة من دفعات العائلات الجماعيّة.
- * رأسُ العائلة يدفع عن أقاربه (متجر زد/سلة أو بنك) ويُرفق رقمَ الطلب +
- * الإيصالَ الجماعيّ؛ هنا يراجعها صاحبُ الحملة فيؤكّد دفعَ المجموعة كاملةً.
+ * واجهة تحقق صاحب الحملة من دفعات العائلات الجماعية.
+ * رأس العائلة يدفع عن أقاربه (متجر زد/سلة أو بنك) ويرفق رقم الطلب +
+ * الإيصال الجماعي؛ هنا يراجعها صاحب الحملة فيؤكد دفع المجموعة كاملة.
  *
  * يعتمد على RPCs: list_family_payments / verify_family_payment.
- * لا حركةَ أموالٍ — تأكيدٌ يدويٌّ لإيصالٍ مستلَم.
+ * لا حركة أموال — تأكيد يدوي لإيصال مستلم.
  *
  * @param {object}  sub          { id, ... }
- * @param {object} [trip]        لو مُرِّر، يَقصر القائمةَ على رحلةٍ واحدة
- * @param {Function} onChanged   تُستدعى بعد تأكيدٍ ناجحٍ (لتحديث الأب)
+ * @param {object} [trip]        لو مرر، يقصر القائمة على رحلة واحدة
+ * @param {Function} onChanged   تستدعى بعد تأكيد ناجح (لتحديث الأب)
  */
 export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
   const { toast, confirm } = useUI()
@@ -29,7 +29,7 @@ export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
     const { data, error } = await supabase.rpc('list_family_payments', {
       p_sub: sub.id, p_trip: trip?.id ?? null,
     })
-    if (error) toast(translateRpcError(error, 'تعذّر تحميل دفعات العائلات.'), { type: 'error' })
+    if (error) toast(translateRpcError(error, 'تعذر تحميل دفعات العائلات.'), { type: 'error' })
     setRows(data || [])
     setLoading(false)
   }, [sub?.id, trip?.id, toast])
@@ -39,9 +39,9 @@ export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
   async function verify(r) {
     const pending = Number(r.member_count) - Number(r.paid_count)
     const ok = await confirm({
-      title: 'تأكيدُ دفع العائلة',
-      message: `سيُؤكَّد دفعُ ${pending} من أفراد عائلة «${r.head_name || '—'}» دفعةً واحدة. تأكّدت من الإيصال؟`,
-      confirmText: 'نعم، أكّد الدفع',
+      title: 'تأكيد دفع العائلة',
+      message: `سيؤكد دفع ${pending} من أفراد عائلة «${r.head_name || '—'}» دفعة واحدة. تأكدت من الإيصال؟`,
+      confirmText: 'نعم، أكد الدفع',
     })
     if (!ok) return
     setBusyId(r.family_group_id)
@@ -49,15 +49,15 @@ export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
       p_group: r.family_group_id, p_trip: r.trip_id,
     })
     setBusyId('')
-    if (error) { toast(translateRpcError(error, 'تعذّر تأكيد الدفع.'), { type: 'error' }); return }
-    toast(`أُكِّد دفعُ ${data ?? 0} فرداً ✓`, { type: 'success' })
+    if (error) { toast(translateRpcError(error, 'تعذر تأكيد الدفع.'), { type: 'error' }); return }
+    toast(`أكد دفع ${data ?? 0} فردا ✓`, { type: 'success' })
     await load()
     onChanged?.()
   }
 
-  if (loading) return <div className="muted" style={{ padding: '12px' }}>جارٍ التحميل…</div>
+  if (loading) return <div className="muted" style={{ padding: '12px' }}>جار التحميل…</div>
   if (rows.length === 0) {
-    return <div className="muted" style={{ padding: '12px' }}>لا دفعاتِ عائلاتٍ بعد.</div>
+    return <div className="muted" style={{ padding: '12px' }}>لا دفعات عائلات بعد.</div>
   }
 
   return (
@@ -77,23 +77,23 @@ export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
                 {!trip && <div className="muted" style={{ fontSize: '0.85em' }}>{r.trip_title}</div>}
               </div>
               <span className={`badge ${done ? 'ok' : 'warn'}`}>
-                {done ? 'مؤكَّد' : `معلّق · ${pending}/${total}`}
+                {done ? 'مؤكد' : `معلق · ${pending}/${total}`}
               </span>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 8, fontSize: '0.9em' }}>
-              <div>عددُ الأفراد: <b>{total}</b></div>
-              <div>المؤكَّد: <b>{paid}</b></div>
-              <div>رقمُ طلب المتجر: <b dir="ltr">{r.order_no || '—'}</b></div>
+              <div>عدد الأفراد: <b>{total}</b></div>
+              <div>المؤكد: <b>{paid}</b></div>
+              <div>رقم طلب المتجر: <b dir="ltr">{r.order_no || '—'}</b></div>
             </div>
 
             {r.receipt_url ? (
               <div style={{ marginTop: 8 }}>
-                <div className="muted" style={{ fontSize: '0.85em', marginBottom: 4 }}>الإيصالُ الجماعيّ:</div>
+                <div className="muted" style={{ fontSize: '0.85em', marginBottom: 4 }}>الإيصال الجماعي:</div>
                 <SignedImage bucket="payment-proofs" path={r.receipt_url} maxHeight={180} showOpenFull />
               </div>
             ) : (
-              <div className="muted" style={{ marginTop: 8, fontSize: '0.85em' }}>لا إيصالَ مُرفَق بعد.</div>
+              <div className="muted" style={{ marginTop: 8, fontSize: '0.85em' }}>لا إيصال مرفق بعد.</div>
             )}
 
             {!done && (
@@ -103,7 +103,7 @@ export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
                   disabled={busyId === r.family_group_id}
                   onClick={() => verify(r)}
                 >
-                  <Icon name="check" size={16} /> تحقّق وأكّد دفعَ العائلة ({pending})
+                  <Icon name="check" size={16} /> تحقق وأكد دفع العائلة ({pending})
                 </button>
               </div>
             )}

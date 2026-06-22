@@ -11,12 +11,12 @@ function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
 function dayKey(iso) { return iso ? iso.slice(0, 10) : '' }
 
 /**
- * تحليلات الحملة المتقدّمة — مؤشّرات، منحنى زمني، نقاط الركوب الأكثر، ومقارنة الرحلات.
+ * تحليلات الحملة المتقدمة — مؤشرات، منحنى زمني، نقاط الركوب الأكثر، ومقارنة الرحلات.
  * @param {Array}  trips
  * @param {object} byTrip   Map(trip_id -> {count, paid, boarded, checked_in})
  * @param {object} totals
  * @param {string} subscriberId   لجلب التفاصيل الزمنية ونقاط الركوب
- * @param {string} [org]          اسم الحملة لتبييض التقرير المُصدَّر
+ * @param {string} [org]          اسم الحملة لتبييض التقرير المصدر
  */
 export default function CampaignAnalytics({ trips = [], byTrip, totals, subscriberId, org, sub }) {
   const { toast } = useUI()
@@ -32,13 +32,13 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
     { label: 'نسبة الإشغال', value: occupancy, sub: `${tt.count}/${totalSeats || '—'} مقعد`, cls: 'em' },
     { label: 'نسبة الدفع', value: payRate, sub: `${tt.paid} مدفوع`, cls: 'ok' },
     { label: 'نسبة الصعود', value: boardRate, sub: `${tt.boarded} صعدوا`, cls: 'info' },
-    { label: 'نسبة التسكين', value: checkinRate, sub: `${tt.checked_in} مُسكّن`, cls: 'warn' },
+    { label: 'نسبة التسكين', value: checkinRate, sub: `${tt.checked_in} مسكن`, cls: 'warn' },
   ]
 
-  // تفاصيلٌ زمنية + نقاط الركوب + التحصيل — تُحمَّل مرّةً عند تغيّر الحملة
+  // تفاصيل زمنية + نقاط الركوب + التحصيل — تحمل مرة عند تغير الحملة
   const [detail, setDetail] = useState({ daily: [], topBoarding: [], collected: 0, refunded: 0, refundPending: 0, refundPendingCount: 0 })
   const [loadErr, setLoadErr] = useState(false)
-  // تقييمُ الحملة (المعتمرون → الحملة) — متوسّطٌ + عددٌ + أحدثُ التعليقات
+  // تقييم الحملة (المعتمرون → الحملة) — متوسط + عدد + أحدث التعليقات
   const [ratingSummary, setRatingSummary] = useState({ avg: 0, count: 0, recent: [] })
   useEffect(() => {
     if (!subscriberId) { setRatingSummary({ avg: 0, count: 0, recent: [] }); return }
@@ -67,7 +67,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
         .from('passengers').select('created_at, boarding_point, status')
         .eq('subscriber_id', subscriberId).gte('created_at', since).limit(2000))
       if (cancel) return
-      // لا تُظهر أصفارًا مضلّلةً عند فشل الجلب — ميّز الخطأ بوضوح.
+      // لا تظهر أصفارا مضللة عند فشل الجلب — ميز الخطأ بوضوح.
       if (error) { setLoadErr(true); return }
       const rows = data ?? []
       // منحنى زمني آخر ٣٠ يوم
@@ -91,7 +91,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
       }
       const topBoarding = [...bp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
 
-      // التحصيل الكلّي (كلّ الأوقات): مجموع مبالغ المدفوعين
+      // التحصيل الكلي (كل الأوقات): مجموع مبالغ المدفوعين
       const { data: payRows } = await trace('analytics:payments', () => supabase
         .from('passengers').select('amount')
         .eq('subscriber_id', subscriberId)
@@ -99,7 +99,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
       if (cancel) return
       const collected = (payRows ?? []).reduce((s, r) => s + (Number(r.amount) || 0), 0)
 
-      // الاستردادات (المرحلة ٧): المُعاد فعلًا + المعلّق بانتظار المعالجة
+      // الاستردادات (المرحلة ٧): المعاد فعلا + المعلق بانتظار المعالجة
       const { data: refRows } = await trace('analytics:refunds', () => supabase
         .from('refunds').select('amount, status')
         .eq('subscriber_id', subscriberId).in('status', ['requested', 'refunded']))
@@ -113,7 +113,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
     return () => { cancel = true }
   }, [subscriberId])
 
-  // المتوقّع = مجموع (سعر الرحلة × عدد مسجّليها)
+  // المتوقع = مجموع (سعر الرحلة × عدد مسجليها)
   const expectedRevenue = trips.reduce((s, t) => {
     const pr = t.price != null ? Number(t.price) : 0
     const c = byTrip?.get(t.id)?.count || 0
@@ -122,9 +122,9 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
   const hasPricing = trips.some((t) => t.price != null)
   const money = (n) => Number(n || 0).toLocaleString('en-US')
 
-  // تقريرٌ ماليٌّ مخصّصٌ للحملة (Word) — أرقامٌ لكلّ رحلةٍ + إجماليّات
+  // تقرير مالي مخصص للحملة (Word) — أرقام لكل رحلة + إجماليات
   async function exportFinancial() {
-    toast('جارٍ تجهيز التقرير الماليّ…', { type: 'info' })
+    toast('جار تجهيز التقرير المالي…', { type: 'info' })
     try {
       const rows = trips.map((t) => {
         const e = byTrip?.get(t.id) || { count: 0, paid: 0 }
@@ -132,22 +132,22 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
         return [t.title || '—', String(t.capacity || 0), String(e.count), String(e.paid), money(pr * e.count)]
       })
       await tableToDocx({
-        title: 'التقرير الماليّ للحملة',
+        title: 'التقرير المالي للحملة',
         subtitle: org || '',
         org: org || '',
         meta: [
-          `المحصّل: ${money(detail.collected)} ﷼`,
-          `المتوقّع: ${money(expectedRevenue)} ﷼`,
-          `المُسترَد: ${money(detail.refunded)} ﷼`,
+          `المحصل: ${money(detail.collected)} ﷼`,
+          `المتوقع: ${money(expectedRevenue)} ﷼`,
+          `المسترد: ${money(detail.refunded)} ﷼`,
           `الصافي بعد الاسترداد: ${money(detail.collected - detail.refunded)} ﷼`,
-          detail.refundPending > 0 ? `طلبات استردادٍ معلّقة: ${detail.refundPendingCount} بمبلغ ${money(detail.refundPending)} ﷼` : '',
+          detail.refundPending > 0 ? `طلبات استرداد معلقة: ${detail.refundPendingCount} بمبلغ ${money(detail.refundPending)} ﷼` : '',
         ].filter(Boolean),
-        headers: ['الرحلة', 'السعة', 'المعتمرون', 'المدفوع', 'المتوقّع (﷼)'],
+        headers: ['الرحلة', 'السعة', 'المعتمرون', 'المدفوع', 'المتوقع (﷼)'],
         rows,
         filename: `تقرير-مالي-${(org || 'حملة').replace(/\s+/g, '_')}`,
       })
-      toast('تم تنزيل التقرير الماليّ', { type: 'success' })
-    } catch (e) { console.error(e); toast('تعذّر إنشاء التقرير — حاول مجدّدًا.', { type: 'error' }) }
+      toast('تم تنزيل التقرير المالي', { type: 'success' })
+    } catch (e) { console.error(e); toast('تعذر إنشاء التقرير — حاول مجددا.', { type: 'error' }) }
   }
 
   const maxDaily = Math.max(1, ...detail.daily.map((d) => d.c))
@@ -161,18 +161,18 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
     <>
       <section className="panel">
         <div className="panel-head">
-          <h3>المؤشّرات الرئيسة</h3>
+          <h3>المؤشرات الرئيسة</h3>
           <span className="sub">عبر {trips.length} رحلة</span>
         </div>
 
         {loadErr && (
           <div className="alert err" style={{ marginBottom: 10 }}>
-            تعذّر تحميل بعض التفاصيل (المنحنى الزمني والتحصيل) — قد تكون الأرقام أدناه غير مكتملة. حدّث الصفحة.
+            تعذر تحميل بعض التفاصيل (المنحنى الزمني والتحصيل) — قد تكون الأرقام أدناه غير مكتملة. حدث الصفحة.
           </div>
         )}
 
         {tt.count === 0 && totalSeats === 0 ? (
-          <div className="empty"><div className="em-ttl">لا بيانات بعد</div><div>ستظهر المؤشّرات فور إضافة الرحلات والمعتمرين.</div></div>
+          <div className="empty"><div className="em-ttl">لا بيانات بعد</div><div>ستظهر المؤشرات فور إضافة الرحلات والمعتمرين.</div></div>
         ) : (
           <div className="an-bars">
             {bars.map((b) => (
@@ -193,33 +193,33 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
             <span className="sub">عبر الحملة</span>
             <span style={{ flex: 1 }} />
             <button className="btn btn-em btn-sm" onClick={() => setShowReport(true)} disabled={trips.length === 0}>
-              <Icon name="manifest" size={14} /> تَقرير PDF
+              <Icon name="manifest" size={14} /> تقرير PDF
             </button>
             <button className="btn btn-ghost btn-sm" onClick={exportFinancial} disabled={trips.length === 0}>
-              <Icon name="edit" size={14} /> تَقرير Word
+              <Icon name="edit" size={14} /> تقرير Word
             </button>
             {hasPricing && (
               <span className={`tag ${expectedRevenue > 0 && detail.collected >= expectedRevenue ? 'ok' : 'warn'}`}>
-                {pct(detail.collected, expectedRevenue)}% محصّل
+                {pct(detail.collected, expectedRevenue)}% محصل
               </span>
             )}
           </div>
           {hasPricing && (
             <div className="an-row" style={{ marginTop: 4 }}>
-              <div className="an-head"><span>المحصّل من المتوقّع</span><strong>{money(detail.collected)} / {money(expectedRevenue)} ﷼</strong></div>
+              <div className="an-head"><span>المحصل من المتوقع</span><strong>{money(detail.collected)} / {money(expectedRevenue)} ﷼</strong></div>
               <div className="bar"><span className="fill-ok" style={{ width: pct(detail.collected, expectedRevenue) + '%' }} /></div>
-              <div className="an-sub">المتبقّي: {money(Math.max(0, expectedRevenue - detail.collected))} ﷼</div>
+              <div className="an-sub">المتبقي: {money(Math.max(0, expectedRevenue - detail.collected))} ﷼</div>
             </div>
           )}
           <div className="stats" style={{ marginTop: 12 }}>
-            <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>المحصّل</div><div className="v" style={{ fontSize: 20 }}>{money(detail.collected)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
-            <div className="stat"><div className="top"><span className="ic"><Icon name="trash" size={15} /></span>المُسترَد</div><div className="v" style={{ fontSize: 20 }}>{money(detail.refunded)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
+            <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>المحصل</div><div className="v" style={{ fontSize: 20 }}>{money(detail.collected)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
+            <div className="stat"><div className="top"><span className="ic"><Icon name="trash" size={15} /></span>المسترد</div><div className="v" style={{ fontSize: 20 }}>{money(detail.refunded)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
             <div className="stat info"><div className="top"><span className="ic"><Icon name="badge" size={15} /></span>الصافي</div><div className="v" style={{ fontSize: 20 }}>{money(detail.collected - detail.refunded)} <span style={{ fontSize: 12, color: 'var(--cr-300)' }}>﷼</span></div></div>
           </div>
           {detail.refundPending > 0 && (
             <div className="alert warn" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Icon name="bell" size={16} />
-              <span>{detail.refundPendingCount} طلب استردادٍ بانتظار المعالجة — بمبلغ {money(detail.refundPending)} ﷼. عالِجها من «طلبات الاسترداد» داخل الرحلة.</span>
+              <span>{detail.refundPendingCount} طلب استرداد بانتظار المعالجة — بمبلغ {money(detail.refundPending)} ﷼. عالجها من «طلبات الاسترداد» داخل الرحلة.</span>
             </div>
           )}
         </section>
@@ -228,7 +228,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
       <section className="panel">
         <div className="panel-head">
           <h3>منحنى التسجيلات</h3>
-          <span className="sub">آخر ٣٠ يومًا</span>
+          <span className="sub">آخر ٣٠ يوما</span>
           <span style={{ flex: 1 }} />
           <span className={`tag ${trend >= 0 ? 'ok' : 'warn'}`}>
             {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}% آخر ٧ أيام
@@ -240,14 +240,14 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--cr-300)', marginTop: 6 }}>
-          <span>قبل ٣٠ يومًا</span><span>اليوم</span>
+          <span>قبل ٣٠ يوما</span><span>اليوم</span>
         </div>
       </section>
 
       {ratingSummary.count > 0 && (
         <section className="panel">
           <div className="panel-head">
-            <h3>تقييمُ الحملة</h3>
+            <h3>تقييم الحملة</h3>
             <span className="sub">من المعتمرين</span>
             <span style={{ flex: 1 }} />
             <RatingStars value={ratingSummary.avg} size={18} count={ratingSummary.count} />
@@ -267,7 +267,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
 
       {detail.topBoarding.length > 0 && (
         <section className="panel">
-          <div className="panel-head"><h3>أكثر نقاط الركوب طلبًا</h3></div>
+          <div className="panel-head"><h3>أكثر نقاط الركوب طلبا</h3></div>
           <div className="an-bars">
             {detail.topBoarding.map(([name, c]) => (
               <div className="an-row" key={name}>

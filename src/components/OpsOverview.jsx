@@ -4,14 +4,14 @@ import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
 /**
- * لوحةُ العمليّات لصاحب الحملة — «طراز التحكّم».
- * نظرةٌ موحّدةٌ حيّة: نبضٌ ماليّ + إشغالُ المقاعد والفنادق + عدّاداتُ الحالات
- * + تنبيهاتٌ تشغيليّةٌ قابلةٌ للتنفيذ (رحلاتٌ بلا تسكين / مقاعدُ ناقصة / دفعٌ معلّق).
- * أرقامٌ حقيقيّةٌ من القاعدة (استعلامان فقط: passengers + hotel_rooms).
+ * لوحة العمليات لصاحب الحملة — «طراز التحكم».
+ * نظرة موحدة حية: نبض مالي + إشغال المقاعد والفنادق + عدادات الحالات
+ * + تنبيهات تشغيلية قابلة للتنفيذ (رحلات بلا تسكين / مقاعد ناقصة / دفع معلق).
+ * أرقام حقيقية من القاعدة (استعلامان فقط: passengers + hotel_rooms).
  *
  * @param {object}   sub        { id, ... }
  * @param {object[]} trips      رحلات الحملة (من الأب)
- * @param {Function} onManage   فتح إدارة رحلةٍ بعينها
+ * @param {Function} onManage   فتح إدارة رحلة بعينها
  */
 const money = (n) => Number(n || 0).toLocaleString('en-US')
 const PAID = ['paid', 'boarded', 'checked_in']
@@ -65,7 +65,7 @@ export default function OpsOverview({ sub, trips = [], onManage }) {
     const collectRate = expected > 0 ? Math.round((collected / expected) * 100) : null
     const total = rows.length
 
-    // تنبيهاتٌ تشغيليّة للرحلات القادمة (مفتوحة/مسودة، لم يفت موعدها)
+    // تنبيهات تشغيلية للرحلات القادمة (مفتوحة/مسودة، لم يفت موعدها)
     const now = Date.now()
     const byTrip = new Map()
     for (const p of rows) {
@@ -88,7 +88,7 @@ export default function OpsOverview({ sub, trips = [], onManage }) {
       if (roomTrips.has(t.id)) {
         if (a.unroomed > 0) issues.push({ tone: 'info', text: `${a.unroomed} بلا تسكين` })
       } else {
-        issues.push({ tone: 'muted', text: 'لا فنادق مُضافة' })
+        issues.push({ tone: 'muted', text: 'لا فنادق مضافة' })
       }
       if (issues.length) alerts.push({ trip: t, days: daysTo(t.depart_at), issues })
     }
@@ -101,13 +101,13 @@ export default function OpsOverview({ sub, trips = [], onManage }) {
 
   return (
     <div className="ops" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* ١) النبض الماليّ */}
+      {/* ١) النبض المالي */}
       <section className="mlk-card">
-        <h2 className="mlk-h2"><Icon name="payments" size={16} /> النبض الماليّ</h2>
+        <h2 className="mlk-h2"><Icon name="payments" size={16} /> النبض المالي</h2>
         <div className="stats">
-          <div className="stat ok"><div className="top">المُحصَّل</div><div className="v">{money(m.collected)} <span style={{ fontSize: 12 }}>﷼</span></div></div>
-          <div className="stat"><div className="top">المتوقَّع</div><div className="v">{money(m.expected)} <span style={{ fontSize: 12 }}>﷼</span></div></div>
-          <div className="stat warn"><div className="top">المتبقّي</div><div className="v">{money(m.outstanding)} <span style={{ fontSize: 12 }}>﷼</span></div></div>
+          <div className="stat ok"><div className="top">المحصل</div><div className="v">{money(m.collected)} <span style={{ fontSize: 12 }}>﷼</span></div></div>
+          <div className="stat"><div className="top">المتوقع</div><div className="v">{money(m.expected)} <span style={{ fontSize: 12 }}>﷼</span></div></div>
+          <div className="stat warn"><div className="top">المتبقي</div><div className="v">{money(m.outstanding)} <span style={{ fontSize: 12 }}>﷼</span></div></div>
           <div className="stat info"><div className="top">نسبة التحصيل</div><div className="v">{m.collectRate == null ? '—' : m.collectRate + '٪'}</div></div>
         </div>
       </section>
@@ -116,9 +116,9 @@ export default function OpsOverview({ sub, trips = [], onManage }) {
       <section className="mlk-card">
         <h2 className="mlk-h2"><Icon name="customers" size={16} /> المعتمرون ({m.total})</h2>
         <div className="stats">
-          <div className="stat"><div className="top">مسجّل</div><div className="v">{m.status.registered}</div></div>
+          <div className="stat"><div className="top">مسجل</div><div className="v">{m.status.registered}</div></div>
           <div className="stat ok"><div className="top">مدفوع</div><div className="v">{m.status.paid}</div></div>
-          <div className="stat info"><div className="top">صَعِد</div><div className="v">{m.status.boarded}</div></div>
+          <div className="stat info"><div className="top">صعد</div><div className="v">{m.status.boarded}</div></div>
           <div className="stat warn"><div className="top">استلم الغرفة</div><div className="v">{m.status.checked_in}</div></div>
         </div>
       </section>
@@ -127,18 +127,18 @@ export default function OpsOverview({ sub, trips = [], onManage }) {
       <section className="mlk-card">
         <h2 className="mlk-h2"><Icon name="seat" size={16} /> الإشغال</h2>
         <div className="stats">
-          <div className="stat info"><div className="top"><Icon name="seat" size={13} /> مقاعد مُسنَدة</div><div className="v">{m.seated}/{m.total}</div></div>
+          <div className="stat info"><div className="top"><Icon name="seat" size={13} /> مقاعد مسندة</div><div className="v">{m.seated}/{m.total}</div></div>
           <div className="stat"><div className="top"><Icon name="bed" size={13} /> غرف الفنادق</div><div className="v">{m.roomsCount}</div></div>
-          <div className="stat ok"><div className="top"><Icon name="bed" size={13} /> مُسكَّنون</div><div className="v">{m.roomed}{m.roomsCapacity > 0 ? `/${m.roomsCapacity}` : ''}</div></div>
+          <div className="stat ok"><div className="top"><Icon name="bed" size={13} /> مسكنون</div><div className="v">{m.roomed}{m.roomsCapacity > 0 ? `/${m.roomsCapacity}` : ''}</div></div>
         </div>
       </section>
 
-      {/* ٤) التنبيهات التشغيليّة */}
+      {/* ٤) التنبيهات التشغيلية */}
       <section className="mlk-card">
-        <h2 className="mlk-h2"><Icon name="bell" size={16} /> تنبيهات تشغيليّة</h2>
+        <h2 className="mlk-h2"><Icon name="bell" size={16} /> تنبيهات تشغيلية</h2>
         {m.alerts.length === 0 ? (
           <div className="muted" style={{ padding: '8px 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Icon name="check" size={15} /> كلُّ الرحلات القادمة جاهزةٌ — لا تنبيهات.
+            <Icon name="check" size={15} /> كل الرحلات القادمة جاهزة — لا تنبيهات.
           </div>
         ) : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>

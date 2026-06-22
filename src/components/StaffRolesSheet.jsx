@@ -5,13 +5,13 @@ import { useUI } from '../lib/useUI'
 import Icon from './Icon'
 
 /**
- * واجهةُ «الرتب والصلاحيات» لإدارة ملبّيك (حصريّةٌ لمن يملك staff.manage = المالك).
- * تعرض أعضاء المنصّة (أدمن/دعم)، رتبةَ كلٍّ، وصلاحياتِه القابلةَ للتبديل.
+ * واجهة «الرتب والصلاحيات» لإدارة ملبّيك (حصرية لمن يملك staff.manage = المالك).
+ * تعرض أعضاء المنصة (أدمن/دعم)، رتبة كل، وصلاحياته القابلة للتبديل.
  * تعتمد على RPCs: list_staff_permissions / set_staff_rank / grant_staff_permission /
- * revoke_staff_permission. (الأدمن صلاحياته كاملةٌ ضمنًا — غير قابلةٍ للتعديل.)
+ * revoke_staff_permission. (الأدمن صلاحياته كاملة ضمنا — غير قابلة للتعديل.)
  */
 
-// المفاتيح بترتيب العرض + تسمياتها العربية. staff.manage حصريّةٌ للمالك (غير قابلة للمنح).
+// المفاتيح بترتيب العرض + تسمياتها العربية. staff.manage حصرية للمالك (غير قابلة للمنح).
 const PERMS = [
   { key: 'subscribers.view',    label: 'عرض المشتركين' },
   { key: 'subscribers.manage',  label: 'إدارة المشتركين' },
@@ -20,12 +20,12 @@ const PERMS = [
   { key: 'feedback.handle',     label: 'الشكاوى والرسائل' },
   { key: 'marketing.manage',    label: 'التسويق' },
   { key: 'pii.view',            label: 'بيانات المعتمرين (PII)' },
-  { key: 'audit.view',          label: 'سجلّات التدقيق' },
+  { key: 'audit.view',          label: 'سجلات التدقيق' },
 ]
 
 const RANKS = [
-  { key: '',            label: 'بلا رتبة (صلاحيات يدويّة)' },
-  { key: 'ops_manager', label: 'مدير عمليّات' },
+  { key: '',            label: 'بلا رتبة (صلاحيات يدوية)' },
+  { key: 'ops_manager', label: 'مدير عمليات' },
   { key: 'finance',     label: 'مالية' },
   { key: 'support_l1',  label: 'دعم — مستوى ١' },
   { key: 'marketing',   label: 'تسويق' },
@@ -40,7 +40,7 @@ export default function StaffRolesSheet() {
   const load = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase.rpc('list_staff_permissions')
-    if (error) toast(translateRpcError(error, 'تعذّر تحميل الفريق.'), { type: 'error' })
+    if (error) toast(translateRpcError(error, 'تعذر تحميل الفريق.'), { type: 'error' })
     setRows(data || [])
     setLoading(false)
   }, [toast])
@@ -52,7 +52,7 @@ export default function StaffRolesSheet() {
     const fn = has ? 'revoke_staff_permission' : 'grant_staff_permission'
     const { error } = await supabase.rpc(fn, { p_profile: member.profile_id, p_key: key })
     setBusyId('')
-    if (error) { toast(translateRpcError(error, 'تعذّر تحديث الصلاحية.'), { type: 'error' }); return }
+    if (error) { toast(translateRpcError(error, 'تعذر تحديث الصلاحية.'), { type: 'error' }); return }
     await load()
   }
 
@@ -60,27 +60,27 @@ export default function StaffRolesSheet() {
     if (!rank) return
     const ok = await confirm({
       title: 'تطبيق رتبة',
-      message: `سيُستبدَل صلاحياتُ «${member.full_name || '—'}» بقالب الرتبة المختارة. متابعة؟`,
+      message: `سيستبدل صلاحيات «${member.full_name || '—'}» بقالب الرتبة المختارة. متابعة؟`,
       confirmText: 'تطبيق',
     })
     if (!ok) { await load(); return }
     setBusyId(member.profile_id + ':rank')
     const { error } = await supabase.rpc('set_staff_rank', { p_profile: member.profile_id, p_rank: rank })
     setBusyId('')
-    if (error) { toast(translateRpcError(error, 'تعذّر تطبيق الرتبة.'), { type: 'error' }); return }
-    toast('طُبِّقت الرتبة ✓', { type: 'success' })
+    if (error) { toast(translateRpcError(error, 'تعذر تطبيق الرتبة.'), { type: 'error' }); return }
+    toast('طبقت الرتبة ✓', { type: 'success' })
     await load()
   }
 
-  if (loading) return <div className="muted" style={{ padding: 14 }}>جارٍ التحميل…</div>
+  if (loading) return <div className="muted" style={{ padding: 14 }}>جار التحميل…</div>
   if (rows.length === 0) {
-    return <div className="muted" style={{ padding: 14 }}>لا أعضاءَ في فريق المنصّة بعد.</div>
+    return <div className="muted" style={{ padding: 14 }}>لا أعضاء في فريق المنصة بعد.</div>
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-        امنح كلَّ عضوٍ صلاحياتِه بدقّة، أو طبّق رتبةً جاهزة. المالك (أدمن) صلاحياتُه كاملةٌ دائمًا.
+        امنح كل عضو صلاحياته بدقة، أو طبق رتبة جاهزة. المالك (أدمن) صلاحياته كاملة دائما.
       </p>
       {rows.map((m) => {
         const isOwner = m.role === 'admin'
@@ -89,7 +89,7 @@ export default function StaffRolesSheet() {
           <div key={m.profile_id} className="mlk-card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Icon name="user" size={16} />
-              {/* المالك/الأدمن يُعرَض بهويّة المنصّة لا باسمٍ شخصيّ. الموظّفون الفعليّون بأسمائهم الوظيفيّة. */}
+              {/* المالك/الأدمن يعرض بهوية المنصة لا باسم شخصي. الموظفون الفعليون بأسمائهم الوظيفية. */}
               <strong>{isOwner ? 'إدارة ملبّيك' : (m.full_name || '—')}</strong>
               <span className={`badge ${isOwner ? 'ok' : 'info'}`}>{isOwner ? 'مالك' : 'دعم'}</span>
               {!isOwner && m.platform_rank && (
@@ -99,12 +99,12 @@ export default function StaffRolesSheet() {
 
             {isOwner ? (
               <div className="muted" style={{ fontSize: 13 }}>
-                <Icon name="check" size={14} /> كلُّ الصلاحيات (بما فيها إدارة الفريق) — غير قابلةٍ للتعديل.
+                <Icon name="check" size={14} /> كل الصلاحيات (بما فيها إدارة الفريق) — غير قابلة للتعديل.
               </div>
             ) : (
               <>
                 <label className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span className="muted" style={{ fontSize: 12 }}>رتبةٌ جاهزة (تستبدل الصلاحيات):</span>
+                  <span className="muted" style={{ fontSize: 12 }}>رتبة جاهزة (تستبدل الصلاحيات):</span>
                   <select
                     value={m.platform_rank || ''}
                     disabled={busyId === m.profile_id + ':rank'}

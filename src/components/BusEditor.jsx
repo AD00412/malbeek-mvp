@@ -7,9 +7,9 @@ import { loadTripBuses, busName } from '../lib/buses'
 import { useUI } from '../lib/useUI'
 
 /**
- * مدير باصات الرحلة — تخطيطٌ قابلٌ للضبط مع معاينةٍ حيّة، ودعمٌ لعدّة باصات.
- * الباص ١ يُحفظ في trips (المسار الحالي، يُزامَن إلى trip_buses عبر التريغر).
- * الباصات ٢+ تُحفظ مباشرةً في trip_buses. سعة الرحلة = مجموع الباصات.
+ * مدير باصات الرحلة — تخطيط قابل للضبط مع معاينة حية، ودعم لعدة باصات.
+ * الباص ١ يحفظ في trips (المسار الحالي، يزامن إلى trip_buses عبر التريغر).
+ * الباصات ٢+ تحفظ مباشرة في trip_buses. سعة الرحلة = مجموع الباصات.
  */
 export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
   const [buses, setBuses] = useState([])
@@ -62,7 +62,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
     return !isAllowed(seat, policy, p.gender, p.is_family)
   })
 
-  // سعة الرحلة الكلّية = مجموع الباصات (مع تخطيط الباص النشِط الحالي)
+  // سعة الرحلة الكلية = مجموع الباصات (مع تخطيط الباص النشط الحالي)
   function tripCapacity() {
     return buses.reduce((s, b) => {
       if (b.id === activeId) return s + seatCount(rows, back)
@@ -73,13 +73,13 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
   async function save() {
     if (busy || !trip?.id || !active) return
     if (bookedBeyond > 0) {
-      setErr(`يوجد ${bookedBeyond} معتمرٍ على مقاعد أكبر من سعة التخطيط الجديد (${total}). عدّل مقاعدهم أوّلًا أو زِد الصفوف.`)
+      setErr(`يوجد ${bookedBeyond} معتمر على مقاعد أكبر من سعة التخطيط الجديد (${total}). عدل مقاعدهم أولا أو زد الصفوف.`)
       return
     }
     setErr(''); setBusy(true)
     try {
       if (isPrimary) {
-        // الباص ١: المسار الحالي (trips) — التريغر يُزامن trip_buses
+        // الباص ١: المسار الحالي (trips) — التريغر يزامن trip_buses
         const { error } = await supabase.from('trips').update({
           bus_label: busLabel.trim() || null,
           bus_plate: busPlate.trim() || null,
@@ -98,13 +98,13 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
           bus_back_row: back,
         }).eq('id', activeId)
         if (error) throw error
-        // حدّث سعة الرحلة الكلّية (لا يمسّ الباص ١)
+        // حدث سعة الرحلة الكلية (لا يمس الباص ١)
         await supabase.from('trips').update({ capacity: tripCapacity() }).eq('id', trip.id)
       }
       await load(activeId)
       onSaved?.()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر الحفظ: ' + e.message : 'تعذّر حفظ تخطيط الباص.')
+      setErr(e?.message ? 'تعذر الحفظ: ' + e.message : 'تعذر حفظ تخطيط الباص.')
     } finally {
       setBusy(false)
     }
@@ -122,7 +122,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
       if (error) throw error
       await load(data?.id)
     } catch (e) {
-      setErr(e?.message ? 'تعذّر إضافة الباص: ' + e.message : 'تعذّر إضافة الباص.')
+      setErr(e?.message ? 'تعذر إضافة الباص: ' + e.message : 'تعذر إضافة الباص.')
     } finally {
       setBusy(false)
     }
@@ -130,7 +130,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
 
   async function deleteActive() {
     if (busy || !active || isPrimary) return
-    if (busPax.length > 0) { setErr('لا يمكن حذف باصٍ يحوي معتمرين. انقلهم أوّلًا.'); return }
+    if (busPax.length > 0) { setErr('لا يمكن حذف باص يحوي معتمرين. انقلهم أولا.'); return }
     if (!(await confirm({ title: 'حذف باص', message: `حذف «${busName(active)}»؟`, confirmText: 'حذف', danger: true }))) return
     setBusy(true); setErr('')
     try {
@@ -144,7 +144,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
       toast('تم حذف الباص', { type: 'success' })
       onSaved?.()
     } catch (e) {
-      setErr(e?.message ? 'تعذّر حذف الباص: ' + e.message : 'تعذّر حذف الباص.')
+      setErr(e?.message ? 'تعذر حذف الباص: ' + e.message : 'تعذر حذف الباص.')
     } finally {
       setBusy(false)
     }
@@ -218,7 +218,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
                 </div>
               </div>
               <div className="field">
-                <label>مقاعد الصفّ الخلفي</label>
+                <label>مقاعد الصف الخلفي</label>
                 <div className="stepper">
                   <button type="button" onClick={() => step(setBack, back, 0, 6, -1)}>−</button>
                   <span>{back}</span>
@@ -234,9 +234,9 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
 
             {policyConflicts.length > 0 && (
               <div className="alert err">
-                ⚠️ {policyConflicts.length} معتمرٍ على مقاعد تخالف السياسة الجديدة
+                ⚠️ {policyConflicts.length} معتمر على مقاعد تخالف السياسة الجديدة
                 ({policyConflicts.map((p) => `${p.full_name} (${p.seat_no})`).join('، ')}).
-                يُحفظ التغيير، لكن أعد توزيع مقاعدهم لاحقًا.
+                يحفظ التغيير، لكن أعد توزيع مقاعدهم لاحقا.
               </div>
             )}
 
@@ -250,7 +250,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
           </div>
 
           <div className="sec-label" style={{ textAlign: 'center', marginTop: 10 }}>
-            معاينة حيّة{multi && active ? ` — ${busName(active)}` : ''}
+            معاينة حية{multi && active ? ` — ${busName(active)}` : ''}
           </div>
           <SeatMap policy={policy} rows={rows} back={back} passengers={busPax} readOnly />
         </div>

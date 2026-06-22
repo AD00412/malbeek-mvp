@@ -8,10 +8,10 @@ import Icon from '../../components/Icon'
 
 function arError(msg = '') {
   const m = msg.toLowerCase()
-  if (m.includes('already registered') || m.includes('already been registered')) return 'هذا البريد مُسجّل مسبقًا. سجّل الدخول بدلًا من ذلك.'
+  if (m.includes('already registered') || m.includes('already been registered')) return 'هذا البريد مسجل مسبقا. سجل الدخول بدلا من ذلك.'
   if (m.includes('password')) return 'كلمة المرور ضعيفة (٦ أحرف على الأقل).'
-  if (m.includes('network')) return 'تعذّر الاتصال بالخادم. حاول مرة أخرى.'
-  return 'تعذّر إنشاء الحساب. حاول مرة أخرى.'
+  if (m.includes('network')) return 'تعذر الاتصال بالخادم. حاول مرة أخرى.'
+  return 'تعذر إنشاء الحساب. حاول مرة أخرى.'
 }
 
 export default function Signup() {
@@ -29,8 +29,8 @@ export default function Signup() {
   const navigate = useNavigate()
   const { refreshProfile } = useAuth()
 
-  // إنشاء سجلّ الحملة بـ slug مشتقٍّ ذكيًّا من اسم الحملة (lib/slug)، مع
-  // إعادة المحاولة عند تعارض الفريديّة. مصدرٌ واحدٌ للحقيقة — لا تكرارَ.
+  // إنشاء سجل الحملة بـ slug مشتق ذكيا من اسم الحملة (lib/slug)، مع
+  // إعادة المحاولة عند تعارض الفريدية. مصدر واحد للحقيقة — لا تكرار.
   async function createSubscriber(userId) {
     for (let i = 0; i < 5; i++) {
       const slug = suggestSlug(orgName) + (i === 0 ? '' : '-' + Math.random().toString(36).slice(2, 5))
@@ -42,16 +42,16 @@ export default function Signup() {
       if (!error) return data
       if (error.code !== '23505') throw error // أي خطأ غير تعارض الـ slug
     }
-    throw new Error('تعذّر توليد رابطٍ فريد للحملة.')
+    throw new Error('تعذر توليد رابط فريد للحملة.')
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (busy) return
-    if (!agreed) { setErr('يُرجى الموافقة على الشروط وسياسة الخصوصيّة للمتابعة.'); return }
+    if (!agreed) { setErr('يرجى الموافقة على الشروط وسياسة الخصوصية للمتابعة.'); return }
     setErr(''); setInfo(''); setBusy(true)
 
-    // 1) إنشاء حساب المصادقة (الدور = مشترك يُحفظ في بيانات المستخدم)
+    // 1) إنشاء حساب المصادقة (الدور = مشترك يحفظ في بيانات المستخدم)
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -60,15 +60,15 @@ export default function Signup() {
 
     if (error) { setBusy(false); setErr(arError(error.message)); return }
 
-    // 2) إن لم تُنشأ جلسة (تأكيد البريد مفعّل) — أبلغ المستخدم
+    // 2) إن لم تنشأ جلسة (تأكيد البريد مفعل) — أبلغ المستخدم
     if (!data.session) {
       setBusy(false)
-      setInfo('تم إنشاء حسابك. فعّل بريدك الإلكتروني ثم سجّل الدخول لإكمال تجهيز حملتك.')
+      setInfo('تم إنشاء حسابك. فعل بريدك الإلكتروني ثم سجل الدخول لإكمال تجهيز حملتك.')
       return
     }
 
     try {
-      // 3) أنشئ سجلّ الحملة ثم اربطه بالملف الشخصي
+      // 3) أنشئ سجل الحملة ثم اربطه بالملف الشخصي
       const sub = await createSubscriber(data.user.id)
       const { error: upErr } = await supabase
         .from('profiles')
@@ -81,7 +81,7 @@ export default function Signup() {
       navigate('/dashboard', { replace: true })
     } catch (e2) {
       setBusy(false)
-      setErr(typeof e2?.message === 'string' ? e2.message : 'تعذّر تجهيز الحملة. تواصل مع الدعم.')
+      setErr(typeof e2?.message === 'string' ? e2.message : 'تعذر تجهيز الحملة. تواصل مع الدعم.')
     }
   }
 
@@ -89,7 +89,7 @@ export default function Signup() {
     <AuthShell
       title="إنشاء حساب"
       sub="أنشئ حسابك للبدء في إدارة حملتك."
-      footer={<>لديك حسابٌ بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}
+      footer={<>لديك حساب بالفعل؟ <Link to="/login">تسجيل الدخول</Link></>}
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="field with-ic">
@@ -125,7 +125,7 @@ export default function Signup() {
 
         <label className="checkbox-group">
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-          <span>أوافق على <Link to="/terms" target="_blank">الشروط والأحكام</Link> و<Link to="/privacy" target="_blank">سياسة الخصوصيّة</Link></span>
+          <span>أوافق على <Link to="/terms" target="_blank">الشروط والأحكام</Link> و<Link to="/privacy" target="_blank">سياسة الخصوصية</Link></span>
         </label>
 
         {err && <div className="alert err">{err}</div>}

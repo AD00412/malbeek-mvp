@@ -8,9 +8,9 @@ import { busName } from '../lib/buses'
 import { translateRpcError } from '../lib/rpcErrors'
 
 /**
- * استيرادٌ جماعيٌّ للمعتمرين من نصٍّ ملصوقٍ (CSV أو منسوخٍ من Excel) لرحلةٍ معيّنة.
+ * استيراد جماعي للمعتمرين من نص ملصوق (CSV أو منسوخ من Excel) لرحلة معينة.
  * ترتيب الأعمدة: الاسم · الهوية · الجوال · الجنسية · الجنس · مكان الركوب.
- * يتحقّق ويعاين قبل الإدراج؛ المقاعد تُترك فارغةً لتُوزَّع لاحقًا.
+ * يتحقق ويعاين قبل الإدراج؛ المقاعد تترك فارغة لتوزع لاحقا.
  */
 export default function ImportPassengers({ open, tripId, subscriberId, buses = [], defaultBoarding, onClose, onDone }) {
   const [text, setText] = useState('')
@@ -20,8 +20,8 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
   const [err, setErr] = useState('')
   const multiBus = buses.length > 1
 
-  // إن وصلت الباصات بعد فتح المودال (تحميلٌ غير متزامن) ولم يُختَر باصٌ بعد،
-  // ثبّت الافتراضيّ على الأوّل كي لا يُسقَط bus_id صامتًا عند تعدّد الباصات.
+  // إن وصلت الباصات بعد فتح المودال (تحميل غير متزامن) ولم يختر باص بعد،
+  // ثبت الافتراضي على الأول كي لا يسقط bus_id صامتا عند تعدد الباصات.
   useEffect(() => {
     if (!busId && buses.length) setBusId(buses[0].id)
   }, [buses, busId])
@@ -76,7 +76,7 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
       if (error) throw error
       onDone?.(valid.length)
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر الاستيراد.'))
+      setErr(translateRpcError(e, 'تعذر الاستيراد.'))
     } finally {
       setBusy(false)
     }
@@ -98,7 +98,7 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
     >
       <div className="form" style={{ marginTop: 0 }}>
         <div className="alert info" style={{ fontSize: 12.5 }}>
-          الصق القائمة (من Excel أو ملفّ CSV). ترتيب الأعمدة:
+          الصق القائمة (من Excel أو ملف CSV). ترتيب الأعمدة:
           <strong> الاسم · الهوية · الجوال · الجنسية · الجنس · مكان الركوب</strong>. الاسم وحده مطلوب.
         </div>
 
@@ -114,7 +114,7 @@ export default function ImportPassengers({ open, tripId, subscriberId, buses = [
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--cr-200)', cursor: 'pointer' }}>
           <input type="checkbox" checked={skipHeader} onChange={(e) => setSkipHeader(e.target.checked)} />
-          السطر الأوّل عناوين (تخطّيه)
+          السطر الأول عناوين (تخطيه)
         </label>
 
         {multiBus && (

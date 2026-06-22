@@ -10,9 +10,9 @@ import { translateRpcError } from '../lib/rpcErrors'
 const STATUS_LABEL = {
   pending_proof: 'بانتظار إثبات الدفع',
   submitted:     'بانتظار المراجعة',
-  approved:      'مَوافَقٌ — رُقّيت',
-  rejected:      'مَرفوضٌ',
-  cancelled:     'مُلغًى',
+  approved:      'موافق — رقيت',
+  rejected:      'مرفوض',
+  cancelled:     'ملغى',
 }
 const STATUS_TONE = {
   pending_proof: 'warn', submitted: 'info', approved: 'ok', rejected: 'danger', cancelled: 'muted',
@@ -41,7 +41,7 @@ export default function AdminUpgradeRequests() {
   const load = useCallback(async () => {
     setLoading(true); setErr('')
     const { data, error } = await supabase.rpc('list_plan_upgrade_requests', { p_filter: filter })
-    if (error) setErr('تعذّر التحميل: ' + error.message)
+    if (error) setErr('تعذر التحميل: ' + error.message)
     else setRows(data ?? [])
     setLoading(false)
   }, [filter])
@@ -71,29 +71,29 @@ export default function AdminUpgradeRequests() {
 
   async function doApprove(r) {
     const ok2 = await confirm({
-      title: 'الموافقةُ والترقية',
-      message: `سيُرقّى «${r.org_name}» إلى الباقة المدفوعة فورًا، ويَستلم إيميلَ تَأكيدٍ. تأكيد؟`,
-      confirmText: 'وافق ورقّ', cancelText: 'إلغاء',
+      title: 'الموافقة والترقية',
+      message: `سيرقى «${r.org_name}» إلى الباقة المدفوعة فورا، ويستلم إيميل تأكيد. تأكيد؟`,
+      confirmText: 'وافق ورق', cancelText: 'إلغاء',
     })
     if (!ok2) return
     setBusy(r.id); setErr('')
     const { error } = await supabase.rpc('approve_plan_upgrade', { p_req: r.id, p_notes: null })
-    if (error) { setBusy(''); return setErr(translateRpcError(error, 'تعذّرت الموافقة.')) }
+    if (error) { setBusy(''); return setErr(translateRpcError(error, 'تعذرت الموافقة.')) }
     await sendDecisionEmail(r)
     setBusy('')
-    flash(setOk, 'وُوفق ورُقّي ✓ — أُرسل الإيميل')
+    flash(setOk, 'ووفق ورقي ✓ — أرسل الإيميل')
     load()
   }
 
   async function doReject(r) {
-    const reason = window.prompt(`سببُ رفض طلب «${r.org_name}»؟ (٥ أحرفٍ فأكثر)`)
+    const reason = window.prompt(`سبب رفض طلب «${r.org_name}»؟ (٥ أحرف فأكثر)`)
     if (!reason || reason.trim().length < 5) return
     setBusy(r.id); setErr('')
     const { error } = await supabase.rpc('reject_plan_upgrade', { p_req: r.id, p_reason: reason.trim() })
-    if (error) { setBusy(''); return setErr(translateRpcError(error, 'تعذّر الرفض.')) }
+    if (error) { setBusy(''); return setErr(translateRpcError(error, 'تعذر الرفض.')) }
     await sendDecisionEmail(r)
     setBusy('')
-    flash(setOk, 'رُفض الطلب ✓ — أُرسل الإيميل')
+    flash(setOk, 'رفض الطلب ✓ — أرسل الإيميل')
     load()
   }
 
@@ -121,10 +121,10 @@ export default function AdminUpgradeRequests() {
           بانتظار الإثبات
         </button>
         <button className={`mlk-fchip ${filter === 'approved' ? 'active' : ''}`} onClick={() => setFilter('approved')}>
-          مَوافَقَة
+          موافقة
         </button>
         <button className={`mlk-fchip ${filter === 'rejected' ? 'active' : ''}`} onClick={() => setFilter('rejected')}>
-          مَرفوضة
+          مرفوضة
         </button>
         <button className={`mlk-fchip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>الكل</button>
       </div>
@@ -133,7 +133,7 @@ export default function AdminUpgradeRequests() {
       {ok && <div className="alert ok">{ok}</div>}
 
       {loading ? <SkeletonList count={3} /> :
-       rows.length === 0 ? <div className="mlk-empty">لا توجد طلباتٌ في هذه التصفية</div> :
+       rows.length === 0 ? <div className="mlk-empty">لا توجد طلبات في هذه التصفية</div> :
        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
          {rows.map(r => (
            <article key={r.id} className="mlk-card">
@@ -158,24 +158,24 @@ export default function AdminUpgradeRequests() {
              )}
              {r.reject_reason && (
                <div className="alert err" style={{ marginTop: 8 }}>
-                 سببُ الرفض: {r.reject_reason}
+                 سبب الرفض: {r.reject_reason}
                </div>
              )}
 
-             {/* إثباتُ الدفع */}
+             {/* إثبات الدفع */}
              {r.proof_url && proofUrls[r.id] && (
                <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                  <a href={proofUrls[r.id]} target="_blank" rel="noopener" className="mlk-action">
-                   <Icon name="file-text" size={14} /> فتحُ إثبات الدفع
+                   <Icon name="file-text" size={14} /> فتح إثبات الدفع
                  </a>
                </div>
              )}
 
-             {/* أزرارُ الأدمن */}
+             {/* أزرار الأدمن */}
              {isAdmin && r.status === 'submitted' && (
                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                  <button className="mlk-action primary" onClick={() => doApprove(r)} disabled={busy === r.id}>
-                   {busy === r.id ? <span className="spinner" /> : 'وافق ورقّ'}
+                   {busy === r.id ? <span className="spinner" /> : 'وافق ورق'}
                  </button>
                  <button className="mlk-action danger" onClick={() => doReject(r)} disabled={busy === r.id}>
                    رفض

@@ -14,7 +14,7 @@ function initials(name) {
   return n ? n[0] : '؟'
 }
 
-/** شارة حالة الاتصال — تستمع لأحداث المتصفّح */
+/** شارة حالة الاتصال — تستمع لأحداث المتصفح */
 function ConnectionPill() {
   const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
   useEffect(() => {
@@ -25,32 +25,32 @@ function ConnectionPill() {
   return (
     <span className={`status-pill ${online ? '' : 'offline'}`}>
       <span className="ring" />
-      {online ? 'متّصل' : 'غير متّصل'}
+      {online ? 'متصل' : 'غير متصل'}
     </span>
   )
 }
 
 /**
- * هيكل اللوحة الموحّد — موبايل أوّلًا.
- * على الجوال: رأسٌ + محتوى + شريطٌ سفليٌّ للتنقّل (يأخذ `tabs`).
- * على سطح المكتب: شريطٌ جانبيٌّ يستخدم نفس `tabs`.
+ * هيكل اللوحة الموحد — موبايل أولا.
+ * على الجوال: رأس + محتوى + شريط سفلي للتنقل (يأخذ `tabs`).
+ * على سطح المكتب: شريط جانبي يستخدم نفس `tabs`.
  *
- * نمطٌ موحَّدٌ للأيقونات في الرأس (Popover): الإشعارات + الحساب
- * — لا BottomSheet للقوائم العلويّة (تجنّب مشكلات flex+RTL على iOS).
+ * نمط موحد للأيقونات في الرأس (Popover): الإشعارات + الحساب
+ * — لا BottomSheet للقوائم العلوية (تجنب مشكلات flex+RTL على iOS).
  *
  * @param {string}    title
  * @param {string}    subtitle
  * @param {Array}     tabs    [{ key, label, icon, badge, disabled, fab }]
  * @param {string}    active
  * @param {Function}  onTab
- * @param {ReactNode} actions   أزرارٌ يسار الرأس (سطح المكتب)
- * @param {Function}  onNotifNavigate  معالج التنقّل من إشعار
+ * @param {ReactNode} actions   أزرار يسار الرأس (سطح المكتب)
+ * @param {Function}  onNotifNavigate  معالج التنقل من إشعار
  */
 export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate, planLabel, planUsage }) {
   const { profile, role } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [debugOpen, setDebugOpen]   = useState(false)
-  // ٣ نقراتٍ على شعار «ملبّيك» خلال ثانيتَين → لوحةُ التشخيص
+  // ٣ نقرات على شعار «ملبّيك» خلال ثانيتين → لوحة التشخيص
   const tapsRef = useRef([])
   const triggerDebug = () => {
     const now = Date.now()
@@ -61,7 +61,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
     }
   }
 
-  // طرقُ فتحٍ إضافيّةٌ مضمونة:
+  // طرق فتح إضافية مضمونة:
   //   ١) #debug في الرابط (مثال: mulabeek.com/#debug)
   //   ٢) اختصار لوحة المفاتيح: Ctrl/Cmd + Shift + D
   useEffect(() => {
@@ -80,9 +80,9 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
     }
   }, [])
 
-  const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
+  const navTabs = tabs.filter((t) => t.label) // عناصر التنقل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
-  // ★ تمركزُ زرّ الإجراء (FAB) في وسط الشريط دائمًا (الفهرس ٢ من ٥) مهما كان ترتيبُه.
+  // ★ تمركز زر الإجراء (FAB) في وسط الشريط دائما (الفهرس ٢ من ٥) مهما كان ترتيبه.
   const _fabIdx = bottomTabs.findIndex((t) => t.fab)
   if (_fabIdx > -1 && bottomTabs.length === 5 && _fabIdx !== 2) {
     const [_fab] = bottomTabs.splice(_fabIdx, 1)
@@ -164,7 +164,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
         planLabel={planLabel} planUsage={planUsage} />
 
       {/* ---------- الشريط السفلي (الجوال) ---------- */}
-      <nav className="tabbar" aria-label="تنقّل سفلي">
+      <nav className="tabbar" aria-label="تنقل سفلي">
         {bottomTabs.map((t) => (
           t.fab ? (
             <div key={t.key} className="tab-cta-wrap">
@@ -195,7 +195,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
         ))}
       </nav>
 
-      {/* لوحةُ التشخيص — تَفتح بـ٣ نقراتٍ على شعار «ملبّيك» */}
+      {/* لوحة التشخيص — تفتح بـ٣ نقرات على شعار «ملبّيك» */}
       <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />
     </div>
   )

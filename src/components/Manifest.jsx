@@ -3,16 +3,16 @@ import Icon from './Icon'
 import { busName } from '../lib/buses'
 
 const STATUS_AR = {
-  registered: 'مسجّل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة',
+  registered: 'مسجل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة',
 }
-const NO_BP = 'بلا مكان محدَّد'
+const NO_BP = 'بلا مكان محدد'
 const DEFAULT_CAPACITY = 49
-/** عددُ الصفوف لكلِّ صفحةٍ A4 — يَترك مَجالًا للتذييل والختم في نفس الصفحة. */
+/** عدد الصفوف لكل صفحة A4 — يترك مجالا للتذييل والختم في نفس الصفحة. */
 const ROWS_PER_PAGE = 25
-/** الحدُّ الأدنى لصفوفٍ في صفحةٍ ثانيةٍ — تَجنّبًا لصفحةٍ تَحوي صفًّا أو اثنين */
+/** الحد الأدنى لصفوف في صفحة ثانية — تجنبا لصفحة تحوي صفا أو اثنين */
 const MIN_TAIL_ROWS = 6
 
-/* تنسيقُ تاريخٍ هجريٍّ بصيغةِ ١٣/٠٦/١٤٤٧ — يستخدمُ تقويمَ أمّ القرى. */
+/* تنسيق تاريخ هجري بصيغة ١٣/٠٦/١٤٤٧ — يستخدم تقويم أم القرى. */
 function fmtHijri(v) {
   if (!v) return '—'
   try {
@@ -22,7 +22,7 @@ function fmtHijri(v) {
   } catch { return '—' }
 }
 
-/* تنسيقُ تاريخٍ ميلاديٍّ مختصرٍ بصيغةِ ٠٤/١٢/٢٠٢٥ — مقروءٌ ومدمجٌ. */
+/* تنسيق تاريخ ميلادي مختصر بصيغة ٠٤/١٢/٢٠٢٥ — مقروء ومدمج. */
 function fmtGreg(v) {
   if (!v) return '—'
   try {
@@ -32,7 +32,7 @@ function fmtGreg(v) {
   } catch { return '—' }
 }
 
-/* جمعُ الاسم والجوال في خانةٍ واحدةٍ */
+/* جمع الاسم والجوال في خانة واحدة */
 function joinNamePhone(name, phone) {
   if (!name && !phone) return '—'
   if (!phone) return name
@@ -46,14 +46,14 @@ function joinNamePhone(name, phone) {
   )
 }
 
-/* بناءُ نصِّ الوجهةِ مع رحلةِ العودة (مثال: «جازان - مكة - جازان») */
+/* بناء نص الوجهة مع رحلة العودة (مثال: «جازان - مكة - جازان») */
 function buildRoute(from, to, hasReturn) {
   const a = (from || '—').trim()
   const b = (to || '—').trim()
   return hasReturn ? `${a} - ${b} - ${a}` : `${a} - ${b}`
 }
 
-/* سطرٌ في كتلةِ بيانات الناقل */
+/* سطر في كتلة بيانات الناقل */
 function CarrierRow({ k, v }) {
   return (
     <div className="mf-c-row">
@@ -64,8 +64,8 @@ function CarrierRow({ k, v }) {
 }
 
 /**
- * ورقةُ كشفٍ واحدةٍ — A4 برأسٍ موحَّدٍ يحوي بياناتِ الناقلِ كاملةً.
- * الترويسةُ والتذييلُ يتكرّران في كلِّ صفحةٍ من صفحاتِ نفسِ الكشف.
+ * ورقة كشف واحدة — A4 برأس موحد يحوي بيانات الناقل كاملة.
+ * الترويسة والتذييل يتكرران في كل صفحة من صفحات نفس الكشف.
  */
 function ManifestSheet({
   trip, sub, carrierCompany,
@@ -83,7 +83,7 @@ function ManifestSheet({
   return (
     <article className="mf-sheet" dir="rtl" style={pageBreakBefore ? { pageBreakBefore: 'always' } : undefined}>
 
-      {/* ===== الترويسة — اللوكَب يمين، بياناتُ الناقل يسار ===== */}
+      {/* ===== الترويسة — اللوكب يمين، بيانات الناقل يسار ===== */}
       <header className="mf-head">
         <div className="mf-brand">
           {sub?.logo_url && (
@@ -110,27 +110,27 @@ function ManifestSheet({
         </div>
       </header>
 
-      {/* ===== سطرٌ فرعيٌّ: عنوانُ الكشف + رقمُ الصفحة ===== */}
+      {/* ===== سطر فرعي: عنوان الكشف + رقم الصفحة ===== */}
       <div className="mf-subtitle">
-        <div className="mf-st-main">كشفُ ركّاب الحافلة · {trip?.title || 'رحلة عُمرة'}</div>
+        <div className="mf-st-main">كشف ركاب الحافلة · {trip?.title || 'رحلة عمرة'}</div>
         <div className="mf-st-page">
           {groupTotal > 1 && <span>كشف {groupIndex} من {groupTotal} · </span>}
           صفحة {pageIndex} من {pageTotal}
         </div>
       </div>
 
-      {/* ===== شريطُ مكان الركوب — هويّةُ هذه الورقة ===== */}
+      {/* ===== شريط مكان الركوب — هوية هذه الورقة ===== */}
       <div className="mf-pickup">
         <div className="mf-pickup-main">
-          <span className="mf-pickup-k">مكانُ الركوب</span>
+          <span className="mf-pickup-k">مكان الركوب</span>
           <span className="mf-pickup-v">{boardingPoint || NO_BP}</span>
         </div>
         <div className="mf-pickup-count">
-          مسجّلٌ: <b>{filledCount}</b>
+          مسجل: <b>{filledCount}</b>
         </div>
       </div>
 
-      {/* ===== جدولُ الركّاب — أعمدةٌ ثابتةُ القياسِ موحَّدةٌ بين كلِّ الكشوفات ===== */}
+      {/* ===== جدول الركاب — أعمدة ثابتة القياس موحدة بين كل الكشوفات ===== */}
       <table className="mf-table">
         <colgroup>
           <col style={{ width: '4%' }} />
@@ -184,18 +184,18 @@ function ManifestSheet({
         </tbody>
       </table>
 
-      {/* ===== التذييل — موحَّدٌ في كلِّ الكشوفات ===== */}
+      {/* ===== التذييل — موحد في كل الكشوفات ===== */}
       <footer className="mf-foot">
         <div className="mf-note">
-          كشفٌ رسميٌّ صادرٌ عن {sub?.org_name || 'الحملة'} · {today}
+          كشف رسمي صادر عن {sub?.org_name || 'الحملة'} · {today}
         </div>
         <div className="mf-stamp">
           {stampUrl ? (
-            <img className="mf-stamp-img" src={stampUrl} alt="الختم الرسميّ" crossOrigin="anonymous" />
+            <img className="mf-stamp-img" src={stampUrl} alt="الختم الرسمي" crossOrigin="anonymous" />
           ) : stamp ? (
             <div className="mf-stamp-e"><span>{stamp}</span></div>
           ) : (
-            <div className="mf-stamp-m">الختمُ والتوقيع</div>
+            <div className="mf-stamp-m">الختم والتوقيع</div>
           )}
         </div>
       </footer>
@@ -203,7 +203,7 @@ function ManifestSheet({
   )
 }
 
-/* ترتيبٌ أبجديٌّ لأماكنِ الركوب — يُبقي «بلا مكان» في الآخر */
+/* ترتيب أبجدي لأماكن الركوب — يبقي «بلا مكان» في الآخر */
 function sortBoardingPoints(arr) {
   return [...arr].sort((a, b) => {
     if (a === NO_BP && b !== NO_BP) return 1
@@ -213,18 +213,18 @@ function sortBoardingPoints(arr) {
 }
 
 /**
- * يَحسب عدد الصفوف الكُلّيّ للكشف:
- *  - صفحةٌ واحدةٌ تَفيض دائمًا إلى ROWS_PER_PAGE (نَموذجٌ نَظيف بصفوفٍ فارغةٍ
- *    للإضافة اليدويّة لو احتُيج)
- *  - إن زاد الفعليّون عن ذلك، نَستعمل عددهم تمامًا (محدودًا بالسَّعة)
- *  - حِراسةٌ ضدّ صفحةٍ ثانيةٍ شبهَ فارغةٍ (≤ MIN_TAIL_ROWS): نُضيف للأولى
- *    بَدلَ إنشاء صفحةٍ ثانيةٍ فيها صفّان فقط (ينكسر بصريًّا).
+ * يحسب عدد الصفوف الكلي للكشف:
+ *  - صفحة واحدة تفيض دائما إلى ROWS_PER_PAGE (نموذج نظيف بصفوف فارغة
+ *    للإضافة اليدوية لو احتيج)
+ *  - إن زاد الفعليون عن ذلك، نستعمل عددهم تماما (محدودا بالسعة)
+ *  - حراسة ضد صفحة ثانية شبه فارغة (≤ MIN_TAIL_ROWS): نضيف للأولى
+ *    بدل إنشاء صفحة ثانية فيها صفان فقط (ينكسر بصريا).
  */
 function targetRowCount(filledCount, capacity) {
   if (filledCount <= ROWS_PER_PAGE) return Math.min(ROWS_PER_PAGE, capacity)
-  // حِراسةٌ ضدّ صفحةٍ ثانيةٍ شبهَ فارغة: لو الـtail < MIN_TAIL_ROWS،
-  // نَدفعها لـMIN_TAIL_ROWS بإضافة صفوفٍ فارغة. هكذا تَبقى الورقتان
-  // مَتوازنتَين بصريًّا.
+  // حراسة ضد صفحة ثانية شبه فارغة: لو الـtail < MIN_TAIL_ROWS،
+  // ندفعها لـMIN_TAIL_ROWS بإضافة صفوف فارغة. هكذا تبقى الورقتان
+  // متوازنتين بصريا.
   const tail = filledCount % ROWS_PER_PAGE
   let total = filledCount
   if (tail > 0 && tail < MIN_TAIL_ROWS) total += (MIN_TAIL_ROWS - tail)
@@ -232,11 +232,11 @@ function targetRowCount(filledCount, capacity) {
 }
 
 /**
- * الكشف الرسميّ — رأسٌ موحَّدٌ بكلِّ بيانات الناقل في كلِّ صفحةٍ، توزيعٌ
- * حسب (الباص × مكانِ الركوب)، أعمدةٌ ثابتةُ القياس.
+ * الكشف الرسمي — رأس موحد بكل بيانات الناقل في كل صفحة، توزيع
+ * حسب (الباص × مكان الركوب)، أعمدة ثابتة القياس.
  */
 export default function Manifest({ trip, sub, passengers = [], buses = [], onClose }) {
-  // الحقولُ القابلةُ للتعديلِ من إعدادات الحملةِ والرحلةِ (مع fallbackاتٍ متوافقةٍ)
+  // الحقول القابلة للتعديل من إعدادات الحملة والرحلة (مع fallbackات متوافقة)
   const carrierCompany = (sub?.carrier_company || sub?.org_name || 'الحملة').trim()
   const driver1Name  = trip?.driver_name || ''
   const driver1Phone = trip?.driver_phone || ''
@@ -326,7 +326,7 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
         </button>
         {groups.length > 1 && (
           <span className="mf-toolbar-info">
-            {groups.length} {groups.length === 2 ? 'كشفان' : 'كشوفات'} · ورقةٌ لكلِّ مكانِ ركوبٍ في كلِّ باص
+            {groups.length} {groups.length === 2 ? 'كشفان' : 'كشوفات'} · ورقة لكل مكان ركوب في كل باص
           </span>
         )}
         <span style={{ flex: 1 }} />

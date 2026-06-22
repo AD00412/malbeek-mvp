@@ -1,8 +1,8 @@
-// أدوات مساعدة لتعدّد الباصات (المرحلة ٢).
+// أدوات مساعدة لتعدد الباصات (المرحلة ٢).
 import { supabase } from './supabaseClient'
 import { seatCount, DEFAULT_ROWS, DEFAULT_BACK } from './busLayout'
 
-/** جلب باصات رحلةٍ مرتّبةً برقم الباص */
+/** جلب باصات رحلة مرتبة برقم الباص */
 export async function loadTripBuses(tripId) {
   if (!tripId) return []
   const { data } = await supabase
@@ -13,7 +13,7 @@ export async function loadTripBuses(tripId) {
   return data ?? []
 }
 
-/** تخطيط باصٍ ({rows, back, policy}) مع قيمٍ افتراضيّةٍ آمنة */
+/** تخطيط باص ({rows, back, policy}) مع قيم افتراضية آمنة */
 export function busLayout(bus) {
   return {
     rows: bus?.bus_rows ?? DEFAULT_ROWS,
@@ -22,12 +22,12 @@ export function busLayout(bus) {
   }
 }
 
-/** إجمالي سعة كلّ الباصات */
+/** إجمالي سعة كل الباصات */
 export function totalCapacity(buses = []) {
   return buses.reduce((s, b) => s + seatCount(b.bus_rows ?? DEFAULT_ROWS, b.bus_back_row ?? DEFAULT_BACK), 0)
 }
 
-/** اسم عرضٍ للباص */
+/** اسم عرض للباص */
 export function busName(bus) {
   if (!bus) return ''
   return bus.label?.trim() || `باص ${bus.bus_number}`

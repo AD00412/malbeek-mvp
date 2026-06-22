@@ -14,7 +14,7 @@ export function homeForRole(role) {
 }
 
 // شاشة تحميل أنيقة أثناء التحقق من الجلسة
-export function ScreenLoader({ label = 'جارٍ التحميل…' }) {
+export function ScreenLoader({ label = 'جار التحميل…' }) {
   return (
     <div className="screen-loader">
       <div className="sl-mark"><CompassMark size={64} /></div>
@@ -24,7 +24,7 @@ export function ScreenLoader({ label = 'جارٍ التحميل…' }) {
 }
 
 /**
- * يحمي المسار: يتطلّب جلسة، ويمكن تقييده بأدوار محدّدة.
+ * يحمي المسار: يتطلب جلسة، ويمكن تقييده بأدوار محددة.
  * <RequireAuth roles={['subscriber']}> ... </RequireAuth>
  */
 export default function RequireAuth({ roles, children }) {
@@ -37,10 +37,10 @@ export default function RequireAuth({ roles, children }) {
     return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   }
 
-  // الجلسة موجودة لكن الملف الشخصي لم يُحمَّل بعد
-  if (!profile) return <ScreenLoader label="جارٍ تجهيز حسابك…" />
+  // الجلسة موجودة لكن الملف الشخصي لم يحمل بعد
+  if (!profile) return <ScreenLoader label="جار تجهيز حسابك…" />
 
-  // تقييد حسب الدور: وجّه المستخدم إلى لوحته الصحيحة
+  // تقييد حسب الدور: وجه المستخدم إلى لوحته الصحيحة
   if (roles && !roles.includes(profile.role)) {
     return <Navigate to={homeForRole(profile.role)} replace />
   }

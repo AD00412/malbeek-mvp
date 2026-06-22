@@ -1,25 +1,25 @@
 import { useEffect, useRef, useId } from 'react'
 
-/* عدّاد فتحٍ مشترك: يمنع كسر body.overflow عند تداخل ورقتين/أكثر معًا. */
+/* عداد فتح مشترك: يمنع كسر body.overflow عند تداخل ورقتين/أكثر معا. */
 let openCount = 0
 let savedOverflow = ''
 
 const FOCUSABLE = 'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
 /**
- * ورقة سفلية (Bottom Sheet) — تتحوّل لمودال متوسّط على سطح المكتب.
- * Escape يُغلق، النقر خارج البطاقة يُغلق، يُقفل تمرير الجسم أثناء الفتح،
- * يحصر التركيز داخل البطاقة (focus trap) ويعيده للعنصر المُطلِق عند الإغلاق.
+ * ورقة سفلية (Bottom Sheet) — تتحول لمودال متوسط على سطح المكتب.
+ * Escape يغلق، النقر خارج البطاقة يغلق، يقفل تمرير الجسم أثناء الفتح،
+ * يحصر التركيز داخل البطاقة (focus trap) ويعيده للعنصر المطلق عند الإغلاق.
  *
- * ★ iOS Safari fix: onClose يُحفظ في ref بدلَ تَبعيّة، لأنّ كلَّ keystroke في
- *   نموذجٍ بداخل الورقة يُعيد إنشاءَ closure للأب → تَغيُّرُ مَرجع onClose →
- *   re-run للـeffect → focus يَنتقل من input → keyboard يَنزل في iOS.
- *   النِّمطُ الجديد: التَّبعيّةُ على [open] فقط؛ الكلوجراتُ تُقرأ من ref.
+ * ★ iOS Safari fix: onClose يحفظ في ref بدل تبعية، لأن كل keystroke في
+ *   نموذج بداخل الورقة يعيد إنشاء closure للأب → تغير مرجع onClose →
+ *   re-run للـeffect → focus ينتقل من input → keyboard ينزل في iOS.
+ *   النمط الجديد: التبعية على [open] فقط؛ الكلوجرات تقرأ من ref.
  *
  * @param {boolean}   open
  * @param {string}    title
  * @param {Function}  onClose
- * @param {ReactNode} actions   صفّ أزرارٍ سفلي (اختياري)
+ * @param {ReactNode} actions   صف أزرار سفلي (اختياري)
  */
 export default function BottomSheet({ open, title, onClose, actions, children }) {
   const cardRef = useRef(null)
@@ -27,12 +27,12 @@ export default function BottomSheet({ open, title, onClose, actions, children })
   const onCloseRef = useRef(onClose)
   const titleId = useId()
 
-  // يَبقى onCloseRef مُحدَّثًا بآخر دالّة بلا تَسبيب re-run للـeffect.
+  // يبقى onCloseRef محدثا بآخر دالة بلا تسبيب re-run للـeffect.
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     if (!open) return
-    // احفظ العنصر المُركَّز قبل الفتح كي نعيد إليه التركيز لاحقًا.
+    // احفظ العنصر المركز قبل الفتح كي نعيد إليه التركيز لاحقا.
     lastFocusRef.current = document.activeElement
 
     const onKey = (e) => {
@@ -53,11 +53,11 @@ export default function BottomSheet({ open, title, onClose, actions, children })
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
 
-    // ركّز أوّل عنصرٍ داخل البطاقة بعد الرسم — مرّةً واحدةً عند الفتح.
+    // ركز أول عنصر داخل البطاقة بعد الرسم — مرة واحدة عند الفتح.
     const t = setTimeout(() => {
       const card = cardRef.current
       if (!card) return
-      // تَجنّب إعادةَ التَّركيز لو المستخدم بدأ يَكتب في حقلٍ أصلًا.
+      // تجنب إعادة التركيز لو المستخدم بدأ يكتب في حقل أصلا.
       if (card.contains(document.activeElement)) return
       const first = card.querySelector(FOCUSABLE)
       ;(first || card).focus?.()
@@ -71,7 +71,7 @@ export default function BottomSheet({ open, title, onClose, actions, children })
       const el = lastFocusRef.current
       if (el && typeof el.focus === 'function' && document.contains(el)) el.focus()
     }
-    // ★ التَّبعيّة على [open] فقط — onClose عبر ref.
+    // ★ التبعية على [open] فقط — onClose عبر ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 

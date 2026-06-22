@@ -4,15 +4,15 @@ import { safeExt } from '../lib/format'
 import Icon from './Icon'
 
 /**
- * رفع صورةٍ (ختم/شعار) إلى Supabase Storage في `org-assets/<subscriber_id>/<filename>`.
- * يقبل ملفًّا من الجوال أو الكمبيوتر، يعرض معاينةً ذكيّة، ويُرجع الرابط العامّ.
+ * رفع صورة (ختم/شعار) إلى Supabase Storage في `org-assets/<subscriber_id>/<filename>`.
+ * يقبل ملفا من الجوال أو الكمبيوتر، يعرض معاينة ذكية، ويرجع الرابط العام.
  *
- * @param {string}   subscriberId   معرّف الحملة (يستخدم كاسم مجلّدٍ في الـ bucket)
- * @param {string}   value          الرابط الحاليّ (للعرض)
+ * @param {string}   subscriberId   معرف الحملة (يستخدم كاسم مجلد في الـ bucket)
+ * @param {string}   value          الرابط الحالي (للعرض)
  * @param {Function} onChange       (newUrl) => void
  * @param {string}   label          تسمية الحقل
- * @param {string}   slot           اسم اللاحقة في الملفّ: 'stamp' | 'logo' | غيرها
- * @param {string}   hint           نصُّ مساعدةٍ صغير
+ * @param {string}   slot           اسم اللاحقة في الملف: 'stamp' | 'logo' | غيرها
+ * @param {string}   hint           نص مساعدة صغير
  */
 export default function ImageUpload({ subscriberId, value, onChange, label, slot = 'image', hint }) {
   const [busy, setBusy] = useState(false)
@@ -21,10 +21,10 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
 
   async function handleFile(file) {
     if (!file) return
-    if (!subscriberId) { setErr('تعذّر تحديد الحملة. حدّث الصفحة.'); return }
+    if (!subscriberId) { setErr('تعذر تحديد الحملة. حدث الصفحة.'); return }
     const okTypes = ['image/png', 'image/jpeg', 'image/webp']
     if (!okTypes.includes(file.type)) { setErr('الصيغة غير مدعومة. استخدم PNG / JPG / WebP.'); return }
-    if (file.size > 2 * 1024 * 1024) { setErr('حجم الملفّ كبير (٢ ميغابايت بحدٍّ أقصى).'); return }
+    if (file.size > 2 * 1024 * 1024) { setErr('حجم الملف كبير (٢ ميغابايت بحد أقصى).'); return }
 
     setBusy(true); setErr('')
     try {
@@ -37,7 +37,7 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
       const { data: pub } = supabase.storage.from('org-assets').getPublicUrl(path)
       onChange?.(pub.publicUrl)
     } catch (e) {
-      setErr('تعذّر الرفع: ' + (e?.message || e))
+      setErr('تعذر الرفع: ' + (e?.message || e))
     } finally {
       setBusy(false)
     }
@@ -49,8 +49,8 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
   return (
     <div className="field">
       {label && <label>{label}</label>}
-      {/* بدون capture: iOS Safari يعرض قائمةً بثلاثة خياراتٍ (مكتبة الصور / التقاط صورة / اختيار ملفّ)
-          بدل فتح الكاميرا مباشرةً — تجربةٌ أكثر مرونةً ومطابقةٌ لتوقّعات المستخدم. */}
+      {/* بدون capture: iOS Safari يعرض قائمة بثلاثة خيارات (مكتبة الصور / التقاط صورة / اختيار ملف)
+          بدل فتح الكاميرا مباشرة — تجربة أكثر مرونة ومطابقة لتوقعات المستخدم. */}
       <input
         ref={fileRef} type="file"
         accept="image/png,image/jpeg,image/webp"
@@ -74,8 +74,8 @@ export default function ImageUpload({ subscriberId, value, onChange, label, slot
           {busy ? <span className="spinner" /> : (
             <>
               <Icon name="download" size={22} style={{ transform: 'rotate(180deg)' }} />
-              <strong>اختر صورةً من جهازك</strong>
-              <span className="muted" style={{ fontSize: 12 }}>الجوّال أو الكمبيوتر · PNG / JPG / WebP · ٢ ميغابايت كحدٍّ أقصى</span>
+              <strong>اختر صورة من جهازك</strong>
+              <span className="muted" style={{ fontSize: 12 }}>الجوال أو الكمبيوتر · PNG / JPG / WebP · ٢ ميغابايت كحد أقصى</span>
             </>
           )}
         </button>

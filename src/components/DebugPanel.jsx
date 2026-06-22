@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { getEvents, clearEvents, exportText, subscribe } from '../lib/debugLog'
 
 /**
- * لوحةُ تشخيصٍ للأعطال الصامتة. تُفتح من ٣ نقراتٍ على شعار «ملبّيك».
- * تَعرض آخرَ ٢٠٠ حدث: long tasks، استعلامات Supabase، أخطاء، تنقّل.
+ * لوحة تشخيص للأعطال الصامتة. تفتح من ٣ نقرات على شعار «ملبّيك».
+ * تعرض آخر ٢٠٠ حدث: long tasks، استعلامات Supabase، أخطاء، تنقل.
  */
 
 const CATEGORY_COLOR = {
@@ -16,7 +16,7 @@ const CATEGORY_COLOR = {
   THROW:   '#ef4444',
   START:   '#94a3b8',
   END:     '#10b981',
-  SB:      '#22d3ee',  // فيروزيٌّ — مكالمات Supabase التلقائيّة
+  SB:      '#22d3ee',  // فيروزي — مكالمات Supabase التلقائية
   AUTH:    '#a78bfa',
   RT:      '#fb7185',  // وردي — Realtime
   WARMUP:  '#fbbf24',
@@ -40,7 +40,7 @@ export default function DebugPanel({ open, onClose }) {
     const text = exportText()
     try { await navigator.clipboard.writeText(text) }
     catch {
-      // fallback — حدّد textarea مؤقّتًا
+      // fallback — حدد textarea مؤقتا
       const ta = document.createElement('textarea')
       ta.value = text; document.body.appendChild(ta); ta.select()
       try { document.execCommand('copy') } catch { /* ignore */ }
@@ -64,10 +64,10 @@ export default function DebugPanel({ open, onClose }) {
     <div className="debug-overlay" role="dialog" aria-modal="true">
       <div className="debug-card">
         <div className="debug-head">
-          <strong>سجلّ التشخيص ({events.length})</strong>
+          <strong>سجل التشخيص ({events.length})</strong>
           <span style={{ flex: 1 }} />
           <span style={{ fontSize: 12, color: '#ef4444' }}>{errorCount} خطأ</span>
-          <span style={{ fontSize: 12, color: '#f59e0b' }}>{freezeCount} تجمّد</span>
+          <span style={{ fontSize: 12, color: '#f59e0b' }}>{freezeCount} تجمد</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="إغلاق">×</button>
         </div>
 
@@ -75,7 +75,7 @@ export default function DebugPanel({ open, onClose }) {
           {[
             { k: 'all',     t: 'الكل' },
             { k: 'errors',  t: 'أخطاء' },
-            { k: 'freezes', t: 'تجمّد' },
+            { k: 'freezes', t: 'تجمد' },
             { k: 'sb',      t: 'Supabase' },
           ].map((t) => (
             <button key={t.k} type="button"
@@ -104,7 +104,7 @@ export default function DebugPanel({ open, onClose }) {
         </div>
 
         <div className="debug-actions">
-          <button className="btn btn-em btn-sm" onClick={onCopy}>📋 نسخ كنصّ</button>
+          <button className="btn btn-em btn-sm" onClick={onCopy}>📋 نسخ كنص</button>
           <button className="btn btn-ghost btn-sm" onClick={() => { clearEvents(); setEvents([]) }}>
             مسح
           </button>

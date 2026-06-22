@@ -9,10 +9,10 @@ import Icon from '../../components/Icon'
 function arError(msg = '') {
   const m = String(msg).toLowerCase()
   if (m.includes('invalid login') || m.includes('invalid credentials')) return 'البريد أو كلمة المرور غير صحيحة.'
-  if (m.includes('email not confirmed')) return 'لم يتم تأكيد بريدك بعد. افتح رسالة التفعيل ثمّ أعد المحاولة.'
-  if (m.includes('rate limit') || m.includes('too many')) return 'محاولاتٌ كثيرةٌ متتالية. انتظر دقيقةً ثمّ حاول مجدّدًا.'
-  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return 'تعذّر الاتصال بالخادم. تحقّق من اتصالك بالإنترنت.'
-  return 'تعذّر تسجيل الدخول. حاول مجدّدًا.'
+  if (m.includes('email not confirmed')) return 'لم يتم تأكيد بريدك بعد. افتح رسالة التفعيل ثم أعد المحاولة.'
+  if (m.includes('rate limit') || m.includes('too many')) return 'محاولات كثيرة متتالية. انتظر دقيقة ثم حاول مجددا.'
+  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return 'تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.'
+  return 'تعذر تسجيل الدخول. حاول مجددا.'
 }
 
 export default function Login() {
@@ -28,18 +28,18 @@ export default function Login() {
 
   useEffect(() => { emailRef.current?.focus() }, [])
 
-  // حارسٌ ضدّ التعليق: لو تأخّر تحميل الملفّ الشخصي بعد دخولٍ ناجح،
-  // نوقف الـ spinner ونعرض رسالةً واضحة.
+  // حارس ضد التعليق: لو تأخر تحميل الملف الشخصي بعد دخول ناجح،
+  // نوقف الـ spinner ونعرض رسالة واضحة.
   useEffect(() => {
     if (!busy) return
     const t = setTimeout(() => {
       setBusy(false)
-      setErr('تمّ الدخول لكن تعذّر تحميل ملفّك الشخصي. حدّث الصفحة، وإن تكرّر الأمر تواصل مع الدعم.')
+      setErr('تم الدخول لكن تعذر تحميل ملفك الشخصي. حدث الصفحة، وإن تكرر الأمر تواصل مع الدعم.')
     }, 8000)
     return () => clearTimeout(t)
   }, [busy])
 
-  // مُسجَّلٌ بالفعل؟ وجّهه إلى لوحته (أو إلى الصفحة التي جاء منها).
+  // مسجل بالفعل؟ وجهه إلى لوحته (أو إلى الصفحة التي جاء منها).
   if (!loading && session && profile) {
     const from = loc.state?.from
     const dest = from && from !== '/login' ? from : homeForRole(role)
@@ -58,7 +58,7 @@ export default function Login() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: mail, password })
       if (error) { setErr(arError(error.message)); setBusy(false); return }
-      // النجاح: AuthProvider يلتقط الجلسة ويتكفّل <Navigate> أعلاه بالتوجيه.
+      // النجاح: AuthProvider يلتقط الجلسة ويتكفل <Navigate> أعلاه بالتوجيه.
     } catch (e2) {
       setErr(arError(e2?.message))
       setBusy(false)

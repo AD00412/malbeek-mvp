@@ -13,16 +13,16 @@ function initials(name, email) {
 }
 
 /**
- * درجٌ جانبيٌّ ينزلق من جهة البدء (RTL: من اليمين، LTR: من اليسار).
- * يفتح بضغطة ☰ في الرأس، يُغلق بنقرةٍ خارجه/Escape/زرّ ×.
- * المحتوى: بطاقةُ مستخدم + قائمةُ تنقّلٍ كاملةٌ + استهلاكُ الباقة + خروج.
+ * درج جانبي ينزلق من جهة البدء (RTL: من اليمين، LTR: من اليسار).
+ * يفتح بضغطة ☰ في الرأس، يغلق بنقرة خارجه/Escape/زر ×.
+ * المحتوى: بطاقة مستخدم + قائمة تنقل كاملة + استهلاك الباقة + خروج.
  *
  * @param {boolean}  open
  * @param {Function} onClose
  * @param {Array}    tabs          نفس بنية AppShell: {key,label,icon,badge,disabled,fab,section}
  * @param {string}   active
  * @param {Function} onTab         (key) => void
- * @param {string}   planLabel     سطرٌ تحت الاسم (مثلًا: "باقة ملبّيك" أو "تجريبيّة")
+ * @param {string}   planLabel     سطر تحت الاسم (مثلا: "باقة ملبّيك" أو "تجريبية")
  * @param {object}   planUsage     { used, limit } لإظهار شريط الباقة (للمشترك)
  */
 export default function SideDrawer({ open, onClose, tabs = [], active, onTab, planLabel, planUsage }) {
@@ -50,7 +50,7 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
     onClose?.()
     const ok = await confirm({
       title: 'تسجيل الخروج',
-      message: 'هل أنت متأكّد؟ ستحتاج إلى الدخول مرّةً أخرى.',
+      message: 'هل أنت متأكد؟ ستحتاج إلى الدخول مرة أخرى.',
       confirmText: 'تسجيل الخروج',
     })
     if (ok) await signOut()
@@ -60,7 +60,7 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
   const email = user?.email || ''
   const av = initials(profile?.full_name, email)
 
-  // فلتر العناصر للعرض في الدرج (نُظهر كل شيء، حتى ما لا يدخل tabbar السفلي)
+  // فلتر العناصر للعرض في الدرج (نظهر كل شيء، حتى ما لا يدخل tabbar السفلي)
   const items = tabs.filter((t) => t.label)
   const usagePct = planUsage && planUsage.limit > 0 ? Math.min(100, Math.round((planUsage.used / planUsage.limit) * 100)) : null
 
@@ -72,7 +72,7 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="قائمة التنقّل"
+        aria-label="قائمة التنقل"
         tabIndex={-1}
       >
         <header className="drawer-head">
@@ -86,8 +86,8 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
           <button className="drawer-close" onClick={onClose} aria-label="إغلاق">×</button>
         </header>
 
-        {/* قائمة التنقّل — تمرّ على tabs بترتيبها (مع الفواصل/الأقسام) */}
-        <nav className="drawer-nav" aria-label="تنقّل رئيسي">
+        {/* قائمة التنقل — تمر على tabs بترتيبها (مع الفواصل/الأقسام) */}
+        <nav className="drawer-nav" aria-label="تنقل رئيسي">
           {tabs.map((it, i) => {
             if (!it.label) return <div key={'s' + i} className="drawer-sec">{it.section}</div>
             return (
@@ -106,7 +106,7 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
           })}
         </nav>
 
-        {/* استهلاك الباقة (يظهر فقط إن مرّر المضيف planUsage) */}
+        {/* استهلاك الباقة (يظهر فقط إن مرر المضيف planUsage) */}
         {usagePct != null && (
           <div className="drawer-plan">
             <div className="drawer-plan-row">
@@ -118,7 +118,7 @@ export default function SideDrawer({ open, onClose, tabs = [], active, onTab, pl
             <div className={`drawer-plan-bar ${usagePct >= 100 ? 'full' : ''}`}><span style={{ width: usagePct + '%' }} /></div>
             {usagePct >= 100 && (
               <div className="drawer-plan-hint">
-                وصلتَ سقف الباقة التجريبيّة — اطلب ترقيةً للوصول لحملاتٍ غير محدودة.
+                وصلت سقف الباقة التجريبية — اطلب ترقية للوصول لحملات غير محدودة.
               </div>
             )}
           </div>
