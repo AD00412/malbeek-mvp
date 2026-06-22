@@ -939,7 +939,7 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
           <div className="v">{tt.paid}</div>
         </div>
         <div className="stat info">
-          <div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعود الحافلة</div>
+          <div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعد الباص</div>
           <div className="v">{tt.boarded}</div>
         </div>
         <div className="stat warn">
