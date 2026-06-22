@@ -535,6 +535,7 @@ function labelAction(a) {
 }
 
 function formatDetails(d) {
+  if (!d || typeof d !== 'object') return null
   if (d.from && d.to) return `${d.from} → ${d.to}`
   if (d.action === 'set_trip_limit' || (d.old != null && d.new != null)) return `${d.old} → ${d.new} رحلة`
   if (d.days) return `${d.days} يوما`

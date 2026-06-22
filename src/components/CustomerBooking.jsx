@@ -623,7 +623,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
               {trip?.price != null && (
                 <div className="alert info" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                   <Icon name="payments" size={16} /> المبلغ المطلوب:
-                  <strong>{Number(trip.price).toLocaleString('en-US')} ﷼</strong> للمقعد
+                  <strong>{Number(trip?.price || 0).toLocaleString('en-US')} ﷼</strong> للمقعد
                 </div>
               )}
 
