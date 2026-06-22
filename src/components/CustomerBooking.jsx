@@ -643,6 +643,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                 <div className="form" style={{ marginTop: 14 }}>
                   <div className="sec-label">{booking?.id && trip?.price != null ? 'أو ادفع بطريقةٍ أخرى' : 'طرق الدفع'}</div>
 
+                  {isFamily && (
+                    <p className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>
+                      💳 <strong>دفعةُ العائلة الجماعيّة:</strong> ادفع مرّةً واحدةً عن عائلتك بالكامل،
+                      وأرفِق إيصالاً واحداً ورقمَ طلبٍ واحداً يشمل الجميع — يؤكّدها صاحبُ الحملة دفعةً واحدة.
+                    </p>
+                  )}
+
                   {sub?.bank_iban && (
                     <div className="alert info" style={{ display: 'block', marginBottom: 8 }}>
                       <div style={{ fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -670,7 +677,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                   {/* إثبات الدفع: لقطة إتمام الطلب (متاحٌ بعد تأكيد الحجز) */}
                   {booking?.id ? (
                     <div className="field" style={{ marginTop: 6 }}>
-                      <label>أرفِق صورة إتمام الطلب <span className="muted" style={{ fontSize: 12 }}>(لقطة شاشة من المتجر)</span></label>
+                      <label>{isFamily ? 'إيصالُ دفعة العائلة الجماعيّة' : 'أرفِق صورة إتمام الطلب'} <span className="muted" style={{ fontSize: 12 }}>(لقطة شاشة من المتجر)</span></label>
                       <input ref={proofRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }} onChange={uploadProof} />
                       {booking.payment_proof_url ? (
                         <div className="img-upload preview" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
@@ -695,8 +702,8 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                   )}
 
                   <div className="field">
-                    <label>أو الصق رقم العملية <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
-                    <input type="text" placeholder="رقم عملية الدفع لإثباتٍ إضافيّ" value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
+                    <label>{isFamily ? 'رقمُ طلب المتجر (زد/سلة) — لدفعة العائلة' : 'أو الصق رقم العملية'} <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
+                    <input type="text" placeholder={isFamily ? 'رقمُ الطلب الواحد الذي يشمل العائلة' : 'رقم عملية الدفع لإثباتٍ إضافيّ'} value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)} />
                   </div>
                   <p className="muted" style={{ fontSize: 12.5 }}>يراجع صاحب الحملة الإيصال ويؤكّد الدفع — يبقى حجزك «مسجّلًا» حتى التأكيد.</p>
                 </div>
