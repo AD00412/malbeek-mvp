@@ -5,6 +5,8 @@ import { useAuth } from '../../app/useAuth'
 import { suggestSlug } from '../../lib/slug'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter'
+import { scorePassword } from '../../lib/passwordStrength'
 
 function arError(msg = '') {
   const m = msg.toLowerCase()
@@ -49,6 +51,8 @@ export default function Signup() {
     e.preventDefault()
     if (busy) return
     if (!agreed) { setErr('يرجى الموافقة على الشروط وسياسة الخصوصية للمتابعة.'); return }
+    const ps = scorePassword(password)
+    if (!ps.ok) { setErr('كلمة المرور ضعيفة — ' + (ps.suggestions[0] || 'استخدم ٨ أحرف على الأقل بمزيج أحرف وأرقام.')); return }
     setErr(''); setInfo(''); setBusy(true)
 
     // 1) إنشاء حساب المصادقة (الدور = مشترك يحفظ في بيانات المستخدم)
@@ -117,11 +121,12 @@ export default function Signup() {
         <div className="field with-ic has-toggle ltr">
           <label>كلمة المرور <span className="req">*</span></label>
           <span className="f-ic"><Icon name="lock" size={17} /></span>
-          <input type={showPw ? 'text' : 'password'} autoComplete="new-password" placeholder="٦ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
+          <input type={showPw ? 'text' : 'password'} autoComplete="new-password" placeholder="٨ أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
           <button type="button" className="pw-toggle" aria-label={showPw ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} onClick={() => setShowPw((s) => !s)} tabIndex={-1}>
             <Icon name={showPw ? 'eyeOff' : 'eye'} size={17} />
           </button>
         </div>
+        <PasswordStrengthMeter password={password} />
 
         <label className="checkbox-group">
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />

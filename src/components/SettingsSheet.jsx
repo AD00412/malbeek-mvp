@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
 import { useUI } from '../lib/useUI'
 import BottomSheet from './BottomSheet'
+import SecuritySheet from './SecuritySheet'
 import Icon from './Icon'
 import ImageUpload from './ImageUpload'
 import { slugify, isValidSlug } from '../lib/slug'
@@ -16,6 +17,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
   const { toast } = useUI()
   const [tab, setTab] = useState('profile')   // profile | org | brand
   const [busy, setBusy] = useState(false)
+  const [securityOpen, setSecurityOpen] = useState(false)
 
   // الملف الشخصي
   const [fullName, setFullName] = useState('')
@@ -152,6 +154,11 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
           <button className="btn btn-gold btn-block" onClick={saveProfile} disabled={busy}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={15} /> حفظ التغييرات</>}
           </button>
+
+          {/* أمان الحساب — كلمة المرور، تأكيد البريد، المصادقة الثنائية، الجلسات */}
+          <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => setSecurityOpen(true)}>
+            <Icon name="settings" size={15} /> أمان الحساب
+          </button>
         </div>
       )}
 
@@ -256,6 +263,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
           </button>
         </div>
       )}
+      <SecuritySheet open={securityOpen} onClose={() => setSecurityOpen(false)} />
     </BottomSheet>
   )
 }
