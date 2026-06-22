@@ -3,11 +3,13 @@
 
 name: Node.js CI
 
+# يعمل على الـPRs فقط (يفحص قبل الدمج) + تشغيلٌ يدويٌّ عند الحاجة.
+# أُزيل المُحفِّز على push:main لأنّ كلّ دمجٍ كان يُطلق فحصًا مكرّرًا (الـPR
+# فحصه أصلًا) فيولّد إيميلات «Run failed» مزعجة. النشر يتكفّل به deploy.yml.
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
