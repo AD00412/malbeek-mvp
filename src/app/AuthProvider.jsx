@@ -36,7 +36,8 @@ async function prefetchDashboard(profile, userId) {
     } else if (profile.role === 'customer') {
       const key = `cust-dash:${userId}`
       if (getCached(key)) return
-      let sq = supabase.from('subscribers').select('id, org_name, store_url, logo_url')
+      // قراءةٌ آمنةُ الأعمدة عبر الـVIEW (تستثني admin_notes/suspended_*/trial_*)
+      let sq = supabase.from('v_subscriber_public').select('id, org_name, store_url, logo_url')
       sq = profile.subscriber_id ? sq.eq('id', profile.subscriber_id) : sq.limit(1)
       let tq = supabase.from('trips')
         .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, seating_policy, bus_rows, bus_back_row, price, notes')
