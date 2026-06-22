@@ -7,6 +7,7 @@ import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
 import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
+import AdminBusTower from '../../components/AdminBusTower'
 import OpsOverview from '../../components/OpsOverview'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
@@ -168,6 +169,7 @@ export function AdminHome() {
   const tabs = [
     { section: 'الإدارة' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
+    { key: 'fleet',    label: 'برج الباصات',   icon: 'trips' },
     // ★ A1 — badge يَعرض الجديد هذا الأسبوع (لا العدد الكلّيّ المُضلِّل)
     { key: 'subs',     label: 'المشتركون',     icon: 'building', badge: recent7Badge(subs) || undefined },
     { key: 'upgrades', label: 'طلبات الترقية', icon: 'payments', badge: pendingUpgrades || undefined },
@@ -235,6 +237,7 @@ export function AdminHome() {
             />
           </>
         )}
+        {view === 'fleet' && <AdminBusTower />}
         {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />}
         {view === 'upgrades' && <AdminUpgradeRequests />}
         {view === 'trips' && <AdminAllTrips />}
