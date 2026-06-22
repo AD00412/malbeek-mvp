@@ -646,6 +646,13 @@
 .sec-label{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--gd-300);
   margin-top:6px;padding-bottom:2px;border-bottom:1px solid var(--line)}
 
+/* مجموعةُ إجراءاتٍ كبطاقةٍ بصريّةٍ مستقلّة — تنظيمٌ أوضح لشاشة إدارة الرحلة */
+.tm-group{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm)}
+.tm-group .sec-label{margin-top:0;padding-bottom:8px;color:var(--em-500);font-size:14px;
+  display:flex;align-items:center;gap:8px}
+.tm-group .sec-label svg{color:var(--em-500);flex:none}
+
 .pax-list{display:flex;flex-direction:column;gap:8px}
 .pax-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);
   background:var(--surface-3)}
