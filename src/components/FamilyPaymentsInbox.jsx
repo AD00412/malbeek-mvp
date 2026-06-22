@@ -37,7 +37,7 @@ export default function FamilyPaymentsInbox({ sub, trip, onChanged }) {
   useEffect(() => { load() }, [load])
 
   async function verify(r) {
-    const pending = Number(r.member_count) - Number(r.paid_count)
+    const pending = (Number(r?.member_count) || 0) - (Number(r?.paid_count) || 0)
     const ok = await confirm({
       title: 'تأكيد دفع العائلة',
       message: `سيؤكد دفع ${pending} من أفراد عائلة «${r.head_name || '—'}» دفعة واحدة. تأكدت من الإيصال؟`,

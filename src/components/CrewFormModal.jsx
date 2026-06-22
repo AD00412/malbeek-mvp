@@ -60,7 +60,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
       if (r1.error) throw r1.error
 
       const orgPayload = {
-        org_name: orgName.trim() || sub.org_name || 'حملتي',
+        org_name: orgName.trim() || sub?.org_name || 'حملتي',
         carrier_company: carrierCompany.trim() || null,
         license_no: licenseNo.trim() || null,
         contact_phone: normalizePhone(contactPhone) || null,
