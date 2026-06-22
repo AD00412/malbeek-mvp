@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import Icon from './Icon'
 
 /**
- * بطاقةُ تثبيت ملبّيك كتطبيقٍ (PWA).
+ * بطاقة تثبيت ملبّيك كتطبيق (PWA).
  *
- * منطقٌ ذكيّ:
- *  - Android/Desktop Chrome/Edge: يلتقط حدث ‎beforeinstallprompt‎ → زرٌّ
- *    واحدٌ «ثبّت الآن» يُشغّل المحاوَرة الأصليّةَ بضغطةٍ.
- *  - iOS Safari: لا يدعم التثبيت البرمجيَّ — نعرض الخطوات اليدويّة.
- *  - تطبيقٌ مثبّتٌ بالفعل: يعرض رسالةَ «ملبّيك مثبّتٌ ✓».
+ * منطق ذكي:
+ *  - Android/Desktop Chrome/Edge: يلتقط حدث ‎beforeinstallprompt‎ → زر
+ *    واحد «ثبت الآن» يشغل المحاورة الأصلية بضغطة.
+ *  - iOS Safari: لا يدعم التثبيت البرمجي — نعرض الخطوات اليدوية.
+ *  - تطبيق مثبت بالفعل: يعرض رسالة «ملبّيك مثبت ✓».
  */
 export default function InstallCard() {
   const [platform, setPlatform] = useState('ios')        // 'ios' | 'android'
@@ -16,20 +16,20 @@ export default function InstallCard() {
   const [installed, setInstalled] = useState(false)
   const [installing, setInstalling] = useState(false)
 
-  // ١) اكتشافُ المنصّةِ تلقائيًّا للتبويب الافتراضيّ + التحقّق من حالة التثبيت
+  // ١) اكتشاف المنصة تلقائيا للتبويب الافتراضي + التحقق من حالة التثبيت
   useEffect(() => {
     if (typeof window === 'undefined') return
     const ua = navigator.userAgent || ''
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     setPlatform(isIOS ? 'ios' : 'android')
 
-    // مثبّتٌ بالفعل؟ (PWA يفتح بـ standalone)
+    // مثبت بالفعل؟ (PWA يفتح بـ standalone)
     const standalone = window.matchMedia?.('(display-mode: standalone)').matches
       || window.navigator.standalone === true
     if (standalone) setInstalled(true)
   }, [])
 
-  // ٢) التقاطُ حدث التثبيت لـ Android/Chrome
+  // ٢) التقاط حدث التثبيت لـ Android/Chrome
   useEffect(() => {
     function onBeforeInstall(e) {
       e.preventDefault()
@@ -47,7 +47,7 @@ export default function InstallCard() {
     }
   }, [])
 
-  // ٣) تشغيلُ التثبيت بضغطةٍ (Android/Chrome فقط)
+  // ٣) تشغيل التثبيت بضغطة (Android/Chrome فقط)
   async function quickInstall() {
     if (!installEvent || installing) return
     setInstalling(true)
@@ -55,18 +55,18 @@ export default function InstallCard() {
       await installEvent.prompt()
       const choice = await installEvent.userChoice
       if (choice?.outcome === 'accepted') setInstalled(true)
-    } catch (_) { /* المستخدمُ أغلق المحاورةَ — لا حاجة لمعالجةٍ */ }
+    } catch (_) { /* المستخدم أغلق المحاورة — لا حاجة لمعالجة */ }
     setInstalling(false)
     setInstallEvent(null)
   }
 
-  // ٤) إن كان مثبّتًا — حالةُ الاحتفال
+  // ٤) إن كان مثبتا — حالة الاحتفال
   if (installed) {
     return (
       <section className="install-card install-installed" id="install">
         <div className="install-installed-ic"><Icon name="check" size={32} /></div>
-        <h2>ملبّيك مثبّتٌ ✓</h2>
-        <p>تطبيقُ ملبّيك على شاشتك الرئيسيّة، افتحه مباشرةً من هناك بشاشةٍ كاملةٍ.</p>
+        <h2>ملبّيك مثبت ✓</h2>
+        <p>تطبيق ملبّيك على شاشتك الرئيسية، افتحه مباشرة من هناك بشاشة كاملة.</p>
       </section>
     )
   }
@@ -76,20 +76,20 @@ export default function InstallCard() {
   return (
     <section className="install-card" id="install">
       <div className="install-head">
-        <span className="install-tag">تثبيتٌ عبر المتصفّح</span>
-        <h2>ثبّت ملبّيك على شاشتك الرئيسيّة</h2>
-        <p>استخدمه كأيّ تطبيقٍ، رمزٌ على شاشتك، فتحٌ بضغطةٍ، شاشةٌ كاملةٌ بلا شريط متصفّحٍ</p>
+        <span className="install-tag">تثبيت عبر المتصفح</span>
+        <h2>ثبت ملبّيك على شاشتك الرئيسية</h2>
+        <p>استخدمه كأي تطبيق، رمز على شاشتك، فتح بضغطة، شاشة كاملة بلا شريط متصفح</p>
       </div>
 
-      {/* زرّ التثبيت بضغطةٍ — لـ Android/Chrome فقط (iOS لا يدعمه) */}
+      {/* زر التثبيت بضغطة — لـ Android/Chrome فقط (iOS لا يدعمه) */}
       {canQuickInstall && (
         <div className="install-quick">
           <button type="button" className="btn btn-em install-quick-btn" onClick={quickInstall} disabled={installing}>
             {installing
-              ? <><span className="spinner" /> جارٍ التثبيت…</>
-              : <><Icon name="download" size={17} /> ثبّت الآن بضغطةٍ</>}
+              ? <><span className="spinner" /> جار التثبيت…</>
+              : <><Icon name="download" size={17} /> ثبت الآن بضغطة</>}
           </button>
-          <div className="install-quick-hint">يفتح Android محاوَرةَ التثبيت الرسميّةَ مباشرةً</div>
+          <div className="install-quick-hint">يفتح Android محاورة التثبيت الرسمية مباشرة</div>
         </div>
       )}
 
@@ -120,10 +120,10 @@ export default function InstallCard() {
         </button>
       </div>
 
-      {/* خطواتٌ يدويّةٌ — تظهر دائمًا (للـ iOS، أو لـ Android بدون beforeinstallprompt) */}
+      {/* خطوات يدوية — تظهر دائما (للـ iOS، أو لـ Android بدون beforeinstallprompt) */}
       <div className="install-steps-wrap">
         {platform === 'android' && canQuickInstall && (
-          <div className="install-steps-note">أو يدويًّا، الخطواتُ التالية:</div>
+          <div className="install-steps-note">أو يدويا، الخطوات التالية:</div>
         )}
         <ol className="install-steps">
           {platform === 'ios' ? (
@@ -132,15 +132,15 @@ export default function InstallCard() {
                 <span className="install-num">١</span>
                 <div className="install-step-body">
                   <div className="install-step-title">افتح في Safari</div>
-                  <div className="install-step-desc">من iPhone أو iPad، فالتثبيت مدعومٌ في Safari فقط على iOS</div>
+                  <div className="install-step-desc">من iPhone أو iPad، فالتثبيت مدعوم في Safari فقط على iOS</div>
                 </div>
                 <span className="install-step-ic"><Icon name="external" size={18} /></span>
               </li>
               <li>
                 <span className="install-num">٢</span>
                 <div className="install-step-body">
-                  <div className="install-step-title">اضغط زرّ المشاركة</div>
-                  <div className="install-step-desc">المربّعُ مع سهمٍ صاعدٍ في شريط Safari السفليّ</div>
+                  <div className="install-step-title">اضغط زر المشاركة</div>
+                  <div className="install-step-desc">المربع مع سهم صاعد في شريط Safari السفلي</div>
                 </div>
                 <span className="install-step-ic">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -151,8 +151,8 @@ export default function InstallCard() {
               <li>
                 <span className="install-num">٣</span>
                 <div className="install-step-body">
-                  <div className="install-step-title">اختر «إضافة إلى الشاشة الرئيسيّة»</div>
-                  <div className="install-step-desc">«Add to Home Screen» بأيقونة + المربّعة</div>
+                  <div className="install-step-title">اختر «إضافة إلى الشاشة الرئيسية»</div>
+                  <div className="install-step-desc">«Add to Home Screen» بأيقونة + المربعة</div>
                 </div>
                 <span className="install-step-ic"><Icon name="plus" size={18} /></span>
               </li>
@@ -160,7 +160,7 @@ export default function InstallCard() {
                 <span className="install-num">٤</span>
                 <div className="install-step-body">
                   <div className="install-step-title">اضغط «إضافة»</div>
-                  <div className="install-step-desc">يظهر رمزُ ملبّيك على شاشتك الرئيسيّة، افتحه كأيّ تطبيقٍ</div>
+                  <div className="install-step-desc">يظهر رمز ملبّيك على شاشتك الرئيسية، افتحه كأي تطبيق</div>
                 </div>
                 <span className="install-step-ic ok"><Icon name="check" size={18} /></span>
               </li>
@@ -179,7 +179,7 @@ export default function InstallCard() {
                 <span className="install-num">٢</span>
                 <div className="install-step-body">
                   <div className="install-step-title">افتح القائمة (⋮)</div>
-                  <div className="install-step-desc">النقاط الثلاث العموديّة في أعلى يمين Chrome</div>
+                  <div className="install-step-desc">النقاط الثلاث العمودية في أعلى يمين Chrome</div>
                 </div>
                 <span className="install-step-ic">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
@@ -191,7 +191,7 @@ export default function InstallCard() {
                 <span className="install-num">٣</span>
                 <div className="install-step-body">
                   <div className="install-step-title">اختر «تثبيت التطبيق»</div>
-                  <div className="install-step-desc">«Install app» أو «إضافة إلى الشاشة الرئيسيّة»</div>
+                  <div className="install-step-desc">«Install app» أو «إضافة إلى الشاشة الرئيسية»</div>
                 </div>
                 <span className="install-step-ic"><Icon name="download" size={18} /></span>
               </li>
@@ -199,7 +199,7 @@ export default function InstallCard() {
                 <span className="install-num">٤</span>
                 <div className="install-step-body">
                   <div className="install-step-title">تأكيد التثبيت</div>
-                  <div className="install-step-desc">رمزُ ملبّيك ينضمّ لتطبيقاتك بشاشةٍ كاملةٍ</div>
+                  <div className="install-step-desc">رمز ملبّيك ينضم لتطبيقاتك بشاشة كاملة</div>
                 </div>
                 <span className="install-step-ic ok"><Icon name="check" size={18} /></span>
               </li>
@@ -209,7 +209,7 @@ export default function InstallCard() {
       </div>
 
       <div className="install-foot">
-        بعد التثبيت يفتح ملبّيك بشاشةٍ كاملةٍ بلا شريطِ متصفّحٍ، كأيّ تطبيقٍ أصليٍّ
+        بعد التثبيت يفتح ملبّيك بشاشة كاملة بلا شريط متصفح، كأي تطبيق أصلي
       </div>
     </section>
   )
