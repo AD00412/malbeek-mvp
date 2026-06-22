@@ -48,11 +48,15 @@ function ConnectionPill() {
  */
 export default function AppShell({ title, subtitle, tabs = [], active, onTab, actions, children, onNotifNavigate, planLabel, planUsage }) {
   const { profile, role } = useAuth()
+  // سجلُّ التشخيص حصريٌّ للأدمن — يمنع تسريب تفاصيل تقنيّة (POST/GET/أخطاء)
+  // للمشترك أو المعتمر. لا يُركَّب ولا يُفتَح لغير الأدمن إطلاقًا.
+  const isAdmin = role === 'admin'
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [debugOpen, setDebugOpen]   = useState(false)
-  // ٣ نقرات على شعار «ملبّيك» خلال ثانيتين → لوحة التشخيص
+  // ٣ نقرات على شعار «ملبّيك» خلال ثانيتين → لوحة التشخيص (للأدمن فقط)
   const tapsRef = useRef([])
   const triggerDebug = () => {
+    if (!isAdmin) return
     const now = Date.now()
     tapsRef.current = [...tapsRef.current.filter((t) => now - t < 1500), now]
     if (tapsRef.current.length >= 3) {
@@ -65,6 +69,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
   //   ١) #debug في الرابط (مثال: mulabeek.com/#debug)
   //   ٢) اختصار لوحة المفاتيح: Ctrl/Cmd + Shift + D
   useEffect(() => {
+    if (!isAdmin) return undefined   // لا فتحَ بالهاش/الاختصار لغير الأدمن
     const checkHash = () => { if (location.hash === '#debug') setDebugOpen(true) }
     checkHash()
     window.addEventListener('hashchange', checkHash)
@@ -78,7 +83,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
       window.removeEventListener('hashchange', checkHash)
       document.removeEventListener('keydown', onKey)
     }
-  }, [])
+  }, [isAdmin])
 
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
@@ -196,7 +201,7 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
       </nav>
 
       {/* لوحة التشخيص — تفتح بـ٣ نقرات على شعار «ملبّيك» */}
-      <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />
+      {isAdmin && <DebugPanel open={debugOpen} onClose={() => setDebugOpen(false)} />}
     </div>
   )
 }
