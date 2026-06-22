@@ -54,44 +54,60 @@ export default function QiblaCompass() {
     if (h !== null) setHeading(((h % 360) + 360) % 360)
   }
 
-  async function activate() {
-    setStage('asking')
-
-    // ① إذن الحركة/الاتجاه أولا — يجب أن يطلب داخل إيماءة المستخدم مباشرة
-    //    (iOS 13+). أي await قبله (كالموقع) يبطل الإيماءة فيفشل الإذن. زر
-    //    واحد يستدعي requestPermission() — بلا أي تعليمات سفاري.
+  // طلبُ إذن الحركة — داخل إيماءة المستخدم (iOS 13+). على الأنظمة التي لا
+  // تتطلّب إذنًا (Android/سطح المكتب) يُعدّ مُتاحًا مباشرةً.
+  async function requestMotion() {
     const DOE = typeof DeviceOrientationEvent !== 'undefined' ? DeviceOrientationEvent : null
     if (DOE && typeof DOE.requestPermission === 'function') {
-      try {
-        const result = await DOE.requestPermission()
-        if (result !== 'granted') { setStage('denied'); return }
-      } catch { setStage('denied'); return }
+      try { return await DOE.requestPermission() } catch { return 'denied' }
     }
+    return 'granted'
+  }
 
-    // ② فعل مستمع الاتجاه فورا (القرص يبدأ الدوران)
+  // تفعيلُ الحسّاس + حساب الموقع/القبلة (يُستدعى بعد منح الإذن).
+  function startSensors() {
     const evtName = 'ondeviceorientationabsolute' in window
       ? 'deviceorientationabsolute' : 'deviceorientation'
     window.addEventListener(evtName, onOrientation, true)
     setStage('active')
-
-    // ③ ثم الموقع (لا يؤثر على إذن الحركة) — يحسب زاوية القبلة والمسافة
-    try {
-      const pos = await new Promise((resolve, reject) => {
-        if (!navigator.geolocation) return reject(new Error('no-geo'))
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000,
+    ;(async () => {
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error('no-geo'))
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000,
+          })
         })
-      })
-      const { latitude, longitude, accuracy } = pos.coords
-      setCoords({ lat: latitude, lon: longitude, accuracy })
-      setQiblaDeg(calcQiblaBearing(latitude, longitude))
-      setDistance(calcDistance(latitude, longitude))
-    } catch {
-      // فولباك: الرياض كمركز افتراضي للسعودية (القبلة تقريبية حتى يتاح الموقع)
-      setCoords({ lat: 24.7136, lon: 46.6753, accuracy: null })
-      setQiblaDeg(calcQiblaBearing(24.7136, 46.6753))
-      setDistance(calcDistance(24.7136, 46.6753))
-    }
+        const { latitude, longitude, accuracy } = pos.coords
+        setCoords({ lat: latitude, lon: longitude, accuracy })
+        setQiblaDeg(calcQiblaBearing(latitude, longitude))
+        setDistance(calcDistance(latitude, longitude))
+      } catch {
+        // فولباك: الرياض كمركز افتراضي (القبلة تقريبية حتى يتاح الموقع)
+        setCoords({ lat: 24.7136, lon: 46.6753, accuracy: null })
+        setQiblaDeg(calcQiblaBearing(24.7136, 46.6753))
+        setDistance(calcDistance(24.7136, 46.6753))
+      }
+    })()
+  }
+
+  async function activate() {
+    setStage('asking')
+    const res = await requestMotion()
+    if (res !== 'granted') { setStage('denied'); return }
+    startSensors()
+  }
+
+  // ★ إعادة المحاولة من حالة الرفض — تعطي نتيجةً دائمًا (لا زرّ ميت):
+  //   نطلب الإذن ثانيةً؛ فإن مُنح بدأنا فورًا. وإن بقي مرفوضًا (قيدُ iOS:
+  //   لا إعادةَ سؤالٍ في نفس الجلسة بعد الرفض) نُحدّث الصفحة بلطفٍ فتُعاد
+  //   التهيئةُ ويُتاح طلبٌ جديدٌ عند «ابدأ البوصلة».
+  async function retryFromDenied() {
+    setStage('asking')
+    const res = await requestMotion()
+    if (res === 'granted') { startSensors(); return }
+    setStage('reloading')
+    setTimeout(() => { try { window.location.reload() } catch { setStage('denied') } }, 800)
   }
 
   useEffect(() => {
@@ -279,11 +295,14 @@ export default function QiblaCompass() {
         {stage === 'asking' && (
           <span className="qibla-hint"><span className="spinner" /> جاري التحضير…</span>
         )}
+        {stage === 'reloading' && (
+          <span className="qibla-hint"><span className="spinner" /> نعيد التهيئة لطلب الإذن من جديد…</span>
+        )}
         {stage === 'denied' && (
           <div className="qibla-denied">
             <strong>نحتاج إذن الحركة والاتجاه</strong>
-            <span>اضغط «إعادة المحاولة» وامنح الإذن ليبدأ القرص بالدوران.</span>
-            <button type="button" className="btn btn-em btn-sm" onClick={activate}>إعادة المحاولة</button>
+            <span>اضغط «إعادة المحاولة» وامنح الإذن. إن لم يظهر الطلب، سنعيد تهيئة الصفحة تلقائيًّا لتطلبه من جديد.</span>
+            <button type="button" className="btn btn-em btn-sm" onClick={retryFromDenied}>إعادة المحاولة</button>
           </div>
         )}
         {stage === 'unsupported' && (
