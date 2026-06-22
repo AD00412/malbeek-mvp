@@ -12,6 +12,34 @@ const KIND_ICON = {
   low_occupancy: 'chart', trial_limit_hit: 'sparkle',
   new_subscriber: 'building', new_feedback: 'message', trip_changed: 'trips',
 }
+// إشعاراتٌ عاجلةٌ تُبرز بأولويّةٍ بصريّة (لون/شارة).
+const URGENT_KINDS = new Set(['payment_pending', 'booking_canceled', 'trial_ending', 'trial_limit_hit'])
+
+const MUTE_KEY = 'mlk:notif-muted'
+
+// نغمةٌ لطيفةٌ قصيرةٌ عبر Web Audio — بلا ملفّ صوتٍ خارجيّ. تُحترم حالةُ الكتم
+// وقيودُ المتصفّح (تتطلّب تفاعلًا مسبقًا؛ نلتقط الخطأ بصمت).
+function playChime() {
+  try {
+    if (localStorage.getItem(MUTE_KEY) === '1') return
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (!Ctx) return
+    const ctx = new Ctx()
+    const now = ctx.currentTime
+    const notes = [880, 1174.7] // لا ثمّ ري — نغمتان صاعدتان هادئتان
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain()
+      osc.type = 'sine'; osc.frequency.value = freq
+      const t = now + i * 0.12
+      gain.gain.setValueAtTime(0, t)
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28)
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.start(t); osc.stop(t + 0.3)
+    })
+    setTimeout(() => { try { ctx.close() } catch { /* */ } }, 800)
+  } catch { /* الصوت أمرٌ تجميليّ — لا يُعطّل شيئًا */ }
+}
 
 function fmt(v) {
   if (!v) return ''
@@ -25,39 +53,44 @@ function fmt(v) {
   } catch { return '' }
 }
 
+// تجميعٌ زمنيٌّ ذكيّ: اليوم / أمس / أقدم.
+function dayBucket(v) {
+  try {
+    const d = new Date(v).getTime()
+    const n = new Date()
+    const startToday = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime()
+    if (d >= startToday) return 'اليوم'
+    if (d >= startToday - 86400000) return 'أمس'
+    return 'أقدم'
+  } catch { return 'أقدم' }
+}
+
 /**
- * جرس الإشعارات — زر في الرأس + قائمة منسدلة (Popover) أسفله.
- * يحل محل NotificationsCenter (BottomSheet) ليطابق نمط AccountMenu —
- * تجربة موحدة سلسة على iPhone/Android/سطح المكتب.
+ * جرس الإشعارات — زر في الرأس + قائمة منسدلة. مطوّر:
+ *  • صوتٌ لطيفٌ عند وصول إشعارٍ جديد (يحترم الكتم وأذونات المتصفّح).
+ *  • تنبيهُ متصفّحٍ اختياريٌّ عند الإذن. • تجميعٌ زمنيّ. • إبرازُ العاجل.
  */
 export default function NotificationsBell({ onNavigate }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  // ★ لا cache هنا — الإشعارات حالة ديناميكية (read_at يتغير بالضغطة).
-  //   كل فتح للقائمة = تحميل طازج من DB. التحميل خاطف (٢٠٠ms).
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
   const [unread, reloadUnread] = useUnreadCount()
+  const [muted, setMuted] = useState(() => { try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false } })
   const wrapRef = useRef(null)
+  const prevUnreadRef = useRef(null)
 
   const load = useCallback(async () => {
     if (!user?.id || !open) return
     setLoading(true); setErr('')
-    // ★ فلترة ذكية: نجلب فقط الإشعارات غير المقروءة (read_at IS NULL).
-    //   بمجرد ضغطها، تعلم مقروءة فتختفي من القائمة لاحقا.
-    //   لا cache لا تراكم لا إعادة ظهور.
     const { data, error } = await supabase
       .from('notifications')
       .select('id, kind, title, body, ref_trip, ref_passenger, ref_feedback, read_at, created_at')
       .is('read_at', null)
       .order('created_at', { ascending: false })
       .limit(50)
-    if (error) {
-      setErr('تعذر التحميل — تحقق من اتصالك ثم حدث.')
-      setLoading(false)
-      return
-    }
+    if (error) { setErr('تعذر التحميل — تحقق من اتصالك ثم حدث.'); setLoading(false); return }
     setItems(data ?? [])
     setLoading(false)
   }, [user, open])
@@ -65,27 +98,47 @@ export default function NotificationsBell({ onNavigate }) {
   useEffect(() => { load() }, [load])
   useRealtime('notif-list', open && user?.id ? [{ table: 'notifications' }] : [], load, 200, [open, user?.id, load])
 
-  // أغلق بنقرة خارجها أو Escape
+  // ★ تنبيهٌ عند الوصول: حين يزيد العدّاد (إشعارٌ جديد) نشغّل النغمة + تنبيه
+  //   المتصفّح (إن أُذِن). prevUnreadRef يبدأ null فلا ننبّه على أوّل تحميل.
+  useEffect(() => {
+    const prev = prevUnreadRef.current
+    if (prev != null && unread > prev) {
+      playChime()
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('ملبّيك', { body: 'لديك إشعارٌ جديد', tag: 'mlk-notif', silent: muted })
+        }
+      } catch { /* */ }
+    }
+    prevUnreadRef.current = unread
+  }, [unread, muted])
+
   useEffect(() => {
     if (!open) return
     const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('pointerdown', onDoc)
     document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
+    return () => { document.removeEventListener('pointerdown', onDoc); document.removeEventListener('keydown', onKey) }
   }, [open])
 
-  // ★ تعليم مقروء + إزالة تفاؤلية من القائمة (لا تعود لأن الـGET
-  //   يستثني read_at IS NOT NULL). تجنب DELETE لأن RLS لا يدعمه.
+  function toggleMute() {
+    setMuted((m) => {
+      const next = !m
+      try { localStorage.setItem(MUTE_KEY, next ? '1' : '0') } catch { /* */ }
+      // عند إلغاء الكتم لأوّل مرّة، اطلب إذن تنبيه المتصفّح (إيماءة مستخدم).
+      if (!next && 'Notification' in window && Notification.permission === 'default') {
+        try { Notification.requestPermission() } catch { /* */ }
+      }
+      return next
+    })
+  }
+
   async function dismiss(id) {
     const now = new Date().toISOString()
     setItems((prev) => prev.filter((n) => n.id !== id))
     const { error } = await supabase.from('notifications').update({ read_at: now }).eq('id', id)
-    if (error) load()
-    else reloadUnread()
+    if (error) load(); else reloadUnread()
   }
   async function dismissAll() {
     if (!items.length) return
@@ -93,8 +146,16 @@ export default function NotificationsBell({ onNavigate }) {
     const ids = items.map((n) => n.id)
     setItems([])
     const { error } = await supabase.from('notifications').update({ read_at: now }).in('id', ids)
-    if (error) load()
-    else reloadUnread()
+    if (error) load(); else reloadUnread()
+  }
+
+  // بناء قائمةٍ مجمّعةٍ زمنيًّا للعرض (العاجل يُبرز داخل مجموعته).
+  const groups = []
+  let lastBucket = null
+  for (const n of items) {
+    const b = dayBucket(n.created_at)
+    if (b !== lastBucket) { groups.push({ label: b, rows: [] }); lastBucket = b }
+    groups[groups.length - 1].rows.push(n)
   }
 
   return (
@@ -112,6 +173,10 @@ export default function NotificationsBell({ onNavigate }) {
             <strong>الإشعارات</strong>
             {unread > 0 && <span className="notif-pop-count">{unread} جديد</span>}
             <span style={{ flex: 1 }} />
+            <button className="notif-pop-action" onClick={toggleMute}
+                    title={muted ? 'تشغيل صوت التنبيه' : 'كتم صوت التنبيه'} aria-label="كتم/تشغيل الصوت">
+              <Icon name={muted ? 'bell' : 'bell'} size={14} /> {muted ? 'الصوت مكتوم' : 'الصوت مفعّل'}
+            </button>
             {items.length > 0 && (
               <button className="notif-pop-action" onClick={dismissAll}>مسح الكل</button>
             )}
@@ -135,26 +200,35 @@ export default function NotificationsBell({ onNavigate }) {
               </div>
             ) : (
               <div className="notif-list" style={{ gap: 4 }}>
-                {items.map((n) => (
-                  <button
-                    type="button"
-                    className={`notif-row ${n.read_at ? '' : 'unread'}`}
-                    key={n.id}
-                    onClick={() => {
-                      // أولا: تنقل لو متاح، ثم احذف الإشعار
-                      if (n.ref_trip && onNavigate) { onNavigate(n); setOpen(false) }
-                      // احذف الإشعار بعد القراءة دائما — لا تراكم
-                      dismiss(n.id)
-                    }}
-                  >
-                    <span className="notif-ic"><Icon name={KIND_ICON[n.kind] || 'bell'} size={15} /></span>
-                    <div className="notif-main">
-                      <div className="notif-title">{n.title}{!n.read_at && <span className="notif-dot" />}</div>
-                      {n.body && <div className="notif-body">{n.body}</div>}
-                      <div className="notif-time">{fmt(n.created_at)}</div>
-                    </div>
-                    {n.ref_trip && onNavigate && <Icon name="chevron" size={14} />}
-                  </button>
+                {groups.map((g) => (
+                  <div key={g.label} className="notif-group">
+                    <div className="notif-group-label">{g.label}</div>
+                    {g.rows.map((n) => {
+                      const urgent = URGENT_KINDS.has(n.kind)
+                      return (
+                        <button
+                          type="button"
+                          className={`notif-row ${n.read_at ? '' : 'unread'} ${urgent ? 'urgent' : ''}`}
+                          key={n.id}
+                          onClick={() => {
+                            if (n.ref_trip && onNavigate) { onNavigate(n); setOpen(false) }
+                            dismiss(n.id)
+                          }}
+                        >
+                          <span className="notif-ic"><Icon name={KIND_ICON[n.kind] || 'bell'} size={15} /></span>
+                          <div className="notif-main">
+                            <div className="notif-title">
+                              {urgent && <span className="notif-urgent-tag">عاجل</span>}
+                              {n.title}{!n.read_at && <span className="notif-dot" />}
+                            </div>
+                            {n.body && <div className="notif-body">{n.body}</div>}
+                            <div className="notif-time">{fmt(n.created_at)}</div>
+                          </div>
+                          {n.ref_trip && onNavigate && <Icon name="chevron" size={14} />}
+                        </button>
+                      )
+                    })}
+                  </div>
                 ))}
               </div>
             )}
