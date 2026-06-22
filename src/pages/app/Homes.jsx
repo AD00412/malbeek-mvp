@@ -7,6 +7,7 @@ import CompassMark from '../../components/CompassMark'
 import TripFormModal from '../../components/TripFormModal'
 import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
+import OpsOverview from '../../components/OpsOverview'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
 import FeedbackFab, { showFeedbackFab } from '../../components/FeedbackFab'
@@ -618,6 +619,7 @@ export function SubscriberHome() {
   const tabs = [
     { section: 'حملتي' },
     { key: 'overview', label: 'الرئيسية', icon: 'dashboard' },
+    { key: 'ops', label: 'العمليّات', icon: 'manifest' },
     { key: 'trips', label: 'الرحلات', icon: 'trips', badge: trips.length || undefined },
     { key: 'add', label: 'إضافة', icon: 'plus', fab: true },
     { key: 'analytics', label: 'التحليلات', icon: 'chart' },
@@ -658,7 +660,7 @@ export function SubscriberHome() {
   return (
     <>
       <AppShell
-        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'trips' ? 'رحلات العمرة' : view === 'analytics' ? 'التحليلات' : 'حملتي'}
+        title={managing ? 'إدارة الرحلة' : view === 'overview' ? 'نظرة عامة' : view === 'ops' ? 'لوحة العمليّات' : view === 'trips' ? 'رحلات العمرة' : view === 'analytics' ? 'التحليلات' : 'حملتي'}
         subtitle={sub?.plan === 'paid' ? 'باقة ملبّيك — رحلاتٌ غير محدودة' : `الباقة التجريبية — حتى ${fmtDate(sub?.trial_ends_at)}`}
         tabs={tabs}
         active={view}
@@ -721,6 +723,10 @@ export function SubscriberHome() {
                   onOrgData={manageFirstCrew}
                 />
               </>
+            )}
+
+            {view === 'ops' && (
+              <OpsOverview sub={sub} trips={trips} onManage={(t) => setManaging(t)} />
             )}
 
             {view === 'analytics' && (
