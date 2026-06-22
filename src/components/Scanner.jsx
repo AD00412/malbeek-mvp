@@ -71,12 +71,21 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         return
       }
 
+      // ختمُ الوقت للعرض المتفائل (نفسُ ما تكتبه الدالّة/التحديث).
       const patch = { status: targetStatus }
       if (mode === 'checkin') patch.checked_in_at = new Date().toISOString()
       else patch.boarded_at = new Date().toISOString()
 
-      const { error: upErr } = await supabase.from('passengers').update(patch).eq('id', data.id)
-      if (upErr) throw upErr
+      // تحديثٌ موثوقٌ عبر RPC scan_passenger (يفرض الصلاحيّة + انتقال الحالة + ختم الوقت).
+      // احتياطٌ للتحديث المباشر إن لم تُطبَّق الدالّة بعدُ على القاعدة (PGRST202 / 42883).
+      const { error: rpcErr } = await supabase.rpc('scan_passenger', { p_id: data.id, p_mode: mode })
+      if (rpcErr) {
+        const missing = rpcErr.code === 'PGRST202' || rpcErr.code === '42883' ||
+          /scan_passenger|function .*does not exist|could not find/i.test(rpcErr.message || '')
+        if (!missing) throw rpcErr
+        const { error: upErr } = await supabase.from('passengers').update(patch).eq('id', data.id)
+        if (upErr) throw upErr
+      }
 
       lastScanRef.current = { code, at: Date.now() }   // ثبّت الكبح بعد النجاح فقط
       if (navigator.vibrate) navigator.vibrate(120)
