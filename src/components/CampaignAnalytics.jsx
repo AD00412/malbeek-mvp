@@ -31,7 +31,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
   const bars = [
     { label: 'نسبة الإشغال', value: occupancy, sub: `${tt.count}/${totalSeats || '—'} مقعد`, cls: 'em' },
     { label: 'نسبة الدفع', value: payRate, sub: `${tt.paid} مدفوع`, cls: 'ok' },
-    { label: 'نسبة الصعود', value: boardRate, sub: `${tt.boarded} صعدوا`, cls: 'info' },
+    { label: 'نسبة الصعود', value: boardRate, sub: `${tt.boarded} صعد الباص`, cls: 'info' },
     { label: 'نسبة التسكين', value: checkinRate, sub: `${tt.checked_in} مسكن`, cls: 'warn' },
   ]
 
@@ -284,7 +284,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
           <div className="panel-head"><h3>مقارنة الرحلات</h3></div>
           <div className="tbl-wrap">
             <table className="tbl tbl-cards">
-              <thead><tr><th>الرحلة</th><th>الإشغال</th><th>مدفوع</th><th>صعدوا</th><th>تسكين</th></tr></thead>
+              <thead><tr><th>الرحلة</th><th>الإشغال</th><th>مدفوع</th><th>صعد الباص</th><th>تسكين</th></tr></thead>
               <tbody>
                 {trips.map((t) => {
                   const e = byTrip?.get(t.id) || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
@@ -294,7 +294,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
                       <td data-label="الرحلة">{t.title || '—'}</td>
                       <td data-label="الإشغال">{e.count}/{cap || '—'} <span className="muted">({pct(e.count, cap)}%)</span></td>
                       <td data-label="مدفوع">{e.paid}</td>
-                      <td data-label="صعدوا">{e.boarded}</td>
+                      <td data-label="صعد الباص">{e.boarded}</td>
                       <td data-label="تسكين">{e.checked_in}</td>
                     </tr>
                   )

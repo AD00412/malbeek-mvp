@@ -465,20 +465,20 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       <div className="stats">
         <div className="stat"><div className="top"><span className="ic"><Icon name="customers" size={15} /></span>المسجلون</div><div className="v">{count}{cap ? <span style={{ fontSize: 16, color: 'var(--cr-300)' }}>/{cap}</span> : null}</div></div>
         <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>مدفوع</div><div className="v">{paid}</div></div>
-        <div className="stat info"><div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعدوا</div><div className="v">{boarded}</div></div>
+        <div className="stat info"><div className="top"><span className="ic"><Icon name="bus" size={15} /></span>صعد الباص</div><div className="v">{boarded}</div></div>
         <div className="stat warn"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>الإشغال</div><div className="v">{pct}%</div></div>
       </div>
 
       {(price != null || paid > 0) && (
         <div className="stats" style={{ marginTop: 12 }}>
           <div className="stat ok"><div className="top"><span className="ic"><Icon name="payments" size={15} /></span>المحصل</div><div className="v" style={{ fontSize: 22 }}>{money(collected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></div></div>
-          <div className="stat warn"><div className="top"><span className="ic"><Icon name="chart" size={15} /></span>المتوقع</div><div className="v" style={{ fontSize: 22 }}>{expected != null ? <>{money(expected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></> : <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>—</span>}</div></div>
-          <div className="stat"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>سعر المقعد</div><div className="v" style={{ fontSize: 22 }}>{price != null ? <>{money(price)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></> : <span style={{ fontSize: 14, color: 'var(--cr-300)' }}>غير محدد</span>}</div></div>
+          <div className="stat warn"><div className="top"><span className="ic"><Icon name="chart" size={15} /></span>المتوقع</div><div className="v" style={{ fontSize: 22 }}>{price != null && expected != null ? <>{money(expected)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></> : <span style={{ fontSize: 13.5, color: 'var(--cr-300)' }}>—</span>}</div></div>
+          <div className="stat"><div className="top"><span className="ic"><Icon name="seat" size={15} /></span>سعر المقعد</div><div className="v" style={{ fontSize: 18 }}>{price != null ? <>{money(price)} <span style={{ fontSize: 13, color: 'var(--cr-300)' }}>﷼</span></> : <span style={{ fontSize: 15, color: 'var(--em-500)', fontWeight: 700 }}>مجاني حاليا</span>}</div></div>
         </div>
       )}
-      {price == null && paid > 0 && (
-        <div className="alert warn" style={{ marginTop: 10, fontSize: 13 }}>
-          <Icon name="bell" size={14} /> سعر المقعد غير محدد — حرر الرحلة من الصفحة الرئيسية لإظهار «المحصل» و«المتوقع» بدقة.
+      {price == null && (
+        <div className="alert info" style={{ marginTop: 10, fontSize: 13 }}>
+          <Icon name="info" size={14} /> المقعد مجاني حاليا. عند تفعيل الحجز المدفوع، أضف سعر المقعد من تحرير الرحلة ليظهر «المحصل» و«المتوقع».
         </div>
       )}
 
