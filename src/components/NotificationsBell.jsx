@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
 import { useRealtime } from '../lib/useRealtime'
 import { useUnreadCount } from '../lib/useUnreadCount'
+import { buildNotificationContent } from '../lib/pushContent'
+import { showLocalNotification, enablePush } from '../lib/push'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 
@@ -98,20 +100,24 @@ export default function NotificationsBell({ onNavigate }) {
   useEffect(() => { load() }, [load])
   useRealtime('notif-list', open && user?.id ? [{ table: 'notifications' }] : [], load, 200, [open, user?.id, load])
 
-  // ★ تنبيهٌ عند الوصول: حين يزيد العدّاد (إشعارٌ جديد) نشغّل النغمة + تنبيه
-  //   المتصفّح (إن أُذِن). prevUnreadRef يبدأ null فلا ننبّه على أوّل تحميل.
+  // ★ تنبيهٌ عند الوصول: حين يزيد العدّاد (إشعارٌ جديد) نشغّل النغمة + إشعارًا
+  //   نظيفًا سياقيًّا عبر الـSW (عنوان+جسم+رابطٌ عميق، بلا «from»). نجلب أحدثَ
+  //   إشعارٍ غير مقروءٍ لنعرض محتواه الفعليّ حتى لو كانت القائمة مغلقة.
   useEffect(() => {
     const prev = prevUnreadRef.current
     if (prev != null && unread > prev) {
       playChime()
-      try {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('ملبّيك', { body: 'لديك إشعارٌ جديد', tag: 'mlk-notif', silent: muted })
-        }
-      } catch { /* */ }
+      ;(async () => {
+        const { data } = await supabase.from('notifications')
+          .select('kind, title, body, ref_trip, ref_feedback')
+          .is('read_at', null).order('created_at', { ascending: false }).limit(1)
+        const row = (data && data[0]) || {}
+        const c = buildNotificationContent(row)
+        showLocalNotification({ title: c.title, body: c.body, url: c.url, tag: c.tag })
+      })()
     }
     prevUnreadRef.current = unread
-  }, [unread, muted])
+  }, [unread])
 
   useEffect(() => {
     if (!open) return
@@ -126,9 +132,10 @@ export default function NotificationsBell({ onNavigate }) {
     setMuted((m) => {
       const next = !m
       try { localStorage.setItem(MUTE_KEY, next ? '1' : '0') } catch { /* */ }
-      // عند إلغاء الكتم لأوّل مرّة، اطلب إذن تنبيه المتصفّح (إيماءة مستخدم).
-      if (!next && 'Notification' in window && Notification.permission === 'default') {
-        try { Notification.requestPermission() } catch { /* */ }
+      // عند إلغاء الكتم: فعّل الإشعارات الفوريّة (إذن + service worker + اشتراك
+      // Push إن توفّر مفتاح VAPID) — ضمن إيماءة المستخدم.
+      if (!next && 'Notification' in window && Notification.permission !== 'granted') {
+        enablePush().catch(() => {})
       }
       return next
     })
