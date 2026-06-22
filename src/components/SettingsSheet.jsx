@@ -218,7 +218,7 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
           </div>
           <div className="field">
             <label>الشركة الناقلة</label>
-            <input type="text" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} placeholder="مثال: أبو سرحد للنقل" />
+            <input type="text" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} placeholder="مثال: شركة النقل المعتمدة" />
             <p className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>
               يظهر في رأس الكشف الرسمي. إن ترك فارغا يستخدم اسم الحملة.
             </p>

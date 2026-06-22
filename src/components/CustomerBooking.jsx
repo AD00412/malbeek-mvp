@@ -615,7 +615,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
               <div className="field" style={{ marginTop: 12 }}>
                 <label>مكان الركوب <span className="req">*</span></label>
                 <input type="text" required
-                  placeholder={trip?.boarding_point || 'مثال: محطة جازان المركزية'}
+                  placeholder={trip?.boarding_point || 'مثال: المحطة المركزية'}
                   value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
                 <span className="hint">يستهدف به صاحب الحملة عروضه المستقبلية لمنطقتك.</span>
               </div>

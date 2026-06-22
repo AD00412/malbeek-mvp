@@ -263,7 +263,7 @@ export default function CustomerJoin() {
         <div className="field with-ic">
           <label>مكان الركوب <span className="muted" style={{ fontSize: 12 }}>(اختياري)</span></label>
           <span className="f-ic"><Icon name="location" size={17} /></span>
-          <input type="text" placeholder="مثال: محطة جازان المركزية"
+          <input type="text" placeholder="مثال: المحطة المركزية"
             value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} />
           <span className="hint" style={{ color: 'var(--cr-300)' }}>
             يملأ تلقائيا في حجوزاتك القادمة — تستطيع تغييره عند الحجز.

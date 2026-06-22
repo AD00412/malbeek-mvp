@@ -376,7 +376,7 @@ function HotelFormSheet({ open, hotel, tripId, subscriberId, onClose, onSaved })
       <div className="form" style={{ marginTop: 0 }}>
         <div className="field">
           <label>اسم الفندق *</label>
-          <input type="text" placeholder="مثال: فندق المكي" value={f.name} onChange={(e) => set('name', e.target.value)} />
+          <input type="text" placeholder="مثال: فندق المشاعر" value={f.name} onChange={(e) => set('name', e.target.value)} />
         </div>
         <div className="grid-2">
           <div className="field">
