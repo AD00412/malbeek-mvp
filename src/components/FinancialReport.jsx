@@ -135,7 +135,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
             <div className="fr-kpi">
               <div className="fr-kpi-lb">المُتوقَّع</div>
               <div className="fr-kpi-num">{money(totals.expected)} <span>﷼</span></div>
-              <div className="fr-kpi-sub">نسبةُ التَّحصيل: {pct(totals.collected, totals.expected)}٪</div>
+              <div className="fr-kpi-sub">نسبةُ التَّحصيل: {totals.expected > 0 ? pct(totals.collected, totals.expected) + '٪' : '—'}</div>
             </div>
             <div className="fr-kpi">
               <div className="fr-kpi-lb">المُتبقّي</div>
@@ -201,7 +201,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
                   <td colSpan={6} style={{ textAlign: 'end', fontWeight: 700 }}>الإجماليّ</td>
                   <td className="mf-num" style={{ fontWeight: 700 }}>{money(totals.expected)}</td>
                   <td className="mf-num" style={{ fontWeight: 700, color: '#0b5c43' }}>{money(totals.collected)}</td>
-                  <td className="mf-num" style={{ fontWeight: 700 }}>{pct(totals.collected, totals.expected)}٪</td>
+                  <td className="mf-num" style={{ fontWeight: 700 }}>{totals.expected > 0 ? pct(totals.collected, totals.expected) + '٪' : '—'}</td>
                 </tr>
               )}
             </tbody>
