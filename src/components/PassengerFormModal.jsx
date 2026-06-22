@@ -229,7 +229,7 @@ export default function PassengerFormModal({ open, passenger, tripId, subscriber
         <div className="grid-2">
           <div className="field">
             <label>مكان الركوب</label>
-            <input type="text" placeholder="مثال: محطة جازان" value={boarding} onChange={(e) => setBoarding(e.target.value)} />
+            <input type="text" placeholder="مثال: المحطة المركزية" value={boarding} onChange={(e) => setBoarding(e.target.value)} />
           </div>
           <div className="field">
             <label>الحالة</label>

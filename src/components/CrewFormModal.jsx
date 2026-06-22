@@ -104,7 +104,7 @@ export default function CrewFormModal({ open, trip, sub, onClose, onSaved }) {
         </div>
         <div className="field">
           <label>الشركة الناقلة</label>
-          <input type="text" placeholder="مثال: أبو سرحد للنقل" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} />
+          <input type="text" placeholder="مثال: شركة النقل المعتمدة" value={carrierCompany} onChange={(e) => setCarrierCompany(e.target.value)} />
           <span className="hint">تظهر في رأس الكشف الرسمي. إن تركت فارغة يستخدم اسم الحملة.</span>
         </div>
         <div className="grid-2">

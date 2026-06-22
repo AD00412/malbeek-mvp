@@ -127,7 +127,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
           <div className="grid-2">
             <div className="field">
               <label>من</label>
-              <input type="text" placeholder="جازان" value={routeFrom} onChange={(e) => setRouteFrom(e.target.value)} />
+              <input type="text" placeholder="مدينة الانطلاق" value={routeFrom} onChange={(e) => setRouteFrom(e.target.value)} />
             </div>
             <div className="field">
               <label>إلى</label>
@@ -174,7 +174,7 @@ export default function TripFormModal({ trip, subscriberId, onClose, onSaved }) 
           <div className="grid-2">
             <div className="field">
               <label>نقطة الانطلاق (اختياري)</label>
-              <input type="text" placeholder="محطة جازان المركزية" value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
+              <input type="text" placeholder="المحطة المركزية" value={boardingPoint} onChange={(e) => setBoardingPoint(e.target.value)} />
             </div>
             <div className="field">
               <label>سياسة المقاعد</label>
