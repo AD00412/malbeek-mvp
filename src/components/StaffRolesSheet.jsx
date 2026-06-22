@@ -89,7 +89,8 @@ export default function StaffRolesSheet() {
           <div key={m.profile_id} className="mlk-card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Icon name="user" size={16} />
-              <strong>{m.full_name || '—'}</strong>
+              {/* المالك/الأدمن يُعرَض بهويّة المنصّة لا باسمٍ شخصيّ. الموظّفون الفعليّون بأسمائهم الوظيفيّة. */}
+              <strong>{isOwner ? 'إدارة ملبّيك' : (m.full_name || '—')}</strong>
               <span className={`badge ${isOwner ? 'ok' : 'info'}`}>{isOwner ? 'مالك' : 'دعم'}</span>
               {!isOwner && m.platform_rank && (
                 <span className="badge">{RANKS.find(r => r.key === m.platform_rank)?.label || m.platform_rank}</span>

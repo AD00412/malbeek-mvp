@@ -906,7 +906,7 @@ function Overview({ sub, profile, trips, totalSeats, planLabel, totals, paxByTri
       </section>
 
       {nextTrip && (
-        <section className="panel" style={{ borderColor: 'rgba(196,154,69,.35)' }}>
+        <section className="panel" style={{ borderColor: 'var(--gd-500)' }}>
           <div className="panel-head">
             <span className="ic-badge"><Icon name="trips" size={18} /></span>
             <div>

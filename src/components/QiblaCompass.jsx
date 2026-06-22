@@ -220,7 +220,7 @@ export default function QiblaCompass() {
           </g>
 
           {/* إبرةُ الاتجاه الثابتة — تُشير لأعلى دائمًا */}
-          <g filter={aligned ? 'drop-shadow(0 0 8px rgba(251,191,36,.7))' : 'drop-shadow(0 2px 4px rgba(16,185,129,.5))'}>
+          <g filter={aligned ? 'drop-shadow(0 0 9px rgba(52,211,153,.85))' : 'drop-shadow(0 2px 4px rgba(16,185,129,.5))'}>
             <polygon points={`${CX},20 ${CX - 8},${CY - 6} ${CX + 8},${CY - 6}`}
               fill={aligned ? '#fbbf24' : 'url(#qb-needle)'}
               style={{ transition: 'fill .25s' }} />

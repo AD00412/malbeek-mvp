@@ -43,7 +43,7 @@ export default function PendingInviteBanner() {
   }
 
   return (
-    <section className="panel" style={{ borderColor: 'rgba(196,154,69,.4)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <section className="panel" style={{ borderColor: 'var(--gd-500)', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {invites.map((iv) => (
         <div key={iv.invite_id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span className="ic-badge"><Icon name="customers" size={18} /></span>
