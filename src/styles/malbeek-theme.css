@@ -297,7 +297,7 @@ input[type="time"]::-webkit-date-and-time-value{
 
 /* ==== الشريط الجانبي (سطح المكتب) ==== */
 :root[data-theme="light"] .sidebar{
-  background:linear-gradient(180deg,#fff,#FBF7EE);
+  background:linear-gradient(180deg,#fff,#eaf6ef);
   border-inline-end:1px solid rgba(11,92,67,.10)
 }
 :root[data-theme="light"] .nav-item{color:var(--cr-100)}
@@ -307,7 +307,7 @@ input[type="time"]::-webkit-date-and-time-value{
 /* ==== الدرج الجانبيّ (Drawer) ==== */
 :root[data-theme="light"] .drawer-overlay{background:rgba(11,92,67,.32)}
 :root[data-theme="light"] .drawer-card{
-  background:linear-gradient(180deg,#fff,#FBF7EE);
+  background:linear-gradient(180deg,#fff,#eaf6ef);
   border-inline-end-color:rgba(11,92,67,.14)
 }
 :root[data-theme="light"] .drawer-nm{color:var(--cr-50)}
@@ -332,7 +332,7 @@ input[type="time"]::-webkit-date-and-time-value{
 /* ==== الأوراق السفليّة والمودالات (Modal/Sheet) ==== */
 :root[data-theme="light"] .modal-overlay{background:rgba(11,92,67,.32);backdrop-filter:blur(6px)}
 :root[data-theme="light"] .modal-card{
-  background:linear-gradient(180deg,#fff,#FBF7EE);
+  background:linear-gradient(180deg,#fff,#eaf6ef);
   border-color:rgba(11,92,67,.14);
   color:var(--cr-50)
 }
@@ -437,7 +437,7 @@ input[type="time"]::-webkit-date-and-time-value{
 /* في الفاتح: الشاشة كلّها كريميّة بدل الـ #1a2420 الداكن — مع إبقاء الكشف
    الرسميّ بخلفيّةٍ بيضاءَ للطباعة (لا يحتاج تعديلًا — هو أبيض أصلًا). */
 :root[data-theme="light"] .manifest-overlay{
-  background:#FBF7EE
+  background:#f4faf6
 }
 :root[data-theme="light"] .manifest-toolbar{
   background:rgba(255,255,255,.85);border-bottom-color:rgba(11,92,67,.10)
@@ -449,7 +449,7 @@ input[type="time"]::-webkit-date-and-time-value{
 
 /* ==== Toasts ==== */
 :root[data-theme="light"] .toast{
-  background:linear-gradient(160deg,#fff,#FBF7EE);
+  background:linear-gradient(160deg,#fff,#eaf6ef);
   border-color:rgba(11,92,67,.20);
   color:var(--cr-50);
   box-shadow:0 14px 36px rgba(11,92,67,.18)
