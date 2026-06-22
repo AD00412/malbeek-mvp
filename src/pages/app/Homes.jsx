@@ -373,7 +373,9 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
        <ul className="mlk-list">
          {filtered.map((s) => (
            <li key={s.id}>
-             <button type="button" className="mlk-list-row is-button" onClick={() => onOpenDetail?.(s)}>
+             {/* صفٌّ نقريّ كـ div (لا button) حتى لا يتداخل زرُّ النسخ بداخله مع زرٍّ — HTML صالح. */}
+             <div role="button" tabIndex={0} className="mlk-list-row is-button" onClick={() => onOpenDetail?.(s)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenDetail?.(s) } }}>
                <div className="mlk-list-body">
                  <div className="mlk-list-meta">
                    <span className={`mlk-pill ${s.plan === 'paid' ? 'ok' : 'warn'}`}>
@@ -406,7 +408,7 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
                    </span>
                  </div>
                </div>
-             </button>
+             </div>
            </li>
          ))}
        </ul>}
