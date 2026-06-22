@@ -2104,6 +2104,13 @@ body.fab-interacting *{
 .mlk-kpi-num{font-family:var(--font-display);font-size:30px;font-weight:800;color:var(--cr-50);
   line-height:1;letter-spacing:-.6px}
 .mlk-kpi-lb{font-size:13px;color:var(--cr-300);font-weight:500}
+/* الشاشات الضيّقة جدًّا (هواتف ٣٢٠–٤٨٠px): شبكةُ عمودين تضيق على رقمٍ ماليٍّ طويل —
+   نُصغّر الرقم تجاوبيًّا ونخفّف الحشو فلا يفيض ولا يلتفّ بشكلٍ مكسور. */
+@media (max-width:480px){
+  .mlk-kpi{padding:14px 12px}
+  .mlk-kpi-num{font-size:clamp(20px,6.2vw,28px);letter-spacing:-.4px}
+  .mlk-kpi-lb{font-size:12px}
+}
 .mlk-kpi-delta{font-size:11.5px;color:var(--em-500);font-weight:600;margin-top:4px}
 
 /* ─── شريطُ الإيرادات ـ مَيَّزٌ بدون صَخب ـ ─── */
