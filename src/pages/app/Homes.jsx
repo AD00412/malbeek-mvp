@@ -8,6 +8,7 @@ import TripFormModal from '../../components/TripFormModal'
 import BottomSheet from '../../components/BottomSheet'
 import Roadmap from '../../components/Roadmap'
 import AdminBusTower from '../../components/AdminBusTower'
+import AdminMarketing from '../../components/AdminMarketing'
 import OpsOverview from '../../components/OpsOverview'
 import CustomerBooking from '../../components/CustomerBooking'
 import FeedbackSheet from '../../components/FeedbackSheet'
@@ -178,6 +179,7 @@ export function AdminHome() {
     // ★ A2 — badges للـinboxes، C5 — أيقونتان مختلفتان
     { key: 'feedback', label: 'التغذية الراجعة', icon: 'message', badge: openFb || undefined },
     { key: 'messages', label: 'الرسائل العامّة', icon: 'bell',    badge: openMsg || undefined },
+    { key: 'pmarketing', label: 'تسويق المنصّة', icon: 'message' },
     { section: 'النظام' },
     { key: 'team',     label: 'فريق ملبّيك',     icon: 'customers' },
     { key: 'audit',    label: 'سجلّ النَّشاط',   icon: 'manifest' },
@@ -238,6 +240,7 @@ export function AdminHome() {
           </>
         )}
         {view === 'fleet' && <AdminBusTower />}
+        {view === 'pmarketing' && <AdminMarketing />}
         {view === 'subs' && <SubsPanel subs={subs} loading={loading} onReload={load} onOpenDetail={setDetailSub} />}
         {view === 'upgrades' && <AdminUpgradeRequests />}
         {view === 'trips' && <AdminAllTrips />}
