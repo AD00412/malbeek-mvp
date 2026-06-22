@@ -1,0 +1,13 @@
+-- إغلاق ثغرة تلاعب في التقييمات (طُبِّق على الإنتاج عبر MCP).
+--
+-- المشكلة: سياسة "ratings manager rw" كانت cmd=ALL وقيدُها USING = can_manage_sub(subscriber_id)
+-- بلا قيد اتجاه. وبما أنّ سياسات RLS لنفس الأمر تُدمَج بـOR، فإنّ USING الموسَّع كان يَسمح
+-- للمدير بـ DELETE/UPDATE صفوفِ التقييم باتجاه customer_to_subscriber (تقييمُ العميل للحملة) —
+-- أي حذفُ/تحويرُ المراجعات السلبيّة الصادقة. ثغرةُ تلاعبٍ بالسمعة.
+--
+-- الحل: إسقاط السياسة الزائدة. السياسات الدقيقة تُغطّي حاجةَ المدير المشروعة بالكامل:
+--   • "ratings manager read"   (SELECT): كلّ اتجاهات حملته (ليرى تقييمات العملاء له — قراءةً فقط)
+--   • "ratings manager insert/update/delete": على اتجاه subscriber_to_customer فقط.
+-- وجانبُ العميل يبقى محصورًا ("ratings customer rw": customer_to_subscriber + profile_id=auth.uid()
+--   + تحقّق EXISTS أنه راكبٌ فعليّ في تلك الرحلة).
+drop policy if exists "ratings manager rw" on public.ratings;
