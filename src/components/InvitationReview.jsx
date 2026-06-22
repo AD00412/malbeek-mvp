@@ -85,10 +85,13 @@ export default function InvitationReview({ invitation: inv, onClose, onUpdate })
   async function doPrelim(e) {
     e.preventDefault()
     if (!interviewAt) return setErr('حدّد موعد المقابلة.')
+    // حارس: تاريخٌ غير صالح يرمي RangeError من toISOString — نتحقّق أوّلًا.
+    const interviewDate = new Date(interviewAt)
+    if (isNaN(interviewDate.getTime())) return setErr('موعد المقابلة غير صالح.')
     setBusy(true); setErr('')
     const { error } = await supabase.rpc('preliminary_approve_invitation', {
       p_invitation: inv.id,
-      p_interview_at: new Date(interviewAt).toISOString(),
+      p_interview_at: interviewDate.toISOString(),
       p_location: interviewLoc.trim() || null,
       p_notes: interviewNotes.trim() || null,
     })
