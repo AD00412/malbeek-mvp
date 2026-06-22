@@ -15,6 +15,7 @@ import BusEditor from '../../components/BusEditor'
 import HotelsManager from '../../components/HotelsManager'
 import AuditLogSheet from '../../components/AuditLogSheet'
 import RefundsSheet from '../../components/RefundsSheet'
+import FamilyPaymentsInbox from '../../components/FamilyPaymentsInbox'
 import { SkeletonList } from '../../components/Skeleton'
 import BottomSheet from '../../components/BottomSheet'
 import SignedImage from '../../components/SignedImage'
@@ -99,6 +100,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   const [hotelsOpen, setHotelsOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [refundsOpen, setRefundsOpen] = useState(false)
+  const [familyPayOpen, setFamilyPayOpen] = useState(false)
   const [offersOpen, setOffersOpen] = useState(false)
   const [offerMsg, setOfferMsg] = useState('')
   const [remindOpen, setRemindOpen] = useState(false)
@@ -539,6 +541,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
           <button className="action" style={{ flex: 1 }} onClick={() => setRefundsOpen(true)}>
             <Icon name="payments" size={18} /> طلبات الاسترداد
           </button>
+          <button className="action" style={{ flex: 1 }} onClick={() => setFamilyPayOpen(true)}>
+            <Icon name="user" size={18} /> دفعات العائلات
+          </button>
           <button className="action" style={{ flex: 1 }} onClick={() => setAuditOpen(true)}>
             <Icon name="manifest" size={18} /> سجلّ النشاط
           </button>
@@ -740,6 +745,11 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
       <AuditLogSheet open={auditOpen} tripId={trip?.id} subscriberId={sub?.id} onClose={() => setAuditOpen(false)} />
       <RefundsSheet open={refundsOpen} tripId={trip?.id} onClose={() => setRefundsOpen(false)} />
+      <BottomSheet open={familyPayOpen} onClose={() => setFamilyPayOpen(false)} title="دفعات العائلات الجماعيّة">
+        {familyPayOpen && (
+          <FamilyPaymentsInbox sub={sub} trip={trip} onChanged={load} />
+        )}
+      </BottomSheet>
 
       <BottomSheet
         open={!!proofFor}
