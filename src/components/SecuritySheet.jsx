@@ -6,6 +6,7 @@ import Icon from './Icon'
 import BottomSheet from './BottomSheet'
 import PasswordStrengthMeter from './PasswordStrengthMeter'
 import { scorePassword } from '../lib/passwordStrength'
+import { enablePush, listMyPushDevices, removePushDevice, deviceLabel } from '../lib/push'
 
 function fmtDate(v) {
   if (!v) return '—'
@@ -87,6 +88,40 @@ export default function SecuritySheet({ open, onClose }) {
     setMfaLoading(false)
   }, [])
   useEffect(() => { if (open) loadFactors() }, [open, loadFactors])
+
+  // ── أجهزة الإشعارات الفوريّة (Push) ──
+  const [devices, setDevices] = useState([])
+  const [devLoading, setDevLoading] = useState(true)
+  const [pushBusy, setPushBusy] = useState(false)
+  const loadDevices = useCallback(async () => {
+    setDevLoading(true); setDevices(await listMyPushDevices()); setDevLoading(false)
+  }, [])
+  useEffect(() => { if (open) loadDevices() }, [open, loadDevices])
+
+  async function activatePush() {
+    setPushBusy(true)
+    let r; try { r = await enablePush() } catch { r = { ok: false, reason: 'subscribe-failed' } }
+    setPushBusy(false)
+    const MSG = {
+      subscribed: ['فُعّلت الإشعارات على هذا الجهاز ✓', 'success'],
+      'ios-needs-install': ['على iPhone: ثبّت «ملبّيك» على الشاشة الرئيسية أولًا (مشاركة ← إضافة إلى الشاشة الرئيسية)، ثم فعّل من داخله.', 'info'],
+      denied: ['إذن الإشعارات مرفوض — فعّله من إعدادات الجهاز ثم أعد المحاولة.', 'warn'],
+      dismissed: ['أُغلق طلب الإذن — حاول مجدّدًا وامنح الإذن.', 'info'],
+      unsupported: ['متصفّحك لا يدعم الإشعارات الفوريّة.', 'warn'],
+      'sw-failed': ['تعذّر التجهيز — أعد تحميل الصفحة.', 'error'],
+      'subscribe-failed': ['تعذّر الاشتراك — حاول مجدّدًا.', 'error'],
+      'save-failed': ['تعذّر حفظ الاشتراك — تحقّق من اتصالك.', 'error'],
+    }
+    const [msg, type] = MSG[r.reason] || ['تعذّر التفعيل.', 'error']
+    toast(msg, { type })
+    if (r.ok) loadDevices()
+  }
+  async function removeDevice(d) {
+    const ok = await confirm({ title: 'إزالة جهاز', message: 'سيُوقَف وصولُ الإشعارات لهذا الجهاز. متابعة؟', confirmText: 'إزالة', danger: true })
+    if (!ok) return
+    await removePushDevice(d.id, d.endpoint)
+    toast('أُزيل الجهاز.', { type: 'info' }); loadDevices()
+  }
 
   async function startEnroll() {
     setMfaErr('')
@@ -203,6 +238,34 @@ export default function SecuritySheet({ open, onClose }) {
           <div className="mlk-list-meta"><span className="hint">آخر دخول: {fmtDate(user?.last_sign_in_at)}</span></div>
           <button className="mlk-action" style={{ marginTop: 10 }} onClick={signOutEverywhere}>
             <Icon name="logout" size={15} /> تسجيل الخروج من كل الأجهزة
+          </button>
+        </section>
+
+        {/* ⑤ أجهزة الإشعارات الفوريّة */}
+        <section className="mlk-card" style={{ padding: 14 }}>
+          <h3 className="mlk-h2" style={{ marginTop: 0 }}><Icon name="bell" size={15} /> الأجهزة المفعّلة للإشعارات</h3>
+          <p className="hint" style={{ marginTop: 0 }}>الأجهزة التي تصلها الإشعارات الفوريّة (تدعم أجهزةً متعدّدة).</p>
+          {devLoading ? <span className="hint">جارٍ التحميل…</span> : devices.length === 0 ? (
+            <div className="alert info" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Icon name="bell" size={15} />
+              <span style={{ flex: 1, fontSize: 12.5 }}>لا أجهزةٌ مفعّلة بعد. فعّل الإشعارات على هذا الجهاز.</span>
+            </div>
+          ) : (
+            <ul className="mlk-list" style={{ gap: 8 }}>
+              {devices.map((d) => (
+                <li key={d.id} className="mlk-list-row" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Icon name="bell" size={15} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13.5 }}>{deviceLabel(d.user_agent)}</div>
+                    <div className="hint">مُفعّل: {fmtDate(d.created_at)}</div>
+                  </div>
+                  <button className="icon-btn danger" onClick={() => removeDevice(d)} title="إزالة الجهاز"><Icon name="trash" size={14} /></button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <button className="btn btn-em btn-block" style={{ marginTop: 10 }} onClick={activatePush} disabled={pushBusy}>
+            {pushBusy ? <span className="spinner" /> : <><Icon name="plus" size={15} /> تفعيل الإشعارات على هذا الجهاز</>}
           </button>
         </section>
 

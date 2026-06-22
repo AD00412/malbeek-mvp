@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
+import { useUI } from '../lib/useUI'
 import { useRealtime } from '../lib/useRealtime'
 import { useUnreadCount } from '../lib/useUnreadCount'
 import { buildNotificationContent } from '../lib/pushContent'
@@ -74,6 +75,7 @@ function dayBucket(v) {
  */
 export default function NotificationsBell({ onNavigate }) {
   const { user } = useAuth()
+  const { toast } = useUI()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -132,13 +134,30 @@ export default function NotificationsBell({ onNavigate }) {
     setMuted((m) => {
       const next = !m
       try { localStorage.setItem(MUTE_KEY, next ? '1' : '0') } catch { /* */ }
-      // عند إلغاء الكتم: فعّل الإشعارات الفوريّة (إذن + service worker + اشتراك
-      // Push إن توفّر مفتاح VAPID) — ضمن إيماءة المستخدم.
-      if (!next && 'Notification' in window && Notification.permission !== 'granted') {
-        enablePush().catch(() => {})
-      }
       return next
     })
+  }
+
+  // تفعيلُ الإشعارات الفوريّة مع تغذيةٍ راجعةٍ واضحةٍ لكل حالة (لا فشلٌ صامت).
+  const [pushBusy, setPushBusy] = useState(false)
+  async function activatePush() {
+    setPushBusy(true)
+    let r
+    try { r = await enablePush() } catch (e) { r = { ok: false, reason: 'subscribe-failed' } }
+    setPushBusy(false)
+    const MSG = {
+      subscribed: ['فُعّلت الإشعارات على هذا الجهاز ✓', 'success'],
+      'ios-needs-install': ['على iPhone: ثبّت «ملبّيك» على الشاشة الرئيسية أولًا (مشاركة ← إضافة إلى الشاشة الرئيسية)، ثم افتحه وفعّل الإشعارات من داخله.', 'info'],
+      denied: ['إذن الإشعارات مرفوض — فعّله من إعدادات المتصفّح/الجهاز ثم أعد المحاولة.', 'warn'],
+      dismissed: ['أُغلق طلب الإذن — اضغط مرّةً أخرى وامنح الإذن.', 'info'],
+      unsupported: ['متصفّحك لا يدعم الإشعارات الفوريّة.', 'warn'],
+      'sw-failed': ['تعذّر تجهيز الإشعارات — أعد تحميل الصفحة وحاول.', 'error'],
+      'subscribe-failed': ['تعذّر الاشتراك — حاول مجدّدًا.', 'error'],
+      'save-failed': ['تعذّر حفظ الاشتراك — تحقّق من اتصالك.', 'error'],
+    }
+    const [msg, type] = MSG[r.reason] || ['تعذّر التفعيل.', 'error']
+    toast(msg, { type })
+    if (r.ok) { setMuted(false); try { localStorage.setItem(MUTE_KEY, '0') } catch { /* */ } }
   }
 
   async function dismiss(id) {
@@ -188,6 +207,16 @@ export default function NotificationsBell({ onNavigate }) {
               <button className="notif-pop-action" onClick={dismissAll}>مسح الكل</button>
             )}
           </div>
+
+          {typeof Notification !== 'undefined' && Notification.permission !== 'granted' && (
+            <div className="alert info" style={{ margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <Icon name="bell" size={15} />
+              <span style={{ flex: 1, fontSize: 12.5 }}>فعّل الإشعارات الفوريّة لتصلك التنبيهات على جهازك حتى والتطبيق مغلق.</span>
+              <button className="btn btn-em btn-sm" onClick={activatePush} disabled={pushBusy}>
+                {pushBusy ? <span className="spinner" /> : 'تفعيل الإشعارات'}
+              </button>
+            </div>
+          )}
 
           <div className="notif-pop-body">
             {loading ? (
