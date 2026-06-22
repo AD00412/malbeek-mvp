@@ -6,3 +6,6 @@ dist
 
 .mcp.json
 malbeek-dev-screenshot.png
+
+# إعداد محرّر محلّي
+.claude/launch.json
