@@ -2,7 +2,10 @@
 // إشعارٍ أماميٍّ نظيفٍ عبر الـSW (عنوان + جسم + رابطٌ عميق، بلا «from»).
 import { supabase } from './supabaseClient'
 
-const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
+// المفتاح العامّ VAPID — عامٌّ بالتصميم (يُشحن في bundle العميل بأمان). يُمكن
+// تجاوزه بمتغيّر بيئة. وجودُه يُتيح حفظَ اشتراكِ Push في القاعدة عند تفعيل المستخدم.
+const VAPID_PUBLIC = import.meta.env.VITE_VAPID_PUBLIC_KEY ||
+  'BJ6olqCTO4uHziNCi5GZL-i0mQKk7NwWt831P9KlykRz5cTuuRYY6Khd_-_iaE9r3nocBP1WMmhLPIpvCTDaaWc'
 
 export function pushSupported() {
   return typeof navigator !== 'undefined' && 'serviceWorker' in navigator &&
