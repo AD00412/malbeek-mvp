@@ -35,7 +35,9 @@ const FREELANCE_DOC = {
   authority: 'وزارة الموارد البشريّة والتنمية الاجتماعيّة',
   category: 'الخدمات التخصصيّة',
   number: 'FL-879416950',
-  holder: 'أحمد خالد علي طويس مغفوري',
+  // الاسم الشخصيّ لحامل الوثيقة مُقنَّعٌ حفاظًا على الخصوصيّة — تُعرَض الجهةُ
+  // «إدارة ملبّيك» مع رقم الوثيقة الرسميّ (FL-879416950) للمصداقيّة القانونيّة.
+  holder: 'إدارة ملبّيك',
   profession: 'برمجة وتطوير المواقع الإلكترونيّة',
   issuedAt: '٢ يونيو ٢٠٢٦',
 }
@@ -415,7 +417,7 @@ export default function Landing() {
                 </dd>
               </div>
               <div className="doc-row">
-                <dt>الاسم</dt>
+                <dt>الجهة</dt>
                 <dd>{FREELANCE_DOC.holder}</dd>
               </div>
               <div className="doc-row">
