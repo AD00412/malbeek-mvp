@@ -1,8 +1,17 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    // jsdom يلزم لاختبارات المكوّنات (DOM) — والدوالُّ الصِّرفة تعمل فيه أيضًا.
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    css: false,
+  },
   server: {
     port: 5173,
     host: true,           // ⇦ يَستمع على 0.0.0.0 فيَصل من iPhone/Android على نفس Wi-Fi
