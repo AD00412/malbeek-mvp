@@ -27,6 +27,7 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
   const { toast } = useUI()
   const ticketRef = useRef(null)
   const [qrUrl, setQrUrl] = useState('')
+  const [barUrl, setBarUrl] = useState('')   // باركود Code128 (للماسحات الخطّيّة)
   const [qrFailed, setQrFailed] = useState(false)
   const [busy, setBusy] = useState('')   // '' | 'save' | 'share'
   const canShare = typeof navigator !== 'undefined' && !!navigator.share
@@ -47,6 +48,13 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
       } catch (_) {
         if (!cancelled) setQrFailed(true)
       }
+      // باركود Code128 الخطّيّ (يقرؤه ماسحُ التذاكر + الماسحاتُ الخطّيّة المطبوعة)
+      try {
+        const JsBarcode = (await import('jsbarcode')).default
+        const canvas = document.createElement('canvas')
+        JsBarcode(canvas, code, { format: 'CODE128', displayValue: false, height: 48, margin: 0, background: '#ffffff', lineColor: '#063d2c' })
+        if (!cancelled) setBarUrl(canvas.toDataURL('image/png'))
+      } catch (_) { /* اختياريٌّ — الـQR يكفي */ }
     })()
     return () => { cancelled = true }
   }, [code])
@@ -175,6 +183,9 @@ export default function Ticket({ passenger, trip, sub, buses = [], onClose }) {
               <div className="tk-qr-fallback">رمز التذكرة</div>
             ) : (
               <div className="tk-qr-fallback">…</div>
+            )}
+            {barUrl && (
+              <img className="tk-barcode" src={barUrl} alt="باركود خطّيّ Code128" style={{ width: '85%', maxWidth: 280, height: 46, marginTop: 8, objectFit: 'contain' }} />
             )}
             <div className="tk-code">{code}</div>
           </div>

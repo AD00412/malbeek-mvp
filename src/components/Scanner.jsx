@@ -149,7 +149,14 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
         }
 
         if (useNative) {
-          const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
+          // QR + Code128 (التذكرة تحمل الاثنين؛ نقرأ أيًّا منهما)
+          let useFmts = ['qr_code', 'code_128']
+          try {
+            const sup = await window.BarcodeDetector.getSupportedFormats?.()
+            if (Array.isArray(sup) && sup.length) useFmts = useFmts.filter((f) => sup.includes(f))
+            if (!useFmts.length) useFmts = ['qr_code']
+          } catch (_) { /* الافتراضيّ يكفي */ }
+          const detector = new window.BarcodeDetector({ formats: useFmts })
           timer = setInterval(async () => {
             if (stopped || document.visibilityState !== 'visible' || !videoRef.current) return
             try {
