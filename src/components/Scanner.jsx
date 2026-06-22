@@ -42,7 +42,7 @@ export default function Scanner({ trip, mode = 'board', onClose, onUpdated }) {
     busyRef.current = true; setBusy(true)
     try {
       let q = supabase.from('passengers')
-        .select('id, full_name, seat_no, boarding_point, status, trip_id, ticket_code, national_id')
+        .select('id, full_name, seat_no, boarding_point, status, trip_id, ticket_code')
       q = isTicket ? q.eq('ticket_code', code) : q.eq('id', code)
       const { data, error } = await q.maybeSingle()
       if (error) throw error
