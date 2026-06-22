@@ -7,7 +7,7 @@ import { fmtDateTime } from '../lib/format'
 import { translateRpcError } from '../lib/rpcErrors'
 
 const STATUS_LABEL = {
-  draft: 'مسودة', queued: 'قَيد الإرسال', sending: 'يُرسَل…',
+  draft: 'مسودة', queued: 'جاهزة (الإرسال موقوف)', sending: 'يُرسَل…',
   sent: 'أُرسلت', failed: 'فَشَل', cancelled: 'مُلغاة',
 }
 const STATUS_TONE = {
@@ -73,7 +73,11 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
     return () => { active = false }
   }, [target, tripId, extraEmails])
 
-  async function handleSend() {
+  // ★★ الإرسالُ الفعليُّ موقوفٌ عمدًا (حدٌّ صارم من أحمد): لا استدعاءَ لـ
+  //    send-marketing-broadcast. هذا الإجراء يُجهّز الحملةَ ويحفظها «جاهزةً»
+  //    مع قائمة المتلقّين فقط — لا تُغادر أيُّ رسالةٍ النظامَ. تفعيلُ الإرسال
+  //    يحتاج إذنَ أحمد + ربطَ مزوّد واتساب/بريد.
+  async function handleSaveReady() {
     setErr('')
     if (subject.trim().length < 3) return setErr('الموضوع قصيرٌ جدًّا.')
     if (body.trim().length < 10) return setErr('النصّ قصيرٌ جدًّا.')
@@ -82,19 +86,18 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
     if (audience === 0) return setErr('لا يَوجد جمهور بهذه الفلترة.')
 
     const ok = await confirm({
-      title: 'إرسالُ الحملة',
-      message: `ستُرسَل الرسالةُ لـ ${audience} مُتلقّي. لا يُمكن التَّراجع.`,
-      confirmText: 'أرسل الآن', cancelText: 'إلغاء',
+      title: 'حفظُ الحملة',
+      message: `ستُحفَظ الحملةُ وتُجهَّز قائمةُ ${audience} متلقٍّ. لن تُرسَل الآن — الإرسالُ الفعليُّ موقوف.`,
+      confirmText: 'احفظ كحملةٍ جاهزة', cancelText: 'إلغاء',
     })
     if (!ok) return
 
     setSending(true)
     try {
-      // ١) إنشاءُ الحملة (يَملأ المُتلقّين)
       const emailsArr = target === 'specific_emails'
         ? extraEmails.split(/[\n,;\s]+/).map(s => s.trim()).filter(Boolean)
         : []
-      const { data, error } = await supabase.rpc('create_marketing_broadcast', {
+      const { error } = await supabase.rpc('create_marketing_broadcast', {
         p_subject: subject.trim(),
         p_body: body.trim(),
         p_target: target,
@@ -102,31 +105,13 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
         p_extra_emails: emailsArr,
       })
       if (error) throw error
-      const row = Array.isArray(data) ? data[0] : data
-      const broadcastId = row?.out_broadcast_id ?? row?.broadcast_id
-      if (!broadcastId) throw new Error('فشل إنشاءُ الحملة')
-
-      // ٢) إطلاقُ المُرسل (قد يَحتاج عدّةَ batches)
-      let done = false
-      let totalSent = 0
-      let safetyCounter = 0
-      while (!done && safetyCounter < 20) {  // حدّ أقصى ٢٠ batch × ٢٥ = ٥٠٠ مُتلقّي
-        const { data: sendRes, error: sendErr } = await supabase.functions.invoke(
-          'send-marketing-broadcast', { body: { broadcast_id: broadcastId } }
-        )
-        if (sendErr) throw sendErr
-        totalSent += sendRes?.batch_sent || 0
-        done = !!sendRes?.done
-        safetyCounter++
-        if (!done) await new Promise(r => setTimeout(r, 800))
-      }
-
-      toast(`أُرسلت لـ ${totalSent} مُتلقّي ✓`, { type: 'success' })
+      // لا إرسالَ — الحملةُ محفوظةٌ جاهزةً فقط.
+      toast('حُفظت الحملةُ وجُهِّز متلقّوها ✓ — الإرسالُ الفعليُّ موقوف.', { type: 'success' })
       setSubject(''); setBody(''); setExtraEmails('')
       setTab('history')
       loadHistory()
     } catch (e) {
-      setErr(translateRpcError(e, 'تعذّر إرسالُ الحملة.'))
+      setErr(translateRpcError(e, 'تعذّر حفظُ الحملة.'))
     } finally {
       setSending(false)
     }
@@ -208,13 +193,24 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
 
           {err && <div className="alert err">{err}</div>}
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="mlk-action primary" onClick={handleSend} disabled={sending || audience === 0}
+          {/* ★ إيقافُ الإرسال الفعليّ — حدٌّ صارم */}
+          <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
+            <Icon name="info" size={16} />
+            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى يأذن أحمد ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع الآن تجهيزَ الحملة وحفظَها «جاهزةً» مع قائمة المتلقّين.</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="mlk-action primary" onClick={handleSaveReady} disabled={sending || audience === 0}
                     style={{ fontSize: 14, padding: '12px 18px' }}>
-              {sending ? <><span className="spinner" /> جارٍ الإرسال…</> : `إرسال إلى ${audience}`}
+              {sending ? <><span className="spinner" /> جارٍ الحفظ…</> : `حفظ كحملةٍ جاهزة (${audience})`}
             </button>
             <button className="mlk-action" onClick={() => setShowPreview(s => !s)}>
               {showPreview ? 'إخفاء المعاينة' : 'معاينة'}
+            </button>
+            <button className="mlk-action" disabled aria-disabled="true"
+                    title="موقوف: يحتاج إذن أحمد + ربط مزوّد واتساب/بريد"
+                    style={{ opacity: .5, cursor: 'not-allowed' }}>
+              إرسال فعليّ (موقوف)
             </button>
           </div>
 
