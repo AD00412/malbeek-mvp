@@ -48,7 +48,7 @@ const LazyScanner = lazy(() => import('../../components/Scanner'))
 
 /** قائمةُ أعمدة المؤسسة المشتركة بين الـ select قراءاتٍ متعدّدة (تفادي الانحراف). */
 const SUBSCRIBER_COLS =
-  'id, owner_id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url, carrier_company'
+  'id, owner_id, org_name, slug, plan, trial_ends_at, trial_trip_limit, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url, carrier_company'
 
 /* ---------- أدوات عرض مشتركة ---------- */
 const STATUS_LABEL = { draft: 'مسودة', open: 'مفتوحة', closed: 'مغلقة', done: 'منتهية' }
@@ -667,7 +667,7 @@ export function SubscriberHome() {
         onTab={onTab}
         onNotifNavigate={(n) => { const t = trips.find((x) => x.id === n.ref_trip); if (t) setManaging(t) }}
         planLabel={sub?.plan === 'paid' ? 'باقة ملبّيك' : 'الباقة التجريبية'}
-        planUsage={sub?.plan === 'paid' ? null : { used: trips.length, limit: 1 }}
+        planUsage={sub?.plan === 'paid' ? null : { used: trips.length, limit: sub?.trial_trip_limit ?? 1 }}
       >
         {err && !managing && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
 
@@ -688,7 +688,7 @@ export function SubscriberHome() {
             {view === 'overview' && (
               <>
                 <PendingInviteBanner />
-                <TrialBanner sub={sub} />
+                <TrialBanner sub={sub} tripsCount={trips.length} />
                 {/* ★ لا نَرسم Overview قبل وصول sub فعلًا — يَمنع ومضةَ ٠/٠
                     قبل ظهور الأرقام الحقيقيّة. SWR cache يَحلّ هذا للزائر
                     العائد، لكنّ الزائر الجديد (بلا cache) كان يَرى أصفارًا
