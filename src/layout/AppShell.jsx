@@ -82,6 +82,12 @@ export default function AppShell({ title, subtitle, tabs = [], active, onTab, ac
 
   const navTabs = tabs.filter((t) => t.label) // عناصر التنقّل (تستثني الفواصل)
   const bottomTabs = navTabs.slice(0, 5)      // الشريط السفلي يأخذ ٥ عناصر فقط
+  // ★ تمركزُ زرّ الإجراء (FAB) في وسط الشريط دائمًا (الفهرس ٢ من ٥) مهما كان ترتيبُه.
+  const _fabIdx = bottomTabs.findIndex((t) => t.fab)
+  if (_fabIdx > -1 && bottomTabs.length === 5 && _fabIdx !== 2) {
+    const [_fab] = bottomTabs.splice(_fabIdx, 1)
+    bottomTabs.splice(2, 0, _fab)
+  }
 
   return (
     <div className="shell">

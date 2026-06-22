@@ -101,6 +101,13 @@ export default function AdminMarketing() {
                 <Icon name="customers" size={16} />
                 <span>سيَستلم <strong style={{ color: 'var(--em-500)' }}>{count}</strong> {count === 1 ? 'متلقٍّ' : 'متلقّياً'}</span>
               </div>
+              {count === 0 && (
+                <p className="hint" style={{ color: 'var(--cr-300)' }}>
+                  {audience === 'subscribers'
+                    ? 'لا مشتركين بإيميلٍ مُسجَّل بعد.'
+                    : 'لا معتمرين بإيميلٍ وموافقةٍ تسويقيّة عبر الحملات بعد.'}
+                </p>
+              )}
             </div>
           </div>
 
@@ -124,7 +131,7 @@ export default function AdminMarketing() {
           {/* ★ إيقافُ الإرسال الفعليّ — حدٌّ صارم */}
           <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
             <Icon name="info" size={16} />
-            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى يأذن أحمد ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع تجهيزَ الحملة وحفظَها «جاهزةً».</span>
+            <span>الإرسالُ الفعليُّ <strong>موقوفٌ</strong> حتى تأذن إدارةُ ملبّيك ويُربَط مزوّدُ رسائل (واتساب/بريد). تستطيع تجهيزَ الحملة وحفظَها «جاهزةً».</span>
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -132,7 +139,7 @@ export default function AdminMarketing() {
               {busy ? <><span className="spinner" /> جارٍ الحفظ…</> : `حفظ كحملةٍ جاهزة (${count})`}
             </button>
             <button className="mlk-action" onClick={() => setShowPreview((s) => !s)}>{showPreview ? 'إخفاء المعاينة' : 'معاينة'}</button>
-            <button className="mlk-action" disabled aria-disabled="true" title="موقوف: يحتاج إذن أحمد + مزوّد رسائل" style={{ opacity: .5, cursor: 'not-allowed' }}>
+            <button className="mlk-action" disabled aria-disabled="true" title="موقوف: يحتاج إذن إدارة ملبّيك + مزوّد رسائل" style={{ opacity: .5, cursor: 'not-allowed' }}>
               إرسال فعليّ (موقوف)
             </button>
           </div>
