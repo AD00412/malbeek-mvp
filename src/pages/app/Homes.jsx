@@ -95,6 +95,12 @@ function recent7Badge(subs) {
 
 export function AdminHome() {
   const [view, setView] = useStickyState('admin:view', 'overview')
+  // رابطٌ عميقٌ من إشعار (?go=feedback/subs/upgrades…) → افتح الشاشة المعنيّة.
+  useEffect(() => {
+    const go = new URLSearchParams(window.location.search).get('go')
+    if (go) { setView(go); window.history.replaceState({}, '', window.location.pathname) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')                                  // ★ A3+B1 — حالة خطأ للوحة
@@ -424,6 +430,12 @@ export function SubscriberHome() {
   const { user, profile, refreshProfile } = useAuth()
   const [view, setView] = useStickyState('sub:view', 'overview')
   const [sub, setSub] = useState(null)
+  // رابطٌ عميقٌ من إشعار (?go=ops/analytics/feedback…) → افتح الشاشة المعنيّة.
+  useEffect(() => {
+    const go = new URLSearchParams(window.location.search).get('go')
+    if (go) { onTab(go); window.history.replaceState({}, '', window.location.pathname) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
@@ -1073,6 +1085,12 @@ export function CustomerHome() {
   const { user, subscriberId } = useAuth()
   const [view, setView] = useStickyState('cust:view', 'trips')
   const [orgName, setOrgName] = useState('')
+  // رابطٌ عميقٌ من إشعار (?go=tickets/feedback…) → افتح الشاشة المعنيّة.
+  useEffect(() => {
+    const go = new URLSearchParams(window.location.search).get('go')
+    if (go) { onTab(go); window.history.replaceState({}, '', window.location.pathname) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [sub, setSub] = useState(null)
   const [trips, setTrips] = useState([])
   const [myBookings, setMyBookings] = useState([])   // ركابي (passengers بـ profile_id = أنا)
