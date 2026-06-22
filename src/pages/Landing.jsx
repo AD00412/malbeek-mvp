@@ -165,7 +165,7 @@ export default function Landing() {
         <div className="lp-hero-mark"><CompassMark size={92} /></div>
         <span className="lp-tag">منصة إدارة حملات العمرة</span>
         <h1>حملتك كاملة<br/>في مكان واحد</h1>
-        <p>سجل المعتمرين، وزع المقاعد، اطبع الكشوف، وامسح التذاكر بالباركود — كل أدوات حملتك في مكان واحد وبسهولة.</p>
+        <p>من تسجيل المعتمرين إلى مسح تذاكرهم يوم الرحلة — أنجز كل شيء بضغطات، ووفر ساعات عملك في كل فوج. ابدأ مجانا وشوف الفرق من أول رحلة.</p>
         <div className="lp-cta-row">
           <Link to="/signup" className="btn btn-em lp-cta">
             <Icon name="sparkle" size={17} /> ابدأ تجربتك المجانية
