@@ -196,18 +196,18 @@ export default function QiblaCompass() {
                 <text key={angle}
                   x={CX + Math.cos(a) * r}
                   y={CY + Math.sin(a) * r + 3}
-                  textAnchor="middle" fontFamily="system-ui" fontWeight="500"
+                  textAnchor="middle" fontFamily="Thmanyah" fontWeight="500"
                   fontSize="9" fill="rgba(255,255,255,.45)">{angle}</text>
               )
             })}
             {/* علاماتُ الجهات الأربع — بأحجامٍ مختلفةٍ كتطبيق iOS */}
-            <text x={CX} y="20" textAnchor="middle" fontFamily="serif" fontWeight="900"
+            <text x={CX} y="20" textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
                   fontSize="16" fill="#ef4444">ش</text>
-            <text x={CX} y={VB - 7} textAnchor="middle" fontFamily="serif" fontWeight="900"
+            <text x={CX} y={VB - 7} textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
                   fontSize="14" fill="rgba(255,255,255,.85)">ج</text>
-            <text x={VB - 10} y={CY + 5} textAnchor="middle" fontFamily="serif" fontWeight="900"
+            <text x={VB - 10} y={CY + 5} textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
                   fontSize="14" fill="rgba(255,255,255,.85)">ش</text>
-            <text x="10" y={CY + 5} textAnchor="middle" fontFamily="serif" fontWeight="900"
+            <text x="10" y={CY + 5} textAnchor="middle" fontFamily="Thmanyah Display" fontWeight="900"
                   fontSize="14" fill="rgba(255,255,255,.85)">غ</text>
 
             {/* رمزُ الكعبة */}
