@@ -14,6 +14,32 @@ const CORS = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   try {
+    const { user_id, title, body, url } = await req.json()
+    if (!user_id) return new Response(JSON.stringify({ error: 'user_id مطلوب' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
+
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    // ★ تفويض (أوّلًا، قبل أيّ عمل): يُسمح بالإرسال لمستخدمٍ معيّن فقط لـ:
+    //   • الخادم الموثوق (service_role) — مشغّلات الأحداث.
+    //   • الإدارة (profiles.role='admin') — إشعاراتٌ يدويّة.
+    //   • المستخدم لنفسه (user_id == هويّة المتّصل) — اختبارٌ ذاتيّ.
+    // بدون هذا، أيّ مستخدمٍ مصادَقٍ يرسل إشعارًا منتحِلًا (عنوان «ملبّيك» +
+    // جسم/رابط من اختياره) لأيّ مستخدم — متّجهُ تصيّدٍ (phishing).
+    const authHeader = req.headers.get('Authorization') || ''
+    const jwt = authHeader.replace(/^Bearer\s+/i, '')
+    let claims: any = {}
+    try { claims = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) } catch { /* */ }
+    const callerRole = claims.role            // 'service_role' | 'authenticated' | 'anon'
+    const callerId = claims.sub
+    let allowed = callerRole === 'service_role' || (callerId && callerId === user_id)
+    if (!allowed && callerId) {
+      const { data: prof } = await supabase.from('profiles').select('role').eq('id', callerId).maybeSingle()
+      allowed = prof?.role === 'admin'
+    }
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'غير مصرّح: الإرسال لمستخدمٍ آخر مقصورٌ على الإدارة.' }), { status: 403, headers: { ...CORS, 'Content-Type': 'application/json' } })
+    }
+
     const VAPID_PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY')
     const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY')
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
@@ -21,10 +47,6 @@ Deno.serve(async (req) => {
     }
     webpush.setVapidDetails('mailto:hello@mulabeek.com', VAPID_PUBLIC, VAPID_PRIVATE)
 
-    const { user_id, title, body, url } = await req.json()
-    if (!user_id) return new Response(JSON.stringify({ error: 'user_id مطلوب' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } })
-
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const { data: subs, error } = await supabase.from('push_subscriptions').select('endpoint, p256dh, auth').eq('user_id', user_id)
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } })
 
