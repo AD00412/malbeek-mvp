@@ -5,19 +5,20 @@ import { translateRpcError } from '../lib/rpcErrors'
 import { SkeletonList } from './Skeleton'
 import { fmtDateTime } from '../lib/format'
 import Icon from './Icon'
+import { FEATURES } from '../lib/featureFlags'
 
 /**
  * تسويق المنصة — لإدارة ملبّيك (الأدمن فقط).
  * قناتان: ملبّيك → المشتركون (إعلانات/تحديثات) · ملبّيك → المعتمرون (عبر كل
- * الحملات، باحترام الموافقة التسويقية). الإرسال الفعلي موقوف بزر معطل
- * — تجهيز وحفظ «جاهز» فقط (لا transmission). القناة الثالثة (صاحب الحملة →
- * معتمريه) في لوحة كل مشترك.
+ * الحملات، باحترام الموافقة التسويقية). تجهيز وحفظ الحملة «جاهزة» فقط (لا
+ * transmission) — زرّ الإرسال الفعليّ مخفيٌّ خلف FEATURES.marketingSend حتى
+ * يُربَط مزوّد الرسائل. القناة الثالثة (صاحب الحملة → معتمريه) في لوحة كل مشترك.
  */
 const AUD = {
   subscribers: { label: 'المشتركون (أصحاب الحملات)', hint: 'إعلانات وتحديثات وعروض لأصحاب الحملات.' },
   pilgrims:    { label: 'المعتمرون (كل الحملات)',    hint: 'يرسل لمن وافق على التسويق فقط — عبر كل الحملات.' },
 }
-const STATUS_LABEL = { draft: 'جاهزة (الإرسال موقوف)', sent: 'أرسلت', failed: 'فشل' }
+const STATUS_LABEL = { draft: 'جاهزة', sent: 'أرسلت', failed: 'فشل' }
 
 export default function AdminMarketing() {
   const { toast, confirm } = useUI()
@@ -55,7 +56,7 @@ export default function AdminMarketing() {
     if (count === 0) return setErr('لا جمهور بهذه الفئة.')
     const ok = await confirm({
       title: 'حفظ حملة المنصة',
-      message: `ستحفظ الحملة وتجهز قائمة ${count} متلق (${AUD[audience].label}). لن ترسل — الإرسال موقوف.`,
+      message: `ستحفظ الحملة وتجهز قائمة ${count} متلق (${AUD[audience].label})، جاهزةً للإرسال.`,
       confirmText: 'احفظ كحملة جاهزة',
     })
     if (!ok) return
@@ -66,7 +67,7 @@ export default function AdminMarketing() {
       })
       if (error) throw error
       // لا إرسال — محفوظة جاهزة فقط.
-      toast('حفظت حملة المنصة وجهز متلقوها ✓ — الإرسال موقوف.', { type: 'success' })
+      toast('حفظت حملة المنصة وجهز متلقوها ✓', { type: 'success' })
       setSubject(''); setBody(''); setTab('history'); loadHistory()
     } catch (e) {
       setErr(translateRpcError(e, 'تعذر حفظ الحملة.'))
@@ -128,20 +129,17 @@ export default function AdminMarketing() {
 
           {err && <div className="alert err">{err}</div>}
 
-          {/* ★ إيقاف الإرسال الفعلي — حد صارم */}
-          <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
-            <Icon name="info" size={16} />
-            <span>الإرسال الفعلي <strong>موقوف</strong> حتى تأذن إدارة ملبّيك ويربط مزود رسائل (واتساب/بريد). تستطيع تجهيز الحملة وحفظها «جاهزة».</span>
-          </div>
-
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="mlk-action primary" onClick={handleSaveReady} disabled={busy || count === 0} style={{ fontSize: 14, padding: '12px 18px' }}>
               {busy ? <><span className="spinner" /> جار الحفظ…</> : `حفظ كحملة جاهزة (${count})`}
             </button>
             <button className="mlk-action" onClick={() => setShowPreview((s) => !s)}>{showPreview ? 'إخفاء المعاينة' : 'معاينة'}</button>
-            <button className="mlk-action" disabled aria-disabled="true" title="موقوف: يحتاج إذن إدارة ملبّيك + مزود رسائل" style={{ opacity: .5, cursor: 'not-allowed' }}>
-              إرسال فعلي (موقوف)
-            </button>
+            {/* زرّ الإرسال الفعليّ يظهر فقط حين يُربَط مزوّد الرسائل (FEATURES.marketingSend) */}
+            {FEATURES.marketingSend && (
+              <button className="mlk-action primary" onClick={handleSaveReady} style={{ fontSize: 14, padding: '12px 18px' }}>
+                إرسال فعلي
+              </button>
+            )}
           </div>
 
           {showPreview && (

@@ -7,6 +7,7 @@ import BottomSheet from './BottomSheet'
 import PasswordStrengthMeter from './PasswordStrengthMeter'
 import { scorePassword } from '../lib/passwordStrength'
 import { enablePush, listMyPushDevices, removePushDevice, deviceLabel } from '../lib/push'
+import { FEATURES } from '../lib/featureFlags'
 
 function fmtDate(v) {
   if (!v) return '—'
@@ -227,7 +228,9 @@ export default function SecuritySheet({ open, onClose }) {
             <>
               {mfaErr && <div className="alert err">{mfaErr}</div>}
               <button className="btn btn-em btn-block" onClick={startEnroll}><Icon name="plus" size={15} /> تفعيل المصادقة الثنائية</button>
-              <span className="hint">الرموز الاحتياطية للاسترداد قادمةٌ قريبًا (تتطلّب تخزينًا آمنًا في الخادم).</span>
+              {FEATURES.backupCodes && (
+                <span className="hint">الرموز الاحتياطية للاسترداد قادمةٌ قريبًا (تتطلّب تخزينًا آمنًا في الخادم).</span>
+              )}
             </>
           )}
         </section>
@@ -269,23 +272,24 @@ export default function SecuritySheet({ open, onClose }) {
           </button>
         </section>
 
-        {/* ⑤ تحقّق الجوال — المستوى ٣ (موقوف، يحتاج مزوّدًا) */}
-        <section className="mlk-card" style={{ padding: 14, opacity: .75 }}>
-          <h3 className="mlk-h2" style={{ marginTop: 0 }}><Icon name="phone" size={15} /> تحقّق برقم الجوال (SMS)</h3>
-          <p className="hint" style={{ marginTop: 0 }}>تحقّقٌ إضافيٌّ برمزٍ يُرسَل لجوالك.</p>
-          <button className="btn btn-ghost btn-block" disabled aria-disabled="true" style={{ opacity: .6, cursor: 'not-allowed' }}>
-            موقوف — يحتاج ربطَ مزوّد رسائل
-          </button>
-        </section>
+        {/* ⑤ تحقّق الجوال — المستوى ٣ (يحتاج مزوّد رسائل؛ مخفيٌّ خلف FEATURES.smsOtp) */}
+        {FEATURES.smsOtp && (
+          <section className="mlk-card" style={{ padding: 14 }}>
+            <h3 className="mlk-h2" style={{ marginTop: 0 }}><Icon name="phone" size={15} /> تحقّق برقم الجوال (SMS)</h3>
+            <p className="hint" style={{ marginTop: 0 }}>تحقّقٌ إضافيٌّ برمزٍ يُرسَل لجوالك.</p>
+          </section>
+        )}
 
-        {/* ⑥ خارطة الطريق — المستوى ٤ */}
-        <section className="mlk-card" style={{ padding: 14 }}>
-          <h3 className="mlk-h2" style={{ marginTop: 0 }}><Icon name="sparkle" size={15} /> قريبًا</h3>
-          <ul className="hint" style={{ margin: 0, paddingInlineStart: 18, lineHeight: 1.9 }}>
-            <li>الدخول ببصمة الوجه/Passkeys (WebAuthn).</li>
-            <li>الدخول عبر «نفاذ» الوطنيّ (يتطلّب تسجيلًا رسميًّا).</li>
-          </ul>
-        </section>
+        {/* ⑥ خارطة الطريق — Passkeys/نفاذ (مخفيّةٌ خلف الأعلام حتى يكتمل المزوّد) */}
+        {(FEATURES.passkeys || FEATURES.nafath) && (
+          <section className="mlk-card" style={{ padding: 14 }}>
+            <h3 className="mlk-h2" style={{ marginTop: 0 }}><Icon name="sparkle" size={15} /> طرقُ دخولٍ إضافيّة</h3>
+            <ul className="hint" style={{ margin: 0, paddingInlineStart: 18, lineHeight: 1.9 }}>
+              {FEATURES.passkeys && <li>الدخول ببصمة الوجه/Passkeys (WebAuthn).</li>}
+              {FEATURES.nafath && <li>الدخول عبر «نفاذ» الوطنيّ.</li>}
+            </ul>
+          </section>
+        )}
       </div>
     </BottomSheet>
   )
