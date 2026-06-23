@@ -1248,7 +1248,7 @@ export function CustomerHome() {
     <>
       <AppShell
         title="أهلا بك"
-        subtitle={orgName ? `رحلات حملة ${orgName}` : 'رحلاتك المتاحة'}
+        subtitle={orgName ? `رحلات ${orgName}` : 'رحلاتك المتاحة'}
         tabs={tabs}
         active={view}
         onTab={onTab}
