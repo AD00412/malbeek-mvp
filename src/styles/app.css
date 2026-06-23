@@ -1216,7 +1216,7 @@
 
 /* مركز الإشعارات */
 .notif-badge{position:absolute;top:-4px;inset-inline-end:-4px;min-width:18px;height:18px;padding:0 5px;
-  background:var(--danger);color:#fff;border-radius:999px;font-size:10.5px;font-weight:700;
+  background:var(--danger-badge);color:#fff;border-radius:999px;font-size:10.5px;font-weight:700;
   display:grid;place-items:center;border:2px solid var(--em-900);font-family:var(--font-sans)}
 .notif-list{display:flex;flex-direction:column;gap:6px;margin-top:-4px}
 .notif-row{display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);
@@ -1317,7 +1317,7 @@ body.fab-interacting *{
 .fab-fb svg{pointer-events:none}
 /* شارةُ الردود غير المقروءة */
 .fab-fb-badge{position:absolute;top:-4px;inset-inline-start:-4px;min-width:20px;height:20px;padding:0 5px;
-  border-radius:99px;background:var(--danger);color:#fff;font-size:11px;font-weight:800;
+  border-radius:99px;background:var(--danger-badge);color:#fff;font-size:11px;font-weight:800;
   display:grid;place-items:center;border:2px solid var(--bg-base);box-shadow:0 2px 6px rgba(0,0,0,.3);
   font-family:var(--font-sans);pointer-events:none}
 :root[data-theme="light"] .fab-fb-badge{border-color:#fff}
