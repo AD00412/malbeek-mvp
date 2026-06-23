@@ -5,9 +5,10 @@ import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 import { fmtDateTime } from '../lib/format'
 import { translateRpcError } from '../lib/rpcErrors'
+import { FEATURES } from '../lib/featureFlags'
 
 const STATUS_LABEL = {
-  draft: 'مسودة', queued: 'جاهزة (الإرسال موقوف)', sending: 'يرسل…',
+  draft: 'مسودة', queued: 'جاهزة', sending: 'يرسل…',
   sent: 'أرسلت', failed: 'فشل', cancelled: 'ملغاة',
 }
 const STATUS_TONE = {
@@ -87,7 +88,7 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
 
     const ok = await confirm({
       title: 'حفظ الحملة',
-      message: `ستحفظ الحملة وتجهز قائمة ${audience} متلق. لن ترسل الآن — الإرسال الفعلي موقوف.`,
+      message: `ستحفظ الحملة وتجهز قائمة ${audience} متلق، جاهزةً للإرسال.`,
       confirmText: 'احفظ كحملة جاهزة', cancelText: 'إلغاء',
     })
     if (!ok) return
@@ -106,7 +107,7 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
       })
       if (error) throw error
       // لا إرسال — الحملة محفوظة جاهزة فقط.
-      toast('حفظت الحملة وجهز متلقوها ✓ — الإرسال الفعلي موقوف.', { type: 'success' })
+      toast('حفظت الحملة وجهز متلقوها ✓', { type: 'success' })
       setSubject(''); setBody(''); setExtraEmails('')
       setTab('history')
       loadHistory()
@@ -200,12 +201,6 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
 
           {err && <div className="alert err">{err}</div>}
 
-          {/* ★ إيقاف الإرسال الفعلي — حد صارم */}
-          <div className="alert" style={{ background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--cr-100)', display: 'flex', alignItems: 'flex-start', gap: 8, lineHeight: 1.7 }}>
-            <Icon name="info" size={16} />
-            <span>الإرسال الفعلي <strong>موقوف</strong> حتى تأذن إدارة ملبّيك ويربط مزود رسائل (واتساب/بريد). تستطيع الآن تجهيز الحملة وحفظها «جاهزة» مع قائمة المتلقين.</span>
-          </div>
-
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="mlk-action primary" onClick={handleSaveReady} disabled={sending || audience === 0}
                     style={{ fontSize: 14, padding: '12px 18px' }}>
@@ -214,11 +209,13 @@ export default function MarketingBroadcasts({ subscriberId, trips = [] }) {
             <button className="mlk-action" onClick={() => setShowPreview(s => !s)}>
               {showPreview ? 'إخفاء المعاينة' : 'معاينة'}
             </button>
-            <button className="mlk-action" disabled aria-disabled="true"
-                    title="موقوف: يحتاج إذن إدارة ملبّيك + ربط مزود واتساب/بريد"
-                    style={{ opacity: .5, cursor: 'not-allowed' }}>
-              إرسال فعلي (موقوف)
-            </button>
+            {/* زرّ الإرسال الفعليّ يظهر فقط حين يُربَط مزوّد الرسائل (FEATURES.marketingSend) */}
+            {FEATURES.marketingSend && (
+              <button className="mlk-action primary" onClick={handleSaveReady}
+                      style={{ fontSize: 14, padding: '12px 18px' }}>
+                إرسال فعلي
+              </button>
+            )}
           </div>
 
           {showPreview && (
