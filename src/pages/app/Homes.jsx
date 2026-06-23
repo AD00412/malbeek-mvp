@@ -1136,7 +1136,7 @@ export function CustomerHome() {
     sq = subscriberId ? sq.eq('id', subscriberId) : sq.limit(1)
     let tq = supabase
       .from('trips')
-      .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, seating_policy, bus_rows, bus_back_row, price, notes')
+      .select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, seating_policy, bus_rows, bus_back_row, price, notes, bus_photo_url')
       .order('depart_at', { ascending: true })
     if (subscriberId) tq = tq.eq('subscriber_id', subscriberId)
     const bq = user?.id

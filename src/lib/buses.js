@@ -7,7 +7,7 @@ export async function loadTripBuses(tripId) {
   if (!tripId) return []
   const { data } = await supabase
     .from('trip_buses')
-    .select('id, bus_number, label, plate, bus_rows, bus_back_row, seating_policy')
+    .select('id, bus_number, label, plate, bus_rows, bus_back_row, seating_policy, photo_url')
     .eq('trip_id', tripId)
     .order('bus_number', { ascending: true })
   return data ?? []

@@ -446,6 +446,13 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
             </div>
           )}
 
+          {trip?.bus_photo_url && (
+            <figure className="bus-photo-card">
+              <img src={trip.bus_photo_url} alt="صورة الباص" loading="lazy" />
+              <figcaption><Icon name="bus" size={14} /> باصك في هذه الرحلة</figcaption>
+            </figure>
+          )}
+
           {loading ? (
             <div className="empty"><div className="em-mark"><CompassMark size={48} /></div>جار التحميل…</div>
           ) : (

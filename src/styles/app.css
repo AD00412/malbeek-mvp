@@ -2250,3 +2250,8 @@ body.fab-interacting *{
 :root[data-theme="light"] .mlk-fchip.active,
 :root[data-theme="light"] .mlk-action.primary{background:#065f46;border-color:#065f46}
 :root[data-theme="light"] .mlk-action.primary:hover{background:#064e3b;border-color:#064e3b}
+
+/* بطاقة صورة الباص — تظهر للمعتمر في شاشة الحجز (طمأنة بصريّة) */
+.bus-photo-card{margin:8px 0 2px;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface-2)}
+.bus-photo-card img{display:block;width:100%;max-height:220px;object-fit:cover}
+.bus-photo-card figcaption{display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--cr-200);background:var(--surface)}

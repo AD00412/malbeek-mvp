@@ -5,6 +5,7 @@ import SeatMap from './SeatMap'
 import { SEATING_POLICIES, seatCount, buildSeats, isAllowed, DEFAULT_ROWS, DEFAULT_BACK } from '../lib/busLayout'
 import { loadTripBuses, busName } from '../lib/buses'
 import { useUI } from '../lib/useUI'
+import ImageUpload from './ImageUpload'
 
 /**
  * مدير باصات الرحلة — تخطيط قابل للضبط مع معاينة حية، ودعم لعدة باصات.
@@ -18,6 +19,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
 
   const [busLabel, setBusLabel] = useState('')
   const [busPlate, setBusPlate] = useState('')
+  const [photo, setPhoto] = useState('')
   const [policy, setPolicy] = useState('all_male')
   const [rows, setRows] = useState(DEFAULT_ROWS)
   const [back, setBack] = useState(DEFAULT_BACK)
@@ -28,6 +30,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
   const fillFrom = useCallback((b) => {
     setBusLabel(b?.label ?? '')
     setBusPlate(b?.plate ?? '')
+    setPhoto(b?.photo_url ?? '')
     setPolicy(b?.seating_policy ?? 'all_male')
     setRows(b?.bus_rows ?? DEFAULT_ROWS)
     setBack(b?.bus_back_row ?? DEFAULT_BACK)
@@ -87,6 +90,7 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
           bus_rows: rows,
           bus_back_row: back,
           capacity: tripCapacity(),
+          bus_photo_url: photo || null,   // مرآةٌ على trips ليراها المعتمر (يقرأ trips لا trip_buses)
         }).eq('id', trip.id)
         if (error) throw error
       } else {
@@ -101,6 +105,9 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
         // حدث سعة الرحلة الكلية (لا يمس الباص ١)
         await supabase.from('trips').update({ capacity: tripCapacity() }).eq('id', trip.id)
       }
+      // صورة الباص — تُخزَّن موحَّدةً على صفّ trip_buses لكل الباصات (تريغر المزامنة
+      // لا يمسّ photo_url، فالباص ١ آمن). activeId موجودٌ لكل باصٍ (بما فيه الباص ١).
+      if (activeId) await supabase.from('trip_buses').update({ photo_url: photo || null }).eq('id', activeId)
       await load(activeId)
       onSaved?.()
     } catch (e) {
@@ -207,6 +214,15 @@ export default function BusEditor({ trip, passengers = [], onClose, onSaved }) {
                 {SEATING_POLICIES.map((p) => <option key={p.v} value={p.v}>{p.t}</option>)}
               </select>
             </div>
+
+            <ImageUpload
+              subscriberId={trip?.subscriber_id}
+              value={photo}
+              onChange={setPhoto}
+              slot={`bus-${activeId || 'primary'}`}
+              label="صورة الباص (اختياري)"
+              hint="تظهر للمعتمر في تفاصيل رحلته — صورة واضحة للباص تطمئنه."
+            />
 
             <div className="grid-2">
               <div className="field">
