@@ -48,6 +48,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
         .select('stars, comment, created_at')
         .eq('subscriber_id', subscriberId).eq('direction', 'customer_to_subscriber')
         .order('created_at', { ascending: false })
+        .limit(500)
       if (cancel || error) return
       const rows = data || []
       const sum = rows.reduce((s, r) => s + (Number(r.stars) || 0), 0)
