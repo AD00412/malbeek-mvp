@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
+import { PAID_STATUSES } from '../lib/passengerStatus'
 
 function fmtGreg(v) {
   if (!v) return '—'
@@ -44,7 +45,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
       const m = new Map()        // collected
       const exp = new Map()      // expected (مجموع السعر المثبت لكل معتمر)
       for (const r of rows || []) {
-        if (['paid','boarded','checked_in'].includes(r.status)) {
+        if (PAID_STATUSES.includes(r.status)) {
           m.set(r.trip_id, (m.get(r.trip_id) || 0) + (Number(r.amount) || 0))
         }
         // المتوقع = ما يلتزم به كل معتمر بسعره المثبت (أو سعر الرحلة الحالي احتياطا)

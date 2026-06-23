@@ -6,3 +6,7 @@ export const PASSENGER_STATUS = [
   { v: 'boarded',    t: 'صعد الحافلة' },
   { v: 'checked_in', t: 'استلم الغرفة' },
 ]
+
+// مجموعة الحالات «المدفوعة فأكثر» (دفع → صعود → تسكين) — مصدرٌ واحدٌ موحَّد
+// للعدّ التراكميّ والتحصيل، يمنع تذبذب التعريف بين الشاشات.
+export const PAID_STATUSES = ['paid', 'boarded', 'checked_in']

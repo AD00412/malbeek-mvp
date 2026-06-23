@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
+import { PAID_STATUSES } from '../lib/passengerStatus'
 
 /**
  * لوحة العمليات لصاحب الحملة — «طراز التحكم».
@@ -14,7 +15,7 @@ import { SkeletonList } from './Skeleton'
  * @param {Function} onManage   فتح إدارة رحلة بعينها
  */
 const money = (n) => Number(n || 0).toLocaleString('en-US')
-const PAID = ['paid', 'boarded', 'checked_in']
+const PAID = PAID_STATUSES
 
 function daysTo(iso) {
   if (!iso) return null

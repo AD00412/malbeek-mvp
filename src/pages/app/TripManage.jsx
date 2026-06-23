@@ -7,6 +7,7 @@ import Icon from '../../components/Icon'
 import CompassMark from '../../components/CompassMark'
 import PassengerFormModal from '../../components/PassengerFormModal'
 import ImportPassengers from '../../components/ImportPassengers'
+import { PAID_STATUSES } from '../../lib/passengerStatus'
 import CrewFormModal from '../../components/CrewFormModal'
 import Manifest from '../../components/Manifest'
 import SeatMap from '../../components/SeatMap'
@@ -381,7 +382,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   }, [passengers])
 
   const q = search.trim().toLowerCase()
-  const PAID = new Set(['paid', 'boarded', 'checked_in'])
+  const PAID = new Set(PAID_STATUSES)
   let filtered = q
     ? passengers.filter((p) => [p.full_name, p.national_id, p.phone, p.seat_no, p.boarding_point]
         .filter(Boolean).join(' ').toLowerCase().includes(q))
