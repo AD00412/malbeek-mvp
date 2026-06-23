@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../app/useAuth'
 import BottomSheet from './BottomSheet'
-import Icon from './Icon'
 import { fmtDateTime } from '../lib/format'
 import { translateRpcError } from '../lib/rpcErrors'
 

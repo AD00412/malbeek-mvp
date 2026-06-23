@@ -6,7 +6,7 @@ import { translateRpcError } from '../../lib/rpcErrors'
 import { cleanName } from '../../lib/format'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
-import { ScreenLoader, homeForRole } from '../../app/RequireAuth'
+import { ScreenLoader } from '../../app/RequireAuth'
 
 const ROLE_AR = { manager: 'مشرف', staff: 'موظف' }
 

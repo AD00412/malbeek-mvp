@@ -5,7 +5,6 @@ import { useAuth } from '../../app/useAuth'
 import { translateRpcError } from '../../lib/rpcErrors'
 import { cleanName, fmtDateTime } from '../../lib/format'
 import AuthShell from './AuthShell'
-import Icon from '../../components/Icon'
 import { ScreenLoader } from '../../app/RequireAuth'
 
 const ROLE_AR = {

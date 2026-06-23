@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { tableToDocx } from '../lib/docx'
 import { useUI } from '../lib/useUI'
