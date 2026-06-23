@@ -116,7 +116,9 @@ Deno.serve(async (req) => {
   //    صغيرٍ (TOLERANCE) لأخطاء التقريب بين هللاتٍ وريالاتٍ ورسوم تحويلٍ صغيرة.
   //    لو الدَفعةُ أقلّ بشكلٍ ملحوظ → نَسجّلها كـ 'underpaid' ولا نُعلّم الراكبَ
   //    'paid' — يُراجعها المالكُ يدويًّا في سجلّ المدفوعات بدل أن يَخسر فرقًا صامتًا.
-  const AMOUNT_TOLERANCE = 1   // ١ ريال — يَسمح بالتقريب
+  //    قَيمةُ السماح من env (PAYMENT_TOLERANCE_SAR) — افتراضيّ ٥ ريال يَستوعب
+  //    رسوم تَحويلٍ نَموذجيّة. اضبطها حسبَ اتّفاقك مع المزوّد.
+  const AMOUNT_TOLERANCE = Math.max(0, Number(Deno.env.get('PAYMENT_TOLERANCE_SAR') ?? '5') || 5)
   let expected: number | null = null
   if (pax) {
     expected = typeof pax.amount === 'number' ? pax.amount : null
