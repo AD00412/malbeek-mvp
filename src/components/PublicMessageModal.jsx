@@ -74,7 +74,9 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
       if (!OK_TYPES.includes(f.type)) { setErr('الصيغ المسموحة: PNG · JPG · WebP · PDF'); continue }
       if (f.size > MAX_BYTES) { setErr(`«${f.name}» أكبر من ٥ ميغابايت.`); continue }
       const previewUrl = f.type.startsWith('image/') ? URL.createObjectURL(f) : ''
-      accepted.push({ file: f, previewUrl, type: f.type })
+      // مفتاحٌ ثابتٌ للقائمة (name+size+lastModified) — يمنع ربط المعاينات خطأً
+      // عند حذف ملفٍّ وسطيّ (بدل key=index).
+      accepted.push({ file: f, previewUrl, type: f.type, _key: `${f.name}-${f.size}-${f.lastModified}` })
     }
     if (accepted.length) setFiles((prev) => [...prev, ...accepted])
   }, [files])
@@ -305,7 +307,7 @@ export default function PublicMessageModal({ open, mode = 'contact', onClose }) 
                   {files.length > 0 && (
                     <ul className="pmsg-files">
                       {files.map((f, i) => (
-                        <li key={i}>
+                        <li key={f._key || i}>
                           {f.previewUrl
                             ? <img src={f.previewUrl} alt="" className="pmsg-file-thumb" />
                             : <span className="pmsg-file-thumb pdf"><Icon name="manifest" size={18} /></span>}

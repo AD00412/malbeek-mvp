@@ -256,7 +256,7 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
           {ratingSummary.recent.length > 0 && (
             <div className="rating-reviews">
               {ratingSummary.recent.map((r, i) => (
-                <div className="rating-review" key={i}>
+                <div className="rating-review" key={r.created_at || i}>
                   <RatingStars value={r.stars} size={14} />
                   <p>{r.comment}</p>
                 </div>
