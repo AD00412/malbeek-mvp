@@ -28,7 +28,13 @@ Deno.serve(async (req) => {
     const { data: subs, error } = await supabase.from('push_subscriptions').select('endpoint, p256dh, auth').eq('user_id', user_id)
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } })
 
-    const payload = JSON.stringify({ title: title || 'ملبّيك', body: body || '', url: url || '/', tag: 'mlk-test' })
+    // نموذج العرض (مثل Zid): العنوان = «ملبّيك» دائمًا، والجسم = محتوًى هادفٌ
+    // **غير فارغٍ أبدًا**. ★ جسمٌ فارغٌ يجعل iOS يُلحق «from <الموقع>» — لذا نضمن
+    // جسمًا غير فارغ (نستعمل العنوان الوارد إن لم يصل جسم، ثم نصًّا افتراضيًّا).
+    const safeBody = (body && String(body).trim()) ||
+      (title && String(title).trim()) ||
+      'لديك تحديثٌ جديد في ملبّيك. افتحه للتفاصيل.'
+    const payload = JSON.stringify({ title: 'ملبّيك', body: safeBody, url: url || '/', tag: 'mlk' })
     let sent = 0, failed = 0, removed = 0
     for (const s of subs || []) {
       try {
