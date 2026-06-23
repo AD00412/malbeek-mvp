@@ -92,24 +92,17 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
       }
       const topBoarding = [...bp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
 
-      // التحصيل الكلي (كل الأوقات): مجموع مبالغ المدفوعين
-      const { data: payRows } = await trace('analytics:payments', () => supabase
-        .from('passengers').select('amount')
-        .eq('subscriber_id', subscriberId)
-        .in('status', ['paid', 'boarded', 'checked_in']))
+      // التحصيل والاستردادات: تجميعٌ خادميٌّ واحد (RPC) بدل جلب كل صفوف amount —
+      // يحافظ على صحّة المجموع ويمنع الجلب المفتوح.
+      const { data: fin } = await trace('analytics:finance', () => supabase
+        .rpc('subscriber_finance_totals', { p_sub: subscriberId }))
       if (cancel) return
-      const collected = (payRows ?? []).reduce((s, r) => s + (Number(r.amount) || 0), 0)
+      const f = (fin && fin[0]) || { collected: 0, refunded: 0, refund_pending: 0, refund_pending_count: 0 }
+      const collected = Number(f.collected) || 0
+      const refunded = Number(f.refunded) || 0
+      const refundPending = Number(f.refund_pending) || 0
 
-      // الاستردادات (المرحلة ٧): المعاد فعلا + المعلق بانتظار المعالجة
-      const { data: refRows } = await trace('analytics:refunds', () => supabase
-        .from('refunds').select('amount, status')
-        .eq('subscriber_id', subscriberId).in('status', ['requested', 'refunded']))
-      if (cancel) return
-      const refunded = (refRows ?? []).filter((r) => r.status === 'refunded').reduce((s, r) => s + (Number(r.amount) || 0), 0)
-      const pend = (refRows ?? []).filter((r) => r.status === 'requested')
-      const refundPending = pend.reduce((s, r) => s + (Number(r.amount) || 0), 0)
-
-      setDetail({ daily, topBoarding, collected, refunded, refundPending, refundPendingCount: pend.length })
+      setDetail({ daily, topBoarding, collected, refunded, refundPending, refundPendingCount: f.refund_pending_count || 0 })
     })()
     return () => { cancel = true }
   }, [subscriberId])
