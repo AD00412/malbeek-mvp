@@ -5,6 +5,17 @@ import { useUI } from '../lib/useUI'
 import Icon from './Icon'
 import { SkeletonList } from './Skeleton'
 import BottomSheet from './BottomSheet'
+import ImageUpload from './ImageUpload'
+
+/** يطبّع رابط/إحداثيات الموقع إلى رابط خرائط قابل للنقر. */
+function toMapsHref(v) {
+  const s = (v || '').trim()
+  if (!s) return null
+  if (/^https?:\/\//i.test(s)) return s                       // رابط خرائط جاهز
+  if (/^-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+$/.test(s))         // إحداثيات «lat,lng»
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.replace(/\s+/g, ''))}`
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s)}` // اسم/عنوان
+}
 
 const ROOM_GENDER = [
   { v: 'mixed',  t: 'مختلطة (عائلات)' },
@@ -150,6 +161,18 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
                   {activeHotel.check_in && <>الدخول: {fmtDate(activeHotel.check_in)} </>}
                   {activeHotel.check_out && <> · الخروج: {fmtDate(activeHotel.check_out)}</>}
                 </div>
+
+                {toMapsHref(activeHotel.map_url) && (
+                  <a className="field-link" style={{ marginTop: 8 }} href={toMapsHref(activeHotel.map_url)} target="_blank" rel="noopener noreferrer">
+                    <Icon name="location" size={14} /> افتح موقع الفندق على الخرائط
+                  </a>
+                )}
+                {activeHotel.photo_url && (
+                  <figure className="bus-photo-card" style={{ marginTop: 10 }}>
+                    <img src={activeHotel.photo_url} alt={`صورة ${activeHotel.name}`} loading="lazy" />
+                    <figcaption><Icon name="bed" size={14} /> {activeHotel.name}</figcaption>
+                  </figure>
+                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 8 }}>
                   <span className="sec-label" style={{ flex: 1, margin: 0 }}>الغرف ({hotelRooms.length})</span>
@@ -338,6 +361,8 @@ function HotelFormSheet({ open, hotel, tripId, subscriberId, onClose, onSaved })
     check_out: hotel?.check_out ?? '',
     distance_text: hotel?.distance_text ?? '',
     notes: hotel?.notes ?? '',
+    map_url: hotel?.map_url ?? '',
+    photo_url: hotel?.photo_url ?? '',
   })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -354,6 +379,8 @@ function HotelFormSheet({ open, hotel, tripId, subscriberId, onClose, onSaved })
       check_out: f.check_out || null,
       distance_text: f.distance_text.trim() || null,
       notes: f.notes.trim() || null,
+      map_url: f.map_url.trim() || null,
+      photo_url: f.photo_url || null,
     }
     const { error } = isEdit
       ? await supabase.from('hotels').update(payload).eq('id', hotel.id)
@@ -402,6 +429,24 @@ function HotelFormSheet({ open, hotel, tripId, subscriberId, onClose, onSaved })
             <input type="date" value={f.check_out} onChange={(e) => set('check_out', e.target.value)} />
           </div>
         </div>
+        <div className="field ltr">
+          <label>موقع الفندق (رابط خرائط أو إحداثيات أو عنوان)</label>
+          <input type="text" inputMode="url" placeholder="https://maps.app.goo.gl/…  أو  21.4225, 39.8262"
+                 value={f.map_url} onChange={(e) => set('map_url', e.target.value)} />
+          {toMapsHref(f.map_url) && (
+            <a className="field-link" href={toMapsHref(f.map_url)} target="_blank" rel="noopener noreferrer">
+              <Icon name="location" size={13} /> معاينة الموقع على الخرائط
+            </a>
+          )}
+        </div>
+        <ImageUpload
+          subscriberId={subscriberId}
+          value={f.photo_url}
+          onChange={(v) => set('photo_url', v)}
+          slot={`hotel-${hotel?.id || 'new'}`}
+          label="صورة الفندق (اختياري)"
+          hint="تطمئن المعتمر وتوضّح مستوى السكن."
+        />
         <div className="field">
           <label>ملاحظات (اختياري)</label>
           <textarea value={f.notes} onChange={(e) => set('notes', e.target.value)} />
