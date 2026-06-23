@@ -1021,6 +1021,7 @@ function TripsView({ trips, allCount, sub, loading, paxByTrip, filter, setFilter
 function TripCard({ trip, booked = 0, stats, onManage, onEdit, onRemove }) {
   const cap = Number(trip.capacity) || 0
   const pct = cap > 0 ? Math.min(100, Math.round((booked / cap) * 100)) : 0
+  const over = cap > 0 && booked > cap            // تجاوز السعة (حجوزات أكثر من المقاعد)
   const status = trip.status || 'draft'
   const tagCls = STATUS_TAG[status] || 'muted'
   const tagLbl = STATUS_FUTURE_LABEL[status] || STATUS_LABEL[status]
@@ -1052,8 +1053,12 @@ function TripCard({ trip, booked = 0, stats, onManage, onEdit, onRemove }) {
         )}
       </div>
 
-      <div className="occupancy">
-        <div className="lbl">إشغال الحافلة <span className="pct">{booked}/{cap || '—'}</span></div>
+      <div className={`occupancy${over ? ' over' : ''}`}>
+        <div className="lbl">
+          إشغال الحافلة
+          {over && <span className="over-chip">تجاوز السعة +{booked - cap}</span>}
+          <span className="pct">{booked}/{cap || '—'}</span>
+        </div>
         <div className="bar"><span style={{ width: pct + '%' }} /></div>
       </div>
 

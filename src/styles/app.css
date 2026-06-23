@@ -503,6 +503,11 @@
 .trip-card .occupancy{display:flex;flex-direction:column;gap:6px}
 .trip-card .occupancy .lbl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--cr-200)}
 .trip-card .occupancy .lbl .pct{margin-inline-start:auto;color:var(--ok-ink);font-weight:700}
+/* تجاوز السعة: حجوزات أكثر من المقاعد — تنبيه بصريّ (لون تحذير) */
+.trip-card .occupancy.over .lbl .pct{color:var(--warn-ink)}
+.trip-card .occupancy.over .bar > span{background:var(--warn)}
+.trip-card .occupancy .over-chip{font-size:10.5px;font-weight:700;line-height:1;padding:3px 8px;border-radius:var(--r-pill);
+  background:rgba(251,191,36,.16);color:var(--warn-ink);white-space:nowrap}
 .bar{height:6px;border-radius:var(--r-pill);background:rgba(255,255,255,.06);overflow:hidden}
 .bar > span{display:block;height:100%;background:var(--grad-em);border-radius:var(--r-pill);transition:width .3s}
 .trip-card .ministats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
