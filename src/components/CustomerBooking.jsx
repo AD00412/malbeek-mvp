@@ -482,7 +482,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                     <input type="checkbox" checked={isFamily} onChange={(e) => {
                       setIsFamily(e.target.checked)
                       if (e.target.checked && familyMembers.length === 0) {
-                        setFamilyMembers([{ name: '', relation: '', national_id: '', phone: '', gender: 'male' }])
+                        setFamilyMembers([{ _key: (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)), name: '', relation: '', national_id: '', phone: '', gender: 'male' }])
                       }
                     }} /> ضمن عائلة
                   </label>
@@ -501,7 +501,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                       المقاعد تخصصها الحملة بعد الحجز.
                     </div>
                     {familyMembers.map((m, i) => (
-                      <div key={i} style={{ padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 8 }}>
+                      <div key={m._key || `idx-${i}`} style={{ padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, marginBottom: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                           <strong style={{ fontSize: 12.5, color: 'var(--em-500)' }}>الفرد {i + 1}</strong>
                           <span style={{ flex: 1 }} />
@@ -563,7 +563,7 @@ export default function CustomerBooking({ trip, sub, onClose, onBooked }) {
                       </div>
                     ))}
                     <button type="button"
-                            onClick={() => setFamilyMembers(prev => [...prev, { name: '', relation: '', national_id: '', phone: '', gender: 'male' }])}
+                            onClick={() => setFamilyMembers(prev => [...prev, { _key: (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)), name: '', relation: '', national_id: '', phone: '', gender: 'male' }])}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px',
                                      background: 'transparent', border: '1px dashed var(--em-500)', color: 'var(--em-500)',
                                      borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
