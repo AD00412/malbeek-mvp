@@ -15,6 +15,15 @@ const KIND_ICON = {
   low_occupancy: 'chart', trial_limit_hit: 'sparkle',
   new_subscriber: 'building', new_feedback: 'message', trip_changed: 'trips',
 }
+// تسميةٌ احتياطيّةٌ للعنوان حتى لا تظهر بطاقةٌ فارغةٌ أبدًا إن وصل صفٌّ بلا عنوان.
+const KIND_LABEL = {
+  new_booking: 'حجزٌ جديد', payment_pending: 'دفعةٌ بانتظار التأكيد', booking_canceled: 'إلغاء حجز',
+  feedback_reply: 'ردٌّ على رسالتك', trial_ending: 'تجربتك تقترب من الانتهاء', upgrade_request: 'طلب ترقية',
+  low_occupancy: 'إشغالٌ منخفض', trial_limit_hit: 'بلغت حدّ الباقة', new_subscriber: 'مشترك جديد',
+  new_feedback: 'رسالةٌ جديدة', trip_changed: 'تحديثٌ على رحلة', trip_reminder: 'تذكيرٌ برحلتك',
+  booking_paid: 'تأكّد دفع حجز', boarded: 'تسجيل صعود', checked_in: 'تمّ التسكين',
+}
+const notifTitle = (n) => (n.title && n.title.trim()) || KIND_LABEL[n.kind] || 'تنبيهٌ جديد'
 // إشعاراتٌ عاجلةٌ تُبرز بأولويّةٍ بصريّة (لون/شارة).
 const URGENT_KINDS = new Set(['payment_pending', 'booking_canceled', 'trial_ending', 'trial_limit_hit'])
 
@@ -255,7 +264,7 @@ export default function NotificationsBell({ onNavigate }) {
                           <div className="notif-main">
                             <div className="notif-title">
                               {urgent && <span className="notif-urgent-tag">عاجل</span>}
-                              {n.title}{!n.read_at && <span className="notif-dot" />}
+                              {notifTitle(n)}{!n.read_at && <span className="notif-dot" />}
                             </div>
                             {n.body && <div className="notif-body">{n.body}</div>}
                             <div className="notif-time">{fmt(n.created_at)}</div>

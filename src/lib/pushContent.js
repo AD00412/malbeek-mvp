@@ -1,7 +1,14 @@
 // محتوى الإشعارات الهادف + الروابط العميقة (deep-links) لكل نوع حدث.
-// يُستعمَل أماميًّا (showNotification) وكبنيةٍ للحمولة التي يرسلها الخادم
-// (edge function) عند وصول الحدث للمستخدم وهو خارج التطبيق.
-// لا تُستعمَل كلمةُ «from» إطلاقًا — عنوانٌ واضحٌ + جسمٌ هادف.
+// يُستعمَل أماميًّا (showNotification عبر الـSW) عند وصول حدثٍ والتطبيق مفتوح.
+//
+// نموذج العرض (مطابقٌ لتطبيقات مثل Zid):
+//   • العنوان = «ملبّيك» دائمًا (العلامة فقط — لا عنوانٌ حدثيٌّ في الترويسة).
+//   • الجسم  = سطرٌ هادفٌ حقيقيٌّ **غير فارغٍ أبدًا**.
+// ★ مهمّ: جسمٌ فارغٌ يجعل iOS يُلحق «from <الموقع>» تلقائيًّا في الإشعار —
+//   لذا نضمن جسمًا غير فارغٍ دائمًا، فتختفي كلمة «from» نهائيًّا.
+
+const BRAND = 'ملبّيك'
+const DEFAULT_BODY = 'لديك تحديثٌ جديد في ملبّيك. افتحه للتفاصيل.'
 
 const KIND = {
   // المشترك
@@ -24,17 +31,30 @@ const KIND = {
   checked_in:       { title: 'تمّ تسكينك',             url: '/customer?go=tickets' },
 }
 
+// يبني جسمًا هادفًا واحدًا من عنوان/جسم الصفّ دون تكرار (بعض الأنواع يكرّر
+// العنوان داخل الجسم). يُرجِع نصًّا غير فارغٍ دائمًا.
+function meaningfulBody(headline, detail) {
+  if (headline && detail) {
+    if (detail.includes(headline)) return detail        // الجسم يحوي العنوان أصلًا
+    if (headline.includes(detail)) return headline
+    return `${headline} — ${detail}`
+  }
+  return headline || detail || DEFAULT_BODY
+}
+
 /**
- * يبني محتوى الإشعار من صفّ notifications: عنوانٌ + جسمٌ + رابطٌ عميق.
- * يُفضّل عنوان/جسم القاعدة (هادفان بالفعل) ويُكمّل بالخريطة + يُلحق ref_trip.
+ * يبني محتوى الإشعار من صفّ notifications: عنوانٌ (العلامة) + جسمٌ هادفٌ + رابطٌ عميق.
  * @returns {{ title:string, body:string, url:string, tag:string }}
  */
 export function buildNotificationContent(row = {}) {
   const meta = KIND[row.kind] || {}
-  const title = (row.title && row.title.trim()) || meta.title || 'ملبّيك'
-  const body = (row.body && row.body.trim()) || ''
-  let url = meta.url || '/'
+  const headline = (row.title && row.title.trim()) || meta.title || ''
+  const detail = (row.body && row.body.trim()) || ''
+  const body = meaningfulBody(headline, detail)
+
+  let url = meta.url || (row.link && String(row.link)) || '/'
   if (row.ref_trip && url.includes('?')) url += `&trip=${row.ref_trip}`
   else if (row.ref_trip) url += `?trip=${row.ref_trip}`
-  return { title, body, url, tag: row.kind ? `mlk-${row.kind}` : 'mlk' }
+
+  return { title: BRAND, body, url, tag: row.kind ? `mlk-${row.kind}` : 'mlk' }
 }
