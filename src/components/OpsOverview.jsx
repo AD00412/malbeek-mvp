@@ -57,7 +57,12 @@ export default function OpsOverview({ sub, trips = [], onManage }) {
       const seat = p.price_at_booking != null ? Number(p.price_at_booking) : (t?.price != null ? Number(t.price) : 0)
       expected += seat
       if (PAID.includes(p.status)) collected += Number(p.amount) || 0
-      if (p.status in status) status[p.status]++
+      // عدّ تراكميّ مطابقٌ لـ buildPaxStats (المصدر القانونيّ): «مدفوع» = دفع فأكثر،
+      // «صعد» = صعد فأكثر — حتى لا يتعارض مع التحليلات/البطاقات/التقرير الماليّ.
+      if (p.status === 'registered') status.registered++
+      if (PAID.includes(p.status)) status.paid++
+      if (p.status === 'boarded' || p.status === 'checked_in') status.boarded++
+      if (p.status === 'checked_in') status.checked_in++
       if (p.seat_no) seated++
       if (p.room_id) roomed++
     }
