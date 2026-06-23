@@ -13,8 +13,19 @@ import { slugify, isValidSlug } from '../lib/slug'
  * يستخدم BottomSheet (آمن بعد إصلاح iOS) ليكون كثير المحتوى لكن منظما.
  */
 export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
-  const { profile, user, refreshProfile, role } = useAuth()
-  const { toast } = useUI()
+  const { profile, user, refreshProfile, role, signOut } = useAuth()
+  const { toast, confirm } = useUI()
+
+  // تسجيل خروجٍ بسيطٌ متاحٌ من الإعدادات لكل الأدوار — أساسيٌّ للمعتمر الذي
+  // لا درجَ جانبيًّا له (تبويباتٌ فقط)، فكان خروجه مدفونًا في «أمان الحساب».
+  async function doSignOut() {
+    const ok = await confirm({
+      title: 'تسجيل الخروج',
+      message: 'هل أنت متأكد؟ ستحتاج إلى الدخول مرة أخرى.',
+      confirmText: 'تسجيل الخروج',
+    })
+    if (ok) { onClose?.(); await signOut() }
+  }
   const [tab, setTab] = useState('profile')   // profile | org | brand
   const [busy, setBusy] = useState(false)
   const [securityOpen, setSecurityOpen] = useState(false)
@@ -158,6 +169,11 @@ export default function SettingsSheet({ open, onClose, sub, onSubChanged }) {
           {/* أمان الحساب — كلمة المرور، تأكيد البريد، المصادقة الثنائية، الجلسات */}
           <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => setSecurityOpen(true)}>
             <Icon name="settings" size={15} /> أمان الحساب
+          </button>
+
+          {/* تسجيل الخروج — متاحٌ مباشرةً من الإعدادات (أساسيٌّ للمعتمر بلا درج) */}
+          <button className="btn btn-ghost btn-block" style={{ marginTop: 10, color: 'var(--danger-ink)' }} onClick={doSignOut}>
+            <Icon name="logout" size={15} /> تسجيل الخروج
           </button>
         </div>
       )}
