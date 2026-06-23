@@ -134,8 +134,8 @@ export default function AdminDashboard({ subs, paid, trips, pax, collected, rece
         <section className="mlk-attn">
           <h2 className="mlk-h">تحتاج انتباهك</h2>
           <ul className="mlk-attn-list">
-            {attention.map((a, i) => (
-              <li key={i}>
+            {attention.map((a) => (
+              <li key={a.tab}>
                 <button type="button" className="mlk-attn-row" onClick={() => onTab?.(a.tab)}>
                   <span className="mlk-attn-count">{a.count}</span>
                   <span className="mlk-attn-label">{a.label}</span>
