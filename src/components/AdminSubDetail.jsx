@@ -57,7 +57,9 @@ export default function AdminSubDetail({ open, sub, onClose, onChanged }) {
       supabase.from('platform_audit_log').select('id, admin_name, admin_role, action, details, created_at')
         .eq('target_type', 'subscriber').eq('target_id', sub.id)
         .order('created_at', { ascending: false }).limit(20),
-      supabase.from('subscribers').select('id, admin_notes, suspended_at, suspended_reason, trial_extended_until, trial_trip_limit, contact_phone, plan, created_at')
+      // VIEW الموظّفين: تُقنّع admin_notes/suspended_reason/bank_* لغير الأدمن
+      // (الدعم لم يعد يقرأ جدول subscribers مباشرةً — أُسقطت سياسة is_staff).
+      supabase.from('v_subscriber_staff').select('id, admin_notes, suspended_at, suspended_reason, trial_extended_until, trial_trip_limit, contact_phone, plan, created_at')
         .eq('id', sub.id).maybeSingle(),
     ])
     setTrips(ts ?? [])
