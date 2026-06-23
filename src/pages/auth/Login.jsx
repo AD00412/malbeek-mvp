@@ -111,6 +111,10 @@ export default function Login() {
           </button>
         </div>
 
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: -4 }}>
+          <Link to="/forgot-password" className="auth-link-sm">نسيت كلمة المرور؟</Link>
+        </div>
+
         {err && <div className="alert err">{err}</div>}
 
         <button className="btn btn-em btn-block" type="submit" disabled={busy}>

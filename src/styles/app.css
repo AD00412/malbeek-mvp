@@ -67,6 +67,9 @@
 @media (max-width:420px){.auth-row{grid-template-columns:1fr}}
 .auth-footer-text,.auth-foot{text-align:center;font-size:13.5px;color:var(--cr-300);margin-top:20px}
 .auth-footer-text a,.auth-foot a{color:var(--em-500);font-weight:700}
+.auth-link-sm{font-size:13px;color:var(--em-500);font-weight:600;text-decoration:none;
+  padding:2px 4px;border-radius:6px;transition:color .15s}
+.auth-link-sm:hover,.auth-link-sm:focus-visible{color:var(--em-400);text-decoration:underline}
 .auth-powered{text-align:center;font-size:11px;color:var(--cr-300);letter-spacing:2px;
   text-transform:lowercase;margin-top:22px;opacity:.7}
 .checkbox-group{display:flex;align-items:center;gap:10px;flex-direction:row-reverse;justify-content:flex-end}
