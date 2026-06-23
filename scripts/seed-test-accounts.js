@@ -108,7 +108,7 @@ async function main() {
     const { error: limErr } = await db.from('subscribers').update({ trial_trip_limit: 10 }).eq('id', SUB_ID)
     if (limErr) {
       if (limErr.code === 'PGRST204' || limErr.code === '42703' || /trial_trip_limit|column.*not exist/i.test(limErr.message || '')) {
-        console.error('\n✗ العمود trial_trip_limit غير موجود (column does not exist) — طبّق APPLY_admin_trial_trip_limit.sql أوّلًا في SQL Editor، ثمّ أعِد التشغيل.')
+        console.error('\n✗ العمود trial_trip_limit غير موجود (column does not exist) — طبّق هجرة supabase/migrations/20260621000002_admin_trial_trip_limit.sql أوّلًا، ثمّ أعِد التشغيل.')
         process.exit(1)
       }
       throw limErr
