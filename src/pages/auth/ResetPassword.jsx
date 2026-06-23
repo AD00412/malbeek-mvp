@@ -33,7 +33,21 @@ export default function ResetPassword() {
   useEffect(() => {
     let cancelled = false
 
-    // تحقّقٌ مبدئيّ — قد تكون الجلسة قائمةً بالفعل عند تحميل الصفحة
+    // كشفُ المؤشّرات في الـ URL مبكّرًا — لو الرابط صحيح، نَنتظر أطول
+    const url = window.location.href
+    const hash = window.location.hash || ''
+    const search = window.location.search || ''
+    const hasRecoveryHint =
+      hash.includes('type=recovery') || hash.includes('access_token=') ||
+      search.includes('type=recovery') || search.includes('code=') ||
+      search.includes('token_hash=') || hash.includes('error=')
+    const hasError =
+      hash.includes('error=') || search.includes('error=')
+
+    // لو الرابط يَحمل error صريحًا من Supabase (مثل otp_expired) — اعرض رسالة فورًا
+    if (hasError) { setInvalid(true); setValidating(false); return }
+
+    // تحقّقٌ مبدئيّ — قد تكون الجلسة قائمةً بالفعل
     ;(async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (cancelled) return
@@ -43,21 +57,36 @@ export default function ResetPassword() {
         setTimeout(() => pwRef.current?.focus(), 50)
         return
       }
-      // ننتظر قليلًا حدث PASSWORD_RECOVERY (Supabase قد يحتاج لحظات لاكتشاف التوكن)
-      setTimeout(() => {
+      // مهلة استرداد: ٤ ثوانٍ لو في hint، ٢ لو ما في (iOS in-app browser أبطأ)
+      const waitMs = hasRecoveryHint ? 4000 : 2000
+      setTimeout(async () => {
         if (cancelled) return
-        // بعد المهلة، إن لم نَستلم حدث الاسترداد ولا session — الرابط منتهٍ/غير صالح
-        supabase.auth.getSession().then(({ data: { session: s } }) => {
-          if (cancelled) return
-          if (s) { setReady(true) } else { setInvalid(true) }
-          setValidating(false)
-        })
-      }, 1500)
+        const { data: { session: s } } = await supabase.auth.getSession()
+        if (cancelled) return
+        if (s) {
+          setReady(true)
+        } else {
+          // محاولةٌ أخيرة: لو في token_hash نتولّى التَّبادل يدويًّا (PKCE flow الجديد)
+          const params = new URLSearchParams(search)
+          const tokenHash = params.get('token_hash')
+          const type = params.get('type')
+          if (tokenHash && (type === 'recovery' || !type)) {
+            const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+            if (!cancelled) {
+              if (error) setInvalid(true)
+              else setReady(true)
+            }
+          } else {
+            setInvalid(true)
+          }
+        }
+        if (!cancelled) setValidating(false)
+      }, waitMs)
     })()
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
-      if (event === 'PASSWORD_RECOVERY' && session) {
+      if ((event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') && session) {
         setReady(true)
         setInvalid(false)
         setValidating(false)
@@ -66,6 +95,7 @@ export default function ResetPassword() {
     })
 
     return () => { cancelled = true; sub?.subscription?.unsubscribe?.() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSubmit(e) {

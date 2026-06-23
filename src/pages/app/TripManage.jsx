@@ -759,7 +759,7 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
       <RefundsSheet open={refundsOpen} tripId={trip?.id} onClose={() => setRefundsOpen(false)} />
       <BottomSheet open={familyPayOpen} onClose={() => setFamilyPayOpen(false)} title="دفعات العائلات الجماعية">
         {familyPayOpen && (
-          <FamilyPaymentsInbox sub={sub} trip={trip} onChanged={load} />
+          <FamilyPaymentsInbox sub={sub} trip={trip} onChanged={loadPassengers} />
         )}
       </BottomSheet>
 
