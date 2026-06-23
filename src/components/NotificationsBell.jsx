@@ -14,6 +14,7 @@ const KIND_ICON = {
   feedback_reply: 'message', trial_ending: 'sparkle', upgrade_request: 'sparkle',
   low_occupancy: 'chart', trial_limit_hit: 'sparkle',
   new_subscriber: 'building', new_feedback: 'message', trip_changed: 'trips',
+  booking_paid: 'payments', boarded: 'bus', checked_in: 'bed', trip_reminder: 'calendar',
 }
 // تسميةٌ احتياطيّةٌ للعنوان حتى لا تظهر بطاقةٌ فارغةٌ أبدًا إن وصل صفٌّ بلا عنوان.
 const KIND_LABEL = {
