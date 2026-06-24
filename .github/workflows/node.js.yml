@@ -29,5 +29,8 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
+    # ★ حارس المراجع غير المعرّفة: ESLint (no-undef='error') يكسر الـPR قبل الدمج
+    #   إن وُجد أيّ متغيّر/مرجعٍ غير معرّف (مثل crash الإنتاج 'load').
+    - run: npm run lint
     - run: npm run build --if-present
     - run: npm test --if-present

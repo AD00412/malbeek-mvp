@@ -27,6 +27,10 @@ jobs:
       - name: تثبيت الاعتماديّات
         run: npm ci
 
+      # ★ حارس قبل الإنتاج: يكسر النشر إن وُجد مرجعٌ غير معرّف (no-undef) أو خطأ lint.
+      - name: فحص ESLint (no-undef)
+        run: npm run lint
+
       - name: بناء النسخة الإنتاجيّة
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
