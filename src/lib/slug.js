@@ -6,7 +6,7 @@
 const WORD_MAP = {
   حملة: 'hamla', الحملة: 'hamla', حملتي: 'hamlati',
   رحلة: 'rihla', الرحلة: 'rihla', رحلات: 'rihlat',
-  عمرة: 'omra', العمرة: 'omra', عمرة: 'omra',
+  عمرة: 'omra', العمرة: 'omra',
   حج: 'hajj', الحج: 'hajj',
   محمد: 'mohammed', أحمد: 'ahmad', احمد: 'ahmad',
   خالد: 'khaled', خالدية: 'khaledia',
@@ -39,8 +39,11 @@ const LETTER_MAP = {
   د:'d',ذ:'th',ر:'r',ز:'z',س:'s',ش:'sh',ص:'s',ض:'d',ط:'t',ظ:'z',
   ع:'',غ:'gh',ف:'f',ق:'q',ك:'k',ل:'l',م:'m',ن:'n',ه:'h',و:'w',ي:'y',
   ى:'a',ة:'a',ؤ:'w',ئ:'y',
-  // الحركات (diacritics) — مفاتيح مقتبسة لأنها رموز مكونة من نقاط فوق/تحت لا حروف:
-  '':'','':'','':'','':'a','':'u','':'i','':'','':'',
+  // الحركات (diacritics) — بترميز \u صريح كي لا تُفقَد عند حفظ الملفّ (كانت ضاعت
+  // سابقاً فصارت مفاتيحَ فارغةً ميتة). فتحة→a ضمّة→u كسرة→i، والباقي يُحذف.
+  'ً': '', 'ٌ': '', 'ٍ': '',        // تنوين فتح/ضمّ/كسر
+  'َ': 'a', 'ُ': 'u', 'ِ': 'i',      // فتحة/ضمّة/كسرة
+  'ّ': '', 'ْ': '',                       // شدّة/سكون
 }
 
 function transliterateLetters(word) {
@@ -82,7 +85,7 @@ export function slugify(input) {
   const s = String(input || '').trim()
   if (!s) return ''
   // قسم على المسافات والشرط والفواصل
-  const tokens = s.split(/[\s\-_,،.\/]+/).filter(Boolean)
+  const tokens = s.split(/[\s\-_,،./]+/).filter(Boolean)
   const out = []
   for (const t of tokens) {
     // إن كانت لاتينية/رقما، أبقها لكن صغرها
