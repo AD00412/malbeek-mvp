@@ -150,13 +150,13 @@ function BusManifest({
   const showStamp = settings?.show_stamp !== false
   const showSig = settings?.show_signature !== false
 
-  const carrierCompany = (settings?.carrier_company || sub?.carrier_company || sub?.org_name || '').trim() || '—'
-  const driver1Name  = settings?.driver1_name  || trip?.driver_name  || ''
-  const driver1Phone = settings?.driver1_phone || trip?.driver_phone || ''
-  const driver2Name  = settings?.driver2_name  || trip?.driver2_name  || trip?.assistant_name  || ''
-  const driver2Phone = settings?.driver2_phone || trip?.driver2_phone || trip?.assistant_phone || ''
-  const plateVal     = settings?.plate         || busPlate || '—'
-  const signerName   = settings?.signer_name   || ''
+  const carrierCompany = (sub?.carrier_company || sub?.org_name || '').trim() || '—'
+  const driver1Name  = trip?.driver_name  || ''
+  const driver1Phone = trip?.driver_phone || ''
+  const driver2Name  = trip?.driver2_name  || trip?.assistant_name  || ''
+  const driver2Phone = trip?.driver2_phone || trip?.assistant_phone || ''
+  const plateVal     = busPlate || '—'
+  const signerName   = settings?.signer_name || ''
 
   const hasReturn = !!trip?.return_at
   const route = buildRoute(trip?.route_from, trip?.route_to, hasReturn)

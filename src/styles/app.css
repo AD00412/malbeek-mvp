@@ -941,17 +941,16 @@
   line-height:1}
 .rs-toggle-label{font-size:13px;color:var(--cr-100);line-height:1.3;flex:1}
 .rs-toggle-row{padding:10px 12px}
-.rs-fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.rs-field{display:flex;flex-direction:column;gap:4px}
-.rs-field label{font-size:11.5px;color:var(--cr-200);font-weight:600}
-.rs-field input{padding:8px 10px;border-radius:8px;border:1px solid var(--line);
-  background:var(--surface);color:var(--cr-50);font-family:var(--font-sans);font-size:13px;
-  min-width:0;width:100%}
-.rs-field input:focus{outline:none;border-color:var(--em-500)}
+.rs-signer-field{display:flex;flex-direction:column;gap:4px;margin-top:8px;padding:10px 12px;background:var(--surface-2);border-radius:8px}
+.rs-signer-field label{font-size:11.5px;color:var(--cr-200);font-weight:600}
+.rs-signer-field input{padding:8px 10px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface);color:var(--cr-50);font-family:var(--font-sans);font-size:13px;width:100%}
+.rs-signer-field input:focus{outline:none;border-color:var(--em-500)}
+.rs-hint{font-size:11px;color:var(--cr-300);margin-top:10px;padding:8px 10px;
+  background:var(--surface-2);border-radius:6px;border-right:3px solid var(--em-600)}
 .rs-actions{display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--line)}
 @media(max-width:600px){
   .rs-cols-grid{grid-template-columns:1fr}
-  .rs-fields{grid-template-columns:1fr}
 }
 
 /* ============================================================

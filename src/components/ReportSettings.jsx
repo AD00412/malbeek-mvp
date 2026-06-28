@@ -17,12 +17,6 @@ const DEFAULT_SETTINGS = {
   show_summary: true,
   show_stamp: true,
   show_signature: true,
-  carrier_company: '',
-  driver1_name: '',
-  driver1_phone: '',
-  driver2_name: '',
-  driver2_phone: '',
-  plate: '',
   signer_name: '',
 }
 
@@ -118,40 +112,19 @@ export default function ReportSettings({ sub, settings: initialSettings, onSave,
               <span className="rs-toggle-label">{label}</span>
             </label>
           ))}
-        </section>
-
-        <section className="rs-section">
-          <div className="rs-section-title">بيانات الناقل (تعبئة مرة وحدة)</div>
-          <div className="rs-fields">
-            <div className="rs-field">
-              <label>الشركة الناقلة</label>
-              <input value={s.carrier_company} onChange={(e) => setField('carrier_company', e.target.value)} placeholder={sub?.carrier_company || sub?.org_name || 'اسم الشركة'} />
+          {s.show_signature !== false && (
+            <div className="rs-field rs-signer-field">
+              <label>اسم الموقّع</label>
+              <input
+                value={s.signer_name}
+                onChange={(e) => setField('signer_name', e.target.value)}
+                placeholder="اسم المسؤول للتوقيع"
+              />
             </div>
-            <div className="rs-field">
-              <label>السائق ١ — الاسم</label>
-              <input value={s.driver1_name} onChange={(e) => setField('driver1_name', e.target.value)} placeholder="اسم السائق الأول" />
-            </div>
-            <div className="rs-field">
-              <label>السائق ١ — الجوال</label>
-              <input value={s.driver1_phone} onChange={(e) => setField('driver1_phone', e.target.value)} dir="ltr" placeholder="05xxxxxxxx" />
-            </div>
-            <div className="rs-field">
-              <label>السائق ٢ — الاسم</label>
-              <input value={s.driver2_name} onChange={(e) => setField('driver2_name', e.target.value)} placeholder="اسم السائق الثاني (اختياري)" />
-            </div>
-            <div className="rs-field">
-              <label>السائق ٢ — الجوال</label>
-              <input value={s.driver2_phone} onChange={(e) => setField('driver2_phone', e.target.value)} dir="ltr" placeholder="05xxxxxxxx" />
-            </div>
-            <div className="rs-field">
-              <label>لوحة الباص</label>
-              <input value={s.plate} onChange={(e) => setField('plate', e.target.value)} dir="ltr" placeholder="XXX-0000" />
-            </div>
-            <div className="rs-field">
-              <label>اسم الموقّع (المسؤول)</label>
-              <input value={s.signer_name} onChange={(e) => setField('signer_name', e.target.value)} placeholder="اسم المسؤول للتوقيع" />
-            </div>
-          </div>
+          )}
+          <p className="rs-hint">
+            بيانات الناقل والسائقين واللوحة تُعدَّل من محرّر الرحلة — الكشف يقرأها تلقائياً.
+          </p>
         </section>
 
         <div className="rs-actions">

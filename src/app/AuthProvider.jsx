@@ -21,7 +21,7 @@ async function prefetchDashboard(profile, userId) {
       if (getCached(key)) return            // محدث مسبقا — لا داعي
       const { data: managedId } = await supabase.rpc('my_managed_subscriber_id')
       if (!managedId) return                 // مالك جديد بلا حملة — تتولى الصفحة الإنشاء
-      const subCols = 'id, owner_id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url, carrier_company, created_at'
+      const subCols = 'id, owner_id, org_name, slug, plan, trial_ends_at, license_no, contact_phone, stamp_text, stamp_url, logo_url, store_url, carrier_company, report_settings, created_at'
       const [subRes, tripsRes, paxRes] = await Promise.all([
         supabase.from('subscribers').select(subCols).eq('id', managedId).maybeSingle(),
         supabase.from('trips').select('id, title, route_from, route_to, depart_at, return_at, capacity, bus_label, boarding_point, status, notes, seating_policy, bus_rows, bus_back_row, price')
