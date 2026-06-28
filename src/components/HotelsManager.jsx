@@ -76,15 +76,26 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
 
   async function removeHotel(h) {
     if (!(await confirm({ title: 'حذف فندق', message: `حذف فندق «${h.name}» وكل غرفه؟ سيلغى إسناد ساكنيه.`, confirmText: 'حذف', danger: true }))) return
-    const { error } = await supabase.from('hotels').delete().eq('id', h.id)
+    // .select() يكشف الحذف الصامت: لو RLS منع الحذف يرجع ٠ صفّ بلا خطأ.
+    const { data: del, error } = await supabase.from('hotels').delete().eq('id', h.id).select('id')
     if (error) { setErr(translateRpcError(error)); return }
+    if (!del || del.length === 0) {
+      setErr('تعذّر حذف الفندق — قد لا تملك الصلاحية أو حُذف مسبقًا. حدّث الصفحة، وإن تكرّر تواصل مع الدعم.')
+      return
+    }
+    setErr('')
     toast('تم حذف الفندق', { type: 'success' })
     onChanged?.(); load()
   }
   async function removeRoom(r) {
     if (!(await confirm({ title: 'حذف غرفة', message: `حذف غرفة ${r.room_number}؟`, confirmText: 'حذف', danger: true }))) return
-    const { error } = await supabase.from('hotel_rooms').delete().eq('id', r.id)
+    const { data: del, error } = await supabase.from('hotel_rooms').delete().eq('id', r.id).select('id')
     if (error) { setErr(translateRpcError(error)); return }
+    if (!del || del.length === 0) {
+      setErr('تعذّر حذف الغرفة — قد لا تملك الصلاحية أو حُذفت مسبقًا. حدّث الصفحة.')
+      return
+    }
+    setErr('')
     toast('تم حذف الغرفة', { type: 'success' })
     onChanged?.(); load()
   }
