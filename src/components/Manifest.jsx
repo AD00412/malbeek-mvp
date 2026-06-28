@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Icon from './Icon'
 import { busName } from '../lib/buses'
 import ReportSettings from './ReportSettings'
@@ -405,7 +406,7 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
 
   const showSummary = settings?.show_summary !== false
 
-  return (
+  return createPortal(
     <div className="manifest-overlay">
       <div className="manifest-toolbar no-print">
         <button className="btn btn-ghost btn-sm mf-btn" onClick={onClose} aria-label="رجوع">
@@ -466,6 +467,7 @@ export default function Manifest({ trip, sub, passengers = [], buses = [], onClo
           onClose={() => setSettingsOpen(false)}
         />
       )}
-    </div>
+    </div>,
+    document.body
   )
 }

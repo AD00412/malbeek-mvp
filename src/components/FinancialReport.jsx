@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 import { PAID_STATUSES } from '../lib/passengerStatus'
@@ -118,12 +119,14 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
     return { expected, collected, outstanding, net }
   }, [tripRows, refunds])
 
+  const hasPricing = trips.some(t => t.price != null && Number(t.price) > 0)
+
   const today = new Date()
   const docRef = buildDocRef(sub?.id, today)
 
   function handlePrint() { window.print() }
 
-  return (
+  return createPortal(
     <div className="manifest-overlay">
       <div className="manifest-toolbar no-print">
         <button className="btn btn-ghost btn-sm mf-btn" onClick={onClose} aria-label="رجوع">
@@ -195,6 +198,11 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
           {refunds.pending > 0 && (
             <div className="fr-alert">
               ⚠️ {refunds.count} طلب استرداد بانتظار المعالجة — بمبلغ {money(refunds.pending)} ﷼
+            </div>
+          )}
+          {!loading && !hasPricing && totals.collected === 0 && trips.length > 0 && (
+            <div className="fr-free-notice">
+              🎫 مقاعد مجانية — لم يُحدَّد سعر لأي رحلة. يعرض التقرير بيانات التسجيل فقط.
             </div>
           )}
 
@@ -277,6 +285,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
           </footer>
         </article>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
