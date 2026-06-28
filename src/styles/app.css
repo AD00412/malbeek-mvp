@@ -811,8 +811,7 @@
 .mf-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
   margin-top:auto;padding-top:2mm;border-top:0.5pt dashed #b9c6bf;
   flex-shrink:0}
-.mf-note{font-size:8pt;color:#3a4a43;line-height:1.4;flex:1;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mf-note{font-size:8pt;color:#3a4a43;line-height:1.4;flex:1;overflow-wrap:anywhere}
 .mf-stamp{flex:none}
 .mf-stamp-e{display:inline-flex;align-items:center;gap:6px;border:1.2pt solid #0b5c43;color:#0b5c43;
   border-radius:5px;padding:2mm 4mm;font-family:var(--font-display);font-weight:700;
@@ -841,6 +840,119 @@
 .fr-table tbody tr:nth-child(even){background:#fafaf6}
 .fr-totals{background:#0b3a2c !important;color:#fbf7ee !important}
 .fr-totals td{background:#0b3a2c !important;color:#fbf7ee !important;border-top:0.8pt solid #0b5c43 !important;padding:1.5mm 1mm !important}
+.fr-collected{color:#0b5c43 !important;font-weight:700 !important}
+.fr-loading{opacity:.5;pointer-events:none}
+.fr-kpi-skeleton{background:linear-gradient(90deg,#e8f0ec 25%,#f4f8f5 50%,#e8f0ec 75%);
+  background-size:200% 100%;animation:mf-skel 1.4s infinite linear;min-height:22mm;border-radius:6px}
+@keyframes mf-skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ============================================================
+   شريط الملخّص + كروت الجوال + تجميع مواقع الركوب + الختم الدائري
+   ============================================================ */
+
+/* شريط ملخّص الكشف (فوق الكشوفات) */
+.mf-summary{display:flex;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:rgba(10,15,13,.88);color:#fff;flex-shrink:0;
+  padding:6px max(14px, env(safe-area-inset-right), env(safe-area-inset-left));
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);white-space:nowrap}
+.mf-sum-item{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 10px;min-width:56px}
+.mf-sum-sep{width:1px;height:28px;background:rgba(255,255,255,.15);flex-shrink:0;margin:0 2px}
+.mf-sum-n{font-family:var(--font-display);font-weight:900;font-size:14px;color:#fff;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.mf-sum-l{font-size:10px;color:rgba(255,255,255,.65);line-height:1.2}
+.mf-sum-total .mf-sum-n{color:#6dd5a8;font-size:16px}
+.mf-sum-st{color:#a8d8c0}
+
+/* صف رأس المجموعة داخل الجدول */
+.mf-group-row{background:#e8f3ed !important}
+.mf-group-row td{padding:1.8mm 3mm !important;border-bottom:1pt solid #0b5c43 !important}
+.mf-group-bp{font-family:var(--font-display);font-weight:800;font-size:9.5pt;color:#0b3a2c;margin-inline-end:6px}
+.mf-group-count{font-size:8pt;color:#5a6b62;font-weight:600}
+
+/* جدول الطباعة: مرئي على الكمبيوتر + الطباعة، مخفي على الجوال */
+.mf-print-table{display:table;width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt;flex:1}
+.mf-print-table thead th{background:#0b5c43;color:#fff;font-family:var(--font-display);font-weight:700;
+  padding:1.5mm 1.2mm;text-align:center;border:0.5pt solid #0b5c43;white-space:normal;word-break:keep-all}
+.mf-print-table tbody td{padding:1.1mm 1.2mm;border:0.5pt solid #cdd8d2;text-align:center;color:#0b1a14;
+  overflow:hidden;text-overflow:ellipsis;white-space:normal;height:5mm;line-height:1.3;vertical-align:middle}
+.mf-print-table thead{display:table-header-group}
+.mf-print-table tbody tr{page-break-inside:avoid;break-inside:avoid}
+.mf-print-table tbody tr:nth-child(even) td{background:#f6faf8}
+
+/* كروت الجوال: مخفية على الكمبيوتر، مرئية على الجوال */
+.mf-cards-view{display:none}
+.mf-card{display:flex;align-items:flex-start;gap:10px;
+  background:var(--bg-card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  margin:0 0 6px;overflow:hidden}
+.mf-card-num{font-family:var(--font-display);font-weight:900;font-size:13px;color:var(--em-500);
+  min-width:22px;text-align:center;padding-top:2px;flex:none}
+.mf-card-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.mf-card-name{font-family:var(--font-display);font-weight:800;font-size:13.5px;color:var(--cr-50);
+  overflow-wrap:anywhere;line-height:1.3}
+.mf-card-details{display:flex;flex-wrap:wrap;gap:3px 8px;font-size:11px;color:var(--cr-300);line-height:1.4}
+.mf-card-status{display:inline-flex;align-items:center;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:20px;margin-top:2px;align-self:flex-start}
+.mf-st-registered .mf-card-status{background:var(--surface-2);color:var(--cr-200)}
+.mf-st-paid .mf-card-status{background:#e8f5ee;color:#0b5c43}
+.mf-st-boarded .mf-card-status{background:#e8f0f8;color:#1a4a8a}
+.mf-st-checked_in .mf-card-status{background:#fef4e0;color:#7a4a08}
+.mf-card-notes{font-size:11px;color:var(--cr-300);font-style:italic;margin-top:2px;overflow-wrap:anywhere}
+.mf-card-group{margin-bottom:14px}
+.mf-card-group-header{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:#0b5c43;color:#fff;padding:7px 12px;border-radius:8px 8px 0 0}
+.mf-card-group-bp{font-family:var(--font-display);font-weight:800;font-size:13px}
+.mf-card-group-count{font-size:11px;color:rgba(255,255,255,.8);flex:none;white-space:nowrap}
+.mf-card-group .mf-card{border-radius:0;border-top:0}
+.mf-card-group .mf-card:last-of-type{border-radius:0 0 10px 10px}
+
+/* الختم الإلكتروني الدائري */
+.mf-stamp-circle{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+.mf-stamp-svg{width:28mm;height:28mm;flex:none}
+.mf-stamp-svg text,.mf-stamp-svg textPath{font-family:var(--font-sans);font-size:7px;fill:#0b5c43}
+.mf-stamp-ref{font-size:7pt;color:#7a8a82;font-variant-numeric:tabular-nums;direction:ltr;
+  text-align:center;margin-top:0.5mm;white-space:nowrap}
+
+/* سطر التوقيع */
+.mf-sig-line{margin-top:2.5mm;padding-top:2mm;border-top:1pt dashed #cdd8d2;
+  font-size:8pt;color:#3a4a43;white-space:normal;overflow-wrap:anywhere}
+
+/* حالة فارغة */
+.mf-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;min-height:220px;color:var(--cr-300);font-size:14px;text-align:center;padding:24px}
+
+/* ============================================================
+   إعدادات التقارير (ReportSettings)
+   ============================================================ */
+.rs-sheet{display:flex;flex-direction:column;gap:18px;padding-bottom:24px}
+.rs-section{display:flex;flex-direction:column;gap:10px}
+.rs-section-title{font-family:var(--font-display);font-weight:800;font-size:13px;color:var(--cr-100);
+  padding-bottom:8px;border-bottom:1px solid var(--line)}
+.rs-cols-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rs-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);
+  user-select:none}
+.rs-toggle:hover{background:var(--surface-2)}
+.rs-toggle input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.rs-toggle-box{width:20px;height:20px;border:1.5px solid var(--line);border-radius:5px;
+  flex:none;position:relative;transition:background .15s,border-color .15s}
+.rs-toggle input:checked ~ .rs-toggle-box{background:var(--em-500);border-color:var(--em-500)}
+.rs-toggle input:checked ~ .rs-toggle-box::after{content:"✓";position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:900;
+  line-height:1}
+.rs-toggle-label{font-size:13px;color:var(--cr-100);line-height:1.3;flex:1}
+.rs-toggle-row{padding:10px 12px}
+.rs-fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.rs-field{display:flex;flex-direction:column;gap:4px}
+.rs-field label{font-size:11.5px;color:var(--cr-200);font-weight:600}
+.rs-field input{padding:8px 10px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface);color:var(--cr-50);font-family:var(--font-sans);font-size:13px;
+  min-width:0;width:100%}
+.rs-field input:focus{outline:none;border-color:var(--em-500)}
+.rs-actions{display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--line)}
+@media(max-width:600px){
+  .rs-cols-grid{grid-template-columns:1fr}
+  .rs-fields{grid-template-columns:1fr}
+}
 
 /* ============================================================
    التَّقييم الثُّنائيّ (RatingStars / RatingSheet) — هويّةُ mlk
@@ -882,16 +994,20 @@
 
 /* ====== الجوال: نُصغّر المعاينة (الطباعةُ تَستردُّ A4 الحقيقيّ) ====== */
 @media(max-width:760px){
-  .mf-sheet{width:100%;min-height:auto;padding:8mm 7mm;gap:4mm}
+  /* كروت على الجوال */
+  .mf-cards-view{display:block}
+  .mf-print-table{display:none}
+  /* الورقة */
+  .mf-sheet{width:100%;min-height:auto;padding:5mm 4mm;gap:3mm}
   .mf-head{flex-direction:column;align-items:stretch;gap:8px}
   .mf-brand{max-width:none}
   .mf-carrier{padding:3mm}
   .mf-c-row{font-size:9pt}
   .mf-c-k{min-width:24mm;font-size:8.5pt}
   .mf-subtitle{flex-direction:column;align-items:flex-start;gap:3px;padding:2mm 3mm}
-  .mf-pickup{padding:3mm 4mm;gap:8px}
-  .mf-pickup-v{font-size:11pt}
   .mf-foot{flex-direction:column;align-items:flex-start;gap:10px}
+  .mf-note{white-space:normal;overflow:visible;text-overflow:unset}
+  .mf-sum-item{padding:4px 7px;min-width:48px}
   .fr-kpis{grid-template-columns:repeat(2,1fr)}
   .fr-kpi-num{font-size:15pt}
 }
@@ -936,6 +1052,24 @@
   .fr-alert{font-size:8pt;padding:1.5mm 2.5mm;margin-bottom:2mm}
   .fr-totals td{padding:1.2mm 1mm !important;font-size:8pt !important}
   .no-print{display:none !important}
+  /* الكشف الجديد في الطباعة */
+  .mf-cards-view{display:none !important}
+  .mf-print-table{display:table !important;font-size:7.5pt !important}
+  .mf-print-table thead th{padding:1.2mm 0.8mm !important;font-size:7pt !important}
+  .mf-print-table tbody td{padding:0.7mm 1mm !important;height:4.8mm !important;line-height:1.15 !important}
+  .mf-group-row td{padding:1mm 2mm !important;font-size:7pt !important}
+  .mf-sig-line{font-size:7pt !important;margin-top:1.5mm !important;padding-top:1mm !important}
+  .mf-stamp-circle{flex:none}
+  .mf-stamp-svg{width:22mm !important;height:22mm !important}
+  .mf-stamp-ref{font-size:6.5pt !important}
+  .fr-kpis{gap:2.5mm;margin:1.5mm 0 2.5mm}
+  .fr-kpi{padding:3mm 2.5mm;min-height:18mm}
+  .fr-kpi-lb{font-size:7.5pt}
+  .fr-kpi-num{font-size:14pt}
+  .fr-kpi-num > span{font-size:8.5pt}
+  .fr-kpi-sub{font-size:6.5pt}
+  .fr-alert{font-size:8pt;padding:1.5mm 2.5mm;margin-bottom:2mm}
+  .fr-totals td{padding:1.2mm 1mm !important;font-size:8pt !important}
 }
 
 /* ============================================================
@@ -1433,30 +1567,38 @@ body.fab-interacting *{
   .mf-brand{max-width:50% !important}
   .mf-carrier{padding:2.5mm 3mm !important;gap:1.2mm !important}
   .mf-subtitle{margin-bottom:2mm !important;padding:1.5mm 3mm !important;flex-direction:row !important;align-items:center !important}
-  .mf-pickup{margin-bottom:2.5mm !important;padding:2mm 5mm !important}
-  .mf-table{margin-bottom:2mm !important}
+  .mf-print-table{margin-bottom:2mm !important}
   .mf-foot{margin-top:auto !important;padding-top:2mm !important}
 
+  /* إخفاء الكروت + إظهار الجدول في الطباعة */
+  .mf-cards-view{display:none !important}
+  .mf-print-table{display:table !important;border-collapse:collapse !important;width:100% !important;
+    table-layout:fixed !important;font-size:7.5pt !important}
+  .mf-print-table thead{display:table-header-group !important}
+  .mf-print-table tbody{display:table-row-group !important}
+  .mf-print-table tr{page-break-inside:avoid !important;break-inside:avoid !important}
+  .mf-print-table thead tr{page-break-inside:avoid !important;page-break-after:avoid !important}
+  .mf-print-table thead th{padding:1.2mm 0.8mm !important;font-size:7pt !important}
+  .mf-print-table tbody td{padding:0.7mm 1mm !important;height:4.8mm !important;line-height:1.15 !important}
+  .mf-group-row{background:#e8f3ed !important}
+  .mf-group-row td{padding:1mm 2mm !important;font-size:7pt !important}
+
+  /* الختم + التوقيع */
+  .mf-stamp-svg{width:22mm !important;height:22mm !important}
+  .mf-sig-line{font-size:7pt !important;margin-top:1.5mm !important;padding-top:1mm !important}
+  .mf-note{white-space:normal !important;overflow:visible !important;text-overflow:unset !important;font-size:7pt !important}
+
   /* ألوانٌ صلبةٌ تُطبَع في كلِّ المتصفّحات */
-  .mf-pickup,.mf-table thead th,.mf-table thead tr,
-  .mf-table tbody tr:nth-child(even) td{
+  .mf-group-row td,.mf-print-table thead th,.mf-print-table thead tr,
+  .mf-print-table tbody tr:nth-child(even) td{
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
     color-adjust:exact !important}
 
-  /* جدولٌ مع تكرارِ الترويسة عبر الصفحاتِ تلقائيًّا (مهمٌّ للأعدادِ الكبيرة) */
-  .mf-table{border-collapse:collapse !important;width:100% !important}
-  .mf-table thead{display:table-header-group !important}
-  .mf-table tbody{display:table-row-group !important}
-  .mf-table tr{page-break-inside:avoid !important;break-inside:avoid !important}
-  .mf-table thead tr{page-break-inside:avoid !important;page-break-after:avoid !important}
-
   /* إجبارُ التخطيطِ A4 الكامل في الطباعةِ مهما كانت معاينةُ الشاشة */
   .mf-foot{flex-direction:row !important;align-items:center !important}
   .mf-logo{height:14mm !important;max-width:30mm !important}
-  .mf-pickup-v{font-size:12pt !important}
-  /* الأعمدةُ ثابتةُ القياسِ — لا تتوسّعُ المحتويات */
-  .mf-table{table-layout:fixed !important}
+  .mf-summary{display:none !important}
 
   /* التذكرة (boarding pass) — لا تُلامس الكشف */
   .ticket{position:static;margin:0 auto;page-break-inside:avoid}

@@ -16,49 +16,72 @@ function fmtHijri(v) {
 function money(n) { return Number(n || 0).toLocaleString('en-US') }
 function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) : 0 }
 
-/**
- * تقرير مالي شامل مطبوع — بهوية الكشف الرسمي.
- *   ١) ترويسة بشعار الحملة + المدة + خلاصة مالية كبيرة
- *   ٢) ٤ بطاقات رئيسة (المحصل/المتوقع/المسترد/الصافي)
- *   ٣) جدول تفصيل لكل رحلة: السعر، المسجلون، المدفوعون،
- *      المحصل الفعلي، المتوقع، المتبقي، نسبة التحصيل
- *   ٤) تذييل بالختم/التوقيع — يبقى على نفس الصفحة دائما
- */
+function buildDocRef(subId, date) {
+  const hex = (subId || '').replace(/-/g, '').slice(0, 8).toUpperCase()
+  const d = new Date(date || Date.now())
+  const yy = String(d.getFullYear()).slice(2)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `FIN-${yy}${mm}-${hex || 'XXXXXXXX'}`
+}
+
+function ElectronicStamp({ orgName, docRef }) {
+  return (
+    <div className="mf-stamp-circle" aria-label="ختم إلكتروني رسمي">
+      <svg viewBox="0 0 120 120" className="mf-stamp-svg" aria-hidden="true">
+        <circle cx="60" cy="60" r="56" fill="none" stroke="#0b5c43" strokeWidth="2.5" strokeDasharray="4 2" />
+        <circle cx="60" cy="60" r="46" fill="none" stroke="#0b5c43" strokeWidth="1" />
+        <text textAnchor="middle" dominantBaseline="middle">
+          <textPath href="#fr-stamp-path-top" startOffset="50%">
+            {orgName} · تقرير مالي
+          </textPath>
+        </text>
+        <text x="60" y="57" textAnchor="middle" fontSize="9" fill="#0b5c43" fontWeight="700">معتمد</text>
+        <text x="60" y="67" textAnchor="middle" fontSize="9" fill="#0b5c43">إلكترونياً ✔</text>
+        <defs>
+          <path id="fr-stamp-path-top" d="M 10,60 A 50,50 0 0 1 110,60" />
+        </defs>
+      </svg>
+      {docRef && <div className="mf-stamp-ref">{docRef}</div>}
+    </div>
+  )
+}
+
 export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
-  const [paymentsByTrip, setPaymentsByTrip] = useState(new Map()) // trip_id → collected amount
-  const [expectedByTrip, setExpectedByTrip] = useState(new Map()) // trip_id → مجموع السعر المثبت وقت الحجز
+  const [paymentsByTrip, setPaymentsByTrip] = useState(new Map())
+  const [expectedByTrip, setExpectedByTrip] = useState(new Map())
   const [refunds, setRefunds] = useState({ refunded: 0, pending: 0, count: 0 })
   const [loading, setLoading] = useState(true)
+
+  const settings = sub?.report_settings || {}
+  const showStamp = settings.show_stamp !== false
+  const showSig = settings.show_signature !== false
+  const signerName = settings.signer_name || ''
 
   useEffect(() => {
     if (!sub?.id) { setLoading(false); return }
     let cancel = false
     ;(async () => {
-      // سعر الرحلة الحالي (احتياط للصفوف بلا price_at_booking مثبت)
       const tripPrice = new Map((trips || []).map((t) => [t.id, t.price != null ? Number(t.price) : 0]))
-      // كل معتمري الحملة: المحصل (amount للمدفوعين) + المتوقع (السعر المثبت وقت الحجز)
       const { data: rows } = await supabase
         .from('passengers')
         .select('trip_id, amount, price_at_booking, status')
         .eq('subscriber_id', sub.id)
       if (cancel) return
-      const m = new Map()        // collected
-      const exp = new Map()      // expected (مجموع السعر المثبت لكل معتمر)
+      const m = new Map()
+      const exp = new Map()
       for (const r of rows || []) {
         if (PAID_STATUSES.includes(r.status)) {
           m.set(r.trip_id, (m.get(r.trip_id) || 0) + (Number(r.amount) || 0))
         }
-        // المتوقع = ما يلتزم به كل معتمر بسعره المثبت (أو سعر الرحلة الحالي احتياطا)
         const seat = r.price_at_booking != null ? Number(r.price_at_booking) : (tripPrice.get(r.trip_id) || 0)
         exp.set(r.trip_id, (exp.get(r.trip_id) || 0) + seat)
       }
       setPaymentsByTrip(m)
       setExpectedByTrip(exp)
 
-      // الاستردادات
       const { data: refs } = await supabase
         .from('refunds').select('amount, status')
-        .eq('subscriber_id', sub.id).in('status', ['requested','refunded'])
+        .eq('subscriber_id', sub.id).in('status', ['requested', 'refunded'])
       if (cancel) return
       const refundedSum = (refs || []).filter(r => r.status === 'refunded').reduce((s, r) => s + (Number(r.amount) || 0), 0)
       const pendArr = (refs || []).filter(r => r.status === 'requested')
@@ -67,14 +90,13 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
       setLoading(false)
     })()
     return () => { cancel = true }
+  // trips مرجع ثابت من الأب — لا يتغير دون تغيّر sub.id في الممارسة الفعلية
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sub?.id])
 
-  // تفصيل لكل رحلة
   const tripRows = useMemo(() => trips.map(t => {
     const e = byTrip?.get(t.id) || { count: 0, paid: 0 }
     const price = t.price != null ? Number(t.price) : 0
-    // المتوقع من السعر المثبت وقت الحجز (دقة تاريخية)؛ وإن لم يحمل بعد
-    // فاحتياط بالسعر الحالي × المسجلين (سلوك سابق).
     const expSum = expectedByTrip.get(t.id)
     const expected = expSum != null ? expSum : price * e.count
     const collected = paymentsByTrip.get(t.id) || 0
@@ -97,6 +119,8 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
   }, [tripRows, refunds])
 
   const today = new Date()
+  const docRef = buildDocRef(sub?.id, today)
+
   function handlePrint() { window.print() }
 
   return (
@@ -113,11 +137,12 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
 
       <div className="manifest-scroll">
         <article className="mf-sheet fr-sheet" dir="rtl">
+
           {/* ترويسة */}
           <header className="mf-head">
             <div className="mf-brand">
               {sub?.logo_url && (
-                <img className="mf-logo" src={sub.logo_url} alt={sub?.org_name || 'الحملة'} crossOrigin="anonymous" />
+                <img className="mf-logo" src={sub.logo_url} alt={sub?.org_name || 'الحملة'} crossOrigin="anonymous" style={{ maxWidth: '100%' }} />
               )}
               <div className="mf-brand-text">
                 <div className="mf-org">{sub?.org_name || 'الحملة'}</div>
@@ -131,6 +156,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
               <div className="mf-c-row"><span className="mf-c-k">نوع التقرير</span><span className="mf-c-v">تقرير مالي شامل للحملة</span></div>
               <div className="mf-c-row"><span className="mf-c-k">عدد الرحلات</span><span className="mf-c-v">{trips.length}</span></div>
               <div className="mf-c-row"><span className="mf-c-k">تاريخ الإصدار</span><span className="mf-c-v" dir="ltr">{fmtGreg(today)} · {fmtHijri(today)}</span></div>
+              <div className="mf-c-row"><span className="mf-c-k">رقم التوثيق</span><span className="mf-c-v ltr">{docRef}</span></div>
             </div>
           </header>
 
@@ -138,27 +164,33 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
             <div className="mf-st-main">التقرير المالي لحملة {sub?.org_name || ''}</div>
           </div>
 
-          {/* خلاصة كبيرة — ٤ بطاقات */}
-          <div className="fr-kpis">
-            <div className="fr-kpi">
-              <div className="fr-kpi-lb">المحصل الفعلي</div>
-              <div className="fr-kpi-num">{money(totals.collected)} <span>﷼</span></div>
+          {/* ٤ بطاقات KPI */}
+          {loading ? (
+            <div className="fr-kpis fr-loading">
+              {[1, 2, 3, 4].map((i) => <div key={i} className="fr-kpi fr-kpi-skeleton" />)}
             </div>
-            <div className="fr-kpi">
-              <div className="fr-kpi-lb">المتوقع</div>
-              <div className="fr-kpi-num">{money(totals.expected)} <span>﷼</span></div>
-              <div className="fr-kpi-sub">نسبة التحصيل: {totals.expected > 0 ? pct(totals.collected, totals.expected) + '٪' : '—'}</div>
+          ) : (
+            <div className="fr-kpis">
+              <div className="fr-kpi">
+                <div className="fr-kpi-lb">المحصل الفعلي</div>
+                <div className="fr-kpi-num">{money(totals.collected)} <span>﷼</span></div>
+              </div>
+              <div className="fr-kpi">
+                <div className="fr-kpi-lb">المتوقع</div>
+                <div className="fr-kpi-num">{money(totals.expected)} <span>﷼</span></div>
+                <div className="fr-kpi-sub">نسبة التحصيل: {totals.expected > 0 ? pct(totals.collected, totals.expected) + '٪' : '—'}</div>
+              </div>
+              <div className="fr-kpi">
+                <div className="fr-kpi-lb">المتبقي</div>
+                <div className="fr-kpi-num">{money(totals.outstanding)} <span>﷼</span></div>
+              </div>
+              <div className="fr-kpi fr-kpi-net">
+                <div className="fr-kpi-lb">الصافي بعد الاسترداد</div>
+                <div className="fr-kpi-num">{money(totals.net)} <span>﷼</span></div>
+                {refunds.refunded > 0 && <div className="fr-kpi-sub">مسترد: {money(refunds.refunded)} ﷼</div>}
+              </div>
             </div>
-            <div className="fr-kpi">
-              <div className="fr-kpi-lb">المتبقي</div>
-              <div className="fr-kpi-num">{money(totals.outstanding)} <span>﷼</span></div>
-            </div>
-            <div className="fr-kpi fr-kpi-net">
-              <div className="fr-kpi-lb">الصافي بعد الاسترداد</div>
-              <div className="fr-kpi-num">{money(totals.net)} <span>﷼</span></div>
-              {refunds.refunded > 0 && <div className="fr-kpi-sub">مسترد: {money(refunds.refunded)} ﷼</div>}
-            </div>
-          </div>
+          )}
 
           {refunds.pending > 0 && (
             <div className="fr-alert">
@@ -194,17 +226,17 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
             </thead>
             <tbody>
               {tripRows.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: '8mm', color: '#7a8a82', fontStyle: 'italic' }}>لا رحلات بعد</td></tr>
+                <tr><td colSpan={9} className="mf-empty">لا رحلات بعد</td></tr>
               ) : tripRows.map((r, i) => (
                 <tr key={r.id}>
                   <td className="mf-num">{i + 1}</td>
-                  <td className="mf-name">{r.title}</td>
+                  <td className="mf-name" style={{ overflowWrap: 'anywhere' }}>{r.title}</td>
                   <td className="ltr">{fmtGreg(r.depart_at)}</td>
                   <td className="mf-num">{r.capacity || '—'}</td>
                   <td className="mf-num">{r.registered}</td>
                   <td className="mf-num">{r.price ? money(r.price) : '—'}</td>
                   <td className="mf-num">{money(r.expected)}</td>
-                  <td className="mf-num" style={{ color: '#0b5c43', fontWeight: 700 }}>{money(r.collected)}</td>
+                  <td className="mf-num fr-collected">{money(r.collected)}</td>
                   <td className="mf-num">{r.expected > 0 ? r.collectRate + '٪' : '—'}</td>
                 </tr>
               ))}
@@ -212,7 +244,7 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
                 <tr className="fr-totals">
                   <td colSpan={6} style={{ textAlign: 'end', fontWeight: 700 }}>الإجمالي</td>
                   <td className="mf-num" style={{ fontWeight: 700 }}>{money(totals.expected)}</td>
-                  <td className="mf-num" style={{ fontWeight: 700, color: '#0b5c43' }}>{money(totals.collected)}</td>
+                  <td className="mf-num fr-collected" style={{ fontWeight: 700 }}>{money(totals.collected)}</td>
                   <td className="mf-num" style={{ fontWeight: 700 }}>{totals.expected > 0 ? pct(totals.collected, totals.expected) + '٪' : '—'}</td>
                 </tr>
               )}
@@ -227,15 +259,20 @@ export default function FinancialReport({ trips = [], byTrip, sub, onClose }) {
               <span style={{ fontSize: '7pt', color: '#7a8a82' }}>
                 الأرقام محتسبة من قاعدة بيانات ملبّيك. المحصل = مجموع مبالغ المدفوعين/الصاعدين/المسكنين.
               </span>
+              {showSig && (
+                <div className="mf-sig-line">
+                  <span>توقيع المسؤول: {signerName || '___________________________'}</span>
+                </div>
+              )}
             </div>
             <div className="mf-stamp">
-              {sub?.stamp_url ? (
-                <img className="mf-stamp-img" src={sub.stamp_url} alt="الختم الرسمي" crossOrigin="anonymous" />
-              ) : sub?.stamp_text ? (
+              {showStamp && sub?.stamp_url ? (
+                <img className="mf-stamp-img" src={sub.stamp_url} alt="الختم الرسمي" crossOrigin="anonymous" style={{ maxWidth: '100%' }} />
+              ) : showStamp && sub?.stamp_text ? (
                 <div className="mf-stamp-e"><span>{sub.stamp_text}</span></div>
-              ) : (
-                <div className="mf-stamp-m">الختم والتوقيع</div>
-              )}
+              ) : showStamp ? (
+                <ElectronicStamp orgName={sub?.org_name || 'الحملة'} docRef={docRef} />
+              ) : null}
             </div>
           </footer>
         </article>

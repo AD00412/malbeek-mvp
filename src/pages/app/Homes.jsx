@@ -27,7 +27,6 @@ import MarketingBroadcasts from '../../components/MarketingBroadcasts'
 import TrialBanner from '../../components/TrialBanner'
 import { useRealtime } from '../../lib/useRealtime'
 import { fmtDateTime } from '../../lib/format'
-import { tableToDocx } from '../../lib/docx'
 import { htmlToPdf } from '../../lib/pdf'
 import { useUI } from '../../lib/useUI'
 import { translateRpcError } from '../../lib/rpcErrors'
@@ -301,28 +300,6 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
     return arr
   }, [subs, q, planFilter, sortBy])
 
-  const reportHeaders = ['الحملة','الرابط','الباقة','الرحلات','المعتمرون','المدفوع','المحصل (﷼)','تاريخ الاشتراك']
-  function reportRows() {
-    return filtered.map((s) => [
-      s.org_name || '', `/${s.slug}`, s.plan === 'paid' ? 'مدفوعة' : 'تجريبية',
-      s.trips_count || 0, s.pax_count || 0, s.paid_count || 0,
-      Number(s.collected) || 0, fmtDateTime(s.created_at),
-    ])
-  }
-  async function exportReportDocx() {
-    toast('جار تجهيز ملف Word…', { type: 'info' })
-    try {
-      await tableToDocx({
-        title: 'تقرير حملات منصة ملبّيك',
-        subtitle: `إجمالي الحملات: ${subs.length}`,
-        meta: [`صدر بتاريخ ${new Date().toLocaleDateString('ar-SA')}`],
-        headers: reportHeaders,
-        rows: reportRows(),
-        filename: 'تقرير-الحملات',
-      })
-      toast('تم تنزيل تقرير Word', { type: 'success' })
-    } catch (e) { console.error(e); toast('تعذر إنشاء ملف Word — حاول مجددا.', { type: 'error' }) }
-  }
   const reportRef = useRef(null)
   const [pdfBusy, setPdfBusy] = useState(false)
   async function exportReportPdf() {
@@ -340,9 +317,6 @@ function SubsPanel({ subs, loading, onReload, onOpenDetail }) {
         <span className="mlk-tab-count">{subs.length} حملة</span>
         <button className="mlk-action" onClick={exportReportPdf} disabled={subs.length === 0 || pdfBusy}>
           {pdfBusy ? <span className="spinner" /> : <><Icon name="download" size={13} /> PDF</>}
-        </button>
-        <button className="mlk-action" onClick={exportReportDocx} disabled={subs.length === 0}>
-          <Icon name="edit" size={13} /> Word
         </button>
       </header>
 

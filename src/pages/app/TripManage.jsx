@@ -21,7 +21,6 @@ import BottomSheet from '../../components/BottomSheet'
 import SignedImage from '../../components/SignedImage'
 import { policyLabel } from '../../lib/busLayout'
 import { loadTripBuses, busLayout, busName } from '../../lib/buses'
-import { tableToDocx } from '../../lib/docx'
 import { translateRpcError } from '../../lib/rpcErrors'
 import { useUI } from '../../lib/useUI'
 import { waMeLink, fmtDateTime } from '../../lib/format'
@@ -271,71 +270,6 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
   function openAdd() { setEditingPax(null); setPaxOpen(true) }
   function openEdit(p) { setEditingPax(p); setPaxOpen(true) }
 
-  /** بيانات الكشف الرسمي — نفس أعمدة Manifest.jsx (٩ أعمدة، بلا أمور
-   *  مالية). الكشف الرسمي والـWord متطابقان تماما في البنية، فيستطيع
-   *  المشرف التعديل في Word وإعادة طباعته دون اختلاف بصري.
-   *  المبلغ/وقت الدفع/التذاكر تنتمي للتقرير المالي المنفصل.
-   */
-  function rosterRows() {
-    const statusAr = { registered: 'مسجل', paid: 'مدفوع', boarded: 'صعد', checked_in: 'استلم الغرفة' }
-    // ترتيب منطقي: حسب الباص ثم مكان الركوب ثم الاسم (مطابق لتجميع PDF)
-    const busById = new Map(buses.map((b) => [b.id, busName(b)]))
-    const sorted = [...passengers].sort((a, b) => {
-      const ba = busById.get(a.bus_id) || ''
-      const bb = busById.get(b.bus_id) || ''
-      if (ba !== bb) return ba.localeCompare(bb, 'ar')
-      const pa = (a.boarding_point || '').trim() || 'ﻱ'
-      const pb = (b.boarding_point || '').trim() || 'ﻱ'
-      if (pa !== pb) return pa.localeCompare(pb, 'ar')
-      return (a.full_name || '').localeCompare(b.full_name || '', 'ar')
-    })
-    return sorted.map((p, i) => [
-      String(i + 1),
-      p.full_name || '',
-      p.national_id || '',
-      p.nationality || '',
-      p.phone || '',
-      p.seat_no || '',
-      p.boarding_point || '',
-      statusAr[p.status] || p.status,
-      '', // ملاحظات — للتعديل اليدوي في Word
-    ])
-  }
-  const rosterHeaders = ['م','الاسم الرباعي','رقم الهوية / الإقامة','الجنسية','رقم الجوال','المقعد','مكان الركوب','الحالة','ملاحظات']
-
-  async function exportRosterDocx() {
-    toast('جار تجهيز ملف Word…', { type: 'info' })
-    try {
-      // بيانات الناقل — مطابقة لترويسة الكشف الرسمي (PDF/طباعة)
-      const fmtAr = (v) => v ? new Date(v).toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'
-      const carrierCompany = (sub?.carrier_company || sub?.org_name || 'الحملة').trim()
-      const driver1 = [trip?.driver_name, trip?.driver_phone].filter(Boolean).join(' · ') || '—'
-      const driver2 = [trip?.driver2_name || trip?.assistant_name, trip?.driver2_phone || trip?.assistant_phone].filter(Boolean).join(' · ') || '—'
-      const route = `${trip?.route_from || '—'} - ${trip?.route_to || '—'}${trip?.return_at ? ` - ${trip?.route_from || ''}` : ''}`
-
-      await tableToDocx({
-        title: `كشف ركاب الحافلة · ${trip?.title || 'رحلة'}`,
-        subtitle: sub?.org_name || '',
-        org: sub?.org_name || '',
-        meta: [
-          `الشركة الناقلة: ${carrierCompany}`,
-          `الوجهة: ${route}`,
-          `الذهاب: ${fmtAr(trip?.depart_at)}${trip?.return_at ? ` · العودة: ${fmtAr(trip?.return_at)}` : ''}`,
-          `السائق ١: ${driver1}    ·    السائق ٢: ${driver2}`,
-          `رقم الباص: ${trip?.bus_label || '—'}    ·    لوحة الباص: ${trip?.bus_plate || '—'}`,
-          `عدد المعتمرين: ${passengers.length}`,
-        ],
-        headers: rosterHeaders,
-        rows: rosterRows(),
-        filename: `كشف-${(trip?.title || 'رحلة').replace(/\s+/g, '_')}`,
-      })
-      toast('تم تنزيل ملف Word', { type: 'success' })
-    } catch (e) {
-      console.error(e)
-      toast('تعذر إنشاء ملف Word — حاول مجددا.', { type: 'error' })
-    }
-  }
-
   // إشعار داخل التطبيق للمعتمرين المسجلين بحساب (تستدعى من نافذة التذكير الجماعي).
   async function sendInAppReminder() {
     const { data, error } = await supabase.rpc('remind_trip', { p_trip: trip.id })
@@ -531,14 +465,9 @@ export default function TripManage({ trip: initialTrip, sub, onBack, onTripChang
 
         <section className="tm-group">
           <div className="sec-label"><Icon name="manifest" size={15} /> الكشوفات والتواصل</div>
-          <div className="action-row">
-            <button className="action ok" onClick={() => setManifestOpen(true)} disabled={count === 0}>
-              <Icon name="manifest" size={18} /> الكشف الرسمي (PDF)
-            </button>
-            <button className="action" onClick={exportRosterDocx} disabled={count === 0}>
-              <Icon name="edit" size={18} /> Word قابل للتعديل
-            </button>
-          </div>
+          <button className="action ok" onClick={() => setManifestOpen(true)} disabled={count === 0}>
+            <Icon name="manifest" size={18} /> الكشف الرسمي
+          </button>
           <button className="action violet" onClick={() => setOffersOpen(true)} disabled={count === 0}>
             <Icon name="message" size={18} /> إرسال عرض
           </button>

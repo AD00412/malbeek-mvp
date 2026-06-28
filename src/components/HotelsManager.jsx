@@ -134,9 +134,10 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
           <SkeletonList count={3} />
         ) : hotels.length === 0 ? (
           <div className="empty">
+            <div className="em-mark"><Icon name="bed" size={40} /></div>
             <div className="em-ttl">لا توجد فنادق بعد</div>
-            <div>أضف فندقك الأول لتبدأ التسكين.</div>
-            <button className="btn btn-gold" style={{ marginTop: 12 }} onClick={() => { setEditingHotel(null); setHotelOpen(true) }}>
+            <div>أضف فندقك الأوّل، ثمّ غرفه، وابدأ تسكين معتمريك.</div>
+            <button className="btn btn-gold" style={{ marginTop: 14 }} onClick={() => { setEditingHotel(null); setHotelOpen(true) }}>
               <Icon name="plus" size={16} /> فندق جديد
             </button>
           </div>
@@ -185,15 +186,22 @@ export default function HotelsManager({ trip, sub, passengers = [], onClose, onC
                   </figure>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 8 }}>
-                  <span className="sec-label" style={{ flex: 1, margin: 0 }}>الغرف ({hotelRooms.length})</span>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditingRoom(null); setRoomOpen(true) }}>
-                    <Icon name="plus" size={14} /> غرفة
+                <div className="rooms-head">
+                  <span className="rooms-title"><Icon name="bed" size={15} /> الغرف <span className="rooms-count">{hotelRooms.length}</span></span>
+                  <button className="btn btn-gold btn-sm" onClick={() => { setEditingRoom(null); setRoomOpen(true) }}>
+                    <Icon name="plus" size={14} /> إضافة غرفة
                   </button>
                 </div>
 
                 {hotelRooms.length === 0 ? (
-                  <div className="muted" style={{ fontSize: 13 }}>أضف غرفا لتبدأ التسكين.</div>
+                  <div className="rooms-empty">
+                    <Icon name="bed" size={28} />
+                    <div className="re-ttl">لا غرف بعد</div>
+                    <div className="re-sub">أضف غرفك وابدأ تسكين معتمريك فيها.</div>
+                    <button className="btn btn-gold btn-sm" onClick={() => { setEditingRoom(null); setRoomOpen(true) }}>
+                      <Icon name="plus" size={14} /> إضافة غرفة
+                    </button>
+                  </div>
                 ) : (
                   <div className="rooms-grid">
                     {hotelRooms.map((r) => {

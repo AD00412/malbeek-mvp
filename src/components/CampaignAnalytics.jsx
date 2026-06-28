@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { tableToDocx } from '../lib/docx'
-import { useUI } from '../lib/useUI'
 import { trace } from '../lib/debugLog'
 import Icon from './Icon'
 import RatingStars from './RatingStars'
@@ -18,8 +16,7 @@ function dayKey(iso) { return iso ? iso.slice(0, 10) : '' }
  * @param {string} subscriberId   لجلب التفاصيل الزمنية ونقاط الركوب
  * @param {string} [org]          اسم الحملة لتبييض التقرير المصدر
  */
-export default function CampaignAnalytics({ trips = [], byTrip, totals, subscriberId, org, sub }) {
-  const { toast } = useUI()
+export default function CampaignAnalytics({ trips = [], byTrip, totals, subscriberId, sub }) {
   const [showReport, setShowReport] = useState(false)
   const tt = totals || { count: 0, paid: 0, boarded: 0, checked_in: 0 }
   const totalSeats = trips.reduce((s, t) => s + (Number(t.capacity) || 0), 0)
@@ -116,34 +113,6 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
   const hasPricing = trips.some((t) => t.price != null)
   const money = (n) => Number(n || 0).toLocaleString('en-US')
 
-  // تقرير مالي مخصص للحملة (Word) — أرقام لكل رحلة + إجماليات
-  async function exportFinancial() {
-    toast('جار تجهيز التقرير المالي…', { type: 'info' })
-    try {
-      const rows = trips.map((t) => {
-        const e = byTrip?.get(t.id) || { count: 0, paid: 0 }
-        const pr = t.price != null ? Number(t.price) : 0
-        return [t.title || '—', String(t.capacity || 0), String(e.count), String(e.paid), money(pr * e.count)]
-      })
-      await tableToDocx({
-        title: 'التقرير المالي للحملة',
-        subtitle: org || '',
-        org: org || '',
-        meta: [
-          `المحصل: ${money(detail.collected)} ﷼`,
-          `المتوقع: ${money(expectedRevenue)} ﷼`,
-          `المسترد: ${money(detail.refunded)} ﷼`,
-          `الصافي بعد الاسترداد: ${money(detail.collected - detail.refunded)} ﷼`,
-          detail.refundPending > 0 ? `طلبات استرداد معلقة: ${detail.refundPendingCount} بمبلغ ${money(detail.refundPending)} ﷼` : '',
-        ].filter(Boolean),
-        headers: ['الرحلة', 'السعة', 'المعتمرون', 'المدفوع', 'المتوقع (﷼)'],
-        rows,
-        filename: `تقرير-مالي-${(org || 'حملة').replace(/\s+/g, '_')}`,
-      })
-      toast('تم تنزيل التقرير المالي', { type: 'success' })
-    } catch (e) { console.error(e); toast('تعذر إنشاء التقرير — حاول مجددا.', { type: 'error' }) }
-  }
-
   const maxDaily = Math.max(1, ...detail.daily.map((d) => d.c))
   const last7 = detail.daily.slice(-7).reduce((s, d) => s + d.c, 0)
   const prev7 = detail.daily.slice(-14, -7).reduce((s, d) => s + d.c, 0)
@@ -188,9 +157,6 @@ export default function CampaignAnalytics({ trips = [], byTrip, totals, subscrib
             <span style={{ flex: 1 }} />
             <button className="btn btn-em btn-sm" onClick={() => setShowReport(true)} disabled={trips.length === 0}>
               <Icon name="manifest" size={14} /> تقرير PDF
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={exportFinancial} disabled={trips.length === 0}>
-              <Icon name="edit" size={14} /> تقرير Word
             </button>
             {hasPricing && (
               <span className={`tag ${expectedRevenue > 0 && detail.collected >= expectedRevenue ? 'ok' : 'warn'}`}>

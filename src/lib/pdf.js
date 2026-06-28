@@ -66,26 +66,6 @@ export async function htmlToPdf(element, filename) {
   }
 }
 
-/**
- * يحول عدة عناصر إلى PDF واحد — كل عنصر يبدأ في صفحة جديدة (مثالي
- * لكشف متعدد الباصات: ورقة لكل سائق).
- */
-export async function htmlsToPdf(elements, filename) {
-  const list = (elements || []).filter(Boolean)
-  if (!list.length) throw new Error('no_element')
-  try {
-    const [jsPDF, html2canvas] = await Promise.all([loadJsPDF(), loadHtml2Canvas()])
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
-    for (let i = 0; i < list.length; i++) {
-      if (i > 0) pdf.addPage()
-      await captureToPdf(list[i], pdf, html2canvas)
-    }
-    saveAs(pdf, filename)
-  } catch (e) {
-    throw friendly(e)
-  }
-}
-
 /** يحول أخطاء التحميل/الـ Bundler إلى رسالة عربية واضحة. */
 function friendly(e) {
   const msg = String(e?.message || e || '')
