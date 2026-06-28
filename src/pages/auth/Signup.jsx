@@ -5,6 +5,7 @@ import { useAuth } from '../../app/useAuth'
 import { suggestSlug } from '../../lib/slug'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
+import GoogleButton from '../../components/GoogleButton'
 import PasswordStrengthMeter from '../../components/PasswordStrengthMeter'
 import { scorePassword } from '../../lib/passwordStrength'
 
@@ -139,6 +140,19 @@ export default function Signup() {
         <button className="btn btn-em btn-block" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : 'إنشاء حساب'}
         </button>
+
+        <div className="auth-divider">أو</div>
+        <GoogleButton
+          intent={{ kind: 'subscriber', orgName: orgName.trim() }}
+          label="التسجيل عبر Google"
+          disabled={busy || !orgName.trim()}
+          onError={(m) => setErr(m)}
+        />
+        {!orgName.trim() && (
+          <p className="hint" style={{ textAlign: 'center', marginTop: -4 }}>
+            اكتب «اسم الحملة» أعلاه لتفعيل التسجيل عبر Google.
+          </p>
+        )}
       </form>
     </AuthShell>
   )

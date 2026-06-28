@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../app/useAuth'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
+import GoogleButton from '../../components/GoogleButton'
 import { ScreenLoader, homeForRole } from '../../app/RequireAuth'
 import { toLatinDigits, normalizePhone, cleanName, isValidNationalId, isValidSaPhone, isValidEmail, pwStrength, PW_LABEL } from '../../lib/format'
 
@@ -301,6 +302,25 @@ export default function CustomerJoin() {
         <button className="btn btn-em btn-block" type="submit" disabled={busy || !allValid}>
           {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> تسجيل ودخول</>}
         </button>
+
+        <div className="auth-divider">أو</div>
+        <GoogleButton
+          intent={{
+            kind: 'customer',
+            subscriberId: org?.id,
+            slug,
+            fullName: cleanName(fullName) || undefined,
+            phone: phone ? normalizePhone(phone) : undefined,
+            nationalId: toLatinDigits(nationalId).trim() || undefined,
+            pickupLocation: pickupLocation.trim() || undefined,
+          }}
+          label="الانضمام عبر Google"
+          disabled={busy || !org}
+          onError={setErr}
+        />
+        <p className="hint" style={{ textAlign: 'center', marginTop: -4 }}>
+          عند المتابعة عبر Google، أكمل بياناتك (الهوية ومكان الركوب) لاحقًا عند الحجز.
+        </p>
       </form>
     </AuthShell>
   )

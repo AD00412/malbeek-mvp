@@ -5,6 +5,7 @@ import { useAuth } from '../../app/useAuth'
 import { translateRpcError } from '../../lib/rpcErrors'
 import { cleanName, fmtDateTime } from '../../lib/format'
 import AuthShell from './AuthShell'
+import GoogleButton from '../../components/GoogleButton'
 import { ScreenLoader } from '../../app/RequireAuth'
 
 const ROLE_AR = {
@@ -228,6 +229,17 @@ export default function AcceptInvite() {
           <button className="btn btn-em" type="submit" disabled={busy}>
             {busy ? <span className="spinner" /> : 'إنشاء حساب والمتابعة'}
           </button>
+
+          <div className="auth-divider">أو</div>
+          <GoogleButton
+            intent={{ kind: 'staff-invite', returnTo: `/invite/${token}` }}
+            disabled={busy}
+            onError={setErr}
+          />
+          <p className="hint" style={{ textAlign: 'center', marginTop: -4 }}>
+            استخدم بريد Google نفسه المُرسَلة إليه الدعوة ({info.email}).
+          </p>
+
           <div className="auth-footer-text" style={{ marginTop: 12 }}>
             لديك حساب مسبق بهذا الإيميل؟ <Link to={`/login?next=/invite/${token}`}>سجل دخولك</Link>
           </div>

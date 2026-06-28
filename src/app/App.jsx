@@ -7,6 +7,7 @@ import Login from '../pages/auth/Login'
 import Signup from '../pages/auth/Signup'
 import ForgotPassword from '../pages/auth/ForgotPassword'
 import ResetPassword from '../pages/auth/ResetPassword'
+import AuthCallback from '../pages/auth/AuthCallback'
 import CustomerJoin from '../pages/auth/CustomerJoin'
 import JoinTeam from '../pages/auth/JoinTeam'
 import AcceptInvite from '../pages/auth/AcceptInvite'
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/terms" element={<Legal kind="terms" />} />
         <Route path="/privacy" element={<Legal kind="privacy" />} />
         <Route path="/j/:slug" element={<CustomerJoin />} />

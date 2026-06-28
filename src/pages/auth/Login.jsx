@@ -5,6 +5,7 @@ import { useAuth } from '../../app/useAuth'
 import { homeForRole } from '../../app/RequireAuth'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
+import GoogleButton from '../../components/GoogleButton'
 
 function arError(msg = '') {
   const m = String(msg).toLowerCase()
@@ -120,6 +121,9 @@ export default function Login() {
         <button className="btn btn-em btn-block" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : 'دخول'}
         </button>
+
+        <div className="auth-divider">أو</div>
+        <GoogleButton intent={{ kind: 'login' }} onError={setErr} disabled={busy} />
       </form>
     </AuthShell>
   )

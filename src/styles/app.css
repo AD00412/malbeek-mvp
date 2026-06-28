@@ -70,6 +70,18 @@
 .auth-link-sm{font-size:13px;color:var(--em-500);font-weight:600;text-decoration:none;
   padding:2px 4px;border-radius:6px;transition:color .15s}
 .auth-link-sm:hover,.auth-link-sm:focus-visible{color:var(--em-400);text-decoration:underline}
+
+/* زرُّ Google + فاصل «أو» — يتبعان الثيم (الشعار يبقى بألوانه) */
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  min-height:48px;padding:11px 16px;border-radius:var(--r-md);cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--line);color:var(--cr-50);
+  font-family:var(--font-sans);font-weight:700;font-size:15px;transition:.15s}
+.btn-google:hover:not(:disabled){border-color:var(--line-strong);background:var(--surface-2)}
+.btn-google:disabled{opacity:.6;cursor:default}
+.btn-google svg{flex:none}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:4px 0;
+  color:var(--cr-300);font-size:12.5px;font-weight:600}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--line)}
 .auth-powered{text-align:center;font-size:11px;color:var(--cr-300);letter-spacing:2px;
   text-transform:lowercase;margin-top:22px;opacity:.7}
 .checkbox-group{display:flex;align-items:center;gap:10px;flex-direction:row-reverse;justify-content:flex-end}

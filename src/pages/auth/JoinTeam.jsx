@@ -6,6 +6,7 @@ import { translateRpcError } from '../../lib/rpcErrors'
 import { cleanName } from '../../lib/format'
 import AuthShell from './AuthShell'
 import Icon from '../../components/Icon'
+import GoogleButton from '../../components/GoogleButton'
 import { ScreenLoader } from '../../app/RequireAuth'
 
 const ROLE_AR = { manager: 'مشرف', staff: 'موظف' }
@@ -159,6 +160,13 @@ export default function JoinTeam() {
           <button className="btn btn-em btn-block" type="submit" disabled={busy}>
             {busy ? <span className="spinner" /> : <><Icon name="check" size={16} /> إنشاء الحساب والانضمام</>}
           </button>
+
+          <div className="auth-divider">أو</div>
+          <GoogleButton
+            intent={{ kind: 'staff-invite', returnTo: `/join-team/${id}` }}
+            disabled={busy}
+            onError={setErr}
+          />
         </form>
       )}
     </AuthShell>
